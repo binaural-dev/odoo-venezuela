@@ -8,6 +8,15 @@
         to render the foreign amount when the payment method is foreign; and
         the layout of .payment-infos (H10, below).
 
+        Tender currency (task 86066): a method with tender_currency_id (e.g.
+        EUR) renders "€ X / Bs Y". That branch WRAPS the old block
+        (t-if getTenderCurrency / t-else with the old t-if inside) instead of
+        turning `t-if="line.payment_method_id?.is_foreign_currency"` into a
+        t-elif: binaural_pos_multicurrency (integra) anchors its xpaths on that
+        exact t-if, in its current and its previous versions, so it must stay
+        a t-if for the PoS to compile whichever of the two repos is deployed
+        first.
+
         We had to do this instead of `t-inherit-mode="extension"` + xpath
         because the core template has TWO PriceFormatter occurrences and
         `//PriceFormatter position="replace"` in qweb-inherit handles them
@@ -42,12 +51,18 @@
                              <span class="payment-name text-truncate"><t t-esc="line.payment_method_id.name"/></span>
                              <div class="payment-amount ms-auto text-end">
                                 <!-- >>> BINAURAL: foreign currency display override <<< -->
-                                <t t-if="line.payment_method_id?.is_foreign_currency">
-                                    <span class="text-nowrap"><PriceFormatter price="env.utils.formatForeignCurrency(line.get_foreign_amount())" /></span>
+                                <t t-if="line.getTenderCurrency()">
+                                    <span class="text-nowrap"><PriceFormatter price="env.utils.formatCurrencyById(line.getTenderAmount(), line.getTenderCurrency().id)" /></span>
                                     <span class="d-inline-block text-nowrap text-muted fs-3 ms-1">/ <PriceFormatter price="env.utils.formatCurrency(line.getAmount())" /></span>
                                 </t>
                                 <t t-else="">
-                                    <PriceFormatter price="env.utils.formatCurrency(line.getAmount())" />
+                                    <t t-if="line.payment_method_id?.is_foreign_currency">
+                                        <span class="text-nowrap"><PriceFormatter price="env.utils.formatForeignCurrency(line.get_foreign_amount())" /></span>
+                                        <span class="d-inline-block text-nowrap text-muted fs-3 ms-1">/ <PriceFormatter price="env.utils.formatCurrency(line.getAmount())" /></span>
+                                    </t>
+                                    <t t-else="">
+                                        <PriceFormatter price="env.utils.formatCurrency(line.getAmount())" />
+                                    </t>
                                 </t>
                             </div>
                         </div>
@@ -172,12 +187,18 @@
                              <span class="payment-name text-truncate"><t t-esc="line.payment_method_id?.name" /></span>
                              <div class="payment-amount ms-auto text-end">
                                 <!-- >>> BINAURAL: foreign currency display override <<< -->
-                                <t t-if="line.payment_method_id?.is_foreign_currency">
-                                    <span class="text-nowrap"><PriceFormatter price="env.utils.formatForeignCurrency(line.get_foreign_amount())" /></span>
+                                <t t-if="line.getTenderCurrency()">
+                                    <span class="text-nowrap"><PriceFormatter price="env.utils.formatCurrencyById(line.getTenderAmount(), line.getTenderCurrency().id)" /></span>
                                     <span class="d-inline-block text-nowrap text-muted fs-3 ms-1">/ <PriceFormatter price="env.utils.formatCurrency(line.getAmount())" /></span>
                                 </t>
                                 <t t-else="">
-                                    <PriceFormatter price="env.utils.formatCurrency(line.getAmount())" />
+                                    <t t-if="line.payment_method_id?.is_foreign_currency">
+                                        <span class="text-nowrap"><PriceFormatter price="env.utils.formatForeignCurrency(line.get_foreign_amount())" /></span>
+                                        <span class="d-inline-block text-nowrap text-muted fs-3 ms-1">/ <PriceFormatter price="env.utils.formatCurrency(line.getAmount())" /></span>
+                                    </t>
+                                    <t t-else="">
+                                        <PriceFormatter price="env.utils.formatCurrency(line.getAmount())" />
+                                    </t>
                                 </t>
                             </div>
                          </div>

@@ -2,6 +2,25 @@
 
 import { PosPayment } from "@point_of_sale/app/models/pos_payment";
 import { patch } from "@web/core/utils/patch";
+// _getLocalDueBefore extiende el de l10n_ve_pos (moneda de cobro) con super:
+// este parche debe aplicarse después. En el bundle lo asegura el orden de
+// dependencias; en Hoot, el orden de importación.
+import "@l10n_ve_pos/overrides/models/payment_model";
+
+// La orden se factura y tiene contexto IGTF: el método de la línea genera IGTF
+// o ya hay deuda IGTF acumulada (con cualquier método). La usan
+// set_foreign_amount y _getLocalDueBefore. Es una función del módulo y no un
+// método: las pruebas de l10n_ve_pos llaman a esos dos con un `this` hecho a
+// mano, sin el resto del prototipo.
+function hasIgtfContext(line) {
+  const order = line.pos_order_id;
+  const method = line.payment_method_id;
+  const igtfContext =
+    Boolean(method?.apply_igtf) ||
+    (typeof order?._igtfRoundLocal === "function" &&
+      order._igtfRoundLocal(order.igtf_amount || 0) !== 0);
+  return Boolean(order?.to_invoice && igtfContext && typeof order._igtfBaseState === "function");
+}
 
 patch(PosPayment.prototype, {
   setup(_defaultObj, options) {
@@ -29,17 +48,7 @@ patch(PosPayment.prototype, {
     // después, en update_igtf — diseño 2026-07-09). Si el monto tecleado lo
     // cubre, fijamos el local EXACTO sin ida y vuelta de conversión.
     const order = this.pos_order_id;
-    const method = this.payment_method_id;
-    const hasIgtfContext =
-      Boolean(method?.apply_igtf) ||
-      (typeof order?._igtfRoundLocal === "function" &&
-        order._igtfRoundLocal(order.igtf_amount || 0) !== 0);
-    if (
-      order?.to_invoice &&
-      hasIgtfContext &&
-      typeof order._igtfBaseState === "function" &&
-      typeof order.localToForeign === "function"
-    ) {
+    if (hasIgtfContext(this) && typeof order.localToForeign === "function") {
       const requested = Number(amount) || 0;
       const { sign, remainingBase, unpaidIgtf } = order._igtfBaseState(this);
       const dueLocal = order._igtfRoundLocal(sign * (remainingBase + unpaidIgtf));
@@ -61,6 +70,20 @@ patch(PosPayment.prototype, {
       }
     }
     return super.set_foreign_amount(...arguments);
+  },
+  // Restante antes de esta línea para la moneda de cobro (EUR...,
+  // l10n_ve_pos setTenderAmount): en contexto IGTF, el mismo que usa el ajuste
+  // de set_foreign_amount, base de factura pendiente + deuda IGTF, SIN el IGTF
+  // que esta línea generará. Si lo tecleado es justo lo propuesto, la línea
+  // vale ese monto exacto, sin ida y vuelta de conversión; si es más, lo
+  // tecleado convertido.
+  _getLocalDueBefore() {
+    if (hasIgtfContext(this)) {
+      const order = this.pos_order_id;
+      const { sign, remainingBase, unpaidIgtf } = order._igtfBaseState(this);
+      return order._igtfRoundLocal(sign * (remainingBase + unpaidIgtf));
+    }
+    return super._getLocalDueBefore(...arguments);
   },
   init_from_JSON(json) {
     super.init_from_JSON(...arguments);

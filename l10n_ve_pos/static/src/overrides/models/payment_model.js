@@ -2,7 +2,7 @@
 
 import { PosPayment } from "@point_of_sale/app/models/pos_payment";
 import { patch } from "@web/core/utils/patch";
-import { GT, LT } from "@point_of_sale/app/utils/numbers";
+import { EQ, GT, LT } from "@point_of_sale/app/utils/numbers";
 import { roundPrecision } from "@web/core/utils/numbers";
 
 // Live patch for Odoo 19 PosPayment.
@@ -16,6 +16,7 @@ patch(PosPayment.prototype, {
         super.setup(...arguments);
         this.foreign_amount = vals.foreign_amount || 0;
         this.foreign_rate = vals.foreign_rate || 0;
+        this.tender_amount = vals.tender_amount || 0;
     },
 
     serializeForORM(opts = {}) {
@@ -24,7 +25,179 @@ patch(PosPayment.prototype, {
         // `foreign_rate` is not set here: the order sync serializes its
         // payments without calling this method, so the rate is stamped on the
         // order's payment commands (PosOrder._setPaymentForeignRates).
+        // Lo mismo con la moneda de cobro: en la sincronización llega
+        // `tender_amount` (campo del registro) y el servidor pone la moneda del
+        // método (pos.order._set_payment_tender_values).
+        const currency = this.getTenderCurrency();
+        data["tender_currency_id"] = currency ? currency.id : false;
+        data["tender_amount"] = currency ? this.getTenderAmount() : 0;
         return data;
+    },
+
+    // ---- Moneda de cobro (tercera moneda, p. ej. EUR) ----
+    //
+    // Un método con `tender_currency_id` se cobra en esa moneda: el cajero
+    // teclea euros y la línea vale en la caja su conversión con la tasa del
+    // día (pos.config.tender_currency_rates, vía pos_order._getPosConversionRate).
+    // `amount` sigue en la moneda de la caja (lo que el core suma, cobra y
+    // contabiliza), `foreign_amount` en la alterna (derivado de `amount`, como
+    // en todo método) y `tender_amount` es lo tecleado: lo que entra al cajón
+    // en euros y al diario real en esa moneda.
+    //
+    // binaural_pos_multicurrency extiende getTenderCurrency (cobro en la moneda
+    // de la compañía en una caja en otra moneda) y los ganchos _getTenderDue /
+    // _getPartialTenderLocalAmount.
+
+    // Un pago ya guardado conserva la moneda con la que se cobró
+    // (pos.payment.tender_currency_id), aunque después cambie la del método:
+    // al reimprimir un recibo viejo salen los euros que se cobraron. Una línea
+    // nueva aún no la tiene y toma la del método.
+    getTenderCurrency() {
+        const order = this.pos_order_id;
+        const currency = this.tender_currency_id || this.payment_method_id?.tender_currency_id;
+        if (!order || !currency) {
+            return null;
+        }
+        if (order._currencyId(currency) === order._currencyId(order._getMainCurrency())) {
+            return null;
+        }
+        return order._resolveCurrencyRecord(currency);
+    },
+
+    getTenderAmount() {
+        return this.tender_amount || 0;
+    },
+
+    // Multiplicadores { toTender: caja → cobro, toLocal: cobro → caja }. En un
+    // reembolso, la tasa con la que se cobraron los pagos originales en esa
+    // moneda (pos.order.get_refund_tender_rates, precargada por la pantalla de
+    // pago): se devuelven los mismos euros. Si no, la tasa viva de la caja.
+    _getTenderRates(currency = this.getTenderCurrency()) {
+        const order = this.pos_order_id;
+        const refundRate = Number(order?.getRefundTenderRate?.(currency)) || 0;
+        if (refundRate > 0) {
+            return { toTender: 1 / refundRate, toLocal: refundRate };
+        }
+        const main = order._getMainCurrency();
+        return {
+            toTender: order._getPosConversionRate(main, currency),
+            toLocal: order._getPosConversionRate(currency, main),
+        };
+    },
+
+    _recomputeTenderFromLocal() {
+        const currency = this.getTenderCurrency();
+        if (!currency) {
+            this.tender_amount = 0;
+            return;
+        }
+        this.tender_amount = this.pos_order_id._convertAtRate(
+            this.amount || 0,
+            this._getTenderRates(currency).toTender,
+            currency
+        );
+    },
+
+    // Restante de la orden en la moneda de la caja ANTES de esta línea (con el
+    // signo del total): total menos los demás pagos hechos, sin vueltos.
+    // l10n_ve_pos_igtf lo extiende con la deuda IGTF.
+    _getLocalDueBefore() {
+        const order = this.pos_order_id;
+        const localTotal = Number(order.totalDue ?? 0) || 0;
+        const paidOthers = Array.from(order.payment_ids || []).reduce((sum, line) => {
+            if (line === this || !line.isDone() || line.is_change) {
+                return sum;
+            }
+            return sum + (Number(line.getAmount()) || 0);
+        }, 0);
+        return localTotal - paidOthers;
+    },
+
+    // Lo adeudado en la moneda de cobro: el restante de la caja convertido
+    // UNA vez y redondeado a esa moneda (lo que el cajero ve propuesto).
+    _getTenderDue(currency, localDueBefore, rates) {
+        return this.pos_order_id._convertAtRate(localDueBefore, rates.toTender, currency);
+    },
+
+    // Monto en la caja de un cobro parcial (no cubre lo adeudado): la
+    // conversión de lo tecleado, con el signo del restante (un reembolso
+    // tecleado sin "-" sigue siendo una salida).
+    _getPartialTenderLocalAmount(currency, requested, tenderDue, localDueBefore, rates) {
+        const signed = localDueBefore < 0 && requested > 0 ? -requested : requested;
+        return this.pos_order_id._convertAtRate(
+            signed,
+            rates.toLocal,
+            this.pos_order_id._getMainCurrency()
+        );
+    },
+
+    // Monto en la caja de un cobro con excedente (supera lo adeudado): lo
+    // tecleado por la tasa, con el signo del restante (un reembolso tecleado
+    // sin "-" sigue siendo una salida). No se mide el excedente contra lo
+    // adeudado, que es el restante ya redondeado a la moneda de cobro:
+    // 18.560 Bs = 18,4685 € → 18,47 €; con 25 € el excedente sería 6,53 € (no
+    // 6,5315) y la línea valdría Bs 25.122,37 en vez de 25.123,91. El error
+    // llega a medio céntimo de la moneda de cobro, de menos o de más según el
+    // redondeo de lo adeudado. Tampoco deja céntimos pendientes: lo tecleado
+    // supera lo adeudado en al menos un céntimo y lo adeudado difiere del
+    // restante convertido en a lo sumo medio.
+    _getOverpaidTenderLocalAmount(currency, requested, tenderDue, localDueBefore, rates) {
+        const sign = localDueBefore < 0 ? -1 : 1;
+        return this.pos_order_id._convertAtRate(
+            sign * Math.abs(requested),
+            rates.toLocal,
+            this.pos_order_id._getMainCurrency()
+        );
+    },
+
+    setTenderAmount(amount) {
+        // Lo tecleado (redondeado a la moneda de cobro: el teclado no limita
+        // los decimales) se compara con lo adeudado en esa moneda:
+        // - igual (pago justo): la línea vale EXACTAMENTE el restante de la
+        //   caja, para que el ruido cambiario no deje un céntimo pendiente ni un
+        //   vuelto fantasma;
+        // - mayor (con excedente): _getOverpaidTenderLocalAmount;
+        // - menor (pago parcial): _getPartialTenderLocalAmount.
+        // Se compara en valor absoluto. En una venta, un negativo tecleado que
+        // no cubre lo adeudado queda en negativo (una salida, como en el core);
+        // si lo cubre, toma el signo del restante.
+        const order = this.pos_order_id;
+        const currency = this.getTenderCurrency();
+        if (!order || !currency) {
+            this.setAmount(Number(amount) || 0);
+            return;
+        }
+        const requested = currency.round(Number(amount) || 0);
+        const rates = this._getTenderRates(currency);
+        const localDueBefore = this._getLocalDueBefore();
+        const tenderDue = this._getTenderDue(currency, localDueBefore, rates);
+
+        const absRequested = Math.abs(requested);
+        const absDue = Math.abs(tenderDue);
+        const coversDue = !currency.isZero(tenderDue) && currency.comp(absRequested, absDue) !== LT;
+
+        let localAmount;
+        if (!coversDue) {
+            localAmount = this._getPartialTenderLocalAmount(
+                currency, requested, tenderDue, localDueBefore, rates
+            );
+        } else if (currency.comp(absRequested, absDue) === EQ) {
+            localAmount = localDueBefore;
+        } else {
+            localAmount = this._getOverpaidTenderLocalAmount(
+                currency, requested, tenderDue, localDueBefore, rates
+            );
+        }
+
+        this._settingTenderAmount = true;
+        try {
+            this.setAmount(localAmount);
+        } finally {
+            this._settingTenderAmount = false;
+        }
+        // Mismo signo que `amount` y redondeado a la moneda de cobro.
+        const sign = (localAmount || requested) < 0 ? -1 : 1;
+        this.tender_amount = currency.round(sign * absRequested);
     },
 
     _recomputeForeignFromLocal() {
@@ -56,6 +229,12 @@ patch(PosPayment.prototype, {
     setAmount(value) {
         super.setAmount(value);
         this._recomputeForeignFromLocal();
+        // Con el monto de la caja como fuente (core, botones +10, precarga),
+        // lo cobrado en la moneda de cobro es su conversión. setTenderAmount
+        // fija `tender_amount` con lo tecleado y lo salta.
+        if (!this._settingTenderAmount) {
+            this._recomputeTenderFromLocal();
+        }
     },
 
     get_amount() {

@@ -1,4 +1,3 @@
-
 <odoo>
     <record id="pos_payment_method_view_form" model="ir.ui.view">
         <field name="name">binaural.pos.payment.method.form</field>
@@ -6,12 +5,14 @@
         <field name="inherit_id" ref="point_of_sale.pos_payment_method_view_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='split_transactions']" position="after">
-                <field name="is_foreign_currency" />
+                <field name="is_foreign_currency" invisible="tender_currency_id"/>
+                <field name="tender_currency_id" invisible="is_foreign_currency or type == 'pay_later'"
+                       options="{'no_create': True}"/>
             </xpath>
 
             <xpath expr="//field[@name='receivable_account_id']" position="after">
-                <field name="cross_account_journal" invisible="not is_foreign_currency" />
-                <field name="cross_journal" invisible="not is_foreign_currency" />
+                <field name="cross_account_journal" invisible="not is_foreign_currency and not tender_currency_id" />
+                <field name="cross_journal" invisible="not is_foreign_currency and not tender_currency_id" />
             </xpath>
         </field>
     </record>
