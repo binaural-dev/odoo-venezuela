@@ -569,19 +569,7 @@ class AccountRetentionLine(models.Model):
 
                         total_taxable_base = total_taxable_base * (line.percentage_tax_base / 100.0)
 
-                        rates = sorted(line.tariff_id.accumulated_rate_ids, key=lambda r: r.start)
-
-                        selected_rate = None
-                        for rate in rates:
-                            is_infinity_tier = (rate.stop == 0)
-                            if not is_infinity_tier:
-                                if rate.start <= total_taxable_base <= rate.stop:
-                                    selected_rate = rate
-                                    break 
-                            else:
-                                if total_taxable_base >= rate.start:
-                                    selected_rate = rate
-                                    break
+                        selected_rate = line.tariff_id.get_accumulated_rate(total_taxable_base)
 
                         if selected_rate:
                             record.invoice_total = record.move_id.tax_totals["total_amount"]
