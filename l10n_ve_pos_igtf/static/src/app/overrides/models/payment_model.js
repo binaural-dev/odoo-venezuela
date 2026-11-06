@@ -74,8 +74,9 @@ patch(PosPayment.prototype, {
   // Restante antes de esta línea para la moneda de cobro (EUR...,
   // l10n_ve_pos setTenderAmount): en contexto IGTF, el mismo que usa el ajuste
   // de set_foreign_amount, base de factura pendiente + deuda IGTF, SIN el IGTF
-  // que esta línea generará. Si lo tecleado lo cubre, la línea vale ese monto
-  // exacto (más el excedente), sin ida y vuelta de conversión.
+  // que esta línea generará. Si lo tecleado es justo lo propuesto, la línea
+  // vale ese monto exacto, sin ida y vuelta de conversión; si es más, lo
+  // tecleado convertido.
   _getLocalDueBefore() {
     if (hasIgtfContext(this)) {
       const order = this.pos_order_id;
