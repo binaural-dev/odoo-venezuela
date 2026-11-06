@@ -731,7 +731,7 @@ El PdV DEBE (MUST) cargar las monedas de cobro de sus métodos, y `res.currency`
 
 ### Requirement: Cobro tecleado en la moneda de cobro
 
-Al pagar con un método con moneda de cobro, el PdV DEBE (MUST) proponer lo adeudado en esa moneda y tomar lo tecleado en ella. Si lo tecleado cubre lo adeudado (comparado en esa moneda), la línea DEBE (MUST) valer en la caja exactamente el restante más el excedente convertido; si no, la conversión de lo tecleado. El pago DEBE (MUST) guardar lo cobrado en `tender_amount` con la moneda del método, y su `foreign_amount` se deriva del monto en la caja como en cualquier método.
+Al pagar con un método con moneda de cobro, el PdV DEBE (MUST) proponer lo adeudado en esa moneda y tomar lo tecleado en ella, redondeado a esa moneda. Si es justo lo propuesto, la línea DEBE (MUST) valer en la caja exactamente el restante; si es más, lo tecleado por la tasa, con el signo del restante; si es menos, la conversión de lo tecleado. El pago DEBE (MUST) guardar lo cobrado en `tender_amount` con la moneda del método, y su `foreign_amount` se deriva del monto en la caja.
 
 #### Scenario: Pago exacto en euros
 
@@ -741,7 +741,17 @@ Al pagar con un método con moneda de cobro, el PdV DEBE (MUST) proponer lo adeu
 #### Scenario: Pago de más en euros
 
 - **WHEN** la venta es de 8.500 Bs y el cajero teclea 10 €
-- **THEN** la línea vale 8.500 Bs más 1,53 € convertidos y el vuelto sale en Bs
+- **THEN** la línea vale los 10 € convertidos y el vuelto sale en Bs
+
+#### Scenario: Excedente sobre lo adeudado redondeado
+
+- **WHEN** la venta es de 18.560 Bs con el € a 1.004,9565776200 Bs (se proponen 18,47 €) y el cajero teclea 25 €
+- **THEN** la línea vale 25.123,91 Bs y el vuelto 6.563,91 Bs, no 25.122,37 y 6.562,37 (excedente medido contra 18,47 €)
+
+#### Scenario: Reembolso con excedente
+
+- **WHEN** un reembolso de una venta cobrada a 1.000 Bs/€ debe 8 € y el cajero teclea 10 €
+- **THEN** la línea vale -10.000 Bs, a la tasa original
 
 #### Scenario: Pago parcial en euros
 

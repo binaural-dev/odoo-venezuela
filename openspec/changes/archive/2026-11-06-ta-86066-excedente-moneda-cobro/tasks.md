@@ -27,4 +27,4 @@
 
 ## 3. Cierre
 
-- [ ] 3.1 `openspec validate --strict` y archivar en el PR #1569
+- [x] 3.1 `openspec validate --strict` y archivar en el PR #1569
