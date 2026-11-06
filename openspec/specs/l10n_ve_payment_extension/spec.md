@@ -748,3 +748,47 @@ Las fechas por defecto de los wizards de retención IVA e ISLR DEBEN (MUST) eval
 
 - **WHEN** se abre el wizard de retención IVA o ISLR
 - **THEN** el rango por defecto es el del mes actual del usuario
+
+### Requirement: Las diferencias de precisión entre monedas al cerrar una factura en moneda extranjera se registran en diferencial cambiario
+
+Cuando una retención (IVA, ISLR o Municipal; sobre facturas, notas de crédito o notas de débito, de cliente o de proveedor) recae sobre un documento en moneda extranjera, el sistema DEBE (MUST) comparar el monto retenido (moneda de la compañía) contra lo adeudado del documento reconvirtiendo la diferencia a la moneda del documento con la tasa del propio documento (`invoice_currency_rate`, nunca la del día). Si esa diferencia, en cualquiera de los dos sentidos (excedente o faltante), redondea a cero en la moneda del documento, el sistema DEBE (MUST) tratarla como redondeo entre monedas: aceptar la retención y declarar la diferencia exacta como línea de `write_off` en el MISMO asiento del pago de retención, de modo que el documento quede en cero y conciliado por completo en ambas monedas. Si la diferencia no desaparece en la moneda del documento, el sistema DEBE (MUST) tratarla como un monto real: un excedente se rechaza (`action_post`, `check_retention_amount`) y un faltante deja el saldo abierto sin writeoff. En un documento en moneda de la compañía la comparación SIGUE siendo estricta.
+
+La cuenta y el signo del writeoff dependen de la dirección del pago de retención (`inbound`: cliente, nota de crédito de proveedor y nota de débito de cliente; `outbound`: proveedor, nota de crédito de cliente y nota de débito de proveedor): en `inbound` el excedente es crédito a la cuenta de ganancia por diferencial cambiario y el faltante es débito a la de pérdida; en `outbound` el excedente es débito a pérdida y el faltante es crédito a ganancia. Si la cuenta que corresponde no está configurada en la compañía, el sistema DEBE (MUST) detener la emisión con un error que nombre esa cuenta, en vez de dejar un residual silencioso en la cuenta por cobrar/pagar.
+
+#### Scenario: Excedente por redondeo en factura de cliente en dólares
+
+- **GIVEN** una factura de cliente en moneda extranjera con adeudado de 45.600 VES
+- **WHEN** se emite una retención por 45.600,01 VES
+- **THEN** la retención se emite y el pago lleva una línea de writeoff de 0,01 VES (crédito a ganancia)
+- **AND** la factura queda en 0 VES / 0 USD, pagada y conciliada
+
+#### Scenario: Faltante por redondeo en factura de cliente en dólares
+
+- **GIVEN** la misma factura
+- **WHEN** se emite una retención por 45.599,99 VES
+- **THEN** el pago lleva una línea de writeoff de 0,01 VES (débito a pérdida)
+- **AND** la factura queda en 0 VES / 0 USD, pagada y conciliada, sin polvo en VES
+
+#### Scenario: Faltante real
+
+- **WHEN** la diferencia equivale a un centavo de la moneda del documento
+- **THEN** no se crea writeoff y la factura queda en estado parcial con ese saldo
+
+### Requirement: El monto de la retención de IVA y la tolerancia de redondeo entre monedas se calculan en un solo lugar
+
+El monto de la retención de IVA en moneda de compañía DEBE (MUST) calcularse únicamente con `account.retention.compute_iva_retention_amount(monto_impuesto, porcentaje)`: lo usan la carga de líneas (`compute_retention_lines_data`), la línea de retención (`_apply_iva_tax_group_values`) y los portales, que pasan su propio porcentaje. Un cambio en la regla de cálculo DEBE (MUST) propagarse a todos.
+
+La mayor diferencia, en moneda de compañía, entre lo retenido y lo adeudado que sigue siendo redondeo entre monedas DEBE (MUST) calcularse únicamente con `account.move._retention_amount_tolerance()`: el mayor paso de la moneda de compañía que, reconvertido a la moneda del documento con `invoice_currency_rate`, redondea a cero. Es 0 en documentos en moneda de compañía. `_retention_difference_within_currency_precision` (cierre de facturas en moneda extranjera) y los portales DEBEN (MUST) usar esa misma regla.
+
+Los valores alternos `foreign_*` de las líneas de retención son heredados: no se usan en cálculos. Cualquier cifra alterna de una retención que se muestre DEBE (MUST) ser referencial y salir de convertir el monto en moneda de compañía con `currency._convert()`.
+
+#### Scenario: Cambio en la regla de cálculo del monto
+
+- **WHEN** se modifica `compute_iva_retention_amount`
+- **THEN** las líneas cargadas por `compute_retention_lines_data` y por la línea de retención usan el nuevo cálculo
+
+#### Scenario: Diferencia dentro y fuera de la tolerancia
+
+- **WHEN** la retención difiere de lo adeudado por una cantidad menor o igual a `_retention_amount_tolerance()` en una factura en moneda extranjera
+- **THEN** la diferencia se trata como redondeo y se lleva a diferencial cambiario
+- **AND** una diferencia mayor (un paso más de la moneda de compañía) se trata como diferencia real

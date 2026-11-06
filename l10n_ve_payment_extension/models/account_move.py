@@ -1,7 +1,7 @@
 from odoo import models, fields, api, _, Command
 from odoo.exceptions import UserError
 from odoo.tools.safe_eval import safe_eval
-from odoo.tools import float_compare
+from odoo.tools import float_compare, float_round
 from collections import defaultdict
 import logging
 
@@ -10,6 +10,62 @@ _logger = logging.getLogger(__name__)
 
 class AccountMoveRetention(models.Model):
     _inherit = "account.move"
+
+    def _retention_excess_within_currency_precision(self, retention_amount_company_currency):
+        """Diferencia exacta a mandar a diferencial cambiario cuando
+        `retention_amount_company_currency` (VEF, ya sumado por todas las
+        lineas de esta factura) excede lo adeudado SOLO porque las dos
+        monedas no pueden expresar el mismo importe con la misma precision.
+
+        La retencion se calcula sobre el impuesto del asiento (VEF); lo
+        adeudado de la factura vive en su propia moneda con su propia
+        precision. Reconvertir el excedente de vuelta a la moneda de la
+        factura, con la tasa de LA FACTURA (`invoice_currency_rate`, nunca
+        la de compañia ni una tasa recalculada del dia), es la unica forma
+        de confirmar sin adivinar que ese excedente es redondeo: si al
+        reconvertir desaparece (redondea a cero en la moneda del documento),
+        la factura queda saldada en los terminos en que fue emitida y el
+        sobrante es un artefacto de precision. Si no desaparece, es un
+        exceso real y no se tolera.
+
+        Devuelve el excedente exacto en VEF cuando es tolerable, o None
+        cuando no hay excedente que tolerar (retencion normal, con exceso
+        real, o con faltante) o la factura esta en moneda de compañia (no
+        hay dos precisiones que reconciliar). Envoltorio de
+        `_retention_difference_within_currency_precision`, que ademas
+        reporta el faltante (diferencia negativa).
+        """
+        diff = self._retention_difference_within_currency_precision(
+            retention_amount_company_currency
+        )
+        return diff if diff and diff > 0 else None
+
+    def _retention_difference_within_currency_precision(self, retention_amount_company_currency):
+        """Diferencia CON SIGNO (retenido - adeudado, en VEF) cuando es
+        solo redondeo entre monedas, o None.
+
+        Positiva: la retencion excede lo adeudado (ver
+        `_retention_excess_within_currency_precision`). Negativa: la
+        retencion queda POR DEBAJO de lo adeudado y el faltante, expresado
+        en la moneda de la factura con la tasa del documento, redondea a
+        cero -la factura ya esta saldada en esa moneda, solo queda
+        polvo en VEF que, sin declararlo, deja la factura "pagada" pero sin
+        conciliar. Misma regla en ambos sentidos: la diferencia tiene que
+        desaparecer en la moneda de la factura; si no, es un monto real.
+        """
+        self.ensure_one()
+        company_currency = self.company_id.currency_id
+        diff = retention_amount_company_currency - abs(self.amount_residual_signed)
+        if company_currency.is_zero(diff):
+            return None
+        # La regla de "es solo redondeo" vive en `_retention_amount_tolerance`
+        # (0.0 en moneda de compania: cualquier diferencia es real).
+        if float_compare(
+            abs(diff), self._retention_amount_tolerance(),
+            precision_rounding=company_currency.rounding,
+        ) > 0:
+            return None
+        return diff
 
     base_currency_is_vef = fields.Boolean(
         compute="_compute_currency_fields",
@@ -123,6 +179,30 @@ class AccountMoveRetention(models.Model):
             " to draft, edited and reposted)."
         ),
     )
+
+    def _retention_amount_tolerance(self):
+        """Mayor diferencia, en moneda de compania, entre lo retenido y lo
+        adeudado que sigue siendo redondeo entre monedas: la que, reconvertida
+        a la moneda del documento con la tasa del documento
+        (`invoice_currency_rate`), redondea a cero (menos de medio centimo de esa
+        moneda). Un centimo completo ya es una diferencia real en esa moneda.
+        0.0 si el documento esta en moneda de compania (comparacion estricta).
+
+        Es el UNICO lugar de la regla: la usan
+        `_retention_difference_within_currency_precision` (que decide si la
+        retencion cierra la factura) y los portales (que la envian al navegador
+        para no rechazar un redondeo que el servidor acepta)."""
+        self.ensure_one()
+        company_currency = self.company_id.currency_id
+        if self.currency_id == company_currency or not self.invoice_currency_rate:
+            return 0.0
+        step = company_currency.rounding
+        limit = (self.currency_id.rounding / 2.0) / self.invoice_currency_rate
+        # Mayor multiplo del paso de la moneda de compania ESTRICTAMENTE menor al limite.
+        tolerance = float_round(limit, precision_rounding=step, rounding_method="DOWN")
+        if float_compare(tolerance, limit, precision_rounding=step / 1000.0) >= 0:
+            tolerance -= step
+        return max(tolerance, 0.0)
 
     @api.depends(
         "move_type",

@@ -38,6 +38,7 @@ from . import test_retention_sequence_branch
 from . import test_retention_sequence_branch_flow
 from . import test_retention_ti14548_rules
 from . import test_retention_foreign_rate_ticket_15154
+from . import test_retention_currency_precision_writeoff
 from . import test_sale_book_retention_lines
 from . import test_municipal_retention_xlsx_report
 from . import test_retention_islr_partner_change
@@ -47,3 +48,4 @@ from . import test_municipal_retention_pdf
 from . import test_accounting_reports_branches_moves
 from . import test_retention_voucher_buttons
 from . import test_retention_resync
+from . import test_retention_amount_tolerance
