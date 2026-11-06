@@ -837,3 +837,22 @@ La cuenta y el signo del writeoff dependen de la dirección del pago de retenci�
 
 - **WHEN** la diferencia equivale a un centavo de la moneda del documento
 - **THEN** no se crea writeoff y la factura queda en estado parcial con ese saldo
+
+### Requirement: El monto de la retención de IVA y la tolerancia de redondeo entre monedas se calculan en un solo lugar
+
+El monto de la retención de IVA en moneda de compañía DEBE (MUST) calcularse únicamente con `account.retention.compute_iva_retention_amount(monto_impuesto, porcentaje)`: lo usan la carga de líneas (`compute_retention_lines_data`), la línea de retención (`_apply_iva_tax_group_values`) y los portales, que pasan su propio porcentaje. Un cambio en la regla de cálculo DEBE (MUST) propagarse a todos.
+
+La mayor diferencia, en moneda de compañía, entre lo retenido y lo adeudado que sigue siendo redondeo entre monedas DEBE (MUST) calcularse únicamente con `account.move._retention_amount_tolerance()`: el mayor paso de la moneda de compañía que, reconvertido a la moneda del documento con `invoice_currency_rate`, redondea a cero. Es 0 en documentos en moneda de compañía. `_retention_difference_within_currency_precision` (cierre de facturas en moneda extranjera) y los portales DEBEN (MUST) usar esa misma regla.
+
+Los valores alternos `foreign_*` de las líneas de retención son heredados: no se usan en cálculos. Cualquier cifra alterna de una retención que se muestre DEBE (MUST) ser referencial y salir de convertir el monto en moneda de compañía con `currency._convert()`.
+
+#### Scenario: Cambio en la regla de cálculo del monto
+
+- **WHEN** se modifica `compute_iva_retention_amount`
+- **THEN** las líneas cargadas por `compute_retention_lines_data` y por la línea de retención usan el nuevo cálculo
+
+#### Scenario: Diferencia dentro y fuera de la tolerancia
+
+- **WHEN** la retención difiere de lo adeudado por una cantidad menor o igual a `_retention_amount_tolerance()` en una factura en moneda extranjera
+- **THEN** la diferencia se trata como redondeo y se lleva a diferencial cambiario
+- **AND** una diferencia mayor (un paso más de la moneda de compañía) se trata como diferencia real
