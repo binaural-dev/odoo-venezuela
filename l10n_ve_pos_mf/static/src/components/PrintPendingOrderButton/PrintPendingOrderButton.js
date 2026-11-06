@@ -67,6 +67,32 @@ export class PrintPendingOrderButton extends Component {
 
         this.state.isPrinting = true;
         try {
+            // Primero se resuelven los pedidos por verificar (puede ser este
+            // mismo): su verificación compara contadores de la máquina. #85447
+            const canPrint = await this.pos._mfResolvePrintVerifications();
+            if (order.mf_invoice_number) {
+                this.props.onOrderFiscalized(order.id).catch(() => {});
+                return;
+            }
+            if (order.mf_print_verification) {
+                this._alert(
+                    _t("Fiscal print to verify"),
+                    _t(
+                        "It is not known whether the fiscal printer printed this order. Check it on the fiscal printer and resolve it from the order in the backend before printing it again."
+                    )
+                );
+                return;
+            }
+            if (!canPrint) {
+                this._alert(
+                    _t("Fiscal print to verify"),
+                    _t(
+                        "The fiscal printer did not respond while verifying a previous order. Try again when it responds."
+                    )
+                );
+                return;
+            }
+
             const data = await this.pos.get_data_invoice(order);
             if (!data || !data.valid) {
                 this._alert(
@@ -93,6 +119,20 @@ export class PrintPendingOrderButton extends Component {
             }
 
             if (!response.success) {
+                if (response.printed === null && response.verification) {
+                    // El pedido ya está sincronizado: la marca también se
+                    // guarda en el servidor. Si eso falla, la cola local lo
+                    // resuelve igual antes de la siguiente impresión.
+                    this.pos._mfQueuePrintVerification(order, response.verification);
+                    try {
+                        await this.orm.call("pos.order", "mf_set_print_verification", [
+                            order.uuid,
+                            response.verification,
+                        ]);
+                    } catch (error) {
+                        console.warn("PrintPendingOrderButton:: No se pudo marcar el pedido por verificar", error);
+                    }
+                }
                 this._alert(
                     _t("Error al imprimir"),
                     _t(response.error || "Error desconocido al imprimir en la maquina fiscal.")
