@@ -91,19 +91,20 @@ function donePayment(amount, isChange = false) {
     return { getAmount: () => amount, isDone: () => true, is_change: isChange };
 }
 
-// Pedido con la tasa EUR del día (o la de un reembolso, `refundRate` Bs por €).
-function makeTenderOrder({ totalDue, paid = [], changes = [], refundRate = 0 }) {
+// Pedido con la tasa EUR del día, `rate` Bs por € (o la de un reembolso,
+// `refundRate`).
+function makeTenderOrder({ totalDue, paid = [], changes = [], refundRate = 0, rate = BS_PER_EUR }) {
     return {
         totalDue,
         payment_ids: [...paid.map((a) => donePayment(a)), ...changes.map((a) => donePayment(a, true))],
         _getMainCurrency: () => VEF,
-        _getPosConversionRate: (from) => (from === EUR ? BS_PER_EUR : 1 / BS_PER_EUR),
+        _getPosConversionRate: (from) => (from === EUR ? rate : 1 / rate),
         _convertAtRate: (v, r, currency) => (!v || !r ? 0 : currency.round(v * r)),
         getRefundTenderRate: () => refundRate,
     };
 }
 
-function tender(order, requested) {
+function tender(order, requested, overrides = {}) {
     const proto = PosPayment.prototype;
     const payment = {
         pos_order_id: order,
@@ -114,9 +115,11 @@ function tender(order, requested) {
         _getLocalDueBefore: proto._getLocalDueBefore,
         _getTenderDue: proto._getTenderDue,
         _getPartialTenderLocalAmount: proto._getPartialTenderLocalAmount,
+        _getOverpaidTenderLocalAmount: proto._getOverpaidTenderLocalAmount,
         setAmount(value) {
             this.amount = VEF.round(value);
         },
+        ...overrides,
     };
     order.payment_ids.push(payment);
     proto.setTenderAmount.call(payment, requested);
@@ -131,10 +134,53 @@ describe("l10n_ve_pos setTenderAmount (moneda de cobro)", () => {
         expect(payment.tender_amount).toBe(8.47);
     });
 
-    test("pagar de más en euros: la caja vale lo adeudado más el excedente convertido (vuelto en Bs)", () => {
+    test("pagar de más en euros: la caja vale lo tecleado convertido (vuelto en Bs)", () => {
         const payment = tender(makeTenderOrder({ totalDue: 8500 }), 10);
-        // 10 − 8,47 = 1,53 € → 1.535,93 Bs de vuelto.
-        expect(payment.amount).toBe(8500 + VEF.round(1.53 * BS_PER_EUR));
+        // 10 € → 10.038,77 Bs: 1.538,77 Bs de vuelto (no 8.500 + 1,53 €).
+        expect(payment.amount).toBe(VEF.round(10 * BS_PER_EUR));
+        expect(payment.tender_amount).toBe(10);
+    });
+
+    test("caso de la caja 1 (06-nov): € 25 por 18.560 Bs valen 25 € convertidos", () => {
+        // 18.560 Bs = 18,4685 € → se propone 18,47 €. Medir el excedente
+        // contra 18,47 (6,53 €) daba 25.122,37 Bs: Bs 1,54 de menos de vuelto.
+        const order = makeTenderOrder({ totalDue: 18560, rate: 1004.95657762 });
+        const payment = tender(order, 25);
+        expect(payment.amount).toBe(25123.91);
+        expect(payment.tender_amount).toBe(25);
+        expect(VEF.round(payment.amount - 18560)).toBe(6563.91);
+    });
+
+    test("caso de la caja 1: los € 18,47 propuestos siguen valiendo 18.560 Bs exactos", () => {
+        const order = makeTenderOrder({ totalDue: 18560, rate: 1004.95657762 });
+        const payment = tender(order, 18.47);
+        // Su conversión serían 18.561,55 Bs: un vuelto de céntimos.
+        expect(payment.amount).toBe(18560);
+        expect(payment.tender_amount).toBe(18.47);
+    });
+
+    test("lo tecleado se redondea a la moneda de cobro antes de convertir", () => {
+        // El teclado no limita los decimales: 8,475 € es 8,48 € en la línea y
+        // en la caja (antes valía 8,475 convertidos y tender_amount 8,48).
+        const over = tender(makeTenderOrder({ totalDue: 8500 }), 8.475);
+        expect(over.amount).toBe(VEF.round(8.48 * BS_PER_EUR));
+        expect(over.tender_amount).toBe(8.48);
+        // 8,474 € es 8,47 €: el pago justo.
+        const exact = tender(makeTenderOrder({ totalDue: 8500 }), 8.474);
+        expect(exact.amount).toBe(8500);
+        expect(exact.tender_amount).toBe(8.47);
+    });
+
+    test("el excedente pasa por _getOverpaidTenderLocalAmount (gancho de binaural_pos_multicurrency)", () => {
+        const calls = [];
+        const payment = tender(makeTenderOrder({ totalDue: 8500 }), 10, {
+            _getOverpaidTenderLocalAmount(currency, requested, tenderDue, localDueBefore) {
+                calls.push([currency, requested, tenderDue, localDueBefore]);
+                return 9999;
+            },
+        });
+        expect(calls).toEqual([[EUR, 10, 8.47, 8500]]);
+        expect(payment.amount).toBe(9999);
         expect(payment.tender_amount).toBe(10);
     });
 
@@ -167,6 +213,22 @@ describe("l10n_ve_pos setTenderAmount (moneda de cobro)", () => {
         const payment = tender(makeTenderOrder({ totalDue: -8000, refundRate: 1000 }), 8);
         expect(payment.amount).toBe(-8000);
         expect(payment.tender_amount).toBe(-8);
+    });
+
+    test("reembolso con excedente: lo tecleado a la tasa original, negativo", () => {
+        // Se devuelven 10 € de una venta cobrada a 1.000 Bs/€ que debía 8 €:
+        // -10.000 Bs (a la tasa de hoy serían -10.038,77).
+        const payment = tender(makeTenderOrder({ totalDue: -8000, refundRate: 1000 }), 10);
+        expect(payment.amount).toBe(-10000);
+        expect(payment.tender_amount).toBe(-10);
+    });
+
+    test("reembolso con excedente sin tasa redonda: no se mide contra lo adeudado redondeado", () => {
+        // Venta cobrada a 1.004,95657762 Bs/€: debe 18,47 €, se devuelven 25 €.
+        const order = makeTenderOrder({ totalDue: -18560, refundRate: 1004.95657762 });
+        const payment = tender(order, 25);
+        expect(payment.amount).toBe(-25123.91);
+        expect(payment.tender_amount).toBe(-25);
     });
 });
 
