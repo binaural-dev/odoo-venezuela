@@ -33,6 +33,52 @@ class FeesRetention(models.Model):
         if self.percentage < 0:
             raise ValidationError(_("The rate percentage cannot be negative.\n"))
 
+    @api.constrains("accumulated_rate", "accumulated_rate_ids")
+    def _check_accumulated_tiers_continuity(self):
+        """Every tier but the last needs an upper limit, and limits must grow.
+
+        The tier is picked by its upper limit (`stop`), so a missing or
+        out-of-order limit would leave a base amount without a tier.
+        """
+        for record in self.filtered("accumulated_rate"):
+            tiers = record.accumulated_rate_ids.sorted("start")
+            previous_stop = 0.0
+            for tier in tiers[:-1]:
+                if tier.stop <= previous_stop:
+                    raise ValidationError(
+                        _(
+                            "Tier '%(name)s' must have an upper limit greater than the "
+                            "previous tier's, otherwise some amounts would have no rate.",
+                            name=tier.name,
+                        )
+                    )
+                previous_stop = tier.stop
+            if tiers and tiers[-1].stop:
+                raise ValidationError(
+                    _("The last tier must have no upper limit (leave 'stop' empty).")
+                )
+
+    def get_accumulated_rate(self, base_ut):
+        """Return the accumulated tier (accumulated.fees) that applies to `base_ut`.
+
+        Tiers are contiguous: a tier covers everything above the previous
+        tier's `stop` up to its own `stop` (inclusive), and the tier without
+        `stop` is open-ended. `start` is only informative, so a configuration
+        such as 0-2000 / 2001-3000 does not leave 2000 < base < 2001 uncovered
+        (Decreto 1.808, art. 9 parágrafo primero: "hasta", "entre ... hasta",
+        "por el monto que exceda de").
+
+        :param float base_ut: taxable base expressed in tax units
+        :return: the matching tier, or an empty recordset if base_ut < 0
+        """
+        self.ensure_one()
+        if base_ut < 0:
+            return self.env["accumulated.fees"]
+        for tier in self.accumulated_rate_ids.sorted("start"):
+            if not tier.stop or base_ut <= tier.stop:
+                return tier
+        return self.env["accumulated.fees"]
+
     @api.depends("apply_subtracting", "percentage", "tax_unit_ids", "tax_unit_ids.value")
     def _compute_amount_subtract(self):
         for record in self:
