@@ -1,7 +1,7 @@
 from odoo import models, fields, api, _, Command
 from odoo.exceptions import UserError
 from odoo.tools.safe_eval import safe_eval
-from odoo.tools import float_compare
+from odoo.tools import float_compare, float_round
 from collections import defaultdict
 import logging
 
@@ -58,11 +58,12 @@ class AccountMoveRetention(models.Model):
         diff = retention_amount_company_currency - abs(self.amount_residual_signed)
         if company_currency.is_zero(diff):
             return None
-        if self.currency_id == company_currency or not self.invoice_currency_rate:
-            return None
-        if not self.currency_id.is_zero(
-            self.currency_id.round(abs(diff) * self.invoice_currency_rate)
-        ):
+        # La regla de "es solo redondeo" vive en `_retention_amount_tolerance`
+        # (0.0 en moneda de compania: cualquier diferencia es real).
+        if float_compare(
+            abs(diff), self._retention_amount_tolerance(),
+            precision_rounding=company_currency.rounding,
+        ) > 0:
             return None
         return diff
 
@@ -178,6 +179,30 @@ class AccountMoveRetention(models.Model):
             " to draft, edited and reposted)."
         ),
     )
+
+    def _retention_amount_tolerance(self):
+        """Mayor diferencia, en moneda de compania, entre lo retenido y lo
+        adeudado que sigue siendo redondeo entre monedas: la que, reconvertida
+        a la moneda del documento con la tasa del documento
+        (`invoice_currency_rate`), redondea a cero (menos de medio centimo de esa
+        moneda). Un centimo completo ya es una diferencia real en esa moneda.
+        0.0 si el documento esta en moneda de compania (comparacion estricta).
+
+        Es el UNICO lugar de la regla: la usan
+        `_retention_difference_within_currency_precision` (que decide si la
+        retencion cierra la factura) y los portales (que la envian al navegador
+        para no rechazar un redondeo que el servidor acepta)."""
+        self.ensure_one()
+        company_currency = self.company_id.currency_id
+        if self.currency_id == company_currency or not self.invoice_currency_rate:
+            return 0.0
+        step = company_currency.rounding
+        limit = (self.currency_id.rounding / 2.0) / self.invoice_currency_rate
+        # Mayor multiplo del paso de la moneda de compania ESTRICTAMENTE menor al limite.
+        tolerance = float_round(limit, precision_rounding=step, rounding_method="DOWN")
+        if float_compare(tolerance, limit, precision_rounding=step / 1000.0) >= 0:
+            tolerance -= step
+        return max(tolerance, 0.0)
 
     @api.depends(
         "move_type",

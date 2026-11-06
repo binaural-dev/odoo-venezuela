@@ -156,7 +156,9 @@ class AccountRetentionLine(models.Model):
         the invoice (one real tax rate/aliquot).
         """
         self.ensure_one()
-        retention_amount = abs(tax_group["tax_amount"] * (withholding_amount / 100))
+        retention_amount = self.env["account.retention"].compute_iva_retention_amount(
+            tax_group["tax_amount"], withholding_amount
+        )
         self.name = _("Iva Retention")
         self.invoice_type = invoice_id.move_type
         self.aliquot = tax.amount
