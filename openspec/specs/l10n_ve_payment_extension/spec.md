@@ -725,6 +725,28 @@ En acciones automatizadas/cron (`automated_action`/`cron_id` en el contexto) el 
 - **WHEN** se emite cualquiera de ellos
 - **THEN** no se lanza el error de duplicidad
 
+#### Scenario: Diferenciador vacío no actúa como comodín
+
+- **GIVEN** dos comprobantes del mismo tipo y partner sobre la misma factura, donde el diferenciador de uno está vacío (sin concepto de pago o sin actividad económica) y el del otro tiene valor
+- **WHEN** se emite cualquiera de ellos
+- **THEN** no se lanza el error de duplicidad, en ningún sentido; el vacío se trata como un valor más y solo bloquea contra otro comprobante igualmente vacío
+
+#### Scenario: Línea de IVA con alícuota 0
+
+- **GIVEN** un comprobante de retención de IVA al que el usuario agrega una línea con "Agregar una línea"
+- **WHEN** la factura elegida no tiene IVA, o el usuario escribe alícuota 0 en la línea
+- **THEN** no se crea una línea con alícuota 0: si la factura no tiene IVA se limpia la factura y se avisa, y si el usuario escribe 0 la línea vuelve a la alícuota de la factura y se avisa. No existe retención de IVA con alícuota 0 (no hay IVA que retener) y una línea así escondería la factura de los chequeos de duplicidad
+
+#### Scenario: Aprobar una retención de IVA con una línea de alícuota 0
+- **GIVEN** una retención de IVA en borrador con una línea de alícuota 0 (creada por cualquier vía)
+- **WHEN** el usuario pulsa Aprobar (`action_post`)
+- **THEN** se muestra un error claro con las facturas afectadas y la retención no se emite; la línea no se ignora (no existe retención de IVA al 0%). En acciones automatizadas o cron se deja nota en el chatter y se devuelve `False`. ISLR y municipal no se ven afectados
+
+#### Scenario: Facturas ofrecidas por "Agregar una línea" en una retención de IVA
+- **GIVEN** una retención de IVA en borrador (nueva, reabierta, o creada al confirmar la factura)
+- **WHEN** se abre el formulario
+- **THEN** `available_invoice_ids` es un campo computado, no almacenado, que se recalcula al abrir: las facturas publicadas del cliente con IVA, saldo pendiente, sin comprobante de IVA y sin línea de retención de IVA en borrador o emitida de otra retención. Las facturas de las líneas de la propia retención siempre se incluyen (no se las quita la línea ni el número de comprobante que Odoo les asigna al crearla). En retenciones de terceros son las facturas de sus propias líneas. ISLR y municipal siguen usando `allowed_lines_move_ids`, y una retención ya emitida no ofrece facturas
+
 #### Scenario: Comprobantes de terceros distintos sobre la misma factura
 
 - **GIVEN** dos comprobantes del mismo tipo con partners distintos sobre la misma factura
@@ -735,6 +757,22 @@ En acciones automatizadas/cron (`automated_action`/`cron_id` en el contexto) el 
 
 - **WHEN** la otra retención con la misma factura está `cancel`, o es de otro `type_retention`
 - **THEN** no se lanza el error de duplicidad
+
+### Requirement: Los botones de retenciones de la factura abren las vistas de su tipo
+
+`account.move.action_view_retention` DEBE (MUST) abrir las retenciones de la factura según `retention_type` del contexto (`iva`, `islr` o `municipal`) con las vistas de ese tipo indicadas de forma explícita (formulario, y lista cuando hay más de una; ISLR no tiene lista propia). Con una sola retención abre su formulario; con varias, la lista filtrada por esas retenciones. Un `retention_type` ausente o desconocido, o una factura sin retenciones de ese tipo, no devuelve acción.
+
+#### Scenario: Retención ISLR única
+
+- **GIVEN** una factura con una retención ISLR
+- **WHEN** se pulsa el botón de retención ISLR
+- **THEN** se abre el formulario ISLR de esa retención, no el de otro tipo
+
+#### Scenario: Varias retenciones municipales
+
+- **GIVEN** una factura con dos retenciones municipales
+- **WHEN** se pulsa el botón de retención municipal
+- **THEN** se abre la lista municipal filtrada por esas dos retenciones y, al abrir una, el formulario municipal
 
 ### Requirement: Retenciones de IVA en los libros fiscales según el alcance del libro
 
