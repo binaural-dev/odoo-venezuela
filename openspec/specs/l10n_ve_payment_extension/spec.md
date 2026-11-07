@@ -796,19 +796,3 @@ Las fechas por defecto de los wizards de retención IVA e ISLR DEBEN (MUST) eval
 
 - **WHEN** se abre el wizard de retención IVA o ISLR
 - **THEN** el rango por defecto es el del mes actual del usuario
-
-### Requirement: El importe alterno del pago de una retención usa la fecha de tasa de su asiento
-
-El importe alterno (`foreign_amount`) de un pago de retención (`is_retention`) DEBE (MUST) calcularse con la misma fecha de tasa con la que se valoran las líneas de su asiento: la fecha de la factura retenida (`invoice_date`, o `date` si falta) cuando todas las líneas del pago pertenecen a una única factura, y no con `payment.date` (la fecha contable de la retención). Ambos lados DEBEN (MUST) compartir la misma regla (`account.payment._get_retention_foreign_rate_date`) para que no puedan diverger. Los pagos que no son retención conservan el cálculo por `payment.date`. La fecha contable del pago y de su asiento no cambia.
-
-#### Scenario: Tasa distinta entre la fecha de la factura y la fecha contable de la retención
-
-- **WHEN** se emite una retención (IVA, ISLR o municipal, de cliente o de proveedor; sobre factura, nota de crédito o nota de débito) en una fecha cuya tasa difiere de la tasa de la fecha de la factura retenida
-- **THEN** `foreign_amount` del pago es igual al monto alterno de cada línea del asiento, calculado con la tasa de la fecha de la factura
-- **AND** `payment.date` y la fecha del asiento siguen siendo la fecha contable de la retención
-
-#### Scenario: Pago que no es retención
-
-- **WHEN** el pago no es una retención (creado con el formulario del pago o con el asistente "Registrar pago")
-- **THEN** `foreign_amount` se calcula con `payment.date` como antes
-- **AND** coincide con el monto alterno de cada línea de su asiento

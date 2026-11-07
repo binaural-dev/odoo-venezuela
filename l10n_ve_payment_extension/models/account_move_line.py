@@ -8,12 +8,12 @@ class AccountMoveLine(models.Model):
         
         self.ensure_one()
         payment = self.move_id.origin_payment_id
-        if payment:
-            # Misma regla que el importe alterno del pago
-            # (`account.payment._compute_foreign_amount`).
-            rate_date = payment._get_retention_foreign_rate_date()
-            if rate_date:
-                return rate_date
+        if payment and payment.is_retention:
+            invoice = payment.retention_line_ids.mapped("move_id")
+            if len(invoice) == 1:
+                invoice_date = invoice.invoice_date or invoice.date
+                if invoice_date:
+                    return invoice_date
         return super()._get_foreign_rate_date()
 
     ciu_id = fields.Many2one(
