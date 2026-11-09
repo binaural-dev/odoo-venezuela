@@ -16,4 +16,5 @@
             "l10n_ve_base/static/src/core/debug/debug_menu_items.js",
         ],
     },
+    "installable": False,
 }

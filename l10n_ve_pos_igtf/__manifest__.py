@@ -25,4 +25,5 @@
     },
     "application": True,
     "binaural": True,
+    "installable": False,
 }

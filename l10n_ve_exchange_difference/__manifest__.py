@@ -63,7 +63,7 @@ might use is ready in advance):
         'views/res_config_settings_views.xml',
         'views/res_partner_views.xml',
     ],
-    'installable': True,
+    'installable': False,
     'auto_install': False,
     'license': 'LGPL-3',
 }

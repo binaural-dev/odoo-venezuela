@@ -14,5 +14,5 @@
         "wizard/account_payment_register.xml",
     ],
     "application": False,
-    "installable": True,
+    "installable": False,
 }

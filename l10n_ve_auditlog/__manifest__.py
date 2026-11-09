@@ -20,4 +20,5 @@
         "l10n_ve_accountant",
         "l10n_ve_payment_extension",
     ],
+    "installable": False,
 }

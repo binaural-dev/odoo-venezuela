@@ -17,7 +17,7 @@
             "l10n_ve_mf_base/static/tests/unit/**/*",
         ],
     },
-    "installable": True,
+    "installable": False,
     "application": False,
     "auto_install": False,
 }

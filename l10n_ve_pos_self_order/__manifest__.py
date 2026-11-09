@@ -35,4 +35,5 @@
     "application": True,
     "images": ["static/description/icon.png"],
     "binaural": True,
+    "installable": False,
 }

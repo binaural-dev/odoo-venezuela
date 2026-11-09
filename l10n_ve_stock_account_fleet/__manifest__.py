@@ -19,4 +19,5 @@
     "images": ["static/description/icon.png"],
     "auto_install": True,
     "application": False,
+    "installable": False,
 }

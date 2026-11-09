@@ -16,6 +16,6 @@
         'views/res_config_settings_views.xml',
     ],
     'images': ['static/description/icon.png'],
-    'installable': True,
+    'installable': False,
     "application": False,
 }

@@ -27,7 +27,7 @@
         "views/stock_scrap_views.xml",
         "views/stock_warehouse_views.xml",
     ],
-    "installable": True,
+    "installable": False,
     "application": True,
     "auto_install": False,
 }

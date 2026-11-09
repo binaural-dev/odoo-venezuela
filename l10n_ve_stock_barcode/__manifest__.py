@@ -11,4 +11,5 @@
     "depends": ["stock_barcode"],
     "data": [],
     "auto_install": True,
+    "installable": False,
 }
