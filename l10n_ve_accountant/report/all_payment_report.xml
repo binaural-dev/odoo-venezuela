@@ -6,7 +6,6 @@
         <field name="model">payment.report</field>
         <field name="report_type">qweb-pdf</field>
         <field name="report_name">l10n_ve_accountant.financial_all_payments</field>
-        <field name="report_file">l10n_ve_accountant.financial_all_payments</field>
     </record>
 
 

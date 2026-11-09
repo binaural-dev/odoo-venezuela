@@ -24,7 +24,6 @@
     ],
     "data": [
         "security/res_groups.xml",
-        "security/ir.model.access.csv",
         "data/account_data.xml",
         "data/ir_actions_server.xml",
         "data/paperformats.xml",
