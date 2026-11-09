@@ -9,3 +9,4 @@ from . import test_stock_picking
 from . import test_default_internal_transfer_reason
 from . import test_dispatch_note
 from . import test_transport_data
+from . import test_transfer_ids_group
