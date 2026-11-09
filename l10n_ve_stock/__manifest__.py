@@ -18,7 +18,6 @@
     "data": [
         "security/l10n_ve_stock_groups.xml",
         "security/ir.model.access.csv",
-        "security/security_l10n_ve_stock.xml",
         "data/inventory_valuation_paperformat.xml",
         "data/ir_actions_server.xml",
         "report/packaging_picking_template.xml",
@@ -35,6 +34,7 @@
         "views/stock_picking_alter_location_views.xml",
         "wizard/stock_quantity_history.xml",
         "wizard/move_alter_location_qtities.xml",
+        'security/ir.access.csv',
     ],
     "application": True,
     "pre_init_hook": "pre_init_hook",

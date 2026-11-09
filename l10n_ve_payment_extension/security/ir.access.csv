@@ -1,0 +1,31 @@
+id,name,model_id,group_id/id,operation,domain
+access_l10n_ve_account_retention,l10n_ve_account_retention,account.retention,account.group_account_invoice,cru,
+access_l10n_ve_account_retention_1,l10n_ve_account_retention,account.retention,account.group_account_readonly,r,
+retention_restricted_multi_company,Account Retention multi-company,account.retention,,crud,"
+            ['|',('company_id','=',False),('company_id', 'in', company_ids)]
+        "
+access_l10n_ve_account_retention_line,l10n_ve_account_retention_line,account.retention.line,account.group_account_invoice,crud,
+access_l10n_ve_account_retention_line_1,l10n_ve_account_retention_line,account.retention.line,account.group_account_readonly,r,
+retention_line_restricted_multi_company,Account Retention line multi-company,account.retention.line,,crud,"
+            ['|',('company_id','=',False),('company_id', 'in', company_ids)]
+        "
+access_type_withholdind,id_type_withholdind,account.withholding.type,base.group_everyone,crud,
+access_type_person,id_type_person,type.person,base.group_user,crud,
+access_fees,Tarifas,fees.retention,base.group_everyone,crud,
+access_fees_acumulative,Tarifas Acumulada,accumulated.fees,base.group_everyone,crud,
+access_configurate_signature,Configuraciones de firma,signature.config,base.group_everyone,crud,
+access_wizard_accounting_reports_islr,l10n_ve_wizard_accounting_reports_islr,wizard.retention.islr,base.group_everyone,crud,
+access_wizard_accounting_reports_iva,l10n_ve_wizard_accounting_reports_iva,wizard.retention.iva,base.group_everyone,crud,
+access_municipal_retention_xlsx_report,municipal_retention_xlsx_report,municipal.retention.xlsx.report,base.group_everyone,crud,
+access_municipal_retention_patent_report,municipal_retention_patent_report,municipal.retention.patent.report,base.group_everyone,crud,
+access_retention_line_report,retention_line_report,retention.line.report,base.group_everyone,r,
+access_arcv_report,arcv_report,arcv.report,base.group_everyone,cru,
+access_payment_concept_fiscal_user_support,access_payment_concept_fiscal_user_support,payment.concept,l10n_ve_accountant.group_fiscal_config_support,cru,
+access_payment_concept_line_fiscal_user_support,access_payment_concept_fiscal_user_support,payment.concept.line,l10n_ve_accountant.group_fiscal_config_support,cru,
+access_economy_activity_fiscal_user_support,access_economy_activity_fiscal_user_support,economic.activity,l10n_ve_accountant.group_fiscal_config_support,cru,
+access_economy_activity_fiscal_user_manager,access_economy_activity_fiscal_user_manager,economic.activity,account.group_account_manager,crud,
+access_economy_activity_fiscal_user_user,access_economy_activity_fiscal_user_user,economic.activity,l10n_ve_accountant.group_fiscal_config_user,r,
+access_economy_branch_fiscal_user_support,access_economy_branch_fiscal_user_support,economic.branch,l10n_ve_accountant.group_fiscal_config_support,cru,
+access_economy_branch_fiscal_user_manager,access_economy_branch_fiscal_user_manager,economic.branch,account.group_account_manager,crud,
+access_batch_retentions_wizard,acces_batch_retentions_wizard,batch.retentions.wizard,account.group_account_manager,cru,
+access_batch_retentions_wizard_lines,acces_batch_retentions_wizard_lines,batch.retentions.wizard.lines,account.group_account_manager,cru,

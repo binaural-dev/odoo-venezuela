@@ -1,0 +1,2 @@
+id,name,model_id,group_id/id,operation,domain
+access_move_action_cancel_advance_payment_wizard,access_move_action_cancel_advance_payment_wizard,move.action.cancel.advance.payment.wizard,base.group_user,crud,

@@ -11,10 +11,10 @@
         "fleet",
     ],
     "data": [
-        "security/ir.model.access.csv",
         "views/fleet_vehicle_views.xml",
         "views/res_partner_views.xml",
         "views/stock_picking_views.xml",
+        'security/ir.access.csv',
     ],
     "images": ["static/description/icon.png"],
     "auto_install": True,
