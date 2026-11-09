@@ -893,7 +893,7 @@ class TestCoverageGaps(TransactionCase):
 
         report_lines = self.env["account.invoice.report"].search([
             ("move_id", "=", refund.id),
-            ("display_type", "=", "product"),
+            ("product_id", "=", self.product.id),
         ])
         self.assertTrue(report_lines)
         for line in report_lines:
