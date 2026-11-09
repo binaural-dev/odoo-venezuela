@@ -90,7 +90,7 @@
                     <button name="action_update_prices" type="object"
                         string=" Update Prices"
                         help="Recompute all prices based on this pricelist"
-                        class="btn-link mb-1 px-0" icon="fa-refresh"
+                        class="btn-link mb-1 px-0" icon="refresh"
                         confirm="This will update all unit prices based on the currently set pricelist."
                         invisible="not show_update_pricelist or state in ['sale', 'done', 'cancel']" />
                 </div>
@@ -100,7 +100,7 @@
                     <button name="action_update_prices" type="object"
                         string=" Update Prices"
                         help="Recompute all prices based on this pricelist"
-                        class="btn-link mb-1 px-0" icon="fa-refresh"
+                        class="btn-link mb-1 px-0" icon="refresh"
                         confirm="This will update all unit prices based on the currently set pricelist."
                         invisible="not show_update_pricelist or state in ['sale', 'done', 'cancel']" />
                 </div>

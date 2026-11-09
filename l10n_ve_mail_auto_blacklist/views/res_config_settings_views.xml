@@ -33,9 +33,9 @@
                             <div class="text-muted">Also count emails refused by the SMTP server because of the recipient address (e.g. 550 mailbox unavailable), not only bounces received afterwards.</div>
                             <div class="mt8">
                                 <button type="action" name="%(l10n_ve_mail_auto_blacklist.mail_bounce_event_action)d"
-                                        string="Delivery Failures" icon="oi-arrow-right" class="oe_link"/>
+                                        string="Delivery Failures" icon="east" class="oe_link"/>
                                 <button type="action" name="%(mail.mail_blacklist_action)d"
-                                        string="Blacklist" icon="oi-arrow-right" class="oe_link"/>
+                                        string="Blacklist" icon="east" class="oe_link"/>
                             </div>
                         </div>
                     </setting>

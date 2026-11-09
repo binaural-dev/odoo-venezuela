@@ -9,7 +9,7 @@
                 <div class="button ms-1 back btn btn-lg btn-secondary"
                     t-on-click="() => this.showPaymentsOrigin()"
                     > 
-                    <i class="fa fa-angle-double-left me-2" />
+                    <i class="oi me-2" data-icon="keyboard_double_arrow_left" />
                     <span class="back_text">View Payments Origin</span>
                 </div>
             </t>

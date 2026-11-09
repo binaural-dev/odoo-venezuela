@@ -7,14 +7,14 @@
                 <t t-set-slot="control-panel-always-buttons">
                     <div class="d-flex align-items-center gap-2">
                         <div class="btn-group" role="group" aria-label="Pagination">
-                            <button type="button" class="btn btn-secondary fa fa-chevron-left"
+                            <button type="button" class="oi btn btn-secondary" data-icon="chevron_left"
                                     title="Previous page"
                                     t-on-click="onClickPrevPage"
                                     t-att-disabled="state.page &lt;= 1"/>
                             <span class="btn btn-secondary disabled">
                                 Page <t t-out="state.page"/> / <t t-out="totalPages"/>
                             </span>
-                            <button type="button" class="btn btn-secondary fa fa-chevron-right"
+                            <button type="button" class="oi btn btn-secondary" data-icon="chevron_right"
                                     title="Next page"
                                     t-on-click="onClickNextPage"
                                     t-att-disabled="state.page &gt;= totalPages"/>
@@ -23,10 +23,10 @@
                             <button type="button" class="btn btn-primary dropdown-toggle" title="Imprimir">Imprimir</button>
                             <t t-set-slot="content">
                                 <DropdownItem onSelected.bind="onClickPrint">
-                                    <i class="fa fa-file-pdf-o me-1"/>PDF
+                                    <i class="oi me-1" data-icon="picture_as_pdf"/>PDF
                                 </DropdownItem>
                                 <DropdownItem onSelected.bind="onClickExportExcel">
-                                    <i class="fa fa-file-excel-o me-1"/>Excel
+                                    <i class="oi me-1" data-icon="table_chart"/>Excel
                                 </DropdownItem>
                             </t>
                         </Dropdown>
@@ -49,7 +49,7 @@
                                         </t>
                                     </t>
                                 </select>
-                                <button class="o_add_qty btn btn-primary fa fa-plus"
+                                <button class="oi o_add_qty btn btn-primary" data-icon="add"
                                         type="submit"
                                         t-on-click="onClickAddPricelist"
                                         title="Add a Price List"/>
@@ -60,7 +60,7 @@
                                         <span class="o_field_badge o_remove_pricelist badge rounded-pill me-2 py-1 border mb-2"
                                                 t-att-data-id="pl.id">
                                             <t class="me-2" t-esc="pl.display_name"/>
-                                            <i class="oi oi-close ms-1 opacity-50 opacity-100-hover text-900 cursor-pointer"
+                                            <i class="oi ms-1 opacity-50 opacity-100-hover text-900 cursor-pointer" data-icon="close_small"
                                                 title="Remove pricelist"
                                                 t-on-click="onClickRemovePricelist"/>
                                         </span>

@@ -3,7 +3,7 @@
 
     <t t-name="l10n_ve_pos_mf.FiscalPrinterButton">
         <button
-            class="fiscal-printer-action btn btn-light btn-lg lh-lg h-100 fa fa-print"
+            class="oi fiscal-printer-action btn btn-light btn-lg lh-lg h-100" data-icon="print"
             t-att-class="'fiscal-printer-' + state.status"
             t-att-title="statusTitle"
             t-on-click="onClick"

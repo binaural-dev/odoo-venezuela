@@ -121,7 +121,7 @@
                                         type="object" 
                                         string="Generate Token" 
                                         class="btn-secondary ps-2 w-50" 
-                                        icon="fa-refresh" 
+                                        icon="refresh" 
                                         title="Generate Token for TFHKA."
                                 />
                             </div>
