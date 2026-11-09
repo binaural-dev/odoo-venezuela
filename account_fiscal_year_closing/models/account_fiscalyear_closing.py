@@ -100,16 +100,10 @@ class AccountFiscalyearClosing(models.Model):
         readonly=True,
     )
 
-    _sql_constraints = [
-        (
-            "year_company_uniq",
-            "unique(year, company_id)",
-            (
-                "There should be only one fiscal year closing for that year and "
-                "company!"
-            ),
-        ),
-    ]
+    _year_company_uniq = models.Constraint(
+        "unique(year, company_id)",
+        "There should be only one fiscal year closing for that year and company!",
+    )
 
     def _prepare_mapping(self, tmpl_mapping):
         self.ensure_one()
@@ -377,13 +371,10 @@ class AccountFiscalyearClosingConfig(models.Model):
     journal_id = fields.Many2one(required=True)
     move_id = fields.Many2one(comodel_name="account.move", string="Move")
 
-    _sql_constraints = [
-        (
-            "code_uniq",
-            "unique(code, fyc_id)",
-            _("Code must be unique per fiscal year closing!"),
-        ),
-    ]
+    _code_uniq = models.Constraint(
+        "unique(code, fyc_id)",
+        "Code must be unique per fiscal year closing!",
+    )
 
     def config_inverse_get(self):
         configs = self.env["account.fiscalyear.closing.config"]
