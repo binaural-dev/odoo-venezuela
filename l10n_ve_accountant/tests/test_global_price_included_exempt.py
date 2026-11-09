@@ -189,3 +189,58 @@ class TestGlobalPriceIncludedExempt(TransactionCase):
             move = self._invoice(self.usd, method, lines, ["exe", "incl", "incl", "extra"])
             self.assertGreater(len(move.tax_totals["subtotals"]), 1)
             self._assert_consistent(move, check_lines=False)
+
+    def _group(self, move, name):
+        groups = [g for st in move.tax_totals["subtotals"] for g in st["tax_groups"] if g["group_name"] == name]
+        self.assertEqual(len(groups), 1, f"El widget debe traer el grupo {name}")
+        return groups[0]
+
+    def test_rounding_cent_stays_in_its_tax_group(self):
+        """Con Global, la diferencia de redondeo cae en el grupo de impuesto al que
+        pertenece y no en la línea de mayor base de toda la factura (una línea
+        exenta). Caso reportado: precios de 4 decimales, tres líneas con IVA y una
+        exenta con la mayor base. La base siempre es VEF: se comprueba también el
+        monto en bolívares de cada grupo en `tax_totals`."""
+        rate = 879.1225
+        set_rate(self.env, self.usd, self.today, self.company, rate)
+        set_rate(self.env, self.eur, self.today, self.company, rate)
+        cc = self.company.currency_id
+        for currency, factor in ((self.usd, 1.0), (self.eur, 1.0), (self.vef, rate)):
+            iva_price, exempt_price = round(135.5130 * factor, 4), round(81.2835 * factor, 4)
+            lines = [(iva_price, 1)] * 3 + [(exempt_price, 3)]
+            move = self._invoice(currency, "round_globally", lines, ["excl", "excl", "excl", "exe"])
+            with self.subTest(currency=currency.name):
+                iva_lines = move.invoice_line_ids[:3]
+                exempt_line = move.invoice_line_ids[3]
+                exempt_expected = currency.round(exempt_price * 3)
+                iva_expected = currency.round(iva_price * 3)
+                # La línea exenta conserva su propia base (sin el centavo del grupo IVA).
+                self.assertAlmostEqual(-exempt_line.amount_currency, exempt_expected, 2)
+                self.assertAlmostEqual(-sum(iva_lines.mapped("amount_currency")), iva_expected, 2)
+                # Los grupos del widget (documento y VEF) salen de sus propias líneas.
+                exempt_group, iva_group = self._group(move, "Exento"), self._group(move, "IVA")
+                self.assertAlmostEqual(exempt_group["base_amount_currency"], exempt_expected, 2)
+                self.assertAlmostEqual(iva_group["base_amount_currency"], iva_expected, 2)
+                self.assertAlmostEqual(exempt_group["base_amount"], -exempt_line.balance, 2)
+                self.assertAlmostEqual(iva_group["base_amount"], -sum(iva_lines.mapped("balance")), 2)
+                self.assertAlmostEqual(
+                    -exempt_line.balance, cc.round(exempt_expected * (1.0 if currency == self.vef else rate)), 2,
+                    "El saldo en VEF del exento no debe llevar el centavo del grupo IVA")
+                self._assert_consistent(move, check_lines=False)
+
+    def test_exempt_group_with_two_lines_keeps_its_own_cent(self):
+        """Un grupo con varias líneas conserva su propia diferencia de redondeo: dos
+        exentas de 10,006 suman 20,01 (no 20,02 línea por línea) aunque haya IVA incluido."""
+        lines = [(10.006, 1), (10.006, 1), (30.00, 1), (20.00, 1)]
+        move = self._invoice(self.usd, "round_globally", lines, ["exe", "exe", "incl", "incl"])
+        exempt_lines = move.invoice_line_ids[:2]
+        self.assertAlmostEqual(-sum(exempt_lines.mapped("amount_currency")), 20.01, 2)
+        self.assertAlmostEqual(self._group(move, "Exento")["base_amount_currency"], 20.01, 2)
+        self._assert_consistent(move, check_lines=False)
+
+    def test_per_line_widget_matches_move_with_price_included_taxes(self):
+        """Por línea con IVA incluido y precios de 4 decimales: la base del widget sale de
+        las líneas reales (antes quedaba 0,01 por encima del asiento: 738,56 contra 738,55)."""
+        lines = [(73.0150, 2), (60.2099, 1), (88.2215, 1), (111.0216, 4)]
+        move = self._invoice(self.usd, "round_per_line", lines, ["incl", "exe", "incl", "incl"])
+        self._assert_consistent(move, check_lines=False)
