@@ -53,12 +53,26 @@ El sistema DEBE (MUST) validar, vía constraint sobre `is_donation`, `line_ids` 
 
 ### Requirement: Nota de crédito automática al publicar una factura de donación
 
-Al publicar (`action_post`) una factura de cliente (`move_type = out_invoice`) con `is_donation` activo, el sistema DEBE (MUST) crear automáticamente su reversión mediante el asistente `account.move.reversal` con la fecha del día y el mismo diario, y publicar la nota de crédito resultante.
+Al publicar (`action_post`) una factura de cliente (`move_type = out_invoice`) con `is_donation` activo, el sistema DEBE (MUST) publicar la factura y crear automáticamente su reversión mediante el asistente `account.move.reversal` con la fecha del día y el mismo diario. La nota de crédito resultante queda en **borrador**: su `action_post()` se detiene en el wizard de confirmación de `l10n_ve_accountant` (sin `move_action_post_alert`), así que se confirma después a mano.
 
 #### Scenario: Publicación de factura de donación
 
 - **WHEN** se publica una factura de cliente marcada como donación
-- **THEN** se crea y publica automáticamente una nota de crédito que revierte la factura, con fecha del día y el diario de la factura
+- **THEN** la factura queda publicada y se crea automáticamente, en borrador, una nota de crédito que la revierte, con fecha del día y el diario de la factura
+
+### Requirement: NC de donación exenta de la validación de origen por `is_donation`
+
+Una nota de crédito con `is_donation` activo DEBE (MUST) quedar exenta de la validación de productos y montos contra la factura origen de `l10n_ve_invoice` (que corre al publicar), sin depender de ninguna clave de contexto: `account.move` sobrescribe `_l10n_ve_skip_refund_origin_validation()` para devolver `is_donation`. El producto de donación nunca está en la factura original y la nota de crédito se publica en una llamada distinta a la que la creó.
+
+#### Scenario: Nota de crédito de donación confirmada a mano
+
+- **WHEN** la nota de crédito automática de una factura de donación, que quedó en borrador, se publica en una llamada posterior sin la clave `l10n_ve_skip_refund_origin_validation`
+- **THEN** se publica sin error, aunque su producto de donación no esté en la factura original
+
+#### Scenario: La misma nota de crédito sin la marca de donación
+
+- **WHEN** se publica una nota de crédito equivalente (producto de donación, monto mayor al facturado) con `is_donation` desactivado
+- **THEN** se lanza un error de validación de `l10n_ve_invoice`
 
 ### Requirement: Asignación del partner de la compañía en asientos manuales de donación
 

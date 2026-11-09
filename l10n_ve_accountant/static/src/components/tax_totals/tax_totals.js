@@ -93,6 +93,22 @@ class TaxForeignTotalsComponent extends TaxTotalsComponent {
 TaxForeignTotalsComponent.template = "l10n_ve_accountant.TaxForeignTotalsField";
 TaxForeignTotalsComponent.props = { ...standardFieldProps };
 
+/**
+ * El documento esta en la moneda de la compania (el bloque alterno muestra la
+ * moneda de referencia en lugar de VES).
+ */
+export function isCompanyCurrencyDocument(totals) {
+  return Boolean(totals) && totals.currency_id === totals.ves_currency_id;
+}
+
+/**
+ * El segundo bloque solo se oculta cuando el documento esta en la moneda de la
+ * compania y la compania no tiene moneda de referencia.
+ */
+export function hasAlternateBlock(totals, foreignCurrencyId) {
+  return !isCompanyCurrencyDocument(totals) || Boolean(foreignCurrencyId);
+}
+
 class TaxVesTotalsComponent extends TaxTotalsComponent {
   get readonly() {
     return this.props.readonly;
@@ -101,12 +117,11 @@ class TaxVesTotalsComponent extends TaxTotalsComponent {
   // Documento en moneda de la compañía: el bloque inferior muestra los
   // montos de la moneda de referencia en lugar de los de la compañía.
   get showForeign() {
-    const totals = this.totals;
-    return Boolean(totals) && totals.currency_id === totals.ves_currency_id;
+    return isCompanyCurrencyDocument(this.totals);
   }
 
   get hasAlternate() {
-    return !this.showForeign || Boolean(this.props.record.data.foreign_currency_id);
+    return hasAlternateBlock(this.totals, this.props.record.data.foreign_currency_id);
   }
 }
 TaxVesTotalsComponent.template = "l10n_ve_accountant.TaxVesTotalsField";

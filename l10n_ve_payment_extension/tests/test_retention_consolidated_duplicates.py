@@ -214,6 +214,192 @@ class TestRetentionConsolidatedDuplicates(RetentionTestCommon):
             ret_a.action_post()
         self.assertIn(ret_b.display_name, str(e.exception))
 
+    def test_available_invoices_offered_when_reopening_from_the_invoice(self):
+        """Flujo del cliente: la retención de A (creada al confirmar su factura)
+        se abre de nuevo y "Agregar una línea" ofrece la factura B, que aún no
+        tiene retención; al guardar, la línea nace con la alícuota real."""
+        inv_a = self._post_iva_invoice()
+        inv_b = self._post_iva_invoice()
+        ret_a = self._create_retention("iva", inv_a)
+        self.assertIn(inv_b, ret_a.available_invoice_ids)
+        self.assertIn(inv_a, ret_a.available_invoice_ids)
+
+        with Form(ret_a, view=IVA_FORM_VIEW) as form_a:
+            with form_a.retention_line_ids.new() as line:
+                line.move_id = inv_b
+        ret_a = form_a.save()
+        self.assertEqual(ret_a.retention_line_ids.move_id, inv_a | inv_b)
+        self.assertEqual(set(ret_a.retention_line_ids.mapped("aliquot")), {16.0})
+
+    def test_available_invoices_exclude_invoice_with_its_own_retention(self):
+        """B con su retención individual en borrador no se ofrece en A (A ya
+        existía o B ya está retenida); al eliminar esa retención vuelve a verse
+        sin tocar nada más, porque el campo se recalcula al abrir."""
+        inv_a = self._post_iva_invoice()
+        inv_b = self._post_iva_invoice()
+        ret_a = self._create_retention("iva", inv_a)
+        ret_b = self._create_retention("iva", inv_b)
+
+        with Form(ret_a, view=IVA_FORM_VIEW):
+            pass
+        self.assertNotIn(inv_b, ret_a.available_invoice_ids)
+        self.assertIn(inv_a, ret_a.available_invoice_ids)  # no se quita a sí misma
+        # simétrico: A tampoco se ofrece en la retención de B
+        self.assertNotIn(inv_a, ret_b.available_invoice_ids)
+
+        ret_b.unlink()
+        ret_a.invalidate_recordset()
+        self.assertIn(inv_b, ret_a.available_invoice_ids)
+
+    # --- Flujo real del cliente (facturas de venta, como en el ticket) -------
+
+    def _post_sale_iva_invoice(self, generate_retention=True):
+        """Factura de venta con IVA confirmada: con "¿Genera retención de IVA?"
+        Odoo crea sola su retención en borrador (`action_post` ->
+        `_create_retention`)."""
+        inv = self._create_invoice_reten_iva(
+            1000.0, self.partner_pnr_75, "out_invoice", self.sale_journal,
+        )
+        self._prepare_invoice_for_retention(inv)
+        inv.generate_iva_retention = generate_retention
+        inv.with_context(move_action_post_alert=True).action_post()
+        self.assertEqual(inv.state, "posted")
+        return inv
+
+    def _retention_opened_from_invoice(self, invoice):
+        """Abre la retención desde el botón de la factura, como el usuario."""
+        action = invoice.with_context(retention_type="iva").action_view_retention()
+        self.assertEqual(action["res_model"], "account.retention")
+        return self.env["account.retention"].browse(action["res_id"])
+
+    def _new_customer_iva_retention_form(self):
+        return Form(
+            self.env["account.retention"].with_context(
+                default_type="out_invoice", default_type_retention="iva",
+            ),
+            view=IVA_FORM_VIEW,
+        )
+
+    def test_invoice_confirmation_creates_the_retention_and_the_selector_follows(self):
+        """Dos facturas de venta que generan retención: cada una queda con su
+        retención en borrador (alícuota 16) y, al abrirla desde la factura, el
+        selector ofrece la propia factura y no la otra, que ya está retenida."""
+        inv_a = self._post_sale_iva_invoice()
+        inv_b = self._post_sale_iva_invoice()
+        ret_a = self._retention_opened_from_invoice(inv_a)
+        ret_b = self._retention_opened_from_invoice(inv_b)
+        self.assertNotEqual(ret_a, ret_b)
+        for ret, inv in ((ret_a, inv_a), (ret_b, inv_b)):
+            self.assertEqual(ret.state, "draft")
+            self.assertEqual(ret.retention_line_ids.move_id, inv)
+            self.assertEqual(ret.retention_line_ids.mapped("aliquot"), [16.0])
+
+        with Form(ret_a, view=IVA_FORM_VIEW):
+            pass
+        # reabrir la retención guardada recalcula la lista
+        self.assertEqual(ret_a.available_invoice_ids & (inv_a | inv_b), inv_a)
+        self.assertEqual(ret_b.available_invoice_ids & (inv_a | inv_b), inv_b)
+
+    def test_ticket_flow_from_the_invoice_offers_the_invoice_without_retention(self):
+        """Ticket #16055 desde la pantalla: A tiene su retención y C no tiene
+        ninguna; abriendo la de A desde su factura, "Agregar una línea" ofrece
+        C (y no B, que ya tiene la suya). Al agregar C, la línea nace con la
+        alícuota real y C deja de ofrecerse en otras retenciones."""
+        inv_a = self._post_sale_iva_invoice()
+        inv_b = self._post_sale_iva_invoice()
+        inv_c = self._post_sale_iva_invoice(generate_retention=False)
+        self.assertFalse(inv_c.retention_iva_line_ids)
+        ret_a = self._retention_opened_from_invoice(inv_a)
+        ret_b = self._retention_opened_from_invoice(inv_b)
+
+        offered = ret_a.available_invoice_ids
+        self.assertIn(inv_c, offered)
+        self.assertNotIn(inv_b, offered)
+
+        with Form(ret_a, view=IVA_FORM_VIEW) as form_a:
+            with form_a.retention_line_ids.new() as line:
+                line.move_id = inv_c
+        ret_a = form_a.save()
+        self.assertEqual(ret_a.retention_line_ids.move_id, inv_a | inv_c)
+        self.assertEqual(set(ret_a.retention_line_ids.mapped("aliquot")), {16.0})
+
+        # C ya está retenida en A: no se ofrece en la retención de B, y A
+        # sigue ofreciendo sus dos facturas
+        ret_b.invalidate_recordset()
+        self.assertNotIn(inv_c, ret_b.available_invoice_ids)
+        self.assertEqual(ret_a.available_invoice_ids & (inv_a | inv_b | inv_c), inv_a | inv_c)
+
+    def test_new_retention_form_loads_and_offers_only_eligible_invoices(self):
+        """Retención nueva por Form: al elegir el cliente se cargan, y se
+        ofrecen, exactamente las facturas sin retención; la que ya tiene una
+        en borrador no aparece ni en las líneas ni en el selector."""
+        inv_taken = self._post_sale_iva_invoice()  # ya tiene su retención
+        inv_free_1 = self._post_sale_iva_invoice(generate_retention=False)
+        inv_free_2 = self._post_sale_iva_invoice(generate_retention=False)
+        mine = inv_taken | inv_free_1 | inv_free_2
+
+        with self._new_customer_iva_retention_form() as form:
+            form.partner_id = self.partner_pnr_75
+            form.number = "12345678901234"
+            form.date_accounting = fields.Date.today()
+        retention = form.save()
+
+        self.assertEqual(retention.retention_line_ids.move_id & mine, inv_free_1 | inv_free_2)
+        self.assertEqual(retention.available_invoice_ids & mine, inv_free_1 | inv_free_2)
+        self.assertEqual(set(retention.retention_line_ids.mapped("aliquot")), {16.0})
+        # lo ofrecido es exactamente lo que la regla actual considera elegible
+        self.assertEqual(
+            retention.available_invoice_ids,
+            retention._get_iva_available_invoices(),
+        )
+
+    def test_available_invoices_for_third_party_are_its_own_lines(self):
+        inv = self._post_iva_invoice()
+        other = self._post_iva_invoice()
+        retention = self._create_retention("iva", inv, third_party=True)
+        self.assertEqual(retention.available_invoice_ids, inv)
+        self.assertNotIn(other, retention.available_invoice_ids)
+
+    def test_available_invoices_not_offered_by_islr_nor_once_emitted(self):
+        """Solo una retención de IVA en borrador ofrece facturas: ISLR (que usa
+        `allowed_lines_move_ids`) y la retención emitida no, aunque haya
+        facturas elegibles que el IVA sí ofrecería."""
+        inv = self._post_iva_invoice()
+        iva = self._create_retention("iva", self._post_iva_invoice())
+        self.assertIn(inv, iva.available_invoice_ids)  # hay elegibles: no es vacío por defecto
+
+        islr = self._create_retention("islr", self._post_invoice())
+        self.assertFalse(islr.available_invoice_ids)
+
+        iva.state = "emitted"
+        iva.invalidate_recordset()
+        self.assertFalse(iva.available_invoice_ids)
+
+    def test_iva_post_rejects_zero_aliquot_line(self):
+        """No existe retención de IVA con alícuota 0: aprobar una que la trae
+        (por la vía que sea) da error claro, no se ignora la línea."""
+        inv = self._post_iva_invoice()
+        retention = self._create_retention("iva", inv, aliquot=0.0)
+        with self.assertRaises(UserError) as e:
+            retention.action_post()
+        self.assertIn("0%", str(e.exception))
+        self.assertIn(inv.display_name, str(e.exception))
+        self.assertEqual(retention.state, "draft")
+
+    def test_iva_post_zero_aliquot_in_automated_action_posts_note(self):
+        inv = self._post_iva_invoice()
+        retention = self._create_retention("iva", inv, aliquot=0.0)
+        messages_before = len(retention.message_ids)
+        self.assertFalse(retention.with_context(automated_action=True).action_post())
+        self.assertEqual(retention.state, "draft")
+        self.assertGreater(len(retention.message_ids), messages_before)
+
+    def test_zero_aliquot_check_applies_only_to_iva(self):
+        """ISLR/municipal no tienen alícuota de IVA: el chequeo no las toca."""
+        inv = self._post_invoice()
+        retention = self._create_retention("islr", inv)
+        retention._check_iva_lines_have_aliquot()  # no levanta
+
     def test_check_ignores_cancelled_other_type_and_same_retention(self):
         inv = self._post_invoice()
         cancelled = self._create_retention("islr", inv)

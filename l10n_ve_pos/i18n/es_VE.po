@@ -16,6 +16,12 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_session.py:0
+msgid "%(journal)s: suspense account"
+msgstr "%(journal)s: cuenta transitoria"
+
+#. module: l10n_ve_pos
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.table_payment_report_pos_general
 msgid "&gt;$"
 msgstr ""
@@ -58,6 +64,19 @@ msgstr "Activar entrada de producto con código de barras en modo estricto"
 #: model:ir.model.fields,help:l10n_ve_pos.field_res_config_settings__activate_barcode_strict_mode
 msgid "Activate product entry with barcode in strict mode"
 msgstr "Activar entrada de producto con código de barras en modo estricto"
+
+#. module: l10n_ve_pos
+#: model:ir.model.fields,help:l10n_ve_pos.field_pos_config__allow_product_creation_in_pos
+#: model:ir.model.fields,help:l10n_ve_pos.field_res_config_settings__allow_product_creation_in_pos
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
+msgid "Allow creating products from the PoS screen"
+msgstr "Permite crear productos desde la pantalla del POS"
+
+#. module: l10n_ve_pos
+#: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_config__allow_product_creation_in_pos
+#: model:ir.model.fields,field_description:l10n_ve_pos.field_res_config_settings__allow_product_creation_in_pos
+msgid "Allow product creation"
+msgstr "Permitir crear productos"
 
 #. module: l10n_ve_pos
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
@@ -203,17 +222,20 @@ msgid "Delete"
 msgstr ""
 
 #. module: l10n_ve_pos
-#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
-msgid ""
-"Deletes automatically products without free qty on\n"
-"                                                POS"
-msgstr ""
-
-#. module: l10n_ve_pos
 #. odoo-javascript
 #: code:addons/l10n_ve_pos/static/src/overrides/components/closing_popup/closing_popup.xml:0
 msgid "Difference"
 msgstr "Diferencia"
+
+#. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_order_line.py:0
+msgid ""
+"Discount line price cannot be positive. Product \"%(product)s\" has a "
+"price of %(price)s in order %(order)s."
+msgstr ""
+"El precio de la línea de descuento no puede ser positivo. El producto "
+"\"%(product)s\" tiene un precio de %(price)s en la orden %(order)s."
 
 #. module: l10n_ve_pos
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_account_move__display_name
@@ -392,6 +414,11 @@ msgstr ""
 #: model:ir.model.fields.selection,name:l10n_ve_pos.selection__pos_payment_report__type_report__general
 msgid "General"
 msgstr ""
+
+#. module: l10n_ve_pos
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
+msgid "Hide storable products without stock on hand in the PoS source location"
+msgstr "Oculta los productos almacenables sin stock a mano en la ubicación de origen de la caja"
 
 #. module: l10n_ve_pos
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_account_move__id
@@ -897,6 +924,18 @@ msgstr "La categoría %s no pertenece a la compañía actual."
 
 #. module: l10n_ve_pos
 #. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_session.py:0
+msgid ""
+"The cross move of the payment method %(method)s cannot be created because these accounts are not set:\n"
+"%(accounts)s\n"
+"Set them in the journal configuration and try again."
+msgstr ""
+"No se puede crear el asiento de cruce del método de pago %(method)s porque faltan estas cuentas:\n"
+"%(accounts)s\n"
+"Configúrelas en el diario y vuelva a intentarlo."
+
+#. module: l10n_ve_pos
+#. odoo-python
 #: code:addons/l10n_ve_pos/controllers/controller.py:0
 msgid "The product's '%s' You do not have enough stock in the warehouse %s"
 msgstr "El producto '%s' no tiene suficiente stock en el almacén '%s'"
@@ -911,6 +950,18 @@ msgstr "Los productos '%s' no están disponibles en el almacén %s"
 #: model:ir.model.fields,help:l10n_ve_pos.field_pos_payment__foreign_rate
 msgid "The rate that is gonna be always shown to the user."
 msgstr "La tarifa que siempre se mostrará al usuario."
+
+#. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_config.py:0
+msgid ""
+"The session cannot be opened: the cross move of these payment methods needs accounts that are not set:\n"
+"%(accounts)s\n"
+"Set them in Accounting > Configuration > Journals."
+msgstr ""
+"No se puede abrir la sesión: el asiento de cruce de estos métodos de pago necesita cuentas que no están configuradas:\n"
+"%(accounts)s\n"
+"Configúrelas en Contabilidad > Configuración > Diarios."
 
 #. module: l10n_ve_pos
 #. odoo-python
@@ -995,6 +1046,52 @@ msgstr ""
 "aún está abierta"
 
 #. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_session.py:0
+msgid "an account of the move lines"
+msgstr "una cuenta de las líneas del asiento"
+
+#. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_session.py:0
+msgid "incoming payments account"
+msgstr "cuenta de pagos entrantes"
+
+#. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_session.py:0
+msgid "outgoing payments account"
+msgstr "cuenta de pagos salientes"
+
+#. module: l10n_ve_pos
 #: model:ir.model,name:l10n_ve_pos.model_report_l10n_ve_pos_payment_report_pos
 msgid "report.l10n_ve_pos.payment_report_pos"
 msgstr ""
+
+#. module: l10n_ve_pos
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/services/pos_store.js:0
+msgid "Insufficient stock"
+msgstr "Stock insuficiente"
+
+#. module: l10n_ve_pos
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/services/pos_store.js:0
+msgid ""
+"There is not enough stock in the warehouse for:\n"
+"\n"
+"%s\n"
+"\n"
+"Adjust the quantities to continue with the payment."
+msgstr ""
+"No hay stock suficiente en el almacén para:\n"
+"\n"
+"%s\n"
+"\n"
+"Ajusta las cantidades para continuar con el pago."
+
+#. module: l10n_ve_pos
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/services/pos_store.js:0
+msgid "ordered %(requested)s, on hand %(available)s"
+msgstr "pedido %(requested)s, a mano %(available)s"

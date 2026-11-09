@@ -447,3 +447,8 @@ Los montos `foreign_igtf_*` de `tax_totals` están en la moneda de la compañía
 
 - **WHEN** se abre una factura en una moneda distinta a la de la compañía con IGTF sugerido o aplicado
 - **THEN** el bloque nativo muestra el IGTF en la moneda del documento y el segundo bloque lo muestra en VES
+
+#### Scenario: Orden de venta
+
+- **WHEN** se abre una orden de venta (`sale.order`) en cualquier moneda
+- **THEN** el segundo bloque no muestra filas de IGTF: el IGTF solo existe en facturas (`account.move`)

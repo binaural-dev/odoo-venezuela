@@ -91,8 +91,7 @@ class SaleOrderLine(models.Model):
             # la tasa de la orden estuviera congelada.
             order_date = (
                 line.order_id.foreign_rate_date
-                or line.order_id.date_order
-                or fields.Date.today()
+                or fields.Date.context_today(line, line.order_id.date_order)
             )
 
             company_currency = line.company_id.currency_id

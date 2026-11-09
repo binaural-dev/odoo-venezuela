@@ -36,6 +36,11 @@ El sistema DEBE (MUST) calcular `foreign_rate` y `foreign_inverse_rate` de cada 
 
 #### Scenario: Asiento sin fecha de tasa con solo la fecha contable editada
 
+- **WHEN** se edita `date` en un asiento (`entry`), o en un documento sin `invoice_date`, sin tasa manual
+- **THEN** `foreign_rate` y `foreign_inverse_rate` se recalculan con la tasa vigente a la nueva `date`
+
+#### Scenario: Asiento sin fecha de tasa con solo la fecha contable editada
+
 - **WHEN** se edita `date` en un documento sin `invoice_date` (por ejemplo un asiento), sin tasa manual
 - **THEN** `foreign_rate` y `foreign_inverse_rate` se recalculan con la tasa vigente a la nueva `date`
 
@@ -80,6 +85,18 @@ Límites de esa protección, tal como los implementa el código:
 - **GIVEN** una factura en USD confirmada con la tasa 884,75 y luego la tasa de ese mismo día editada a 900
 - **WHEN** se restablece la factura a borrador
 - **THEN** el cambio de estado se permite, el asiento queda balanceado y todas sus líneas conservan los importes calculados con 884,75
+
+#### Scenario: Restablecer a borrador con un pago conciliado o una nota de crédito
+
+- **GIVEN** una factura confirmada con la tasa 884,75, con un pago conciliado (o una nota de crédito aplicada) y la tasa de ese día editada después a 900
+- **WHEN** se restablece la factura a borrador
+- **THEN** el cambio de estado se permite y las tasas y los balances de todas sus líneas siguen siendo los de la confirmación
+
+#### Scenario: Factura de proveedor con pago normal conciliado
+
+- **GIVEN** una factura de proveedor confirmada, sin retenciones, con un pago normal conciliado y la tasa de ese día editada después
+- **WHEN** se restablece a borrador
+- **THEN** el cambio de estado se permite y las tasas y los balances siguen siendo los de la confirmación (el bloqueo por pago real de `l10n_ve_payment_extension` solo aplica a facturas con retenciones)
 
 #### Scenario: Volver a confirmar tras restablecer a borrador
 
@@ -886,7 +903,28 @@ Cuando varias líneas comparten un mismo impuesto, su monto de impuesto DEBE (MU
 
 - **WHEN** se evalúa el widget de pagos de un `account.move` aún sin guardar
 - **THEN** no se lanza ningún error y no se agrega ninguna fila sintética
+
 ### Requirement: Un pago no puede tener fecha futura
+
+La fecha de un pago (`account.payment.date`) y la fecha del asistente de registrar pago
+(`account.payment.register.payment_date`) NO PUEDEN (MUST NOT) ser posteriores a `fields.Date.context_today` (zona
+horaria del usuario). La validación es una constraint de guardado, de modo que aplica al crear y al escribir desde el
+formulario de pagos, desde el asistente y desde cualquier otro flujo. Ticket #15682.
+
+#### Scenario: Pago con fecha de hoy o pasada
+
+- **WHEN** se crea un pago con fecha de hoy o anterior
+- **THEN** se crea con normalidad
+
+#### Scenario: Pago con fecha futura desde el formulario
+
+- **WHEN** se crea un pago con fecha posterior a hoy, o se cambia la fecha de un pago existente a una fecha posterior a hoy
+- **THEN** se lanza un error de validación y no se guarda
+
+#### Scenario: Asistente de registrar pago con fecha futura
+
+- **WHEN** se abre el asistente de registrar pago y se fija una fecha posterior a hoy
+- **THEN** se lanza un error de validación antes de crear ningún pago
 
 ### Requirement: Sin página "Foreign currency" ni grupo de visibilidad en la factura
 
@@ -896,24 +934,6 @@ El formulario de `account.move` NO DEBE (MUST NOT) incluir la página `foreign_c
 
 - **WHEN** se obtiene el formulario de `account.move` en una compañía con `foreign_currency_id`
 - **THEN** no existe `//page[@name='foreign_currency']` ni el widget `account-tax-foreign-totals-field`, y el grupo no existe (`test_no_foreign_currency_page`)
-
-### Requirement: El descuento de una línea de factura pasa por `_get_effective_discount_percent()`
-
-`account.move.line._get_effective_discount_percent()` DEBE (MUST) devolver el porcentaje de descuento que realmente se aplica a la línea (por defecto `discount or 0.0`) y ser la única fuente que lean el cálculo de impuestos de la línea (override de `account.tax._prepare_base_line_for_taxes_computation`, que asigna `discount` solo cuando el registro es un `account.move.line`), `_compute_foreign_subtotal`, `company_currency_line_totals`, `detailed_amounts` y la reconstrucción del apunte de las líneas con impuesto de precio incluido (`_price_included_split`). Un módulo que descuenta a través de un campo propio DEBE (MUST) extender solo este método. Sin ninguna extensión el comportamiento es idéntico al de leer `discount`. `l10n_ve_deductible` lo extiende; `discount_fixed` de `l10n_ve_invoice` mantiene su propio override.
-
-#### Scenario: Módulo con descuento propio
-
-- **WHEN** un módulo extiende `_get_effective_discount_percent()` para devolver su porcentaje en una línea con `discount = 0`
-- **THEN** el subtotal, el total, el apunte, el subtotal en moneda alterna, el desglose en moneda de la compañía y el detalle de importes de esa línea usan ese porcentaje
-
-### Requirement: `_sync_tax_lines` resincroniza los apuntes cuando cambian los campos de `_get_base_line_sync_extra_fields()`
-
-`account.move._get_base_line_sync_extra_fields()` DEBE (MUST) devolver los campos de línea de factura, además de los de agrupación, cuyo cambio obliga a `_sync_tax_lines` a resincronizar los apuntes (por defecto `price_unit`, `quantity` y `discount`). Un módulo que altera los importes de la línea con un campo propio DEBE (MUST) añadirlo extendiendo este método; de lo contrario, cambiar solo ese campo en una factura guardada no actualizaría los apuntes.
-
-#### Scenario: Cambia solo el campo propio de un módulo
-
-- **WHEN** en una factura guardada cambia únicamente el campo que un módulo añadió a `_get_base_line_sync_extra_fields()`
-- **THEN** los apuntes de las líneas de producto se resincronizan con el nuevo importe
 
 ### Requirement: El descuento de una línea de factura pasa por `_get_effective_discount_percent()`
 
@@ -958,68 +978,6 @@ El formulario de `account.move` NO DEBE (MUST NOT) incluir la página `foreign_c
 
 - **WHEN** el cierre de sesión POS crea el pago agrupado de un método de banco cuyo neto es 0 (contexto `from_pos`)
 - **THEN** la guarda no aplica y la sesión puede cerrarse
-### Requirement: Un pago no puede tener fecha futura
-
-La fecha de un pago (`account.payment.date`) y la fecha del asistente de registrar pago
-(`account.payment.register.payment_date`) NO PUEDEN (MUST NOT) ser posteriores a `fields.Date.context_today` (zona
-horaria del usuario). La validación es una constraint de guardado, de modo que aplica al crear y al escribir desde el
-formulario de pagos, desde el asistente y desde cualquier otro flujo. Ticket #15682.
-
-#### Scenario: Pago con fecha de hoy o pasada
-
-- **WHEN** se crea un pago con fecha de hoy o anterior
-- **THEN** se crea con normalidad
-
-#### Scenario: Pago con fecha futura desde el formulario
-
-- **WHEN** se crea un pago con fecha posterior a hoy, o se cambia la fecha de un pago existente a una fecha posterior a hoy
-- **THEN** se lanza un error de validación y no se guarda
-
-#### Scenario: Asistente de registrar pago con fecha futura
-
-- **WHEN** se abre el asistente de registrar pago y se fija una fecha posterior a hoy
-- **THEN** se lanza un error de validación antes de crear ningún pago
-
-### Requirement: Sin página "Foreign currency" ni grupo de visibilidad en la factura
-
-El formulario de `account.move` NO DEBE (MUST NOT) incluir la página `foreign_currency` ni el widget `account-tax-foreign-totals-field`, y el grupo `l10n_ve_accountant.group_foreign_currency_view_accountant` NO DEBE (MUST NOT) existir (eliminados por ti-83943: la página era invisible en la práctica y el grupo solo gobernaba su visibilidad). Los montos y la tasa alternos siguen disponibles en las líneas, en las vistas de lista y en `tax_totals` (claves `*_foreign_currency`), que no dependen de esa página. El widget `account-tax-foreign-totals-field` permanece registrado en el frontend pero ningún formulario lo usa.
-
-#### Scenario: Formulario de factura con moneda alterna configurada
-
-- **WHEN** se obtiene el formulario de `account.move` en una compañía con `foreign_currency_id`
-- **THEN** no existe `//page[@name='foreign_currency']` ni el widget `account-tax-foreign-totals-field`, y el grupo no existe (`test_no_foreign_currency_page`)
-
-### Requirement: No se puede confirmar un pago con importe cero
-
-`account.payment.action_post` DEBE (MUST) lanzar `UserError` cuando algún pago a confirmar tiene importe cero (según la precisión de su moneda), antes de generar o publicar el asiento.
-
-#### Scenario: Confirmar un pago con importe 0.0
-
-- **WHEN** se confirma desde la vista de pagos un pago cuyo importe es 0.0
-- **THEN** se lanza un `UserError` y el pago permanece en borrador
-
-#### Scenario: Confirmar un pago con importe mayor a cero
-
-- **WHEN** se confirma un pago con importe mayor a cero
-- **THEN** el pago se confirma con normalidad
-
-### Requirement: El descuento de una línea de factura pasa por `_get_effective_discount_percent()`
-
-`account.move.line._get_effective_discount_percent()` DEBE (MUST) devolver el porcentaje de descuento que realmente se aplica a la línea (por defecto `discount or 0.0`) y ser la única fuente que lean el cálculo de impuestos de la línea (override de `account.tax._prepare_base_line_for_taxes_computation`, que asigna `discount` solo cuando el registro es un `account.move.line`), `_compute_foreign_subtotal`, `company_currency_line_totals`, `detailed_amounts` y la reconstrucción del apunte de las líneas con impuesto de precio incluido (`_price_included_split`). Un módulo que descuenta a través de un campo propio DEBE (MUST) extender solo este método. Sin ninguna extensión el comportamiento es idéntico al de leer `discount`. `l10n_ve_deductible` lo extiende; `discount_fixed` de `l10n_ve_invoice` mantiene su propio override.
-
-#### Scenario: Módulo con descuento propio
-
-- **WHEN** un módulo extiende `_get_effective_discount_percent()` para devolver su porcentaje en una línea con `discount = 0`
-- **THEN** el subtotal, el total, el apunte, el subtotal en moneda alterna, el desglose en moneda de la compañía y el detalle de importes de esa línea usan ese porcentaje
-
-### Requirement: `_sync_tax_lines` resincroniza los apuntes cuando cambian los campos de `_get_base_line_sync_extra_fields()`
-
-`account.move._get_base_line_sync_extra_fields()` DEBE (MUST) devolver los campos de línea de factura, además de los de agrupación, cuyo cambio obliga a `_sync_tax_lines` a resincronizar los apuntes (por defecto `price_unit`, `quantity` y `discount`). Un módulo que altera los importes de la línea con un campo propio DEBE (MUST) añadirlo extendiendo este método; de lo contrario, cambiar solo ese campo en una factura guardada no actualizaría los apuntes.
-
-#### Scenario: Cambia solo el campo propio de un módulo
-
-- **WHEN** en una factura guardada cambia únicamente el campo que un módulo añadió a `_get_base_line_sync_extra_fields()`
-- **THEN** los apuntes de las líneas de producto se resincronizan con el nuevo importe
 
 ### Requirement: El bloque de totales en VES no se muestra cuando la factura ya está en la moneda de la compañía
 
@@ -1034,6 +992,17 @@ El formulario de factura DEBE (MUST) mostrar el bloque de totales en VES (grupo 
 
 - **WHEN** se abre una factura cuya `currency_id` es distinta de `company_currency_id`
 - **THEN** se muestran el widget nativo en la moneda del documento y el bloque de totales en VES
+
+### Requirement: Las fechas de tasa de facturas, asientos y pagos son las del usuario
+
+Todo cálculo de tasa o conversión de `account.move` y `account.payment` que use una fecha de respaldo (`invoice_date`, `date` o `l10n_ve_conversion_date` vacíos) DEBE (MUST) usar `fields.Date.context_today`, nunca `fields.Date.today()`. Las facturas, asientos y pagos creados sin fecha explícita ya toman su fecha de `invoice_date_display` / `date`, que usan `context_today`, y DEBEN (MUST) seguir haciéndolo.
+
+#### Scenario: Factura, asiento o pago a las 8:30 pm en Caracas
+
+- **WHEN** se crea una factura de venta o compra, un asiento o un pago sin fecha explícita a las 00:30 UTC del día siguiente, con tasa del día del usuario y no del día UTC
+- **THEN** el documento toma la tasa del día del usuario y no se lanza error de tasa
+
+#### Scenario: Asiento con fecha contable distinta de hoy
 
 - **WHEN** se crea un asiento (`entry`) con `date` pasada o futura, hay tasa para esa fecha y no la hay para el día de hoy
 - **THEN** el asiento toma la tasa de su `date`; la consulta de tasa del `create` usa `date` en los asientos y `invoice_date` (o el «hoy» del usuario) en los demás documentos
@@ -1070,3 +1039,32 @@ La fecha tasa (`invoice_date`, "Rate Date") es la única que determina la tasa d
 
 - **WHEN** se activa o desactiva el ajuste de la compañía
 - **THEN** ninguna factura existente (borrador o publicada) cambia su tasa
+
+### Requirement: Segundo bloque de totales con la moneda alterna cuando el documento está en la moneda de la compañía
+
+El widget `account-tax-ves-totals-field` (segundo bloque de totales de la pestaña principal, debajo del nativo) DEBE (MUST) mostrar los montos de `tax_totals` según la moneda del documento: si `currency_id` es distinta de la moneda de la compañía muestra los montos en VES (`*_currency_ves`); si `currency_id` es la moneda de la compañía muestra los montos en la moneda alterna (`foreign_currency_id`: claves `*_foreign_currency` de subtotal, Total G de cada grupo de impuestos, impuesto y total), formateados con esa moneda. Si el documento está en la moneda de la compañía y la compañía no tiene `foreign_currency_id`, el bloque NO DEBE (MUST NOT) mostrarse. En la vista de factura el grupo contenedor (`o_ve_invoice_totals`) solo se oculta con `currency_id == company_currency_id and not foreign_currency_id`. El widget solo presenta los montos que `_get_tax_totals_summary` ya calcula; no los recalcula (ti-85450). El bloque alterno NO DEBE (MUST NOT) mostrar ningún monto adeudado: el formulario no incluye `amount_residual_company` ("residual amount" / "Importe adeudado" en la moneda de la compañía), con el documento en cualquier moneda. El único monto adeudado visible es el nativo (`amount_residual`). Motivo: `amount_residual_company` está en la moneda de la compañía (VEF) y no corresponde a los montos alternos que calcula `tax_totals` (moneda de referencia), ni necesariamente a la moneda del documento; por ejemplo, con un documento en EUR el bloque alterno está en USD, `amount_residual_company` en VEF y `amount_residual` en EUR, tres monedas distintas, por lo que no se usa en este bloque.
+
+#### Scenario: Factura en la moneda de la compañía con moneda alterna configurada
+
+- **GIVEN** una compañía con moneda VEF y `foreign_currency_id` USD, y una factura en VEF
+- **WHEN** se abre la pestaña principal de la factura
+- **THEN** debajo de los totales en VEF aparece el bloque con subtotal, Total G, impuesto y total en USD (`total_amount_foreign_currency`), no los montos en VEF (`test_alternate_totals_block`)
+
+#### Scenario: Factura en moneda extranjera
+
+- **GIVEN** una factura en USD en una compañía con moneda VEF
+- **WHEN** se abre la pestaña principal de la factura
+- **THEN** el bloque inferior muestra los totales en VEF, sin cambios respecto al comportamiento previo (`test_alternate_totals_block`)
+
+#### Scenario: Monto adeudado
+
+- **GIVEN** una factura en cualquier moneda
+- **WHEN** se abre la pestaña principal
+- **THEN** el bloque alterno solo muestra `tax_totals`; el único monto adeudado es el nativo y `amount_residual_company` no está en el formulario (`test_alternate_totals_block`)
+
+#### Scenario: Compañía sin moneda alterna
+
+- **GIVEN** una factura en la moneda de la compañía y una compañía sin `foreign_currency_id`
+- **WHEN** se abre la pestaña principal
+- **THEN** el bloque inferior no se muestra
+

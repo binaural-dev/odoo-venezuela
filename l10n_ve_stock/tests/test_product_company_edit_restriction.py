@@ -87,6 +87,9 @@ class TestProductCompanyEditRestriction(TransactionCase):
     def test_company_id_change_is_tracked_in_chatter(self):
         other_company = self._create_other_company()
         message_count_before = len(self.template.message_ids)
+        # The guard also applies to the superuser, so the test env's own
+        # user needs the group to actually change the company.
+        self.env.user.group_ids = [(4, self.group.id)]
         self.template.write({"company_id": other_company.id})
         # Odoo defers tracking-message creation to a cr.precommit hook, which
         # only runs on a real DB commit. Force it here so the assertions
@@ -198,6 +201,9 @@ class TestProductCompanyEditRestriction(TransactionCase):
         """company_id=False ("Visible for all companies") is the least
         privileged state, not a company change - clearing it via write()
         must be allowed without the group too, same as create()."""
+        # sudo() doesn't bypass the guard: setting the starting company
+        # needs the group on the test env's own user.
+        self.env.user.group_ids = [(4, self.group.id)]
         self.template.sudo().write({"company_id": self.env.company.id})
         self.assertTrue(self.template.company_id)
         template = self.template.with_user(self.user)

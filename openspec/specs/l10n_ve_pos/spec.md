@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Adapta el Punto de Venta de Odoo 19 a la operación venezolana: tasa operativa de la caja tomada de `l10n_ve_rate`, manejo dual de montos (moneda principal y moneda alterna) en órdenes, pagos, asientos y reportes, facturación obligatoria de toda orden (SENIAT), reembolsos a la tasa histórica, movimientos de compensación (cross moves) para métodos de pago en divisa, carga de cadenas de listas de precios, formulario reducido de contacto para el cajero y permisos de caja. Extiende `pos.config`, `pos.session`, `pos.order`, `pos.order.line`, `pos.payment`, `pos.payment.method`, `account.move`, `account.partial.reconcile`, `account.tax`, `res.company`, `res.config.settings`, `res.currency`, `res.partner`, `res.users`, `stock.picking`, `product.product`, `product.category` y `product.pricelist`, e incluye un frontend OWL extenso bajo `static/src` empaquetado en `point_of_sale._assets_pos`. Depende de `point_of_sale`, `l10n_ve_rate`, `l10n_ve_contact`, `l10n_ve_stock`, `l10n_ve_location` y `l10n_ve_accountant`.
+Adapta el Punto de Venta de Odoo 19 a la operación venezolana: tasa operativa de la caja tomada de `l10n_ve_rate`, manejo dual de montos (moneda principal y moneda alterna) en órdenes, pagos, asientos y reportes, facturación obligatoria de toda orden (SENIAT), reembolsos a la tasa histórica, movimientos de compensación (cross moves) para métodos de pago en divisa, carga de cadenas de listas de precios, formulario reducido de contacto para el cajero y permisos de caja. Extiende `pos.config`, `pos.session`, `pos.order`, `pos.order.line`, `pos.payment`, `pos.payment.method`, `account.move`, `account.partial.reconcile`, `account.tax`, `res.company`, `res.config.settings`, `res.currency`, `res.partner`, `res.users`, `stock.picking`, `product.product`, `product.category`, `product.pricelist` y `pos.load.mixin`, e incluye un frontend OWL extenso bajo `static/src` empaquetado en `point_of_sale._assets_pos`. Depende de `point_of_sale`, `l10n_ve_rate`, `l10n_ve_contact`, `l10n_ve_stock`, `l10n_ve_location` y `l10n_ve_accountant`. El Kiosko y el autopedido móvil los ajusta `l10n_ve_pos_self_order`, con su propia spec en `l10n_ve_pos_self_order/openspec/specs` ("Mostrar solamente los productos disponibles" en `pos-self-order-kiosk-available-products`).
 
 ## Requirements
 
@@ -230,7 +230,7 @@ Durante el cierre de sesión, el sistema DEBE (MUST) acumular `foreign_amount` d
 
 ### Requirement: Cross moves de compensación para métodos en divisa
 
-Al cerrar la sesión (`action_pos_session_close` → `_validate_cross_move`), por cada método de pago que pase `_is_cross_move_eligible` —`is_foreign_currency`, tipo distinto de `pay_later`, `cross_account_journal` y `cross_journal` presentes Y una cuenta transitoria resoluble— el sistema DEBE (MUST) crear en `cross_account_journal` asientos EN BORRADOR (`state="draft"`) que trasladan el saldo de la cuenta transitoria del método hacia la cuenta real del `cross_journal`, con `foreign_debit`/`foreign_credit`, `not_foreign_recalculate = True`, la tasa del pago (`foreign_rate`, también en el encabezado junto con `foreign_currency_id`) y una referencia (`ref`) que identifica sesión/orden/pago; el número secuencial (`name`) se deja vacío para que lo asigne el diario al contabilizar. Un método sin alguno de los dos diarios se omite en silencio.
+Al cerrar la sesión (`action_pos_session_close` → `_validate_cross_move`), por cada método de pago que pase `_is_cross_move_eligible` —`is_foreign_currency`, tipo distinto de `pay_later`, `cross_account_journal` y `cross_journal` presentes Y una cuenta transitoria resoluble— el sistema DEBE (MUST) crear en `cross_account_journal` asientos EN BORRADOR (`state="draft"`) que trasladan el saldo de la cuenta transitoria del método hacia la cuenta real del `cross_journal`, con `foreign_debit`/`foreign_credit`, `not_foreign_recalculate = True`, la tasa del pago (`foreign_rate`, también en el encabezado junto con `foreign_currency_id`) y una referencia (`ref`) que identifica sesión/orden/pago; el número secuencial (`name`) se deja vacío para que lo asigne el diario al contabilizar. Un método sin alguno de los dos diarios se omite en silencio (change `l10n-ve-pos-cross-move-accounts-check` de `l10n_ve_pos`: la sesión no abre si al cruce le faltan sus cuentas; en el cierre, una transitoria que falte omite el cruce con un aviso en el log y una cuenta de las líneas de pago que falte da un error legible).
 
 La cuenta transitoria la resuelve `_get_cross_transitory_account`: para `cash`, `journal_id.default_account_id`; para el resto, `outstanding_account_id` o, si está vacía, `journal_id.default_account_id`; y como último recurso, en ambos casos, `company_id.account_default_pos_receivable_account_id`. La cuenta real la resuelve `_get_cross_real_account` con la `payment_account_id` de las líneas de método de pago entrantes o salientes del `cross_journal` según el signo. Existe además una variante `use_suspense=True` (usada desde fuera, p. ej. `binaural_pos_close` para cash in/out) que drena `journal_id.suspense_account_id` hacia `cross_journal.suspense_account_id` invirtiendo el sentido del asiento.
 
@@ -344,12 +344,42 @@ El módulo DEBE (MUST) restringir los botones de cantidad y precio del numpad a 
 
 ### Requirement: Visibilidad y orden de productos según disponibilidad
 
-Con el flag de compañía `pos_show_just_products_with_available_qty` activo, el sistema DEBE (MUST) ordenar el catálogo cargado al PdV por `qty_available` descendente (`_sort_available_products`) y el frontend excluir de `productsToDisplay` los productos cuyo tipo no es `service` ni `consu` y cuya `qty_available` no es positiva. El loader de productos expone `free_qty` y `qty_available` calculados con el almacén del tipo de operación de la caja.
+Con el flag de compañía `pos_show_just_products_with_available_qty` activo, el sistema DEBE (MUST) ordenar el `product.product` cargado al PdV por `qty_available` descendente, y la cuadrícula del PdV, también al buscar, NO DEBE (MUST NOT) mostrar los almacenables sin ninguna variante con `qty_available` positiva (`ProductTemplate.canBeDisplayed`). Lo no almacenable se muestra siempre. `qty_available` se calcula en la ubicación de origen de la caja y sus hijas, la que valida "Cantidad en 0".
 
 #### Scenario: Flag activo
 
 - **WHEN** la compañía activa el flag y se abre la caja
-- **THEN** los productos llegan ordenados por disponibilidad descendente, computada contra el almacén de la caja
+- **THEN** los productos llegan ordenados por disponibilidad descendente, computada contra la ubicación de origen de la caja
+
+#### Scenario: Flag activo y almacenable sin stock en la ubicación de origen de la caja
+
+- **WHEN** la compañía activa el flag y un producto almacenable disponible en el PdV tiene stock a mano 0 o negativo en la ubicación de origen de la caja
+- **THEN** el producto no aparece en la cuadrícula ni en la búsqueda del PdV
+
+#### Scenario: Stock solo en otro almacén
+
+- **WHEN** el flag está activo y el producto tiene stock en otro almacén de la compañía pero no en el de la caja
+- **THEN** el PdV recibe `qty_available` 0 para ese producto y no lo muestra
+
+#### Scenario: Stock en otra ubicación del almacén de la caja
+
+- **WHEN** el flag está activo y el producto tiene stock en una ubicación del almacén de la caja que no es la de origen ni hija de ella
+- **THEN** el PdV recibe `qty_available` 0 para ese producto y no lo muestra, igual que "Cantidad en 0" no lo dejaría vender
+
+#### Scenario: Alguna variante con stock
+
+- **WHEN** el flag está activo y al menos una variante del producto tiene stock a mano positivo en la ubicación de origen de la caja
+- **THEN** el producto aparece en la cuadrícula
+
+#### Scenario: Producto no almacenable
+
+- **WHEN** el flag está activo y el producto es un servicio, un consumible sin control de stock o un combo
+- **THEN** el producto aparece aunque no tenga stock
+
+#### Scenario: Flag apagado
+
+- **WHEN** la compañía no activa el flag
+- **THEN** los productos almacenables sin stock aparecen en la cuadrícula y el bloqueo de vender sin stock depende de "Cantidad en 0" (`amount_to_zero`)
 
 ### Requirement: Existencia disponible en la tarjeta de producto
 
@@ -371,6 +401,8 @@ El controlador DEBE (MUST) exponer las rutas JSON `/validate_products_order` y `
 
 Es decir, `sell_kit_from_another_store` exime únicamente los productos ausentes del almacén de la caja; nunca el stock insuficiente.
 
+En O19 ningún JS del PdV llama estas rutas (son código heredado de O17). El bloqueo por stock antes del pago con "Cantidad en 0" lo hace `pos.config.check_stock_availability` (ver el requirement «"Cantidad en 0" bloquea el pago sin stock a mano»), con otra semántica: stock a mano de la ubicación origen de la caja, sin kits de otra tienda.
+
 #### Scenario: Stock insuficiente en el almacén de la caja
 
 - **WHEN** se llama `/validate_products_in_warehouse` con una cantidad mayor a la disponible en el almacén del picking type, con `sell_kit_from_another_store` verdadero
@@ -380,6 +412,35 @@ Es decir, `sell_kit_from_another_store` exime únicamente los productos ausentes
 
 - **WHEN** el producto no tiene quants en el almacén del picking type y se pasa `sell_kit_from_another_store` verdadero
 - **THEN** la respuesta vuelve con `msg_error` en `False` y la venta se permite
+
+### Requirement: "Cantidad en 0" bloquea el pago sin stock a mano
+
+Con `amount_to_zero` activo en la caja, al pulsar "Pago" (o al validar con el pago rápido) el PdV DEBE (MUST) comparar la cantidad pedida por producto almacenable (suma de líneas positivas) contra el stock a mano de la ubicación origen de la caja (`pos.config.check_stock_availability`) y, si alguna la supera, mostrar "Stock insuficiente" con el detalle y no pasar a la pantalla de pago. Lo reservado por otras órdenes no reduce el stock a comparar.
+
+#### Scenario: Stock a mano suficiente aunque esté reservado por otra orden
+
+- **WHEN** hay 8 a mano, otra orden confirmada reservó 7 y la orden del PdV lleva 7
+- **THEN** el PdV pasa a la pantalla de pago
+
+#### Scenario: Stock a mano insuficiente
+
+- **WHEN** hay 1 a mano y la orden del PdV lleva 7
+- **THEN** se muestra "Stock insuficiente" con "pedido 7, a mano 1" y no se abre la pantalla de pago ni se imprime en la MF
+
+#### Scenario: Check apagado o producto no almacenable
+
+- **WHEN** la caja no tiene `amount_to_zero`, o el producto es servicio/consumible no almacenable
+- **THEN** no se valida stock
+
+#### Scenario: Pago rápido
+
+- **WHEN** la caja usa el pago rápido y la orden lleva más de lo que hay a mano
+- **THEN** se muestra "Stock insuficiente" y la orden no se valida ni se imprime en la MF
+
+#### Scenario: Producto que ya no existe
+
+- **WHEN** la orden trae el id de un producto borrado después de que la caja lo cargó
+- **THEN** ese producto se omite y el resto de la orden se valida normalmente
 
 ### Requirement: Formulario reducido de contacto exclusivo del PdV
 
@@ -491,3 +552,59 @@ El módulo DEBE (MUST) definir el grupo `l10n_ve_pos.group_authorized_discount_p
 
 - **WHEN** un administrador edita un usuario
 - **THEN** el grupo "Authorized discount pos" está disponible dentro del privilegio del Punto de Venta
+
+### Requirement: La tasa de la caja es la del día del usuario
+
+`pos.config._compute_rate` DEBE (MUST) buscar la tasa de `fields.Date.context_today` y no la de `fields.Date.today()`. Como esa búsqueda usa `raise_if_not_found=False`, usar la fecha UTC dejaba la caja con tasa `0` sin avisar después de las 8 pm de Caracas.
+
+#### Scenario: Caja consultada a las 8:30 pm en Caracas
+
+- **WHEN** se calcula la tasa de la caja a las 00:30 UTC del día siguiente y hay tasa del día del usuario
+- **THEN** `foreign_rate` toma la tasa del día del usuario y no queda en 0
+
+### Requirement: "Permitir crear productos" por caja
+
+`pos.config` DEBE (MUST) tener `allow_product_creation_in_pos` ("Permitir crear productos"), apagado por defecto y editable desde Ajustes. Apagado, el PdV DEBE (MUST) ocultar "Crear producto" del menú y "Crear manualmente" de la pantalla de productos vacía, y `PosStore.editProduct()` sin producto NO DEBE (MUST NOT) abrir el formulario. Solo un `true` explícito la enciende.
+
+#### Scenario: Creación permitida
+
+- **WHEN** la caja tiene "Permitir crear productos" encendido y el usuario tiene permiso para crear productos
+- **THEN** el menú del PdV muestra "Crear producto" y abre el formulario de producto nuevo
+
+#### Scenario: Creación apagada
+
+- **WHEN** la caja tiene "Permitir crear productos" apagado
+- **THEN** el menú no muestra "Crear producto", la pantalla de productos vacía no muestra "Crear manualmente" y `editProduct()` sin producto no abre nada
+
+#### Scenario: Editar un producto existente con la creación apagada
+
+- **WHEN** la caja tiene "Permitir crear productos" apagado y el cajero edita un producto existente
+- **THEN** se abre el formulario de edición como siempre
+
+#### Scenario: Caja cargada antes de actualizar el módulo
+
+- **WHEN** el PdV trae `pos.config` de su caché sin el campo (`undefined`)
+- **THEN** la creación se trata como no permitida
+
+#### Scenario: Cajas existentes al actualizar
+
+- **WHEN** se actualiza `l10n_ve_pos` en una base con cajas creadas antes
+- **THEN** todas quedan con "Permitir crear productos" apagado hasta que se encienda en Ajustes
+### Requirement: Stock actual al abrir la caja con "Mostrar solamente los productos disponibles"
+
+Con el flag activo, `pos.session.load_data` DEBE (MUST) cargar `product.template` y `product.product` sin el filtro por `write_date` de la carga incremental, porque un movimiento de stock no lo cambia: una sesión nueva o la entrada desde el backend traen el stock actual aunque la caja tenga caché. F5 con la sesión abierta no consulta al servidor: para eso lo recomendado es "Volver a cargar datos" → "Limitado".
+
+#### Scenario: Stock cambiado con la caja ya cargada
+
+- **WHEN** el flag está activo, la caja cargó un producto almacenable y después su stock cambia en la ubicación de origen de la caja (se repone o se agota) sin que cambie el producto
+- **THEN** al abrir una sesión nueva o entrar desde el backend el producto aparece o desaparece según el stock actual
+
+#### Scenario: F5 con la sesión abierta
+
+- **WHEN** el flag está activo, la sesión sigue abierta y se repone el stock de un producto oculto
+- **THEN** tras F5 sigue oculto, y aparece tras "Volver a cargar datos" → "Limitado", que vacía la caché del navegador igual que "Completo" y recarga hasta `point_of_sale.limited_product_count` plantillas
+
+#### Scenario: Flag apagado
+
+- **WHEN** la compañía no activa el flag y la caja abre con caché
+- **THEN** la carga incremental conserva el filtro por `write_date` del core y solo reenvía los productos modificados

@@ -10,7 +10,7 @@ class AccountMoveInherit(models.Model):
     _inherit = "account.move"
 
     def get_last_day_previous_fortnight(self, period):
-        today = date.today()
+        today = fields.Date.context_today(self)
         if period == "fortnightly":
             if today.day > 15:
                 return today.replace(day=15)

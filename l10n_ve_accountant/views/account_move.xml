@@ -101,7 +101,6 @@
             <xpath expr="//field[@name='partner_id']" position="replace">
                 <field name="partner_id" nolabel="1"
                     context="{'res_partner_search_mode': (context.get('default_move_type', 'entry') in ('out_invoice', 'out_refund', 'out_receipt') and 'customer') or (context.get('default_move_type', 'entry') in ('in_invoice', 'in_refund', 'in_receipt') and 'supplier') or False, 'show_address': 1, 'default_is_company': True}"
-                    domain="[('type', '!=', 'private'), ('company_id', 'in', (False, company_id))]"
                     options="{&quot;always_reload&quot;: True, &quot;no_quick_create&quot;: True}"
                     invisible="move_type not in ('out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt')" />
                 <field name="manually_set_rate" invisible="1" />
@@ -124,7 +123,11 @@
 
             <!-- Second totals block: VES when the invoice is in another currency; the
                  alternate currency when it is in the company currency. Hidden only when
-                 both apply: company currency and no alternate currency configured. -->
+                 both apply: company currency and no alternate currency configured.
+                 It does not show amount_residual_company: that value is in the company currency
+                 and does not match the alternate amounts of tax_totals nor necessarily the
+                 document currency (e.g. EUR document: alternate block in USD,
+                 amount_residual_company in VEF, amount_residual in EUR). -->
             <xpath expr="//page[@name='invoice_tab']//group[hasclass('oe_invoice_lines_tab')]" position="after">
                 <group col="12" class="overflow-hidden o_ve_invoice_totals" invisible="currency_id == company_currency_id and not foreign_currency_id">
                     <group colspan="8">
@@ -148,6 +151,11 @@
             <xpath expr="//page/field[@name='invoice_line_ids']/list/field[@name='price_unit']"
                 position="after">
                 <field name="foreign_price" readonly="1" optional="hide"/>
+                <field name="technical_price_unit" column_invisible="True"/>
+            </xpath>
+            <xpath expr="//page/field[@name='invoice_line_ids']/form//field[@name='price_unit']"
+                position="after">
+                <field name="technical_price_unit" invisible="1"/>
             </xpath>
             <xpath expr="//page/field[@name='invoice_line_ids']/list/field[@name='price_subtotal']"
                 position="after">

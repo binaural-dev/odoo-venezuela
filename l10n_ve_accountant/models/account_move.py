@@ -598,7 +598,7 @@ class AccountMove(models.Model):
                     move.amount_untaxed,
                     fc,
                     move.company_id,
-                    move.invoice_date or fields.Date.today(),
+                    move.invoice_date or fields.Date.context_today(move),
                 )
             else:
                 move.foreign_untaxed_total = move.tax_totals.get(
@@ -647,7 +647,7 @@ class AccountMove(models.Model):
                     move.amount_total,
                     fc,
                     move.company_id,
-                    move.invoice_date or fields.Date.today(),
+                    move.invoice_date or fields.Date.context_today(move),
                 )
                 move.foreign_debit = total
                 move.foreign_credit = total
@@ -783,9 +783,15 @@ class AccountMove(models.Model):
                 move.foreign_rate = move.reversed_entry_id.foreign_rate
                 move.foreign_inverse_rate = move.reversed_entry_id.foreign_inverse_rate
             Rate = self.env["res.currency.rate"]
-            rate_values = Rate.compute_rate(
-                move.foreign_currency_id.id, move.invoice_date or fields.Date.today()
-            )
+            # La tasa de un asiento (entry) es la de su fecha contable (`date`), como en
+            # _compute_rate_for_documents; invoice_date no es su fecha de tasa y trae el "hoy"
+            # por defecto, asi que un asiento con fecha pasada o futura fallaba si hoy no tenia
+            # tasa. Los demas documentos conservan invoice_date (o el hoy del usuario si falta).
+            if move.move_type == "entry":
+                rate_date = move.date or fields.Date.context_today(move)
+            else:
+                rate_date = move.invoice_date or move.date or fields.Date.context_today(move)
+            rate_values = Rate.compute_rate(move.foreign_currency_id.id, rate_date)
             last_foreign_rate = rate_values.get("foreign_rate", 0)
             if move.manually_set_rate and move.foreign_rate != last_foreign_rate:
                 move.message_post(
@@ -844,6 +850,14 @@ class AccountMove(models.Model):
                 del vals[fname]
         return vals
 
+    def _clear_transient_rate_caches(self):
+        """Forget the per-transaction "already done" marks, as a new web
+        request would start without them."""
+        cache = self.env.cr.cache
+        for move in self:
+            cache.pop(("_real_portion_distributed", move.id), None)
+        cache.pop("_dynamic_lines_in_progress", None)
+
     def write(self, vals):
         """
         Drops date writes that change nothing on documents confirmed before
@@ -870,6 +884,13 @@ class AccountMove(models.Model):
                 )
 
         return res
+
+    def button_update_prices_from_pricelist(self):
+        """The button applies the pricelist to every line, including the manual
+        prices that _compute_price_unit protects (task 84438)."""
+        return super(
+            AccountMove, self.with_context(force_price_recomputation=True)
+        ).button_update_prices_from_pricelist()
 
     @api.constrains("invoice_line_ids")
     def _check_taxes_id(self):
@@ -1146,14 +1167,7 @@ class AccountMove(models.Model):
         `invoice_date` ("Rate Date") and falls back to `date` (accounting
         date) when it is empty, as on entries.
         """
-        self._compute_rate_for_documents(
-            self.filtered(lambda m: m.is_sale_document(include_receipts=True)),
-            is_sale=True,
-        )
-        self._compute_rate_for_documents(
-            self.filtered(lambda m: not m.is_sale_document(include_receipts=True)),
-            is_sale=False,
-        )
+        self._compute_rate_for_documents(self)
 
     def _is_rate_date_locked(self):
         """Hook: True si la Rate Date esta bloqueada por la configuracion (la factura usa la
@@ -1171,9 +1185,9 @@ class AccountMove(models.Model):
         return self.invoice_date or self.date
 
     @api.model
-    def _compute_rate_for_documents(self, documents, is_sale):
+    def _compute_rate_for_documents(self, documents):
         """
-        Compute the rate for a set of documents (either sale invoices or purchase invoices/moves).
+        Compute the rate for a set of documents (sale or purchase invoices, entries).
         """
         Rate = self.env["res.currency.rate"]
 
@@ -1436,6 +1450,29 @@ class AccountMove(models.Model):
                     ):
                         line.account_id = move.journal_id.default_account_id
 
+    def _is_subject_to_credit_limit(self):
+        """Whether this move must be validated against the partner's credit limit.
+
+        Only documents that *increase* the customer's receivable are checked.
+        Excluded on purpose:
+
+        - ``out_refund``: credit notes reduce the receivable.
+        - ``entry``: payments, advances and IVA/ISLR withholding vouchers, all of
+          which either reduce the receivable or do not affect it.
+        - ``in_*``: vendor documents do not touch the customer's receivable.
+
+        Blocking those made it impossible to collect from a customer that was
+        already over the limit, which is the opposite of what the limit is for.
+
+        The ``skip_credit_limit_check`` context key bypasses the check for flows
+        that carry an explicit authorization (e.g. a manually unlocked sale
+        order). It is opt-in and never set by default.
+        """
+        self.ensure_one()
+        if self.env.context.get("skip_credit_limit_check"):
+            return False
+        return self.move_type in ("out_invoice", "out_receipt")
+
     def _check_draftable(self):
         """Alternate currency exchange difference entries (native or
         standalone) work like Odoo's own exchange difference entry: they can
@@ -1458,7 +1495,7 @@ class AccountMove(models.Model):
                         'context': {'default_move_id': move.id},
                     }
 
-        for invoice in self:
+        for invoice in self.filtered(lambda move: move._is_subject_to_credit_limit()):
             if (
                 invoice.company_id.account_use_credit_limit
                 and invoice.partner_id.use_partner_credit_limit
@@ -1698,6 +1735,13 @@ class AccountMove(models.Model):
             grouping_key = AccountTax._prepare_base_line_grouping_key(fake_base_line)
             if line.move_id.is_invoice(include_receipts=True):
                 extra_fields = self._get_base_line_sync_extra_fields()
+                # discount_fixed (l10n_ve_invoice, opcional -- este modulo no
+                # depende de ese) tambien cambia la base de la linea y debe
+                # disparar el re-balanceo igual que discount (%); sin esto,
+                # escribirlo solo no refresca balance/amount_currency y
+                # quedan desincronizados de price_subtotal.
+                if 'discount_fixed' in line._fields:
+                    extra_fields.append('discount_fixed')
             else:
                 extra_fields = ['amount_currency']
             return list(grouping_key.keys()) + extra_fields
@@ -2143,7 +2187,7 @@ class AccountMove(models.Model):
                     abs(move.amount_total),
                     fc,
                     move.company_id,
-                    move.invoice_date or fields.Date.today(),
+                    move.invoice_date or fields.Date.context_today(move),
                 )
                 total_debit = aggregate
                 total_credit = aggregate
@@ -2265,7 +2309,9 @@ class AccountMove(models.Model):
                 tax_line.balance = correct_balance
 
         non_pt = move.line_ids.filtered(
-            lambda l: l.display_type not in ('payment_term', 'cogs')
+            lambda l: l.display_type not in (
+                'payment_term', 'cogs', 'line_section', 'line_subsection', 'line_note',
+            )
         )
         if not non_pt:
             return
@@ -2294,6 +2340,7 @@ class AccountMove(models.Model):
                 return
             target_lines = move.line_ids.filtered(
                 lambda l: not l.tax_repartition_line_id
+                and l.display_type not in ('line_section', 'line_subsection', 'line_note')
             )
             self._distribute_to_lines(target_lines, remaining, cc)
             move.real_portion_amount = cc.round(

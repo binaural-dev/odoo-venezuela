@@ -44,7 +44,46 @@ class TestRetentionResync(RetentionTestCommon):
         self.assertEqual(retention.state, "emitted")
         return retention
 
-    def _create_emitted_municipal_retention(self, invoice, retention_amount=10.0):
+    def _emit_islr_retention(self, invoice):
+        """
+        Same as _emit_iva_retention() but for ISLR: goes through the real
+        action_post() flow (generate_islr_retention ->
+        auto_create_islr_retention()), so the retention lines carry what the
+        automatic flow produces (e.g. empty foreign_invoice_amount, the
+        shape that used to make every fresh ISLR retention look stale).
+        """
+        invoice.generate_islr_retention = True
+        invoice.action_post()
+        retention = invoice.retention_islr_line_ids.mapped("retention_id").filtered(
+            lambda r: r.state != "cancel"
+        )
+        self.assertEqual(retention.state, "emitted")
+        return retention
+
+    def _get_economic_activity(self):
+        country = self.env["res.country"].search([("code", "=", "TC83486")], limit=1) or \
+            self.env["res.country"].create({"name": "Test Country 83486", "code": "TC83486"})
+        state = self.env["res.country.state"].search([("code", "=", "TS83486")], limit=1) or \
+            self.env["res.country.state"].create(
+                {"name": "Test State 83486", "code": "TS83486", "country_id": country.id}
+            )
+        municipality = self.env["res.country.municipality"].search(
+            [("code", "=", "MUN-83486")], limit=1
+        ) or self.env["res.country.municipality"].create({
+            "name": "Test Municipality 83486", "code": "MUN-83486",
+            "country_id": country.id, "state_id": [(6, 0, [state.id])],
+        })
+        branch = self.env["economic.branch"].search([("name", "=", "Branch 83486")], limit=1) or \
+            self.env["economic.branch"].create({"name": "Branch 83486", "status": "active"})
+        return self.env["economic.activity"].search(
+            [("name", "=", "Activity 83486")], limit=1
+        ) or self.env["economic.activity"].create({
+            "name": "Activity 83486", "aliquot": 5.0,
+            "municipality_id": municipality.id, "branch_id": branch.id,
+            "description": "Test", "minimum_monthly": 0, "minimum_annual": 0,
+        })
+
+    def _create_emitted_municipal_retention(self, invoice, retention_amount=10.0, activity=None):
         self.company.write({
             "municipal_supplier_retention_journal_id": self.bank_journal_sup_ret.id,
         })
@@ -57,6 +96,7 @@ class TestRetentionResync(RetentionTestCommon):
                 "invoice_total": invoice.amount_total, "invoice_amount": invoice.amount_untaxed,
                 "retention_amount": retention_amount, "foreign_invoice_amount": invoice.amount_untaxed,
                 "foreign_retention_amount": retention_amount,
+                **({"economic_activity_id": activity.id} if activity else {}),
             })],
         })
         retention.number = "01234567891234"
@@ -148,13 +188,13 @@ class TestRetentionResync(RetentionTestCommon):
             "company_id": self.company.id, "partner_id": self.partner_pnr_75.id,
             "date": fields.Date.today(), "date_accounting": fields.Date.today(),
             "retention_line_ids": [
-                Command.create({
+                Command.create({"aliquot": 16.0,
                     "move_id": invoice_1.id, "name": "IVA Line 1",
                     "invoice_total": 232.0, "invoice_amount": 200.0,
                     "retention_amount": 24.0, "foreign_invoice_amount": 200.0,
                     "foreign_retention_amount": 24.0, "foreign_currency_rate": 1.0,
                 }),
-                Command.create({
+                Command.create({"aliquot": 16.0,
                     "move_id": invoice_2.id, "name": "IVA Line 2",
                     "invoice_total": 174.0, "invoice_amount": 150.0,
                     "retention_amount": 18.0, "foreign_invoice_amount": 150.0,
@@ -196,6 +236,29 @@ class TestRetentionResync(RetentionTestCommon):
             invoice.action_recalculate_retentions()
         _logger.info("========= test_06 passed =========")
 
+    # 6c. A PARTIAL real payment blocks just the same: the guard looks at
+    # the reconciled real payments, not at payment_state == "paid".
+    def test_06c_partial_real_payment_blocks_draft_and_recalculate(self):
+        invoice = self._create_prepared_iva_invoice()
+        self._emit_iva_retention(invoice)
+
+        wizard = self.env["account.payment.register"].with_context(
+            active_ids=invoice.ids, active_model="account.move",
+        ).create({
+            "amount": invoice.amount_residual / 2,
+            "payment_date": fields.Date.today(),
+            "journal_id": self.bank_journal_sub.id,
+        })
+        wizard.action_create_payments()
+        self.assertNotEqual(invoice.payment_state, "paid")
+
+        with self.assertRaises(UserError):
+            invoice.button_draft()
+
+        with self.assertRaises(UserError):
+            invoice.action_recalculate_retentions()
+        _logger.info("========= test_06c passed =========")
+
     # 6b. A retention's own payment being the only thing reconciled
     # against the invoice must NOT block button_draft()/
     # action_recalculate_retentions() - only a REAL external payment does.
@@ -211,6 +274,88 @@ class TestRetentionResync(RetentionTestCommon):
         self.assertEqual(retention.state, "draft")
         _logger.info("========= test_06b passed =========")
 
+    # 6d. A real payment on an invoice WITHOUT retentions blocks nothing:
+    # the lock only protects retentions that would have to be rebuilt.
+    def test_06d_real_payment_without_retentions_does_not_block(self):
+        invoice = self._create_prepared_iva_invoice()
+        invoice.action_post()
+        self.assertFalse(invoice.retention_iva_line_ids)
+
+        wizard = self.env["account.payment.register"].with_context(
+            active_ids=invoice.ids, active_model="account.move",
+        ).create({
+            "amount": invoice.amount_residual,
+            "payment_date": fields.Date.today(),
+            "journal_id": self.bank_journal_sub.id,
+        })
+        wizard.action_create_payments()
+
+        invoice._check_retention_paid_lock()  # must not raise
+        invoice.button_draft()
+        self.assertEqual(invoice.state, "draft")
+        invoice.action_post()
+        invoice.button_cancel()  # same guard as button_draft()
+        self.assertEqual(invoice.state, "cancel")
+
+    def _paid_invoice_with_draft_retention(self, keep_payments):
+        """Invoice with an emitted IVA retention and a real payment, whose
+        retention is then forced to draft (mid-resync shape when
+        `keep_payments`; a draft with nothing to rebuild otherwise)."""
+        invoice = self._create_prepared_iva_invoice()
+        retention = self._emit_iva_retention(invoice)
+        wizard = self.env["account.payment.register"].with_context(
+            active_ids=invoice.ids, active_model="account.move",
+        ).create({
+            "amount": invoice.amount_residual,
+            "payment_date": fields.Date.today(),
+            "journal_id": self.bank_journal_sub.id,
+        })
+        wizard.action_create_payments()
+
+        retention_payments = retention.payment_ids
+        self.env.cr.execute(
+            "UPDATE account_retention SET state = 'draft' WHERE id = %s", (retention.id,)
+        )
+        if not keep_payments:
+            self.env.cr.execute(
+                "UPDATE account_payment SET retention_id = NULL WHERE id IN %s",
+                (tuple(retention_payments.ids),),
+            )
+        self.env.invalidate_all()
+        self.assertEqual(bool(retention.payment_ids), keep_payments)
+        return invoice
+
+    # 6e. A retention caught mid-resync (draft WITH payment_ids) still counts
+    # for the lock: a real payment blocks "Recalcular retenciones" there.
+    def test_06e_paid_lock_counts_mid_resync_retention(self):
+        invoice = self._paid_invoice_with_draft_retention(keep_payments=True)
+
+        with self.assertRaises(UserError):
+            invoice.action_recalculate_retentions()
+
+    # 6f. A draft retention WITHOUT payments has nothing to rebuild: the
+    # real payment alone does not block.
+    def test_06f_paid_lock_ignores_draft_retention_without_payments(self):
+        invoice = self._paid_invoice_with_draft_retention(keep_payments=False)
+
+        invoice._check_retention_paid_lock()  # must not raise
+
+    # 6g. "Recalcular retenciones" on an invoice with no retentions at all is
+    # not blocked by a plain payment either (it just has nothing to do).
+    def test_06g_recalculate_without_retentions_is_not_blocked_by_payment(self):
+        invoice = self._create_prepared_iva_invoice()
+        invoice.action_post()
+        wizard = self.env["account.payment.register"].with_context(
+            active_ids=invoice.ids, active_model="account.move",
+        ).create({
+            "amount": invoice.amount_residual,
+            "payment_date": fields.Date.today(),
+            "journal_id": self.bank_journal_sub.id,
+        })
+        wizard.action_create_payments()
+
+        invoice.action_recalculate_retentions()  # must not raise
+
     # 7. button_cancel() of the invoice cancels its emitted retention(s)
     # before the invoice itself is cancelled.
     def test_07_button_cancel_cancels_retention(self):
@@ -222,6 +367,28 @@ class TestRetentionResync(RetentionTestCommon):
         self.assertEqual(retention.state, "cancel")
         self.assertEqual(invoice.state, "cancel")
         _logger.info("========= test_07 passed =========")
+
+    # 7b. button_cancel() is blocked, with no side effects, when the invoice
+    # has a REAL payment applied (same guard as button_draft(), test_06).
+    def test_07b_button_cancel_blocked_by_real_payment(self):
+        invoice = self._create_prepared_iva_invoice()
+        retention = self._emit_iva_retention(invoice)
+
+        wizard = self.env["account.payment.register"].with_context(
+            active_ids=invoice.ids, active_model="account.move",
+        ).create({
+            "amount": invoice.amount_residual,
+            "payment_date": fields.Date.today(),
+            "journal_id": self.bank_journal_sub.id,
+        })
+        wizard.action_create_payments()
+
+        with self.assertRaises(UserError):
+            invoice.button_cancel()
+
+        self.assertEqual(invoice.state, "posted")
+        self.assertEqual(retention.state, "emitted")
+        _logger.info("========= test_07b passed =========")
 
     # 8. action_cancel() of a retention whose payment was already drafted
     # by a previous resync (button_draft()) no longer fails.
@@ -284,6 +451,86 @@ class TestRetentionResync(RetentionTestCommon):
         invoice.invalidate_recordset(["retention_resync_pending"])
         self.assertTrue(invoice.retention_resync_pending)
         _logger.info("========= test_09b passed =========")
+
+    # Municipal: a stale line is detected/rebuilt independently of
+    # account.move.write() receiving invoice_line_ids in its vals.
+    def test_09c_municipal_stale_base_is_detected(self):
+        invoice = self._create_prepared_iva_invoice(amount=200)
+        invoice.action_post()
+        retention = self._create_emitted_municipal_retention(invoice, retention_amount=10.0)
+        self.assertFalse(invoice.retention_resync_pending)
+
+        line = retention.retention_line_ids.filtered(lambda l: l.move_id == invoice)
+        line.write({"invoice_amount": line.invoice_amount + 50.0})
+
+        invoice.invalidate_recordset(["retention_resync_pending"])
+        self.assertTrue(invoice.retention_resync_pending)
+        _logger.info("========= test_09c passed =========")
+
+    def test_09d_municipal_repost_with_line_edited_directly_rebuilds(self):
+        activity = self._get_economic_activity()
+        invoice = self._create_prepared_iva_invoice(amount=200)
+        invoice.action_post()
+        retention = self._create_emitted_municipal_retention(
+            invoice, retention_amount=10.0, activity=activity
+        )
+        payment = retention.payment_ids
+
+        invoice.button_draft()
+        # Deliberately NOT invoice.write({"invoice_line_ids": ...}): the
+        # edit that write() would have synced is the path that was covered.
+        invoice.invoice_line_ids.write({"price_unit": 300.0})
+        invoice.action_post()
+
+        self.assertEqual(retention.state, "emitted")
+        self.assertEqual(retention.payment_ids, payment)
+        line = retention.retention_line_ids.filtered(lambda l: l.move_id == invoice)
+        self.assertAlmostEqual(line.invoice_amount, 300.0, places=2)
+        self.assertAlmostEqual(line.retention_amount, 300.0 * activity.aliquot / 100, places=2)
+        self.assertAlmostEqual(payment.amount, line.retention_amount, places=2)
+        _logger.info("========= test_09d passed =========")
+
+    # ISLR: regression of the false positive (7cec8aa4e) - a freshly emitted
+    # ISLR retention, with the invoice untouched, must NOT be flagged.
+    def test_09e_islr_fresh_retention_is_not_pending(self):
+        invoice = self._create_invoice_islr(
+            amount=500, partner=self.partner_pnr_75,
+            out_invoice="in_invoice", journal=self.purchase_journal,
+        )
+        self._prepare_invoice(invoice)
+        retention = self._emit_islr_retention(invoice)
+
+        invoice.invalidate_recordset(["retention_resync_pending"])
+        retention.invalidate_recordset(["retention_resync_pending"])
+        self.assertFalse(invoice.retention_resync_pending)
+        self.assertFalse(retention.retention_resync_pending)
+        self.assertNotIn(retention, invoice._get_retentions_pending_resync())
+        _logger.info("========= test_09e passed =========")
+
+    # ISLR: a REAL mismatch is still detected, and clears after the
+    # recalculate button.
+    def test_09f_islr_stale_base_is_detected_and_clears(self):
+        invoice = self._create_invoice_islr(
+            amount=500, partner=self.partner_pnr_75,
+            out_invoice="in_invoice", journal=self.purchase_journal,
+        )
+        self._prepare_invoice(invoice)
+        retention = self._emit_islr_retention(invoice)
+
+        line = retention.retention_line_ids.filtered(lambda l: l.move_id == invoice)
+        line[:1].write({"invoice_amount": line[0].invoice_amount + 50.0})
+
+        invoice.invalidate_recordset(["retention_resync_pending"])
+        self.assertTrue(invoice.retention_resync_pending)
+        self.assertIn(retention, invoice._get_retentions_pending_resync())
+
+        invoice.action_recalculate_retentions()
+
+        invoice.invalidate_recordset(["retention_resync_pending"])
+        self.assertFalse(invoice.retention_resync_pending)
+        self.assertEqual(invoice.state, "posted")
+        self.assertEqual(retention.state, "emitted")
+        _logger.info("========= test_09f passed =========")
 
     # 10. retention_resync_pending/payment.retention_resync_pending
     # propagate the invoice's diff; a non-retention payment never reports

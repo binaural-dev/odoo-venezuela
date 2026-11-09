@@ -844,6 +844,10 @@ class AccountMove(models.Model):
 
                         factura_lines = rec.line_ids.filtered(lambda l: l.account_id.id == target_account.id)
 
+                        # factura_line can hold more than one line (an invoice with
+                        # several due dates leaves several entries on the receivable/
+                        # payable account), so .id blows up with "Expected singleton".
+                        # With .ids and 'in' the single-line case behaves the same.
                         partial = self.env['account.partial.reconcile'].search([
                             '|',
                             '&', ('debit_move_id', 'in', factura_lines.ids), ('credit_move_id', 'in', partner_line.ids),

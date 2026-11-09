@@ -135,11 +135,7 @@ class AccountMoveRetention(models.Model):
             if move.move_type not in ("in_invoice", "in_refund"):
                 move.has_pending_retention_to_cancel = False
                 continue
-            retentions = (
-                move.retention_islr_line_ids
-                | move.retention_iva_line_ids
-                | move.retention_municipal_line_ids
-            ).mapped("retention_id").filtered(lambda r: r.state != "cancel")
+            retentions = move._get_all_retentions().filtered(lambda r: r.state != "cancel")
             move.has_pending_retention_to_cancel = bool(retentions)
 
     @api.depends(
@@ -388,7 +384,7 @@ class AccountMoveRetention(models.Model):
     def _compute_currency_fields(self):
         for retention in self:
             retention.base_currency_is_vef = (
-                self.env.company.currency_id == self.env.ref("base.VEF")
+                self.env.company.currency_id.is_venezuelan_bolivar()
             )
 
     def write(self, vals):
@@ -589,8 +585,8 @@ class AccountMoveRetention(models.Model):
         return True
 
     @api.model
-    def _compute_rate_for_documents(self, documents, is_sale):
-        res = super()._compute_rate_for_documents(documents, is_sale)
+    def _compute_rate_for_documents(self, documents):
+        res = super()._compute_rate_for_documents(documents)
         for move in documents:
             if move.origin_payment_id.is_retention:
                 move.foreign_rate = move.origin_payment_id.foreign_rate
@@ -837,11 +833,7 @@ class AccountMoveRetention(models.Model):
         for move in self.filtered(lambda m: m.move_type in ("in_invoice", "in_refund")):
             move._check_retention_paid_lock()
 
-            retentions = (
-                move.retention_islr_line_ids
-                | move.retention_iva_line_ids
-                | move.retention_municipal_line_ids
-            ).mapped("retention_id").filtered(lambda r: r.state != "cancel")
+            retentions = move._get_all_retentions().filtered(lambda r: r.state != "cancel")
 
             move._draft_retentions_for_resync(retentions)
 
@@ -850,16 +842,17 @@ class AccountMoveRetention(models.Model):
 
     def button_cancel(self):
         for move in self.filtered(lambda m: m.move_type in ("in_invoice", "in_refund")):
+            # Same guard as button_draft(): both flows dismantle the
+            # invoice's retentions, so a real payment applied blocks both
+            # (only when the invoice has emitted/mid-resync retentions).
+            move._check_retention_paid_lock()
+
             # Cancel the invoice's non-cancelled retentions explicitly,
             # while the invoice is still posted - account.retention.write()
             # requires the invoices of a third-party retention to be
             # posted, so this must happen before super() moves the
             # invoice to 'cancel'.
-            retentions = (
-                move.retention_islr_line_ids
-                | move.retention_iva_line_ids
-                | move.retention_municipal_line_ids
-            ).mapped("retention_id").filtered(lambda r: r.state != "cancel")
+            retentions = move._get_all_retentions().filtered(lambda r: r.state != "cancel")
             if retentions:
                 retentions.action_cancel()
 
@@ -920,14 +913,27 @@ class AccountMoveRetention(models.Model):
 
             retention.with_context(bypass_retention_lock=True).action_draft()
 
+    def _get_all_retentions(self):
+        """Retention vouchers (any type, any state) this invoice belongs to."""
+        self.ensure_one()
+        return (
+            self.retention_islr_line_ids
+            | self.retention_iva_line_ids
+            | self.retention_municipal_line_ids
+        ).mapped("retention_id")
+
     def _check_retention_paid_lock(self):
         """
-        Shared guard for button_draft() (paso 2) and
-        action_recalculate_retentions() (paso 5): once an invoice has a
-        REAL payment applied - anything other than its own retention's
-        payment, which is reconciled against it as a side effect of
-        emitting the retention itself, not an external payment - its
-        retentions can no longer be safely desmontadas/reconstruidas.
+        Shared guard for button_draft(), button_cancel() and
+        action_recalculate_retentions(): once an invoice that has retentions
+        to desmontar has a REAL payment applied - anything other than its
+        own retention's payment, which is reconciled against it as a side
+        effect of emitting the retention itself, not an external payment -
+        those retentions can no longer be safely desmontadas/reconstruidas.
+        Retentions that count are the emitted ones and the ones caught
+        mid-resync (draft with payment_ids, see _get_retentions_pending_resync);
+        a draft retention without payments has nothing to rebuild, and an
+        invoice without retentions is never blocked by a plain payment.
         Evaluated before anything is desmontado, since the reconciliation
         state no longer reflects the original one afterwards. Using
         payment_state in ("paid", "in_payment") here would also block the
@@ -935,6 +941,11 @@ class AccountMoveRetention(models.Model):
         reconciled against the invoice - that case is safe to resync.
         """
         self.ensure_one()
+        retentions = self._get_all_retentions().filtered(
+            lambda r: r.state == "emitted" or (r.state == "draft" and r.payment_ids)
+        )
+        if not retentions:
+            return
         real_payments = self._get_reconciled_payments().filtered(
             lambda p: not p.is_retention
         )
@@ -1018,10 +1029,18 @@ class AccountMoveRetention(models.Model):
             retention.write({
                 "retention_line_ids": [Command.create(vals) for vals in new_lines_data],
             })
-        # Municipal retention lines are already kept in sync by
-        # account.move.write() (onchange_economic_activity_id) whenever
-        # invoice_line_ids changes - nothing to rebuild here, only the
-        # amount/re-emission below.
+        else:
+            # Municipal lines are not regenerated: they are refreshed in
+            # place with the same onchanges account.move.write() runs, but
+            # unconditionally, since write() only runs them when
+            # invoice_line_ids comes in its vals.
+            lines_of_move = retention.retention_line_ids.filtered(lambda l: l.move_id == self)
+            lines_of_move.write({
+                "invoice_amount": self.tax_totals["base_amount"],
+                "foreign_invoice_amount": self.tax_totals["base_amount_foreign_currency"],
+            })
+            lines_of_move.onchange_economic_activity_id()
+            lines_of_move.onchange_municipal_invoice_amount()
 
         max_invoice_date = retention._get_max_invoice_date()
         if max_invoice_date and retention.date_accounting < max_invoice_date:
@@ -1110,8 +1129,18 @@ class AccountMoveRetention(models.Model):
             if self._retention_lines_amounts_differ(lines_of_move, fresh_amounts, currency):
                 return True
 
-        # Municipal lines are kept in sync automatically by write(); only
-        # the linked payment amount is checked below, for all three types.
+        elif retention.type_retention == "municipal":
+            # Same base the municipal lines take from the invoice in
+            # onchange_economic_activity_id(): checked here independently
+            # of write() (which only syncs them when invoice_line_ids
+            # comes in its vals), so a line edited by any other path is
+            # detected too.
+            base_amount = self.tax_totals["base_amount"]
+            fresh_amounts = [base_amount] * len(lines_of_move)
+            if self._retention_lines_amounts_differ(lines_of_move, fresh_amounts, currency):
+                return True
+
+        # The linked payment amount is checked below, for all three types.
 
         payment = retention.payment_ids[:1]
         if payment:
@@ -1135,11 +1164,7 @@ class AccountMoveRetention(models.Model):
         banner/button, and what action_recalculate_retentions() drafts).
         """
         self.ensure_one()
-        all_retentions = (
-            self.retention_islr_line_ids
-            | self.retention_iva_line_ids
-            | self.retention_municipal_line_ids
-        ).mapped("retention_id")
+        all_retentions = self._get_all_retentions()
 
         mid_resync = all_retentions.filtered(lambda r: r.state == "draft" and r.payment_ids)
 

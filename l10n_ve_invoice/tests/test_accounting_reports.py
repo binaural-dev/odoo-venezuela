@@ -379,6 +379,33 @@ class TestAccountingReports(TransactionCase):
         wizard = self._create_wizard("sale")
         self.assertEqual(wizard.convert_currency_to_float("ABC"), 0.0)
 
+    def test_convert_currency_to_float_symbol_before_nbsp(self):
+        """Formato real de Odoo: simbolo antes + espacio no-separable (\\xa0).
+        Antes se partia por \\xa0 y se quedaba con "Bs." -> 0.0 en todo importe."""
+        wizard = self._create_wizard("sale")
+        self.assertEqual(wizard.convert_currency_to_float("Bs.\xa0876,18"), 876.18)
+        self.assertEqual(wizard.convert_currency_to_float("Bs.\xa00,00"), 0.0)
+
+    def test_convert_currency_to_float_thousands(self):
+        """Punto de miles + coma decimal (es_VE)."""
+        wizard = self._create_wizard("sale")
+        self.assertEqual(wizard.convert_currency_to_float("Bs.\xa02.382,11"), 2382.11)
+        self.assertEqual(
+            wizard.convert_currency_to_float("Bs.\xa013.836,97"), 13836.97
+        )
+
+    def test_convert_currency_to_float_symbol_after(self):
+        """Robustez: simbolo despues del monto tambien se parsea bien."""
+        wizard = self._create_wizard("sale")
+        self.assertEqual(wizard.convert_currency_to_float("1.234,56\xa0Bs."), 1234.56)
+
+    def test_convert_currency_to_float_symbol_after_dot_decimal(self):
+        """Simbolo despues con decimal de punto (Bs.F): el punto pegado al
+        simbolo NO debe colarse como decimal suelto y romper el parseo."""
+        wizard = self._create_wizard("sale")
+        self.assertEqual(wizard.convert_currency_to_float("100.00\xa0Bs.F"), 100.00)
+        self.assertEqual(wizard.convert_currency_to_float("16.00\xa0Bs.F"), 16.00)
+
     # ============================================================
     # Phase 3: Domain & search
     # ============================================================
@@ -426,6 +453,48 @@ class TestAccountingReports(TransactionCase):
         moves = wizard.search_moves()
         self.assertIn(m1.id, moves.ids)
         self.assertIn(m2.id, moves.ids)
+
+    def _post_sale_invoice(self, correlative):
+        move = self._create_move(
+            "out_invoice", self.journal_sale, [self.tax_sale_16.id],
+            correlative=correlative,
+        )
+        move.with_context(move_action_post_alert=True).action_post()
+        return move
+
+    def test_search_moves_sale_same_day_edited_after_post(self):
+        """Las facturas de un mismo día modificadas después de publicarse
+        (pago, digitalización) no se van al final del libro de ventas."""
+        invoices = self.env["account.move"]
+        for i in range(1, 7):
+            invoices |= self._post_sale_invoice(f"00-{i:08d}")
+        # Postgres guarda la versión nueva de cada fila modificada al final de
+        # la tabla: sin desempate, estas tres saldrían de últimas.
+        (invoices[0] | invoices[2] | invoices[4]).write({"ref": "pagada"})
+        self.env.flush_all()
+        self.env.invalidate_all()
+
+        moves = self._create_wizard("sale").search_moves() & invoices
+        self.assertEqual(moves.ids, invoices.ids)
+
+    def test_search_moves_sale_same_day_by_registration_time(self):
+        """Dentro del día, el libro de ventas sigue la fecha-hora de registro."""
+        first, second, third = (
+            self._post_sale_invoice(f"00-{i:08d}") for i in range(1, 4)
+        )
+        today = fields.Datetime.now().replace(hour=12, minute=0, second=0)
+        first.invoice_date_display_datetime = today + timedelta(hours=2)
+        second.invoice_date_display_datetime = today
+        third.invoice_date_display_datetime = today + timedelta(hours=1)
+
+        moves = self._create_wizard("sale").search_moves() & (first | second | third)
+        self.assertEqual(moves.ids, (second | third | first).ids)
+
+    def test_book_order_purchase_unchanged(self):
+        self.assertEqual(
+            self._create_wizard("purchase")._get_book_order(),
+            "invoice_date_display asc",
+        )
 
     # ============================================================
     # Phase 4: _determinate_amount_taxeds

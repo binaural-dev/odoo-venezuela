@@ -4,6 +4,7 @@ from odoo.tests import tagged
 from odoo import Command, fields
 from odoo.exceptions import UserError, ValidationError
 from odoo.tools.float_utils import float_round
+from .rate_helper import seed_foreign_rate
 from .test_withholding_common_VEF import RetentionTestCommon
 import logging
 
@@ -361,6 +362,8 @@ class TestRetentionLifecycle(RetentionTestCommon):
         # the dates, since changing invoice_date can recompute it.
         old_date = fields.Date.today() - timedelta(days=10)
         new_date = fields.Date.today()
+        # La tasa de una compra sale de invoice_date: necesita tasa ese dia.
+        seed_foreign_rate(self.env, old_date)
         old_invoice.write({"invoice_date": old_date, "invoice_date_display": old_date})
         new_invoice.write({"invoice_date": new_date, "invoice_date_display": new_date})
         self._prepare_invoice_for_retention(old_invoice)
@@ -380,7 +383,7 @@ class TestRetentionLifecycle(RetentionTestCommon):
             "date": fields.Date.today(),
             "date_accounting": accounting_date,
             "retention_line_ids": [
-                Command.create({
+                Command.create({"aliquot": 16.0,
                     "move_id": old_invoice.id,
                     "name": "IVA Retention Line",
                     "invoice_total": old_invoice.amount_total,

@@ -442,7 +442,7 @@ La tasa de la orden (`_compute_rate`, `create`, la tasa del precio de línea y l
 
 ### Requirement: Segundo bloque de totales en la orden de venta
 
-El formulario de `sale.order` DEBE (MUST) mostrar, debajo del widget de totales nativo (`account-tax-totals-field`, grupo `sale_total`), el widget `account-tax-ves-totals-field` de `l10n_ve_accountant`, con el campo `foreign_currency_id` cargado en la vista para que el widget pueda formatear la moneda alterna. Si la orden está en la moneda de la compañía muestra los montos en la moneda alterna (claves `*_foreign_currency` de `tax_totals`); si está en otra moneda muestra los montos en VES. Los montos provienen de `tax_totals` y no se recalculan en la vista (ti-85450).
+El formulario de `sale.order` DEBE (MUST) mostrar, debajo del widget de totales nativo (`account-tax-totals-field`, grupo `sale_total`), el widget `account-tax-ves-totals-field` de `l10n_ve_accountant`, con el campo `foreign_currency_id` cargado en la vista para que el widget pueda formatear la moneda alterna. Si la orden está en la moneda de la compañía muestra los montos en la moneda alterna (claves `*_foreign_currency` de `tax_totals`); si está en otra moneda muestra los montos en VES. Si la orden está en la moneda de la compañía y la compañía no tiene `foreign_currency_id`, el campo se oculta (`invisible="currency_id == company_currency_id and not foreign_currency_id"`, igual que en la factura; `company_currency_id` se carga en la vista). El segundo bloque NO DEBE (MUST NOT) mostrar filas de IGTF en la orden de venta (ver `l10n_ve_igtf`). Los montos provienen de `tax_totals` y no se recalculan en la vista (ti-85450).
 
 #### Scenario: Orden en la moneda de la compañía
 

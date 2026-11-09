@@ -20,11 +20,18 @@ class RetentionLineReport(models.Model):
     retention_date_accounting = fields.Date()
     raw_aliquot = fields.Char()
     aliquot = fields.Char(compute="_compute_percentages")
-    iva_amount = fields.Float()
-    invoice_amount = fields.Float()
+    # Importes monetarios anclados a `currency_id`, que la consulta rellena
+    # con la moneda en la que efectivamente vienen. Eran `fields.Float()`
+    # pelados, sin `digits` y sin moneda, y la MISMA columna traia importes en
+    # moneda de compania o en divisa segun `use_foreign_currency`: un numero en
+    # pantalla que no decia en que moneda estaba, y que cambiaba de moneda
+    # segun la compania desde la que se mirara.
+    currency_id = fields.Many2one("res.currency", string="Currency", readonly=True)
+    iva_amount = fields.Monetary(currency_field="currency_id")
+    invoice_amount = fields.Monetary(currency_field="currency_id")
     raw_retention_percentage = fields.Char()
     retention_percentage = fields.Char(compute="_compute_percentages")
-    retention_amount = fields.Float()
+    retention_amount = fields.Monetary(currency_field="currency_id")
     state = fields.Char()
     state_show = fields.Char(string="State")
     type = fields.Char()
@@ -46,16 +53,21 @@ class RetentionLineReport(models.Model):
             "base.VEF", raise_if_not_found=False
         )
         use_foreign_currency = self.env.company.currency_id.id != base_vef_id
+        # La moneda viaja junto a los importes: si la consulta cambia de
+        # columnas, cambia tambien de moneda, y las dos cosas tienen que
+        # decidirse en el mismo sitio o vuelven a divergir.
         amounts_query = """
             rl.iva_amount AS iva_amount,
             rl.invoice_amount AS invoice_amount,
             rl.retention_amount AS retention_amount,
+            r.company_currency_id AS currency_id,
         """
         if use_foreign_currency:
             amounts_query = """
                 rl.foreign_iva_amount AS iva_amount,
                 rl.foreign_invoice_amount AS invoice_amount,
                 rl.foreign_retention_amount AS retention_amount,
+                r.foreign_currency_id AS currency_id,
             """
 
         return (
