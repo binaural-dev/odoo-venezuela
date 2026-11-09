@@ -5,6 +5,8 @@
 - [x] 1.3 `_fix_foreign_summary_from_lines` (alterno del widget desde los apuntes).
 - [x] 1.4 `_get_tax_group_product_lines` reemplaza el filtro duplicado de grupos de impuesto.
 
+- [x] 1.5 Bump de versión `19.0.1.0.42` -> `19.0.1.0.43`.
+
 ## 2. Tests
 
 - [x] 2.1 `tests/test_global_price_included_exempt.py`: USD, VEF, EUR, mezcla, control sin exento,
