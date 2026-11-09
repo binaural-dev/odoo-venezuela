@@ -238,12 +238,21 @@ class ResPartner(models.Model):
                 node.set("widget", "l10n_ve_vat")
         return arch, view
 
-    def _check_vat(self):
+    def _check_vat(self, validation="error"):
+        """Validate the Venezuelan VAT as digits only, with the prefix kept in ``prefix_vat``.
+
+        Odoo 20 moved VAT validation into ``base`` and calls this method from the VAT onchange
+        and inverse. The standard check expects the prefix inside the VAT and would reject every
+        Venezuelan partner, so it is replaced, keeping its ``validation`` contract: ``"error"``
+        raises, ``"setnull"`` clears the VAT and a falsy value only reports nothing.
+        """
         pattern = "^[0-9]*$"
         for record in self:
-            if record.vat:
-                if not re.match(pattern, record.vat):
+            if record.vat and not re.match(pattern, record.vat):
+                if validation == "error":
                     raise MissingError(_("The vat field only accepts numbers"))
+                if validation == "setnull":
+                    record.vat = False
 
     @api.onchange("vat", "prefix_vat")
     def _onchange_(self):
