@@ -1,4 +1,4 @@
-from odoo.tools.float_utils import float_round
+from odoo.tools.float_utils import float_is_zero, float_round
 from odoo import api, models, _
 from odoo.exceptions import ValidationError
 from odoo.tools.misc import formatLang
@@ -10,6 +10,19 @@ _logger = logging.getLogger(__name__)
 
 class AccountTax(models.Model):
     _inherit = "account.tax"
+
+    @api.model
+    def _get_tax_group_product_lines(self, product_lines, group):
+        """Líneas de producto que llevan algún impuesto de `group` (un elemento
+        de `tax_groups` del resumen de `tax_totals`).
+
+        Un impuesto 'group' deja al PADRE en `l.tax_ids`, pero el núcleo expande
+        `involved_tax_ids` a sus HIJOS: se comprueban ambos."""
+        involved_tax_ids = set(group.get('involved_tax_ids', []))
+        return product_lines.filtered(
+            lambda l: (set(l.tax_ids.ids) & involved_tax_ids)
+            or (set(l.tax_ids.children_tax_ids.ids) & involved_tax_ids)
+        )
 
     @api.model
     def _fix_base_amount_for_multi_currency(self, res, record):
@@ -82,13 +95,7 @@ class AccountTax(models.Model):
             # two different taxes), which the remainder math read as
             # double-counted, landing the last group at 0 or negative.
             for tg in tax_groups:
-                involved_tax_ids = set(tg.get('involved_tax_ids', []))
-                # A 'group' tax puts the PARENT in `l.tax_ids`, but core
-                # expands `involved_tax_ids` to its CHILDREN -- check both.
-                tg_lines = product_lines.filtered(
-                    lambda l: (set(l.tax_ids.ids) & involved_tax_ids)
-                    or (set(l.tax_ids.children_tax_ids.ids) & involved_tax_ids)
-                )
+                tg_lines = self._get_tax_group_product_lines(product_lines, tg)
                 if tg_lines:
                     tg_base = cc.round(sum(tg_lines.mapped('balance')) * sign)
                 else:
@@ -183,6 +190,184 @@ class AccountTax(models.Model):
             res.get('total_amount_currency', 0.0) + total_tax_diff_currency
         )
 
+
+    # ── Global + impuestos incluidos en el precio ────────────────────────
+    # Con `round_globally`, el núcleo reparte el centavo del redondeo global
+    # entre las líneas base (suele caer en la de mayor base, p. ej. una línea
+    # exenta) y lo compensa en la línea de impuesto. `_sync_tax_lines` reemplaza
+    # luego el IVA incluido por la suma línea por línea, así que esa
+    # compensación se pierde y el total del asiento queda 0,01 distinto de lo
+    # digitado. Se fija la base de cada línea a su valor individual, igual que
+    # `account.move.line._price_included_split` ya hace con las líneas con IVA
+    # incluido, tanto en la moneda del documento como en la alterna. Los saldos
+    # en la moneda de la compañía y el IVA en VEF siguen saliendo de
+    # `_sync_tax_lines`, que calcula el impuesto sobre los saldos VEF.
+    @api.model
+    def _prepare_tax_lines(self, base_lines, company, **kwargs):
+        res = super()._prepare_tax_lines(base_lines, company, **kwargs)
+        if company.tax_calculation_rounding_method == 'round_globally' and base_lines:
+            self._apply_price_included_per_line(res, base_lines)
+        return res
+
+    @api.model
+    def _apply_price_included_per_line(self, res, base_lines):
+        """Deja cada línea base y el IVA incluido con su valor individual (ver
+        el comentario de `_prepare_tax_lines`). Solo actúa en facturas con al
+        menos una línea con impuestos porcentuales incluidos en el precio."""
+        first_line = base_lines[0].get('record')
+        if first_line is None or first_line._name != 'account.move.line':
+            return
+        move = first_line.move_id
+        if not move.is_invoice(include_receipts=True):
+            return
+        product_lines = move.line_ids.filtered(lambda l: l.display_type == 'product')
+        included_lines = product_lines.filtered(lambda l: l._price_included_split())
+        if not included_lines:
+            return
+        sign = move.direction_sign
+        tax_amount_by_tax = {}
+        for base_line, to_update in res['base_lines_to_update']:
+            line = base_line['record']
+            if line.display_type != 'product':
+                continue
+            currency = base_line['currency_id']
+            raw = (
+                base_line['price_unit'] * base_line['quantity']
+                * (1 - (base_line.get('discount') or 0.0) / 100.0) * sign
+            )
+            taxes = line.tax_ids
+            if line not in included_lines:
+                if not any(tax.price_include for tax in taxes.flatten_taxes_hierarchy()):
+                    # Sin impuestos incluidos en el precio, la base es el importe digitado.
+                    to_update['amount_currency'] = currency.round(raw)
+                # Con impuestos incluidos y excluidos a la vez se deja lo que calculó el núcleo.
+                continue
+            total_rate = sum(taxes.mapped('amount'))
+            base = currency.round(raw / (1 + total_rate / 100.0))
+            included = currency.round(raw)
+            to_update['amount_currency'] = base
+            if float_is_zero(total_rate, precision_digits=4):
+                # Exento incluido en el precio (0 %): no hay impuesto que repartir.
+                continue
+            for tax in taxes:
+                tax_amount_by_tax[tax.id] = tax_amount_by_tax.get(tax.id, 0.0) + currency.round(
+                    (included - base) * tax.amount / total_rate
+                )
+        RepartitionLine = self.env['account.tax.repartition.line']
+
+        def _set_tax_amount(repartition_value, target):
+            repartition_line = (
+                repartition_value if hasattr(repartition_value, 'tax_id')
+                else RepartitionLine.browse(repartition_value)
+            )
+            if (
+                repartition_line
+                and repartition_line.repartition_type == 'tax'
+                and repartition_line.tax_id.id in tax_amount_by_tax
+            ):
+                target['amount_currency'] = (
+                    tax_amount_by_tax[repartition_line.tax_id.id] * repartition_line.factor_percent / 100.0
+                )
+
+        for vals in res['tax_lines_to_add']:
+            _set_tax_amount(vals.get('tax_repartition_line_id'), vals)
+        for vals, _key, to_update in res['tax_lines_to_update']:
+            _set_tax_amount(vals.get('tax_repartition_line_id'), to_update)
+
+    @api.model
+    def _fix_base_amount_from_real_lines(self, res, record, company):
+        """Con `round_globally` e impuestos incluidos en el precio, el IVA del
+        widget sale de las líneas de impuesto reales (por línea) pero la base
+        la calcula el núcleo con redondeo global: el total del widget queda
+        0,01 distinto del asiento. Se recalculan las bases desde las líneas de
+        producto reales (documento y moneda de la compañía)."""
+        if record._name != 'account.move' or not record.is_invoice(include_receipts=True):
+            return
+        if isinstance(record.id, api.NewId) or company.tax_calculation_rounding_method != 'round_globally':
+            return
+        real_tax_lines = record.line_ids.filtered(lambda l: l.display_type == 'tax')
+        if not any(t.price_include and not t.include_base_amount for t in real_tax_lines.tax_line_id):
+            return
+        sign = record.direction_sign
+        doc, cc = record.currency_id, company.currency_id
+        products = record.line_ids.filtered(lambda l: l.display_type == 'product' and not l.tax_repartition_line_id)
+
+        def sums(lines):
+            return (
+                doc.round(sum(lines.mapped('amount_currency')) * sign),
+                cc.round(sum(lines.mapped('balance')) * sign),
+            )
+
+        all_doc, all_company = sums(products)
+        if doc == cc:
+            all_company = all_doc
+        # Cada subtotal parte del total del anterior (grupos con `preceding_subtotal`).
+        running_doc, running_company = all_doc, all_company
+        for subtotal in res.get('subtotals', []):
+            subtotal_tax_doc = subtotal_tax_company = 0.0
+            for group in subtotal.get('tax_groups', []):
+                group_lines = self._get_tax_group_product_lines(products, group)
+                if group_lines:
+                    base_doc, base_company = sums(group_lines)
+                    if doc == cc:
+                        base_company = base_doc
+                    group['base_amount_currency'] = group['display_base_amount_currency'] = base_doc
+                    group['base_amount'] = group['display_base_amount'] = base_company
+                subtotal_tax_doc += group.get('tax_amount_currency', 0.0)
+                subtotal_tax_company += group.get('tax_amount', 0.0)
+                group['total_amount_currency'] = doc.round(
+                    group['base_amount_currency'] + group.get('tax_amount_currency', 0.0)
+                )
+            subtotal['base_amount_currency'] = running_doc
+            subtotal['base_amount'] = running_company
+            running_doc = doc.round(running_doc + subtotal_tax_doc)
+            running_company = cc.round(running_company + subtotal_tax_company)
+            subtotal['total_amount_currency'] = running_doc
+            subtotal['total_amount'] = running_company
+        res['base_amount_currency'] = all_doc
+        res['base_amount'] = all_company
+        res['total_amount_currency'] = running_doc
+        res['total_amount'] = running_company
+
+    @api.model
+    def _fix_foreign_summary_from_lines(self, foreign_res, record):
+        """El alterno del widget se calculaba por separado con el motor del
+        núcleo sobre `foreign_price`, mientras que los apuntes toman el alterno
+        de `foreign_balance` (y, en una tercera moneda, el total agregado). Los
+        apuntes son lo que se publica al libro: el widget los refleja."""
+        if record._name != 'account.move' or not record.is_invoice(include_receipts=True):
+            return
+        if isinstance(record.id, api.NewId) or not record.foreign_currency_id:
+            return
+        fc, ds = record.foreign_currency_id, record.direction_sign
+        products = record.line_ids.filtered(lambda l: l.display_type == 'product' and not l.tax_repartition_line_id)
+        tax_lines = record.line_ids.filtered(lambda l: l.display_type == 'tax')
+        if not products:
+            return
+
+        def value(lines):
+            return fc.round(sum(l.foreign_debit - l.foreign_credit for l in lines) * ds)
+
+        base, tax = value(products), value(tax_lines)
+        foreign_res['base_amount_currency'] = base
+        foreign_res['tax_amount_currency'] = tax
+        foreign_res['total_amount_currency'] = fc.round(base + tax)
+        running = base
+        for subtotal in foreign_res.get('subtotals', []):
+            subtotal_tax = 0.0
+            for group in subtotal.get('tax_groups', []):
+                group_lines = self._get_tax_group_product_lines(products, group)
+                if group_lines:
+                    group['base_amount_currency'] = group['display_base_amount_currency'] = value(group_lines)
+                group['tax_amount_currency'] = value(
+                    tax_lines.filtered(lambda l: l.tax_group_id.id == group.get('id'))
+                )
+                subtotal_tax += group['tax_amount_currency']
+            subtotal['base_amount_currency'] = running
+            subtotal['tax_amount_currency'] = fc.round(subtotal_tax)
+            running = fc.round(running + subtotal_tax)
+            subtotal['total_amount_currency'] = running
+
     @api.model
     def _get_tax_totals_summary(
         self, base_lines, currency, company, cash_rounding=None
@@ -243,6 +428,7 @@ class AccountTax(models.Model):
 
         self._fix_base_amount_for_multi_currency(res, record)
         self._fix_tax_amount_for_round_per_line(res, record, company)
+        self._fix_base_amount_from_real_lines(res, record, company)
 
         currency_id = company.currency_id or False
         foreign_currency_id = company.foreign_currency_id or False
@@ -306,6 +492,7 @@ class AccountTax(models.Model):
             company,
             cash_rounding
         )
+        self._fix_foreign_summary_from_lines(foreign_res, record)
         #amounts in foreign currency
         res['foreign_currency_id'] = foreign_res['currency_id']
         res['ves_currency_id'] = company.currency_id.id
