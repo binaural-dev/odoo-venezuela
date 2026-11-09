@@ -1,15 +1,13 @@
-# Copyright 2016 Tecnativa - Antonio Espinosa
-# Copyright 2016-2017 Tecnativa - Pedro M. Baeza
 # Copyright 2020 Sergio Corato <https://github.com/sergiocorato>
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
 {
-    "name": "Venezuela - Cierre Fiscal",
-    "summary": "Asistente genérico para el cierre del año fiscal",
-    "version": "19.0.0.1.0",
+    "name": "Fiscal year closing",
+    "summary": "Generic fiscal year closing wizard",
+    "version": "19.0.0.0.0",
     "category": "Accounting & Finance",
     "website": "https://github.com/OCA/account-closing",
-    "author": "Tecnativa, Odoo Community Association (OCA)",
+    "author": "Odoo Community Association (OCA)",
     "license": "AGPL-3",
     "installable": False,
     "depends": [
