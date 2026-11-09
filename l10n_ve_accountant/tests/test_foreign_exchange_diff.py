@@ -6,6 +6,7 @@ from lxml import etree
 from odoo.exceptions import UserError, ValidationError
 from odoo.tests import TransactionCase, tagged
 from odoo import fields
+from odoo.tools import date_utils
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -26,8 +27,14 @@ class ForeignExchangeDiffMixin:
         # has a real unique constraint of one rate per (currency, day).
         # Settlement installments go up to `settlement_date` + 6 days: keep them
         # all in the past (a payment cannot be dated after today).
-        self.booking_date = self.today - timedelta(days=20)
-        self.settlement_date = self.today - timedelta(days=10)
+        # Fechas fijas (no relativas a hoy): la diferencia cambiaria nativa se
+        # asienta el ultimo dia del mes del pago, asi que si las fechas dependen
+        # de la fecha de ejecucion los escenarios cambian segun el dia (pagos que
+        # cruzan de mes o caen justo en fin de mes). Los pagos parciales de los
+        # escenarios (+3 y +6 dias) quedan dentro de junio de 2026, sin tocar el
+        # ultimo dia del mes (30).
+        self.booking_date = fields.Date.to_date("2026-06-01")
+        self.settlement_date = fields.Date.to_date("2026-06-10")
 
         self.company.write({
             "currency_id": self.currency_vef.id,
@@ -141,6 +148,11 @@ class ForeignExchangeDiffMixin:
             "company_rate": 1.0 / ves_per_usd,
             "inverse_company_rate": ves_per_usd,
         }
+        # Una tasa declarada por el test nunca es "automatica": si esa fecha ya
+        # habia sido rellenada por `_ensure_usd_rate` (p. ej. el ultimo dia del
+        # mes cuando un pago cae justo ese dia), `_ensure_usd_rate` no debe
+        # volver a pisarla con la tasa anterior.
+        self.__dict__.setdefault("_auto_rate_dates", set()).discard(date)
         existing = self.Rate.search([
             ("name", "=", date),
             ("currency_id", "=", self.currency_usd.id),
@@ -223,7 +235,10 @@ class TestForeignExchangeDiff(ForeignExchangeDiffMixin, TransactionCase):
         currency = currency or self.currency_vef
         journal = self.bank_journal_usd if currency == self.currency_usd else self.bank_journal
         amount = move.amount_total if amount is None else amount
-        self._ensure_usd_rate(date or self.settlement_date, self.today)
+        # La diferencia cambiaria nativa se asienta el ultimo dia del mes del pago
+        # y tambien necesita la tasa de esa fecha exacta.
+        payment_date = date or self.settlement_date
+        self._ensure_usd_rate(payment_date, date_utils.end_of(payment_date, "month"), self.today)
         payment = self.env["account.payment"].with_company(self.company).create({
             "amount": amount,
             "date": date or self.settlement_date,

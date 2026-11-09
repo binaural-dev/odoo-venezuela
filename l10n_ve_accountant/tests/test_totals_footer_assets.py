@@ -11,7 +11,9 @@ class TestTotalsFooterAssets(TransactionCase):
         doc = etree.fromstring(self.env["account.move"].get_view(view_type="form")["arch"])
         boxes = doc.xpath("//group[hasclass('o_ve_invoice_totals')]")
         self.assertEqual(len(boxes), 1)
-        self.assertTrue(boxes[0].xpath(".//field[@name='amount_residual_company']"))
+        self.assertTrue(boxes[0].xpath(".//field[@name='tax_totals'][@widget='account-tax-ves-totals-field']"))
+        # El importe adeudado en la moneda de la compania ya no se muestra en este bloque
+        self.assertFalse(doc.xpath("//field[@name='amount_residual_company']"))
 
     def test_standard_totals_block_keeps_the_class_the_style_relies_on(self):
         doc = etree.fromstring(self.env["account.move"].get_view(view_type="form")["arch"])

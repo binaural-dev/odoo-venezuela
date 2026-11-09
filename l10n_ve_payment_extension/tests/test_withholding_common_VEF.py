@@ -532,7 +532,7 @@ class RetentionTestCommon(TransactionCase):
             "date": today,
             "date_accounting": today,
             "retention_line_ids": [
-                Command.create({
+                Command.create({"aliquot": 16.0,
                     "move_id": invoice.id,
                     "name": "IVA Retention Line",
                     "invoice_total": invoice.amount_total,
