@@ -243,9 +243,9 @@ msgstr "Mantener la fecha de registro como fecha contable de facturas de proveed
 #: model:ir.model.fields,help:l10n_ve_invoice.field_res_company__vendor_bill_accounting_date_on_registration
 #: model:ir.model.fields,help:l10n_ve_invoice.field_res_config_settings__vendor_bill_accounting_date_on_registration
 msgid ""
-"When enabled, the accounting date of vendor bills is set to the registration date. It is not automatically filled with the last day of the journal period and it does not change when the invoice date or the journal changes. The user can still edit it manually."
+"When enabled, the accounting date of vendor bills is set to the registration date, that is, the day the draft is created (not the day the invoice data is entered): a draft created in advance keeps that date. It is not automatically filled with the last day of the journal period and it does not change when the invoice date or the journal changes. The user can still edit it manually. If this setting is turned off later, any subsequent recompute (change of invoice date, journal or company) goes back to the native Odoo computation and may replace the date."
 msgstr ""
-"Cuando está activado, la fecha contable de las facturas de proveedor se fija en la fecha de registro. No se llena automáticamente con el último día del período del diario y no cambia al cambiar la fecha de la factura ni el diario. El usuario puede editarla manualmente."
+"Cuando está activado, la fecha contable de las facturas de proveedor se fija en la fecha de registro, es decir, el día en que se crea el borrador (no el día en que se cargan los datos de la factura): un borrador creado con anticipación conserva esa fecha. No se llena automáticamente con el último día del período del diario y no cambia al cambiar la fecha de la factura ni el diario. El usuario puede editarla manualmente. Si este ajuste se apaga más tarde, un recálculo posterior (cambio de fecha de factura, de diario o de compañía) vuelve al cálculo nativo de Odoo y puede reemplazar la fecha."
 
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.view_res_config_settings_l10n_ve_invoice
