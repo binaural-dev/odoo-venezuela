@@ -57,9 +57,18 @@ class AccountInvoiceReport(models.Model):
             The query with the foreign_rate and foreign_total_billed fields
 
         """
+        # Mismo signo que Odoo aplica a price_subtotal_currency por tipo de documento
+        # (-1 para in_invoice, out_refund, in_receipt). Sin esto las notas de crédito
+        # suman en los totales en moneda alterna (ticket 16272).
+        in_out_sign = (
+            "(CASE WHEN move.move_type IN ('in_invoice','out_refund','in_receipt')"
+            " THEN -1 ELSE 1 END)"
+        )
         return (
             super()._select()
-            + ", line.foreign_currency_id, line.foreign_rate,  line.foreign_subtotal, line.foreign_price_total"
+            + ", line.foreign_currency_id, line.foreign_rate,"
+            + f" line.foreign_subtotal * {in_out_sign} AS foreign_subtotal,"
+            + f" line.foreign_price_total * {in_out_sign} AS foreign_price_total"
         )
 
     @api.model
