@@ -238,6 +238,14 @@ class ResPartner(models.Model):
                 node.set("widget", "l10n_ve_vat")
         return arch, view
 
+    def _inverse_vat(self):
+        """Keep the VAT unvalidated on write, as in Odoo 19.
+
+        Odoo 20 validates the VAT from the field inverse, so every import or API write would be
+        checked. The Venezuelan rule only runs from the VAT onchange and explicit calls.
+        """
+        self._deduce_additional_identifiers_from_vat()
+
     def _check_vat(self, validation="error"):
         """Validate the Venezuelan VAT as digits only, with the prefix kept in ``prefix_vat``.
 

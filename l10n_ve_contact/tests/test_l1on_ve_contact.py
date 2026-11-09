@@ -86,8 +86,9 @@ class TestResPartner(TransactionCase):
             self.partner.write({"email": "owner@example.com"})
 
     def test_check_vat_invalid_characters(self):
+        self.partner.vat = "12A34"
         with self.assertRaises(MissingError):
-            self.partner.vat = "12A34"
+            self.partner._check_vat()
 
     def test_onchange_vat_accepts_invalid_vat_without_raising(self):
         partner = self.env["res.partner"].new({
