@@ -46,7 +46,7 @@ patch(PosPayment.prototype, {
     //
     // binaural_pos_multicurrency extiende getTenderCurrency (cobro en la moneda
     // de la compañía en una caja en otra moneda) y los ganchos _getTenderDue /
-    // _getPartialTenderLocalAmount.
+    // _getPartialTenderLocalAmount / _getOverpaidTenderLocalAmount.
 
     // Un pago ya guardado conserva la moneda con la que se cobró
     // (pos.payment.tender_currency_id), aunque después cambie la del método:
