@@ -16,11 +16,15 @@ class ResCompany(models.Model):
     auto_select_debit_note_journal = fields.Boolean(default=False) 
     vendor_bill_accounting_date_on_registration = fields.Boolean(
         string="Keep Registration Date as Vendor Bill Accounting Date",
-        default=True,
+        default=False,
         help="When enabled, the accounting date of vendor bills is set to the registration "
-        "date. It is not automatically filled with the last day of the journal period and "
-        "it does not change when the invoice date or the journal changes. The user can "
-        "still edit it manually.",
+        "date, that is, the day the draft is created (not the day the invoice data is "
+        "entered): a draft created in advance keeps that date. It is not automatically "
+        "filled with the last day of the journal period and it does not change when the "
+        "invoice date or the journal changes. The user can still edit it manually. If this "
+        "setting is turned off later, any subsequent recompute (change of invoice date, "
+        "journal or company) goes back to the native Odoo computation and may replace the "
+        "date.",
     )
     sync_vendor_bill_accounting_date_with_invoice_date = fields.Boolean(
         string="Sync Vendor Bill Accounting Date with Invoice Date",

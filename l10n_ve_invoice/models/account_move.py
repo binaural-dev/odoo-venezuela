@@ -122,6 +122,8 @@ class AccountMove(models.Model):
         ``_post`` only recomputes the date if it violates a lock date, so the
         date set here survives posting.
         If the candidate date violates a lock date, the native compute is used.
+        If the setting is turned off later, the move no longer falls in ``keep``:
+        any subsequent recompute uses the native compute and may replace the date.
         """
         keep = self.filtered(
             lambda m: m.is_purchase_document(include_receipts=True)

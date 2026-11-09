@@ -98,9 +98,9 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-12 col-lg-12 o_setting_box" id="l10n_ve_invoice_div_sync_vendor_bill_accounting_date_with_invoice_date">
+                        <div class="col-12 col-lg-12 o_setting_box" id="l10n_ve_invoice_div_sync_vendor_bill_accounting_date_with_invoice_date" invisible="not vendor_bill_accounting_date_on_registration">
                             <div class="o_setting_left_pane">
-                                <field name="sync_vendor_bill_accounting_date_with_invoice_date" class="oe_inline" invisible="not vendor_bill_accounting_date_on_registration"/>
+                                <field name="sync_vendor_bill_accounting_date_with_invoice_date" class="oe_inline"/>
                             </div>
                             <div class="o_setting_right_pane">
                                 <label for="sync_vendor_bill_accounting_date_with_invoice_date" class="oe_inline"/>
