@@ -584,7 +584,7 @@ El wizard `batch.retentions.wizard` DEBE (MUST) separar las facturas seleccionad
 
 ### Requirement: Exportación TXT de retenciones IVA para el SENIAT
 
-El wizard `wizard.retention.iva` DEBE (MUST) validar antes de generar el TXT que exista rango de fechas, que la compañía tenga RIF (`vat`) y que existan comprobantes emitidos en el período con `type_retention = iva` y `type = in_invoice` de la compañía activa, filtrando por el campo `date` (fecha del comprobante) y no por la fecha contable; los comprobantes de proveedor cuyo tipo sea `in_refund` o `in_debit` quedan fuera tanto del conteo como del archivo. El archivo se entrega por el controlador `/web/binary/download_retention_iva_txt` con una fila por línea de retención, separada por tabuladores en orden fijo (RIF del agente tomado del partner de la compañía, período `AAAAMM`, fecha de factura, tipo de operación "C", tipo de documento, RIF del proveedor con `prefix_vat`, número de documento, número de control, monto total, base imponible, IVA retenido, documento afectado, número de comprobante, monto exento, alícuota y número de expediente "0"), usando los montos en moneda alterna cuando la moneda base de la compañía no es VEF.
+El wizard `wizard.retention.iva` DEBE (MUST) validar antes de generar el TXT que exista rango de fechas, que la compañía tenga RIF (`vat`) y que existan comprobantes emitidos en el período con `type_retention = iva` y `type` `in_invoice` o `in_refund` de la compañía activa, filtrando por el campo `date` (fecha del comprobante) y no por la fecha contable; los comprobantes de proveedor de tipo `in_debit` quedan fuera tanto del conteo como del archivo. El conteo del wizard y la búsqueda del controlador comparten un único dominio (`_get_retention_iva_domain`). El tipo de documento es `01` para facturas, `03` para notas de crédito (`in_refund`, con el documento afectado tomado de `reversed_entry_id`) y `02` para notas de débito, que se reconocen por el diario `is_debit` y cuyo comprobante es `in_invoice`; el documento afectado es `0` cuando no hay documento origen y el número de control sale vacío si el documento no lo tiene. El archivo se entrega por el controlador `/web/binary/download_retention_iva_txt` con una fila por línea de retención, separada por tabuladores en orden fijo (RIF del agente tomado del partner de la compañía, período `AAAAMM`, fecha de factura, tipo de operación "C", tipo de documento, RIF del proveedor con `prefix_vat`, número de documento, número de control, monto total, base imponible, IVA retenido, documento afectado, número de comprobante, monto exento, alícuota y número de expediente "0"), usando los montos en moneda alterna cuando la moneda base de la compañía no es VEF.
 
 #### Scenario: Período sin retenciones
 
@@ -594,7 +594,17 @@ El wizard `wizard.retention.iva` DEBE (MUST) validar antes de generar el TXT que
 #### Scenario: Período con solo retenciones sobre notas de crédito
 
 - **WHEN** en el período únicamente existen comprobantes IVA emitidos con `type = in_refund`
-- **THEN** el wizard los ignora y lanza el error de período sin retenciones
+- **THEN** el wizard no lanza el error de período sin retenciones y el archivo trae una fila por cada línea de esos comprobantes
+
+#### Scenario: Facturas y notas de crédito en el mismo período
+
+- **WHEN** en el período existen comprobantes IVA emitidos de una factura y de una nota de crédito de proveedor
+- **THEN** el TXT incluye ambos; la fila de la nota de crédito lleva tipo de documento `03`, el número de la factura revertida como documento afectado y base e IVA retenido en positivo
+
+#### Scenario: Nota de débito sin documento origen
+
+- **WHEN** el comprobante corresponde a una nota de débito (diario `is_debit`) sin `debit_origin_id`
+- **THEN** la fila lleva tipo de documento `02` y `0` como documento afectado
 
 #### Scenario: Compañía sin RIF
 
@@ -786,3 +796,19 @@ Las fechas por defecto de los wizards de retención IVA e ISLR DEBEN (MUST) eval
 
 - **WHEN** se abre el wizard de retención IVA o ISLR
 - **THEN** el rango por defecto es el del mes actual del usuario
+
+### Requirement: El importe alterno del pago de una retención usa la fecha de tasa de su asiento
+
+El importe alterno (`foreign_amount`) de un pago de retención (`is_retention`) DEBE (MUST) calcularse con la misma fecha de tasa con la que se valoran las líneas de su asiento: la fecha de la factura retenida (`invoice_date`, o `date` si falta) cuando todas las líneas del pago pertenecen a una única factura, y no con `payment.date` (la fecha contable de la retención). Ambos lados DEBEN (MUST) compartir la misma regla (`account.payment._get_retention_foreign_rate_date`) para que no puedan diverger. Los pagos que no son retención conservan el cálculo por `payment.date`. La fecha contable del pago y de su asiento no cambia.
+
+#### Scenario: Tasa distinta entre la fecha de la factura y la fecha contable de la retención
+
+- **WHEN** se emite una retención (IVA, ISLR o municipal, de cliente o de proveedor; sobre factura, nota de crédito o nota de débito) en una fecha cuya tasa difiere de la tasa de la fecha de la factura retenida
+- **THEN** `foreign_amount` del pago es igual al monto alterno de cada línea del asiento, calculado con la tasa de la fecha de la factura
+- **AND** `payment.date` y la fecha del asiento siguen siendo la fecha contable de la retención
+
+#### Scenario: Pago que no es retención
+
+- **WHEN** el pago no es una retención (creado con el formulario del pago o con el asistente "Registrar pago")
+- **THEN** `foreign_amount` se calcula con `payment.date` como antes
+- **AND** coincide con el monto alterno de cada línea de su asiento
