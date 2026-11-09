@@ -1,3 +1,4 @@
+from datetime import timedelta
 from odoo import Command, fields
 from odoo.exceptions import UserError
 from odoo.tests import Form, tagged
@@ -308,12 +309,14 @@ class TestDraftKeepsPostedRate(TestIndexedPayments):
         self.assertEqual(self._rates(bill), rates_before)
         self.assertEqual(self._balances(bill), before)
 
-    def test_rewriting_same_date_on_posted_invoice_still_raises(self):
+    def test_changing_date_on_posted_invoice_still_raises(self):
         """La guarda no aplica a un documento contabilizado: core sigue
-        rechazando escribir la fecha."""
+        rechazando cambiar la fecha. En 20, escribir el mismo valor ya no
+        es un error, porque core solo rechaza los campos que cambian."""
         self.assertEqual(self.invoice.state, "posted")
+        self.invoice.write({"invoice_date": self.invoice.invoice_date})
         with self.assertRaises(UserError):
-            self.invoice.write({"invoice_date": self.invoice.invoice_date})
+            self.invoice.write({"invoice_date": self.invoice.invoice_date - timedelta(days=1)})
 
     def test_changing_the_date_of_a_reset_draft_does_recompute_rates(self):
         """La protección no congela la tasa si la fecha realmente cambia."""

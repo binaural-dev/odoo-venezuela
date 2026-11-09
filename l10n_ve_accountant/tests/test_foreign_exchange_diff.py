@@ -1160,9 +1160,11 @@ class TestForeignExchangeDiff(TransactionCase):
             "A reversed standalone entry must not produce a synthetic row anymore",
         )
 
-    def test_payments_widget_standalone_case_shows_amount_and_hides_unreconcile(self):
-        """End-to-end via the real `invoice_payments_widget`: the row shows
-        the real 0.5 amount, no real partial, currency hardcoded to VEF.
+    def test_payments_widget_standalone_case_goes_to_exchange_info(self):
+        """End-to-end via the real `invoice_payments_widget`: Odoo 20 groups
+        every exchange partial in `exchange_info` instead of listing it as a
+        payment row, so the standalone entry shows there, with no
+        "Unreconcile" row of its own.
         Ver openspec: design-notes.md § _get_all_reconciled_invoice_partials
         """
         move = self._create_invoice(100.0, booking_ves_per_usd=40.0)
@@ -1172,14 +1174,11 @@ class TestForeignExchangeDiff(TransactionCase):
         entry = self.env["account.move"].search([
             ("l10n_ve_exchange_foreign_source_move_id", "=", move.id),
         ])
+        closing_line = entry.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
         widget = move.invoice_payments_widget
         self.assertTrue(widget)
-        rows = [r for r in widget['content'] if r.get('move_id') == entry.id]
-        self.assertEqual(len(rows), 1)
-        row = rows[0]
-        self.assertEqual(row['currency_id'], self.currency_vef.id)
-        self.assertAlmostEqual(row['amount'], 0.5, places=6)
-        self.assertFalse(row['partial_id'])
+        self.assertFalse([r for r in widget['content'] if r.get('move_id') == entry.id])
+        self.assertIn(closing_line.id, widget['exchange_info']['line_ids'])
 
     def test_payments_widget_no_synthetic_row_when_no_standalone_entry(self):
         move = self._create_invoice(100.0, booking_ves_per_usd=40.0)
@@ -1199,8 +1198,11 @@ class TestForeignExchangeDiff(TransactionCase):
         entry = self.env["account.move"].search([
             ("l10n_ve_exchange_foreign_source_move_id", "=", move.id),
         ])
-        rows_before = [r for r in move.invoice_payments_widget['content'] if r.get('move_id') == entry.id]
-        self.assertEqual(len(rows_before), 1, "Setup sanity: the row must be present before reversal")
+        closing_line = entry.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+        self.assertIn(
+            closing_line.id, move.invoice_payments_widget['exchange_info']['line_ids'],
+            "Setup sanity: the entry must be present before reversal",
+        )
 
         (receivable_line + payment_line).remove_move_reconcile()
         self.assertTrue(entry.reversal_move_ids, "Setup sanity: the entry must be reversed")
@@ -1210,8 +1212,8 @@ class TestForeignExchangeDiff(TransactionCase):
         # `False` (core's own behavior when there is nothing left to show
         # at all) -- either way, the reversed entry's row must be gone.
         widget_after = move.invoice_payments_widget
-        rows_after = [r for r in widget_after['content'] if r.get('move_id') == entry.id] if widget_after else []
-        self.assertFalse(rows_after, "A reversed standalone entry must not show up in the Pagos widget")
+        exchange_lines_after = widget_after['exchange_info']['line_ids'] if widget_after else []
+        self.assertNotIn(closing_line.id, exchange_lines_after, "A reversed standalone entry must not show up in the Pagos widget")
 
     # ── `account.partial.reconcile.unlink()`: safety net for the reversal ──
     # Ver openspec: design-notes.md § account_partial_reconcile.unlink()

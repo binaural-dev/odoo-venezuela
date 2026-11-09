@@ -36,6 +36,20 @@ class AccountMove(models.Model):
         """
         super()._compute_date()
 
+    def get_currency_rate(self, company_id, to_currency_id, requested_date):
+        """Return the rate of ``requested_date`` without the next-day shift of Odoo 20.
+
+        The core adds a day because its rates apply from the day after their date;
+        ``l10n_ve_rate`` makes the rate of a day apply on that same day.
+        """
+        company = self.env["res.company"].browse(company_id)
+        return self.env["res.currency"]._get_conversion_rate(
+            from_currency=company.currency_id,
+            to_currency=self.env["res.currency"].browse(to_currency_id),
+            company=company,
+            date=requested_date,
+        )
+
     def _get_accounting_date_source(self):
         """
         Overrides the base method to substitute invoice_date with invoice_date_display
@@ -2333,9 +2347,9 @@ class AccountMove(models.Model):
     def _get_all_reconciled_invoice_partials(self):
         """Adds the standalone alt-diff entry as a synthetic partial (it
         never reconciles by design, so core's own SQL never finds it).
-        `is_exchange=True` hides the dead "Unreconcile" button; accepted
-        cost is the row's currency getting hardcoded to VEF downstream
-        (see openspec for the full trade-off and the combined-case gap).
+        `is_exchange=True` makes Odoo 20 group it in the widget's
+        `exchange_info` instead of listing it as a payment row, which would
+        offer an "Unreconcile" button with no partial behind it.
         """
         self.ensure_one()
         res = super()._get_all_reconciled_invoice_partials()
