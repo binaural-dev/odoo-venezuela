@@ -88,6 +88,7 @@ class TfhkaDispatchGuideService(models.AbstractModel):
 
     def generate_document_data(self, picking, document_number, document_type):
         self._check_transport_data(picking)
+        self._check_transfer_reason(picking)
         document_identification = self._prepare_identification(picking, document_type, document_number)
         buyer = self._get_fiscal_party(picking)
         details_items = self._prepare_detail_lines(picking)
@@ -175,65 +176,99 @@ class TfhkaDispatchGuideService(models.AbstractModel):
                 return "Inmediato"
 
     def _prepare_detail_lines(self, picking):
+        """Merchandise lines of the dispatch guide.
+
+        Decided move by move: a move coming from a sale order line
+        (``sale_line_id``) reports the quoted price, discount and VAT; any
+        other move (inventory transfer) is zero-valued.
+
+        The transfer reason is not used for this: the "Sale" reason is only
+        set on deliveries, so in a multi-step delivery the pick guide
+        (WH/PICK) comes from the sale with the "Transfer between warehouses"
+        reason and used to be sent with zero amounts (ticket 16109).
+        """
         item_details = []
         line_number = 1
         for record in picking:
-            if record.sale_id and record.transfer_reason_id.code == "sale":
-                for move_line in record.move_ids:
-                    sale_line = move_line.sale_line_id
-
-                    tax_mapping = {
-                        0.0: "E",
-                        8.0: "R",
-                        16.0: "G",
-                        31.0: "A",
-                    }
-                    taxes = sale_line.tax_ids.filtered(lambda t: t.amount)
-                    tax_rate = taxes[0].amount if taxes else 0.0
-
-                    # 17.0 comparaba solo con "VEF": una compañía en "VES" caía
-                    # en la rama de divisa y reportaba foreign_price por error.
-                    if record.sale_id.currency_id.name in VES_CURRENCY_NAMES:
-                        unit_price = round(sale_line.price_unit, 2)
-                    else:
-                        unit_price = round(sale_line.foreign_price, 2)
-
-                    item_price = round(unit_price * move_line.quantity, 2)
-                    # tax_ids puede traer varios impuestos: .amount sobre el
-                    # recordset completo revienta. Se usa la alícuota ya resuelta.
-                    vat = round(item_price * tax_rate / 100, 2)
-                    total_item_value = round(item_price + vat, 2)
-
-                    item_details.append({
-                        "numeroLinea": str(line_number),
-                        "codigoPLU": sale_line.product_id.barcode or sale_line.product_id.default_code or "",
-                        "indicadorBienoServicio": "2" if sale_line.product_id.type == 'service' else "1",
-                        "descripcion": sale_line.product_id.name,
-                        "cantidad": str(move_line.quantity),
-                        "precioUnitario": str(unit_price),
-                        "precioItem": str(item_price),
-                        "codigoImpuesto": tax_mapping[tax_rate],
-                        "tasaIVA": str(round(tax_rate, 2)),
-                        "valorIVA": str(vat),
-                        "valorTotalItem": str(total_item_value),
-                    })
-                    line_number += 1
-            else:
-                for line in record.move_ids:
-                    item_details.append({
-                        "numeroLinea": str(line_number),
-                        "codigoPLU": line.product_id.barcode or line.product_id.default_code or "",
-                        "indicadorBienoServicio": "2" if line.product_id.type == 'service' else "1",
-                        "descripcion": line.product_id.name,
-                        "cantidad": str(line.product_uom_qty),
+            for move in record.move_ids:
+                if move.sale_line_id:
+                    item = self._prepare_sale_detail_line(move)
+                else:
+                    item = {
+                        "codigoPLU": move.product_id.barcode or move.product_id.default_code or "",
+                        "indicadorBienoServicio": "2" if move.product_id.type == 'service' else "1",
+                        "descripcion": move.product_id.name,
+                        "cantidad": str(move.product_uom_qty),
                         "precioUnitario": "0",
                         "precioItem": "0",
                         "tasaIVA": "0",
                         "valorIVA": "0",
                         "valorTotalItem": "0",
-                    })
-                    line_number += 1
+                    }
+                item_details.append({"numeroLinea": str(line_number), **item})
+                line_number += 1
         return item_details
+
+    def _prepare_sale_detail_line(self, move):
+        """Line with the amounts quoted on the sale, over the quantity
+        actually moved (``move.quantity``) so a partial delivery does not
+        over-report.
+
+        ``tax_ids`` may hold several taxes and reading ``.amount`` on the
+        whole recordset fails, so the first non-zero rate is used. The price
+        is in bolivars when the order currency is VES/VEF, otherwise the
+        foreign price is reported."""
+        sale_line = move.sale_line_id
+        product = sale_line.product_id
+
+        tax_mapping = {
+            0.0: "E",
+            8.0: "R",
+            16.0: "G",
+            31.0: "A",
+        }
+        taxes = sale_line.tax_ids.filtered(lambda t: t.amount)
+        tax_rate = taxes[0].amount if taxes else 0.0
+        tax_code = tax_mapping.get(tax_rate)
+        if tax_code is None:
+            raise TfhkaDataError(
+                _(
+                    "The tax rate %(rate)s%% on product '%(product)s' is not supported "
+                    "by TFHKA digitalization (allowed rates: 0, 8, 16, 31)."
+                )
+                % {"rate": tax_rate, "product": product.display_name}
+            )
+
+        if sale_line.order_id.currency_id.name in VES_CURRENCY_NAMES:
+            base_price = sale_line.price_unit
+        else:
+            base_price = sale_line.foreign_price
+
+        quantity = move.quantity
+        discount_factor = (sale_line.discount or 0.0) / 100.0
+        unit_price = round(base_price, 2)
+        unit_price_discount = round(base_price * (1 - discount_factor), 2)
+        price_before_discount = round(base_price * quantity, 2)
+        discount_amount = round(base_price * discount_factor * quantity, 2)
+        item_price = round(price_before_discount - discount_amount, 2)
+        vat = round(item_price * tax_rate / 100, 2)
+        total_item_value = round(item_price + vat, 2)
+
+        return {
+            "codigoPLU": product.barcode or product.default_code or "",
+            "indicadorBienoServicio": "2" if product.type == 'service' else "1",
+            "descripcion": product.name,
+            "cantidad": str(quantity),
+            "precioUnitario": str(unit_price),
+            "precioUnitarioDescuento": str(unit_price_discount),
+            "descuentoMonto": str(discount_amount),
+            "precioItem": str(item_price),
+            "precioAntesDescuento": str(price_before_discount),
+            "codigoImpuesto": tax_code,
+            "tasaIVA": str(round(tax_rate, 2)),
+            "valorIVA": str(vat),
+            "valorTotalItem": str(total_item_value),
+        }
 
     def _prepare_dispatch_guide(self, picking):
         for record in picking:
@@ -252,10 +287,7 @@ class TfhkaDispatchGuideService(models.AbstractModel):
             product_origin = "Nacional e Importado" if len(product_origin_set) > 1 else (product_origin_set.pop() if product_origin_set else "Sin origen definido")
             weight = f"{record.shipping_weight:.2f} {record.weight_uom_name}" if record.shipping_weight else "Sin peso"
             description = re.sub(r'<.*?>', '', str(record.note)) if record.note else "Sin descripción"
-            if record.transfer_reason_id.code == "other_causes":
-                transfer_reason = record.other_causes_transfer_reason
-            else:
-                transfer_reason = record.transfer_reason_id.name
+            transfer_reason = self._get_transfer_reason(record)
 
             dispatch_guide = {
                 "esGuiaDespacho": "1",
@@ -267,6 +299,27 @@ class TfhkaDispatchGuideService(models.AbstractModel):
             }
             dispatch_guide.update(self._prepare_transport_data(record))
             return dispatch_guide
+
+    def _get_transfer_reason(self, picking):
+        """Text sent as ``motivoTraslado``: the free text when the reason is
+        "Other causes", otherwise the reason name. Empty string when missing."""
+        if picking.transfer_reason_id.code == "other_causes":
+            return (picking.other_causes_transfer_reason or "").strip()
+        return picking.transfer_reason_id.name or ""
+
+    def _check_transfer_reason(self, picking):
+        """TFHKA requires ``motivoTraslado`` as a string and rejects the whole
+        document (HTTP 400, code 203) when it is missing. The reason is only
+        mandatory on internal transfers, so a delivery or pick can reach this
+        point without one; stop it here as a fixable Data Error instead."""
+        if not self._get_transfer_reason(picking):
+            if picking.transfer_reason_id.code == "other_causes":
+                message = _(
+                    "Enter the reason for transfer for other causes on dispatch guide %s."
+                )
+            else:
+                message = _("Set the reason for transfer on dispatch guide %s.")
+            raise TfhkaDataError(message % picking.name)
 
     def _prepare_additional_information(self, picking):
         additional_information = []

@@ -242,3 +242,16 @@ class TestDefaultInternalTransferReason(StockAccountTestCommon):
         self.company.internal_transfer_reason_id = self.reason_other
         steps = self._reception_steps()
         self.assertEqual(steps.transfer_reason_id, self.reason_other)
+
+    def test_other_causes_text_required_on_any_operation(self):
+        """The "Other causes" text is required whenever it is shown, not only
+        on deliveries: a pick or internal transfer validated without it sends
+        ``motivoTraslado: false`` to the digital dispatch guide provider."""
+        info = self.Picking.get_view(view_type="form")
+        doc = etree.fromstring(info["arch"])
+        fields = doc.xpath(
+            "//field[@name='other_causes_transfer_reason' and not(@invisible='1')]"
+        )
+        self.assertTrue(fields)
+        for field in fields:
+            self.assertEqual(field.get("required"), "show_other_causes_transfer_reason")
