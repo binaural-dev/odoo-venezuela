@@ -34,23 +34,23 @@ class AccountFiscalyearClosing(models.Model):
 
     name = fields.Char(
         readonly=True,
-        states={"draft": [("readonly", False)]},
     )
     check_draft_moves = fields.Boolean(
         readonly=True,
-        states={"draft": [("readonly", False)]},
     )
     year = fields.Integer(
         help="Introduce here the year to close. If the fiscal year is between "
         "several natural years, you have to put here the last one.",
         default=lambda self: self._default_year(),
         readonly=True,
-        states={"draft": [("readonly", False)]},
     )
     company_id = fields.Many2one(
         default=lambda self: self._default_company_id(),
         readonly=True,
-        states={"draft": [("readonly", False)]},
+    )
+    chart_template = fields.Selection(
+        related="company_id.chart_template",
+        readonly=True,
     )
     state = fields.Selection(
         selection=[
@@ -70,33 +70,28 @@ class AccountFiscalyearClosing(models.Model):
         string="From date",
         required=True,
         readonly=True,
-        states={"draft": [("readonly", False)]},
     )
     date_end = fields.Date(
         string="To date",
         required=True,
         readonly=True,
-        states={"draft": [("readonly", False)]},
     )
     date_opening = fields.Date(
         string="Opening date",
         required=True,
         readonly=True,
-        states={"draft": [("readonly", False)]},
     )
     closing_template_id = fields.Many2one(
         comodel_name="account.fiscalyear.closing.template",
         string="Closing template",
-        # domain="[('chart_template_ids', '=', chart_template_id)]",
+        # domain="[('chart_template', '=', chart_template)]",
         readonly=True,
-        states={"draft": [("readonly", False)]},
     )
     move_config_ids = fields.One2many(
         comodel_name="account.fiscalyear.closing.config",
         inverse_name="fyc_id",
         string="Moves configuration",
         readonly=True,
-        states={"draft": [("readonly", False)]},
     )
     move_ids = fields.One2many(
         comodel_name="account.move",
@@ -105,6 +100,16 @@ class AccountFiscalyearClosing(models.Model):
         readonly=True,
     )
 
+    _sql_constraints = [
+        (
+            "year_company_uniq",
+            "unique(year, company_id)",
+            (
+                "There should be only one fiscal year closing for that year and "
+                "company!"
+            ),
+        ),
+    ]
 
     def _prepare_mapping(self, tmpl_mapping):
         self.ensure_one()
@@ -114,7 +119,7 @@ class AccountFiscalyearClosing(models.Model):
         if tmpl_mapping.dest_account:
             dest_account = self.env["account.account"].search(
                 [
-                    ("company_ids", "in", [self.company_id.id]),
+                    ("company_ids", "in", self.company_id.ids),
                     ("code", "=ilike", tmpl_mapping.dest_account),
                 ],
                 limit=1,
@@ -204,7 +209,7 @@ class AccountFiscalyearClosing(models.Model):
         )
         self.date_opening = fields.Date.to_string(date_end + relativedelta(days=1))
         if self.date_start != self.date_end:
-            self.name = "{}-{}".format(self.date_start, self.date_end)
+            self.name = f"{self.date_start}-{self.date_end}"
         else:
             self.name = str(self.date_end)
 
@@ -221,11 +226,9 @@ class AccountFiscalyearClosing(models.Model):
             if draft_moves:
                 msg = _("One or more draft moves found: \n")
                 for move in draft_moves:
-                    msg += "ID: {}, Date: {}, Number: {}, Ref: {}\n".format(
-                        move.id,
-                        move.date,
-                        move.name,
-                        move.ref,
+                    msg += (
+                        f"ID: {move.id}, Date: {move.date}"
+                        f", Number: {move.name}, Ref: {move.ref}\n"
                     )
                 raise ValidationError(msg)
         return True
@@ -427,7 +430,7 @@ class AccountFiscalyearClosingConfig(models.Model):
             dest_totals.setdefault(dest, 0)
             src_accounts = self.env["account.account"].search(
                 [
-                    ("company_ids", "in", [self.fyc_id.company_id.id]),
+                    ("company_ids", "in", self.fyc_id.company_id.ids),
                     ("code", "=ilike", account_map.src_accounts),
                 ],
                 order="code ASC",
@@ -537,15 +540,19 @@ class AccountFiscalyearClosingMapping(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
-            if vals.get("dest_account_id", False):
-                vals["dest_account_id"] = vals["dest_account_id"]
-        res = super(AccountFiscalyearClosingMapping, self).create(vals_list)
+            if vals.get("dest_account_id", False) and isinstance(
+                vals["dest_account_id"], list
+            ):
+                vals["dest_account_id"] = vals["dest_account_id"][0]
+        res = super().create(vals_list)
         return res
 
     def write(self, vals):
-        if vals.get("dest_account_id", False):
+        if vals.get("dest_account_id", False) and isinstance(
+            vals["dest_account_id"], list
+        ):
             vals["dest_account_id"] = vals["dest_account_id"][0]
-        res = super(AccountFiscalyearClosingMapping, self).write(vals)
+        res = super(AccountFiscalyearClosingMapping, self).create(vals)
         return res
 
     def dest_move_line_prepare(self, dest, balance, partner_id=False):
@@ -588,6 +595,15 @@ class AccountFiscalyearClosingMapping(models.Model):
                     "date": date,
                     "partner_id": partner_id,
                 }
+                if (
+                    account.currency_id
+                    and account.currency_id != account.company_currency_id
+                ):
+                    amount_currency = sum(account_lines.mapped("amount_currency")) * -1
+                    move_line.update(
+                        currency_id=account.currency_id.id,
+                        amount_currency=amount_currency,
+                    )
             else:
                 balance = 0
         return balance, move_line
