@@ -36,6 +36,7 @@ widget distinto del de los apuntes. Por línea no tenía el defecto.
     cada subtotal parte del total del anterior.
   - `_fix_foreign_summary_from_lines`: alterno del widget desde `foreign_debit`/`foreign_credit`.
   - `_get_tax_group_product_lines`: líneas de un grupo de impuesto (antes duplicado en línea).
+- Bump `19.0.1.0.42` -> `19.0.1.0.43`.
 - `tests/test_global_price_included_exempt.py`: 8 pruebas (USD, VEF, EUR, mezcla con IVA excluido,
   control sin exento, exento incluido en el precio, base VEF del IVA y subtotales encadenados).
 
