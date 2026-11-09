@@ -865,6 +865,46 @@ class TestCoverageGaps(TransactionCase):
         self.assertIsInstance(arch, dict)
         self.assertIn('arch', arch)
 
+    def test_invoice_report_foreign_subtotal_sign_matches_price_subtotal_on_refund(self):
+        """Una nota de crédito debe restar en foreign_subtotal/foreign_price_total
+        igual que en price_subtotal: deben tener el mismo signo por línea."""
+        invoice = self._create_invoice(self.currency_usd, 100.0)
+        invoice.with_context(move_action_post_alert=True).action_post()
+
+        refund = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "out_refund",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_vef.id,
+            "reversed_entry_id": invoice.id,
+            "date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0, "price_unit": 100.0,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(6, 0, [self.tax_16.id])],
+                }),
+            ],
+        })
+        refund.with_context(move_action_post_alert=True).action_post()
+
+        report_lines = self.env["account.invoice.report"].search([
+            ("move_id", "=", refund.id),
+            ("product_id", "=", self.product.id),
+        ])
+        self.assertTrue(report_lines)
+        for line in report_lines:
+            self.assertLess(line.price_subtotal, 0)
+            self.assertLess(
+                line.foreign_subtotal, 0,
+                "foreign_subtotal debe salir negativo en una nota de crédito, "
+                "igual que price_subtotal",
+            )
+            self.assertLess(line.foreign_price_total, 0)
+
     # ═══════════════════════════════════════════════════════════════
     # account_move.py - _onchange_foreign_inverse_rate
     # ═══════════════════════════════════════════════════════════════
