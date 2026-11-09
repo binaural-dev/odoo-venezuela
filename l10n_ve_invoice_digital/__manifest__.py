@@ -38,4 +38,5 @@
         "views/tfhka_api_log_views.xml",
         "views/tfhka_digitalization_alert.xml",
     ],
+    "installable": False,
 }

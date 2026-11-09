@@ -46,4 +46,5 @@
             "l10n_ve_pos/static/tests/unit/**/*",
         ],
     },
+    "installable": False,
 }

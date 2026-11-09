@@ -14,5 +14,5 @@
         "wizard/stock_book_report.xml",
     ],
     "images": ["static/description/icon.png"],
-    "installable": True,
+    "installable": False,
 }

@@ -15,4 +15,5 @@
     "application": True,
     "auto_install": False,
     "post_init_hook": "post_init_hook",
+    "installable": False,
 }

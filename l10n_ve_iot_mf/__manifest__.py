@@ -32,7 +32,7 @@
         "wizards/accounting_reports_views.xml",
     ],
     "assets": {"web.assets_backend": ["l10n_ve_iot_mf/static/src/js/*.js"]},
-    "installable": True,
+    "installable": False,
     "application": False,
     "auto_install": False,
     "pre_init_hook": "pre_init_hook"

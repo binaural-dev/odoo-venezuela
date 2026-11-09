@@ -19,4 +19,5 @@
     ],
     "application": True,
     "images": ["static/description/icon.png"],
+    "installable": False,
 }

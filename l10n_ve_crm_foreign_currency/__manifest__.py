@@ -13,4 +13,5 @@
         "views/crm_lead_pipeline_analysis_views.xml",
     ],
     "post_init_hook": "post_init_hook",
+    "installable": False,
 }

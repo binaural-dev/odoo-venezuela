@@ -14,4 +14,5 @@
     ],
     "images": ["static/description/icon.png"],
     "data": [],
+    "installable": False,
 }

@@ -18,7 +18,7 @@
         "views/menu.xml",
         "views/res_config_settings.xml",
     ],
-    "installable": True,
+    "installable": False,
     "application": False,
     "auto_install": True
 }
