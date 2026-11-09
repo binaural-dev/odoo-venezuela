@@ -191,17 +191,49 @@ class AccountTax(models.Model):
         )
 
 
+    # ── Global: el centavo del redondeo cae en el grupo de impuesto al que pertenece ──
+    # Con `round_globally`, el núcleo agrupa las líneas por moneda, nota de crédito
+    # y `computation_key`, pero NO por grupo de impuesto: la diferencia entre el
+    # total redondeado de las bases y la suma de las bases redondeadas de TODA la
+    # factura se reparte entre todas las líneas (cae en la de mayor base). Si esa
+    # diferencia nace en el grupo IVA, puede caer en una línea exenta e inflar la
+    # base del grupo Exento (y la del IVA queda un centavo por debajo) en el
+    # documento fiscal. Se reparte la diferencia dentro de cada grupo de impuesto
+    # (las líneas con `computation_key` siguen redondeándose juntas, como en el núcleo).
+    @api.model
+    def _get_base_line_rounding_key(self, base_line):
+        """Clave con la que se reparte la diferencia de redondeo de una línea base.
+
+        Las líneas con `computation_key` (combos, anticipos...) se redondean juntas
+        por diseño del núcleo y se respetan. Las demás comparten la diferencia con
+        las líneas de sus mismos grupos de impuesto (tupla ordenada de ids; vacía
+        si la línea no lleva impuestos)."""
+        if base_line.get('computation_key'):
+            return ('computation_key', base_line['computation_key'])
+        taxes = base_line['tax_ids'].flatten_taxes_hierarchy()
+        return ('tax_groups', tuple(sorted(set(taxes.tax_group_id.ids))))
+
+    @api.model
+    def _round_tax_details_base_lines(self, base_lines, company, mode='mixed'):
+        if company.tax_calculation_rounding_method != 'round_globally' or len(base_lines) < 2:
+            return super()._round_tax_details_base_lines(base_lines, company, mode=mode)
+        lines_by_key = {}
+        for base_line in base_lines:
+            lines_by_key.setdefault(self._get_base_line_rounding_key(base_line), []).append(base_line)
+        for lines in lines_by_key.values():
+            super()._round_tax_details_base_lines(lines, company, mode=mode)
+
     # ── Global + impuestos incluidos en el precio ────────────────────────
-    # Con `round_globally`, el núcleo reparte el centavo del redondeo global
-    # entre las líneas base (suele caer en la de mayor base, p. ej. una línea
-    # exenta) y lo compensa en la línea de impuesto. `_sync_tax_lines` reemplaza
-    # luego el IVA incluido por la suma línea por línea, así que esa
-    # compensación se pierde y el total del asiento queda 0,01 distinto de lo
-    # digitado. Se fija la base de cada línea a su valor individual, igual que
-    # `account.move.line._price_included_split` ya hace con las líneas con IVA
-    # incluido, tanto en la moneda del documento como en la alterna. Los saldos
-    # en la moneda de la compañía y el IVA en VEF siguen saliendo de
-    # `_sync_tax_lines`, que calcula el impuesto sobre los saldos VEF.
+    # Con `round_globally`, el núcleo compensa el centavo del redondeo global en
+    # la línea de IVA. `_sync_tax_lines` reemplaza luego el IVA incluido por la
+    # suma línea por línea, así que esa compensación se pierde y el total del
+    # asiento queda 0,01 distinto de lo digitado. Se fija la base de cada línea
+    # con IVA incluido a su valor individual, igual que
+    # `account.move.line._price_included_split` ya hace con el saldo VEF, tanto en
+    # la moneda del documento como en la alterna. Los saldos y el IVA en la moneda
+    # de la compañía siguen saliendo de `_sync_tax_lines`, que calcula el impuesto
+    # sobre los saldos VEF. Las demás líneas conservan lo que calcula el núcleo
+    # (la diferencia de su grupo la reparte `_round_tax_details_base_lines`).
     @api.model
     def _prepare_tax_lines(self, base_lines, company, **kwargs):
         res = super()._prepare_tax_lines(base_lines, company, **kwargs)
@@ -211,9 +243,10 @@ class AccountTax(models.Model):
 
     @api.model
     def _apply_price_included_per_line(self, res, base_lines):
-        """Deja cada línea base y el IVA incluido con su valor individual (ver
-        el comentario de `_prepare_tax_lines`). Solo actúa en facturas con al
-        menos una línea con impuestos porcentuales incluidos en el precio."""
+        """Deja cada línea con IVA incluido y el IVA incluido con su valor
+        individual (ver el comentario de `_prepare_tax_lines`). Solo actúa en
+        facturas con al menos una línea con impuestos porcentuales incluidos en
+        el precio."""
         first_line = base_lines[0].get('record')
         if first_line is None or first_line._name != 'account.move.line':
             return
@@ -230,18 +263,16 @@ class AccountTax(models.Model):
             line = base_line['record']
             if line.display_type != 'product':
                 continue
+            if line not in included_lines:
+                # Las demás líneas conservan lo que calcula el núcleo: la diferencia de
+                # redondeo de su grupo la reparte `_round_tax_details_base_lines`.
+                continue
             currency = base_line['currency_id']
             raw = (
                 base_line['price_unit'] * base_line['quantity']
                 * (1 - (base_line.get('discount') or 0.0) / 100.0) * sign
             )
             taxes = line.tax_ids
-            if line not in included_lines:
-                if not any(tax.price_include for tax in taxes.flatten_taxes_hierarchy()):
-                    # Sin impuestos incluidos en el precio, la base es el importe digitado.
-                    to_update['amount_currency'] = currency.round(raw)
-                # Con impuestos incluidos y excluidos a la vez se deja lo que calculó el núcleo.
-                continue
             total_rate = sum(taxes.mapped('amount'))
             base = currency.round(raw / (1 + total_rate / 100.0))
             included = currency.round(raw)
@@ -283,7 +314,7 @@ class AccountTax(models.Model):
         producto reales (documento y moneda de la compañía)."""
         if record._name != 'account.move' or not record.is_invoice(include_receipts=True):
             return
-        if isinstance(record.id, api.NewId) or company.tax_calculation_rounding_method != 'round_globally':
+        if isinstance(record.id, api.NewId):
             return
         real_tax_lines = record.line_ids.filtered(lambda l: l.display_type == 'tax')
         if not any(t.price_include and not t.include_base_amount for t in real_tax_lines.tax_line_id):
