@@ -46,18 +46,14 @@ class AccountMove(models.Model):
         self.ensure_one()
         return self.invoice_date_display or self.date
 
-    _sql_constraints = [
-        (
-            "unique_name",
-            "",
-            "Another entry with the same name already exists.",
-        ),
-        (
-            "unique_name_ve",
-            "",
-            "Another entry with the same name already exists.",
-        ),
-    ]
+    _unique_name = models.Constraint(
+        '',
+        "Another entry with the same name already exists.",
+    )
+    _unique_name_ve = models.Constraint(
+        '',
+        "Another entry with the same name already exists.",
+    )
 
     company_currency_rate = fields.Float(
         string="Tasa de moneda de la compañía",
@@ -325,18 +321,14 @@ class AccountMove(models.Model):
         store=True,
     )
 
-    _sql_constraints = [
-        (
-            "unique_name",
-            "",
-            "Another entry with the same name already exists.",
-        ),
-        (
-            "unique_name_ve",
-            "",
-            "Another entry with the same name already exists.",
-        ),
-    ]
+    _unique_name = models.Constraint(
+        '',
+        "Another entry with the same name already exists.",
+    )
+    _unique_name_ve = models.Constraint(
+        '',
+        "Another entry with the same name already exists.",
+    )
 
     detailed_amounts = fields.Binary(compute="_compute_detailed_amounts")
 
