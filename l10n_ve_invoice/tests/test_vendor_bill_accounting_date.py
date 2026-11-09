@@ -28,11 +28,11 @@ class TestVendorBillAccountingDate(TransactionCase):
         )
         self.today = fields.Date.from_string(TODAY)
         self.partner = self.env["res.partner"].create({"name": "Vendor Test"})
-        # Sin impuestos de compra: con lineas gravadas, el onchange de Form sobre un
-        # registro virtual dispara un bug preexistente de l10n_ve_accountant
-        # (_compute_rate_for_documents hace write() dentro de un compute y se
-        # intentan crear lineas de impuesto con move_id NULL). No es parte de
-        # esta funcionalidad.
+        # No purchase taxes: with taxed lines, the Form onchange on a virtual
+        # record triggers a pre-existing l10n_ve_accountant bug
+        # (_compute_rate_for_documents does a write() inside a compute and tax
+        # lines are attempted to be created with a NULL move_id). It is not part
+        # of this feature.
         self.product = self.env["product.product"].create(
             {
                 "name": "Service Test",
@@ -55,6 +55,8 @@ class TestVendorBillAccountingDate(TransactionCase):
         self.sale_journal = Journal.create(
             {"name": "Sale A", "code": "SLA", "type": "sale", "company_id": self.company.id}
         )
+        # The setting is disabled by default: enable it for the tests below
+        self._set_flags(True, False)
 
     # Helpers
     def _vals(self, move_type="in_invoice", journal=None, **extra):
@@ -101,7 +103,7 @@ class TestVendorBillAccountingDate(TransactionCase):
             return Form(move)
         return Form(self.env["account.move"].with_context(default_move_type=move_type))
 
-    # A on (default)
+    # A on (enabled in setUp)
     def test_01_create_without_date_uses_today(self):
         for invoice_date in ("2026-02-10", "2025-03-10"):
             move = self._bill(extra={"invoice_date": invoice_date})
@@ -235,8 +237,8 @@ class TestVendorBillAccountingDate(TransactionCase):
         self.assertTrue(all(line.date == move.date for line in move.line_ids))
 
     def test_19_reset_to_draft_keeps_date_and_repost(self):
-        # Odoo 17 no permite cambiar el diario de un asiento ya publicado una vez,
-        # asi que se cambia invoice_date por ORM entre el borrador y la republicacion.
+        # Odoo 17 does not allow changing the journal of an already posted entry,
+        # so invoice_date is changed through the ORM between draft and repost.
         move = self._bill(extra={"invoice_date": "2026-02-10"})
         move.action_post()
         move.button_draft()
@@ -251,17 +253,74 @@ class TestVendorBillAccountingDate(TransactionCase):
 
     # Settings
     def test_20_settings_flags(self):
+        self._set_flags(False, False)
         settings = self.env["res.config.settings"].create(
             {
-                "vendor_bill_accounting_date_on_registration": False,
+                "vendor_bill_accounting_date_on_registration": True,
                 "sync_vendor_bill_accounting_date_with_invoice_date": True,
             }
         )
         settings.execute()
-        self.assertFalse(self.env.company.vendor_bill_accounting_date_on_registration)
+        self.assertTrue(self.env.company.vendor_bill_accounting_date_on_registration)
         self.assertTrue(self.env.company.sync_vendor_bill_accounting_date_with_invoice_date)
+        settings = self.env["res.config.settings"].create(
+            {
+                "vendor_bill_accounting_date_on_registration": False,
+                "sync_vendor_bill_accounting_date_with_invoice_date": False,
+            }
+        )
+        settings.execute()
+        self.assertFalse(self.env.company.vendor_bill_accounting_date_on_registration)
+        self.assertFalse(self.env.company.sync_vendor_bill_accounting_date_with_invoice_date)
 
     def test_21_defaults_in_new_company(self):
         company = self.env["res.company"].create({"name": "Defaults Co"})
-        self.assertTrue(company.vendor_bill_accounting_date_on_registration)
+        self.assertFalse(company.vendor_bill_accounting_date_on_registration)
         self.assertFalse(company.sync_vendor_bill_accounting_date_with_invoice_date)
+
+    def test_22_batch_create_mixed_companies(self):
+        company_off = self.env["res.company"].create(
+            {
+                "name": "Native Co",
+                "currency_id": self.env.ref("base.USD").id,
+                "currency_foreign_id": self.env.ref("base.VEF").id,
+            }
+        )
+        self.assertFalse(company_off.vendor_bill_accounting_date_on_registration)
+        journal_off = self.env["account.journal"].create(
+            {
+                "name": "Purchase Off",
+                "code": "PUO",
+                "type": "purchase",
+                "company_id": company_off.id,
+            }
+        )
+        # The test partner belongs to the main company; use a shared one for both companies
+        shared_partner = self.env["res.partner"].create(
+            {"name": "Shared Vendor", "company_id": False}
+        )
+        invoice_date = fields.Date.from_string("2026-02-10")
+        # No lines, to avoid per-company accounts
+        vals_on = {
+            "move_type": "in_invoice",
+            "partner_id": shared_partner.id,
+            "journal_id": self.purchase_journal.id,
+            "company_id": self.company.id,
+            "invoice_date": invoice_date,
+        }
+        vals_off = dict(vals_on, journal_id=journal_off.id, company_id=company_off.id)
+        move_on, move_off = self.env["account.move"].create([vals_on, vals_off])
+        self.assertEqual(move_on.date, self.today)
+        self.assertEqual(move_off.date, self._native_date("in_invoice", invoice_date))
+        self.assertNotEqual(move_off.date, self.today)
+
+    def test_23_setting_turned_off_later_falls_back_to_native(self):
+        move = self._bill(extra={"invoice_date": "2026-02-10"})
+        self.assertEqual(move.date, self.today)
+        self._set_flags(False, False)
+        new_invoice_date = fields.Date.from_string("2026-01-12")
+        move.write({"invoice_date": new_invoice_date})
+        # Intentional behavior: once the setting is off, a later recompute uses the
+        # native computation and replaces the date kept at registration.
+        self.assertEqual(move.date, self._native_date("in_invoice", new_invoice_date))
+        self.assertNotEqual(move.date, self.today)
