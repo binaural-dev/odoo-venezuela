@@ -5,10 +5,10 @@
             <field name="model_id" ref="account.model_account_tax"/>
             <field name="domain_force">[('active', '=', True)]</field>
             <field name="groups" eval="[(4, ref('group_fiscal_config_support'))]"/>
-            <field name="perm_read">1</field>
-            <field name="perm_write">1</field>
-            <field name="perm_create">1</field>
-            <field name="perm_unlink">0</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
         </record>
         <record id="account_move_unlink_draft_only" model="ir.rule">
             <field name="name">delete invoice if draft</field>
