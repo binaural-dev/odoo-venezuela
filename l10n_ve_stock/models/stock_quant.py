@@ -54,7 +54,7 @@ class StockQuan(models.Model):
         owner_id=None,
         strict=False,
     ):
-        if not self.env.company.use_physical_location or self._context.get(
+        if not self.env.company.use_physical_location or self.env.context.get(
             "skip_physical_location", False
         ):
             return super()._update_reserved_quantity(

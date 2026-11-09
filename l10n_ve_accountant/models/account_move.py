@@ -2486,5 +2486,5 @@ class AccountMove(models.Model):
     @api.ondelete(at_uninstall=False)
     def _unlink_except_posted_or_was_posted(self):
         for move in self:
-            if move.posted_before and not self._context.get('force_delete'):
+            if move.posted_before and not self.env.context.get('force_delete'):
                 raise UserError(_("You cannot delete a journal item that is posted, cancelled, or has been previously posted."))
