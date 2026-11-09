@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_l10n_ve_reconcile_assistant_user,l10n_ve.reconcile.assistant user,model_l10n_ve_reconcile_assistant,account.group_account_user,1,1,1,1
+access_l10n_ve_reconcile_assistant_item_user,l10n_ve.reconcile.assistant.item user,model_l10n_ve_reconcile_assistant_item,account.group_account_user,1,1,1,1
