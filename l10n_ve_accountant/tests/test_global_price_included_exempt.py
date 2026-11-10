@@ -94,10 +94,14 @@ class TestGlobalPriceIncludedExempt(TransactionCase):
             product.taxes_id = [(6, 0, [self.taxes[mode].id])]
         pricelist = self.env["product.pricelist"].search([("currency_id", "=", currency.id)], limit=1) \
             or self.env["product.pricelist"].create({"name": "PL " + currency.name, "currency_id": currency.id})
-        form = Form(self.env["account.move"].with_context(default_move_type="out_invoice"))
+        form = Form(
+            self.env["account.move"].with_context(
+                default_move_type="out_invoice",
+                default_journal_id=self.journal.id,
+            )
+        )
         form.partner_id = self.partner
         form.currency_id = currency
-        form.journal_id = self.journal
         try:
             form.pricelist_id = pricelist
         except Exception:  # noqa: BLE001 - el campo depende de account_invoice_pricelist
