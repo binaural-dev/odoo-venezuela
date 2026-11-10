@@ -7,6 +7,7 @@ tax_support_no_archive_rule,Impuestos: No archivar para Soporte Fiscal,account.t
 access_sequence_fiscal_user_support,access_sequence_fiscal_user_support,ir.sequence,l10n_ve_accountant.group_fiscal_config_support,cru,
 access_move_action_post_alert_wizard,access_move_action_post_alert_wizard,move.action.post.alert.wizard,base.group_user,crud,
 account.account_move_see_all,All Journal Entries,account.move,account.group_account_invoice,cru,
+account_move_unlink_draft_only,delete invoice if draft,account.move,account.group_account_invoice,d,"[('state', '=', 'draft')]"
 account.access_account_payment,account.payment,account.payment,account.group_account_invoice,cru,
 account.access_account_journal_manager,account.journal,account.journal,account.group_account_manager,cru,
 account.access_account_journal_group_manager,account.journal.group manager,account.journal.group,account.group_account_manager,cru,
