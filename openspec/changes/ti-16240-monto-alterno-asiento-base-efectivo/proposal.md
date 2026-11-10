@@ -6,10 +6,10 @@ Con la base efectivo activa, el asiento IMBEF que el core genera al conciliar el
 
 - `l10n_ve_accountant`: `account.move.line._get_foreign_value` ya no usa el atajo de `foreign_balance` para líneas `tax` o `payment_term` de asientos con `tax_cash_basis_origin_move_id` (asientos de base efectivo). Esas líneas se valoran por la ruta de asientos que no son factura: `amount_currency` si la línea está en la moneda alterna, o conversión con la tasa.
 - Facturas y demás asientos conservan el cálculo actual.
-- Prueba `TestCashBasisForeign` (con `Form`): factura, pago, asiento IMBEF y pago parcial.
+- Prueba `TestCashBasisForeign` (con `Form`): factura, pago, asiento IMBEF, pago parcial y la migración. En `l10n_ve_payment_extension`, prueba del cobro con retención de IVA sobre una factura en bolívares.
 
 ## Impact
 
 - Specs afectadas: `l10n_ve_accountant` (nuevo requisito: el asiento de base efectivo trae el monto alterno en todas sus líneas).
 - Código: `l10n_ve_accountant/models/account_move_line.py`. Versión del manifest 19.0.1.0.43.
-- Los asientos IMBEF ya generados conservan el monto alterno en 0; este cambio no los recalcula (hace falta un script).
+- Migración `19.0.1.0.43/post-10-caba_tax_lines_foreign_amount.py`: recalcula las líneas de impuesto de los IMBEF existentes que quedaron con el alterno en 0 (idempotente; no toca las que ya lo tienen).

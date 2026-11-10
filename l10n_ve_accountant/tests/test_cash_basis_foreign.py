@@ -1,3 +1,6 @@
+import importlib.util
+import os
+
 from odoo import Command, fields
 from odoo.tests import Form, TransactionCase, tagged
 
@@ -296,3 +299,40 @@ class TestCashBasisForeign(TransactionCase):
         self.assertAlmostEqual(tax_to.amount_currency, -8.0, 2)
         self.assertAlmostEqual(tax_to.foreign_credit, 8.0, 2)
         self.assertAlmostEqual(sum(caba.line_ids.mapped("foreign_balance")), 0.0, 2)
+
+    def test_migration_recomputes_old_cash_basis_entries(self):
+        """5. Los IMBEF ya generados con el alterno en 0 se recalculan."""
+        invoice = self._make_invoice()
+        self._pay(invoice)
+        caba = self._caba_moves(invoice)
+        tax_lines = self._line(caba, self.acc_transition) | self._line(
+            caba, self.acc_final
+        )
+        # Estado de un asiento generado antes del arreglo.
+        self.env.flush_all()
+        self.env.cr.execute(
+            "UPDATE account_move_line SET foreign_debit = 0, foreign_credit = 0,"
+            " foreign_balance = 0 WHERE id IN %s",
+            [tuple(tax_lines.ids)],
+        )
+        self.env.invalidate_all()
+        self.assertEqual(tax_lines.mapped("foreign_balance"), [0.0, 0.0])
+
+        path = os.path.join(
+            os.path.dirname(__file__),
+            "..",
+            "migrations",
+            "19.0.1.0.43",
+            "post-10-caba_tax_lines_foreign_amount.py",
+        )
+        spec = importlib.util.spec_from_file_location("caba_migration", path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        fixed = module.recompute_caba_foreign_amounts(self.env)
+
+        self.assertEqual(fixed, tax_lines)
+        self.assertAlmostEqual(self._line(caba, self.acc_transition).foreign_debit, 16.0, 2)
+        self.assertAlmostEqual(self._line(caba, self.acc_final).foreign_credit, 16.0, 2)
+        self.assertAlmostEqual(sum(caba.line_ids.mapped("foreign_balance")), 0.0, 2)
+        # Idempotente: una segunda corrida no encuentra nada que tocar.
+        self.assertFalse(module.recompute_caba_foreign_amounts(self.env))
