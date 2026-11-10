@@ -1,4 +1,6 @@
-from odoo.tests import  Form ,TransactionCase
+from datetime import datetime, time
+
+from odoo.tests import  Form ,TransactionCase, freeze_time
 import random
 from odoo import fields, Command
 from odoo.tools.float_utils import float_round
@@ -8,6 +10,13 @@ _logger = logging.getLogger(__name__)
 class RetentionTestCommon(TransactionCase):
 
     def setUp(self):
+        # The rates below are created for "today". Fixing the clock at noon of
+        # today keeps the whole test on the same day: without it, a test that
+        # starts right before midnight (UTC) asks for the rate of the next day,
+        # which does not exist, and fails with "There is no rate assigned".
+        freezer = freeze_time(datetime.combine(fields.Date.today(), time(12, 0)), tick=True)
+        freezer.start()
+        self.addCleanup(freezer.stop)
         super().setUp()
         self.Account = self.env["account.account"]
         self.Journal = self.env["account.journal"]
