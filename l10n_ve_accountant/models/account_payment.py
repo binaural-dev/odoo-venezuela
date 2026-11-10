@@ -7,6 +7,7 @@ _logger = logging.getLogger(__name__)
 
 
 class AccountPayment(models.Model):
+    _name = "account.payment"
     _inherit = ["account.payment", "l10n_ve.payment.date.check.mixin"]
 
     destination_account_id = fields.Many2one(

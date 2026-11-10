@@ -321,19 +321,19 @@ class AccountMove(models.Model):
     amount = fields.Float(tracking=True)
 
     real_portion_amount = fields.Monetary(
-        string=_("Real Portion"),
+        string="Real Portion",
         currency_field='company_currency_id',
-        help=_("Accumulated remainder from cross-currency rounding."),
+        help="Accumulated remainder from cross-currency rounding.",
     )
     real_portion_count = fields.Integer(
-        string=_("Real Portion Adjustments"),
+        string="Real Portion Adjustments",
         default=0,
     )
     # Stored to avoid KeyError in trigger tree when
     # account.move.line.company_currency_id (stored related)
     # forces the dependency move_id.company_currency_id
     company_currency_id = fields.Many2one(
-        related='company_id.currency_id', readonly=True, store=True,
+        related='company_id.currency_id', readonly=True, store=True, precompute=True,
     )
 
     amount_residual_company = fields.Monetary(
