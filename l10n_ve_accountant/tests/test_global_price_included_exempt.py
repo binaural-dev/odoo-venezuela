@@ -46,14 +46,14 @@ class TestGlobalPriceIncludedExempt(TransactionCase):
             "name": "Adicional", "company_id": self.company.id, "country_id": ve.id,
             "preceding_subtotal": "Subtotal con IVA"})
 
-        def tax(name, amount, included, group):
+        def tax(name, amount, included, group, use="sale"):
             def rep():
                 return [
                     (0, 0, {"repartition_type": "base", "factor_percent": 100.0}),
                     (0, 0, {"repartition_type": "tax", "factor_percent": 100.0, "account_id": a_tax.id}),
                 ]
             return self.env["account.tax"].with_company(self.company).create({
-                "name": name, "amount": amount, "amount_type": "percent", "type_tax_use": "sale",
+                "name": name, "amount": amount, "amount_type": "percent", "type_tax_use": use,
                 "price_include_override": "tax_included" if included else "tax_excluded",
                 "company_id": self.company.id, "tax_group_id": group.id,
                 "invoice_repartition_line_ids": rep(), "refund_repartition_line_ids": rep()})
@@ -63,6 +63,7 @@ class TestGlobalPriceIncludedExempt(TransactionCase):
             "excl": tax("IVA excl test", 16.0, False, group_iva),
             "exe": tax("Exento test", 0.0, False, group_exe),
             "exei": tax("Exento incluido test", 0.0, True, group_exe),
+            "incl_p": tax("IVA incl compra test", 16.0, True, group_iva, use="purchase"),
             "extra": tax("Adicional test", 3.0, False, group_extra),
         }
         self.partner = self.env["res.partner"].create(
@@ -75,6 +76,17 @@ class TestGlobalPriceIncludedExempt(TransactionCase):
         ]
         self.journal = self.env["account.journal"].search(
             [("type", "=", "sale"), ("company_id", "=", self.company.id)], limit=1)
+
+        a_expense = account("993000", "Suministros test", "expense")
+        a_payable = account("995000", "CxP test", "liability_payable", True)
+        self.supplier = self.env["res.partner"].create(
+            {"name": "Proveedor test", "country_id": ve.id, "property_account_payable_id": a_payable.id})
+        self.vendor_product = self.env["product.product"].create({
+            "name": "incluido", "type": "service", "list_price": 12.95,
+            "property_account_expense_id": a_expense.id, "taxes_id": [(5, 0, 0)],
+            "supplier_taxes_id": [(6, 0, [self.taxes["incl_p"].id])]})
+        self.purchase_journal = self.env["account.journal"].search(
+            [("type", "=", "purchase"), ("company_id", "=", self.company.id)], limit=1)
 
     def _invoice(self, currency, method, lines, modes):
         self.company.tax_calculation_rounding_method = method
@@ -111,8 +123,10 @@ class TestGlobalPriceIncludedExempt(TransactionCase):
         self.assertAlmostEqual(totals["total_amount"], abs(move.amount_total_signed), 2,
                                "El widget debe coincidir con el asiento (VEF)")
         payment_term = move.line_ids.filtered(lambda l: l.display_type == "payment_term")
-        self.assertAlmostEqual(totals["total_amount_foreign_currency"], sum(payment_term.mapped("foreign_debit")), 2,
-                               "El alterno del widget debe coincidir con el de los apuntes")
+        self.assertAlmostEqual(
+            totals["total_amount_foreign_currency"],
+            abs(sum(payment_term.mapped("foreign_debit")) - sum(payment_term.mapped("foreign_credit"))), 2,
+            "El alterno del widget debe coincidir con el de los apuntes")
         self.assertAlmostEqual(sum(move.line_ids.mapped("debit")), sum(move.line_ids.mapped("credit")), 2)
         self.assertAlmostEqual(sum(move.line_ids.mapped("foreign_debit")), sum(move.line_ids.mapped("foreign_credit")), 2)
         if expected_total is not None:
@@ -244,3 +258,47 @@ class TestGlobalPriceIncludedExempt(TransactionCase):
         lines = [(73.0150, 2), (60.2099, 1), (88.2215, 1), (111.0216, 4)]
         move = self._invoice(self.usd, "round_per_line", lines, ["incl", "exe", "incl", "incl"])
         self._assert_consistent(move, check_lines=False)
+
+    def _vendor_bill(self, currency, method, lines):
+        self.company.tax_calculation_rounding_method = method
+        form = Form(self.env["account.move"].with_context(default_move_type="in_invoice"))
+        form.partner_id = self.supplier
+        form.currency_id = currency
+        form.invoice_date = self.today
+        for price, qty in lines:
+            with form.invoice_line_ids.new() as line:
+                line.product_id = self.vendor_product
+                line.quantity = qty
+                line.price_unit = price
+        return form.save()
+
+    def test_vendor_bill_included_tax_comes_from_company_currency_base(self):
+        """Factura de compra con IVA incluido y Global: el IVA en bolívares sale de la
+        base en bolívares (línea por línea), igual que con Por línea. Antes, el
+        widget mandaba al guardar el IVA del núcleo (3,57) y `_inverse_tax_totals`
+        lo escribía como edición manual: el IVA en Bs salía de 3,57 × tasa
+        (Bs. 2.867,92 en vez de Bs. 2.869,86) y el total quedaba en $ 25,89."""
+        company_currency = self.company.currency_id
+        lines = [(12.95, 1), (12.95, 1)]
+        for currency, rate in ((self.usd, 803.34), (self.eur, 803.34), (self.usd, 879.1225)):
+            set_rate(self.env, currency, self.today, self.company, rate)
+            bills = {m: self._vendor_bill(currency, m, lines) for m in ("round_globally", "round_per_line")}
+            for method, move in bills.items():
+                with self.subTest(currency=currency.name, rate=rate, method=method):
+                    inv_rate = move.invoice_currency_rate
+                    expected_tax = sum(
+                        company_currency.round(price * qty / inv_rate)
+                        - company_currency.round(price * qty / 1.16 / inv_rate)
+                        for price, qty in lines)
+                    tax_line = move.line_ids.filtered(lambda l: l.display_type == "tax")
+                    self.assertAlmostEqual(tax_line.debit, expected_tax, 2,
+                                           "El IVA en VEF debe salir de la base en VEF, línea por línea")
+                    self.assertAlmostEqual(move.amount_total, 25.90, 2, "Con IVA incluido el total es lo digitado")
+                    self._assert_consistent(move, check_lines=False)
+            g, l = bills["round_globally"], bills["round_per_line"]
+            with self.subTest(currency=currency.name, rate=rate, comparacion="Global igual a Por línea"):
+                self.assertAlmostEqual(abs(g.amount_total_signed), abs(l.amount_total_signed), 2)
+                self.assertAlmostEqual(
+                    sum(g.line_ids.filtered(lambda x: x.display_type == "tax").mapped("balance")),
+                    sum(l.line_ids.filtered(lambda x: x.display_type == "tax").mapped("balance")), 2)
+

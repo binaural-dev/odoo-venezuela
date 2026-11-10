@@ -361,6 +361,74 @@ class AccountTax(models.Model):
         res['total_amount'] = running_company
 
     @api.model
+    def _fix_price_included_summary_from_base_lines(self, res, base_lines, record):
+        """Registro virtual (onchange) o factura sin líneas de impuesto todavía: el
+        IVA incluido del resumen se calcula línea por línea, igual que lo hace
+        `_sync_tax_lines` con las líneas reales.
+
+        Con Global, el núcleo reparte el centavo del redondeo del IVA incluido entre
+        las líneas (3,57 en vez de 1,79 + 1,79 = 3,58). El cliente reenvía ese JSON al
+        guardar y `_inverse_tax_totals` lo interpreta como una edición manual del
+        IVA: escribe 3,57 en la línea de impuesto y el saldo en bolívares sale de
+        ahí (3,57 × tasa) en lugar de calcularse sobre la base en bolívares."""
+        if record._name != 'account.move' or not record.is_invoice(include_receipts=True):
+            return
+        if not isinstance(record.id, api.NewId) and record.line_ids.filtered(lambda l: l.display_type == 'tax'):
+            return
+        currency = record.currency_id
+        group_delta = {}
+        total_base_delta = 0.0
+        for base_line in base_lines:
+            taxes = base_line['tax_ids']
+            if not taxes or any(
+                t.amount_type != 'percent' or not t.price_include or t.include_base_amount
+                for t in taxes
+            ):
+                continue
+            details = base_line['tax_details']
+            total_rate = sum(taxes.mapped('amount'))
+            if float_is_zero(total_rate, precision_digits=4):
+                continue
+            raw = base_line['price_unit'] * base_line['quantity'] * (1 - (base_line.get('discount') or 0.0) / 100.0)
+            base = currency.round(raw / (1 + total_rate / 100.0))
+            tax_total = currency.round(raw) - base
+            total_base_delta += base - (
+                details['total_excluded_currency'] + details.get('delta_total_excluded_currency', 0.0)
+            )
+            core_by_tax = {d['tax'].id: d for d in details['taxes_data']}
+            for tax in taxes:
+                core = core_by_tax.get(tax.id)
+                if not core:
+                    continue
+                delta = group_delta.setdefault(tax.tax_group_id.id, [0.0, 0.0])
+                delta[0] += currency.round(tax_total * tax.amount / total_rate) - core['tax_amount_currency']
+                delta[1] += base - core['base_amount_currency']
+        if not group_delta:
+            return
+        for subtotal in res.get('subtotals', []):
+            for group in subtotal.get('tax_groups', []):
+                delta = group_delta.get(group['id'])
+                if delta:
+                    group['tax_amount_currency'] = currency.round(group['tax_amount_currency'] + delta[0])
+                    group['base_amount_currency'] = currency.round(group['base_amount_currency'] + delta[1])
+                    group['display_base_amount_currency'] = currency.round(
+                        group['display_base_amount_currency'] + delta[1]
+                    )
+        # Cada subtotal parte del total del anterior (grupos con `preceding_subtotal`).
+        running = currency.round(res['base_amount_currency'] + total_base_delta)
+        tax_amount = 0.0
+        res['base_amount_currency'] = running
+        for subtotal in res.get('subtotals', []):
+            subtotal_tax = sum(g['tax_amount_currency'] for g in subtotal.get('tax_groups', []))
+            subtotal['base_amount_currency'] = running
+            subtotal['tax_amount_currency'] = currency.round(subtotal_tax)
+            running = currency.round(running + subtotal_tax)
+            subtotal['total_amount_currency'] = running
+            tax_amount += subtotal_tax
+        res['tax_amount_currency'] = currency.round(tax_amount)
+        res['total_amount_currency'] = running
+
+    @api.model
     def _fix_foreign_summary_from_lines(self, foreign_res, record):
         """El alterno del widget se calculaba por separado con el motor del
         núcleo sobre `foreign_price`, mientras que los apuntes toman el alterno
@@ -460,6 +528,7 @@ class AccountTax(models.Model):
         self._fix_base_amount_for_multi_currency(res, record)
         self._fix_tax_amount_for_round_per_line(res, record, company)
         self._fix_base_amount_from_real_lines(res, record, company)
+        self._fix_price_included_summary_from_base_lines(res, base_lines, record)
 
         currency_id = company.currency_id or False
         foreign_currency_id = company.foreign_currency_id or False

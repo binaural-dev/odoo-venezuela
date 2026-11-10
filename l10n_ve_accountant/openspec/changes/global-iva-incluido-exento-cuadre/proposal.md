@@ -27,6 +27,7 @@ widget distinto del de los apuntes. Por línea no tenía el defecto.
 - Con Global y al menos una línea con IVA incluido, cada línea base vale su importe individual
   (`precio × cantidad × (1 − descuento)`, con el IVA incluido dividido entre `1 + tasa`), tanto en la
   moneda del documento como en la alterna. El total con IVA incluido es lo que digitó el usuario.
+- El IVA incluido se calcula **línea por línea sobre la base en bolívares**, también cuando el widget lo calcula para un registro virtual (onchange): con Global el servidor ya no manda al guardar el IVA del núcleo (que reparte el centavo), porque `_inverse_tax_totals` lo escribiría como edición manual y el IVA en Bs saldría de `IVA en la moneda del documento × tasa` (factura de compra de 2 × $ 12,95 a 803,34: Bs. 2.867,92 en vez de Bs. 2.869,86 y total de $ 25,89 en vez de $ 25,90).
 - El widget (`tax_totals`) refleja los apuntes reales: bases, IVA y total en documento, VEF y alterno, con Global y con Por línea.
 
 ## What Changes
@@ -39,9 +40,11 @@ widget distinto del de los apuntes. Por línea no tenía el defecto.
   - `_fix_foreign_summary_from_lines`: alterno del widget desde `foreign_debit`/`foreign_credit`.
   - `_round_tax_details_base_lines` + `_get_base_line_rounding_key`: con Global reparte la diferencia
     de redondeo de la base dentro de cada grupo de impuesto (antes, entre todas las líneas).
+  - `_fix_price_included_summary_from_base_lines`: en un registro virtual (o sin líneas de impuesto),
+    el IVA incluido del resumen se calcula línea por línea, igual que `_sync_tax_lines`.
   - `_get_tax_group_product_lines`: líneas de un grupo de impuesto (antes duplicado en línea).
 - Bump `19.0.1.0.42` -> `19.0.1.0.43`.
-- `tests/test_global_price_included_exempt.py`: 11 pruebas (USD, VEF, EUR, mezcla con IVA excluido,
+- `tests/test_global_price_included_exempt.py`: 12 pruebas (USD, VEF, EUR, factura de compra con IVA incluido a distintas tasas, mezcla con IVA excluido,
   control sin exento, exento incluido en el precio, base VEF del IVA, subtotales encadenados, el centavo
   en su grupo en USD/EUR/VEF, grupo exento con dos líneas y widget con Por línea).
 
