@@ -25,6 +25,7 @@ patch(TicketScreen.prototype, {
       res["orderline"]["foreign_price"] = orderline.foreign_price;
       res["orderline"]["foreign_currency_rate"] =
         orderline.foreign_currency_rate;
+      res["orderline"]["foreign_inverse_rate"] = orderline.foreign_inverse_rate;
       res["total_with_tax"] = orderline.order.get_total_with_tax();
       res["foreign_total_with_tax"] =
         orderline.order.get_foreign_total_with_tax();
@@ -35,6 +36,7 @@ patch(TicketScreen.prototype, {
     let res = super._prepareRefundOrderlineOptions(...arguments);
     let { orderline } = toRefundDetail;
     res["foreign_currency_rate"] = orderline.foreign_currency_rate;
+    res["foreign_inverse_rate"] = orderline.foreign_inverse_rate;
     res["foreign_price"] = orderline.foreign_price;
     return res;
   },

@@ -79,5 +79,8 @@ class PosOrderLine(models.Model):
         res = super()._export_for_ui(orderline)
         res["foreign_price"] = orderline.foreign_price
         res["foreign_currency_rate"] = orderline.foreign_currency_rate
+        # foreign_currency_rate es la tasa Bs/USD de la orden; el POS necesita
+        # la tasa en la misma unidad que init_conversion_rate para calcular foreign_price.
+        res["foreign_inverse_rate"] = orderline.order_id.foreign_inverse_rate
         return res
 

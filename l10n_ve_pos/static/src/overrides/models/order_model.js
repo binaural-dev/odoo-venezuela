@@ -115,6 +115,9 @@ patch(Order.prototype, {
     if (options.foreign_currency_rate !== undefined) {
       orderline.foreign_currency_rate = options.foreign_currency_rate;
     }
+    if (options.foreign_inverse_rate !== undefined) {
+      orderline.foreign_inverse_rate = options.foreign_inverse_rate;
+    }
   },
 
   calculate_foreign_base_amount(tax_ids_array, lines) {

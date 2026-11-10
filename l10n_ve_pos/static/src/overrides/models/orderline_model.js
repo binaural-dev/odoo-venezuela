@@ -19,18 +19,24 @@ patch(Orderline.prototype, {
         : undefined;
     this.foreign_price = json.foreign_price || 0;
     this.foreign_currency_rate = json.foreign_currency_rate || false;
+    // Misma unidad que order.init_conversion_rate (foreign_currency_rate es Bs/USD
+    // y se usa en get_conversion_rate, no sirve como multiplicador en base Bs).
+    this.foreign_inverse_rate = json.foreign_inverse_rate || false;
     this.foreign_currency_rate_display = false;
   },
   get_rate() {
     if (this.order._isRefundOrder() && this.get_refund_orderline()) {
-      return this.get_refund_orderline().orderline.foreign_currency_rate;
+      return (
+        this.get_refund_orderline().orderline.foreign_inverse_rate ||
+        this.order.init_conversion_rate
+      );
     }
 
     if (
-      this.foreign_currency_rate &&
-      this.foreign_currency_rate != this.order.init_conversion_rate
+      this.foreign_inverse_rate &&
+      this.foreign_inverse_rate != this.order.init_conversion_rate
     )
-      return this.foreign_currency_rate;
+      return this.foreign_inverse_rate;
 
     return this.order.init_conversion_rate;
   },
