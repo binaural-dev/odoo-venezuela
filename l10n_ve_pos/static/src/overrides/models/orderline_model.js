@@ -54,6 +54,10 @@ patch(Orderline.prototype, {
   export_as_JSON() {
     let res = super.export_as_JSON(...arguments);
     res["foreign_currency_rate"] = this.get_rate();
+    // Persistir la tasa inversa de la línea para que sobreviva al localStorage del
+    // POS: sin esto, al recargar el navegador init_from_JSON la deja en false y
+    // get_rate() pasa a usar la tasa del día en vez de la original de la orden.
+    res["foreign_inverse_rate"] = this.foreign_inverse_rate || this.get_rate();
     res["foreign_price"] = this.get_foreign_unit_price();
     res["foreign_price_subtotal"] = this.get_foreign_price_without_tax();
     res["foreign_price_subtotal_incl"] = this.get_foreign_price_with_tax();
