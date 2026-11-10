@@ -3,7 +3,8 @@
 What: for every cash basis entry (account.move with tax_cash_basis_origin_move_id) it recomputes
     foreign_debit / foreign_credit / foreign_balance of the lines that have the alternate amount
     at 0 although their balance is not. Entries and lines that already have it are not touched,
-    so running it twice changes nothing.
+    and neither are the lines the module never computes (exchange difference journal and
+    not_foreign_recalculate), so running it twice changes nothing.
 
 Why: until this version account.move.line._get_foreign_value returned foreign_balance for the
     'tax' lines of those entries. The core copies display_type = 'tax' to them but creates them
@@ -14,8 +15,8 @@ Why: until this version account.move.line._get_foreign_value returned foreign_ba
 If it does not run: the old cash basis entries keep the alternate amount of their tax lines at 0
     (the alternate-currency tax book and reports under-report them). New entries are fine.
 
-How to revert: not needed, the values are derived from the move (amount_currency or its rate);
-    there is no data to restore.
+How to revert: it is not reverted. It overwrites the alternate amount that was wrong (0) with the
+    one derived from the move (amount_currency or its rate); the previous value is the bug itself.
 
 Task: https://www.binauraldev.com/odoo/my-tickets/16240
 """
@@ -41,6 +42,7 @@ def recompute_caba_foreign_amounts(env):
             ("credit", "!=", 0),
         ]
     )
+    lines = lines.filtered(lambda line: not line._skip_foreign_compute())
     if lines:
         env.add_to_compute(Line._fields["foreign_debit"], lines)
         env.add_to_compute(Line._fields["foreign_credit"], lines)
@@ -51,8 +53,10 @@ def recompute_caba_foreign_amounts(env):
 def migrate(cr, version):
     env = api.Environment(cr, SUPERUSER_ID, {})
     lines = recompute_caba_foreign_amounts(env)
+    fixed = lines.filtered(lambda line: line.foreign_debit or line.foreign_credit)
     _logger.info(
-        "%s cash basis lines in %s entries recomputed",
+        "%s cash basis lines in %s entries recomputed (%s of them now have the alternate amount)",
         len(lines),
         len(lines.move_id),
+        len(fixed),
     )

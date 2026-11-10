@@ -1,14 +1,12 @@
 from odoo import Command, fields
 from odoo.tests import tagged
 
-from .test_retention_payment_foreign_amount_rate_date import (
-    TestRetentionPaymentForeignAmountRateDate as _Flow,
-)
+from .retention_flow_helpers import RetentionFlowHelpers
 from .test_withholding_common_VEF import RetentionTestCommon
 
 
 @tagged("post_install", "-at_install", "retention_cash_basis_foreign")
-class TestRetentionCashBasisForeign(RetentionTestCommon):
+class TestRetentionCashBasisForeign(RetentionFlowHelpers, RetentionTestCommon):
     """Ticket #16240: al cobrar con una retencion de IVA una factura con
     impuesto exigible "al pagar", el asiento de base efectivo (IMBEF) debe
     traer el monto alterno en todas sus lineas, incluidas las de impuesto.
@@ -16,19 +14,10 @@ class TestRetentionCashBasisForeign(RetentionTestCommon):
     La factura se crea en bolivares (moneda de la compania), asi que las lineas
     del IMBEF se valoran por la tasa y no por `amount_currency`.
 
-    Se reutilizan los helpers de TestRetentionPaymentForeignAmountRateDate
-    (documento y retencion creados con `Form`) sin heredar sus pruebas."""
+    El documento y la retencion se crean con `Form` (RetentionFlowHelpers)."""
 
-    RATE_DOC_DATE = _Flow.RATE_DOC_DATE
-    RATE_ACCOUNTING_DATE = _Flow.RATE_ACCOUNTING_DATE
-    AMOUNT = _Flow.AMOUNT
-    CUSTOMER_RETENTION_AMOUNT = _Flow.CUSTOMER_RETENTION_AMOUNT
-
-    _set_rates = _Flow._set_rates
-    _form_document = _Flow._form_document
-    _document = _Flow._document
-    _retention_from_form = _Flow._retention_from_form
-    _economic_activity = _Flow._economic_activity
+    RATE_DOC_DATE = 380.0
+    RATE_ACCOUNTING_DATE = 400.0
 
     def setUp(self):
         super().setUp()
@@ -79,10 +68,11 @@ class TestRetentionCashBasisForeign(RetentionTestCommon):
             [("tax_cash_basis_origin_move_id", "=", document.id)]
         )
         self.assertTrue(caba, "La retencion debe generar el asiento de base efectivo.")
-        rate = self.RATE_ACCOUNTING_DATE if all(
-            m.date == self.accounting_date for m in caba
-        ) else self.RATE_DOC_DATE
+        # El IMBEF se fecha con la liquidacion (la retencion), no con la factura,
+        # y por eso se valora con la tasa de esa fecha.
+        rate = self.RATE_ACCOUNTING_DATE
         for move in caba:
+            self.assertEqual(move.date, self.accounting_date)
             self.assertEqual(len(move.line_ids), 4)
             tax_lines = move.line_ids.filtered(
                 lambda l: l.account_id in (self.acc_transition, self.acc_final)
