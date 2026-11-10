@@ -98,6 +98,11 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
             [("journal_id", "=", self.cross_account_journal.id), ("company_id", "=", self.company.id)]
         )
 
+    def _real_statement_lines(self):
+        return self.env["account.bank.statement.line"].search(
+            [("journal_id", "=", self.real_bank_journal.id)], order="id"
+        )
+
     def _new_session(self):
         return self.env["pos.session"].create(
             {
@@ -278,7 +283,7 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
 
         moves = self._cross_moves()
         self.assertEqual(len(moves), 1)
-        self.assertEqual(moves.state, "draft")
+        self.assertEqual(moves.state, "posted")
         real_leg, transitory_leg = self._legs(
             moves, self.split_bank_method.outstanding_account_id
         )
@@ -431,7 +436,7 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
 
         moves = self._cross_moves()
         self.assertEqual(len(moves), 1)
-        self.assertEqual(moves.state, "draft", "el cruce nunca se postea automaticamente")
+        self.assertEqual(moves.state, "posted", "el cruce se publica al crearse")
         real_leg, transitory_leg = self._legs(moves, self.account_bank)
         self.assertEqual(
             self.split_bank_method.outstanding_account_id,
@@ -673,6 +678,11 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
         self.assertEqual(len(legs), 2, "las dos patas caen en la misma cuenta")
         self.assertAlmostEqual(sum(legs.mapped("debit")), payment.amount, places=2)
         self.assertAlmostEqual(sum(legs.mapped("credit")), payment.amount, places=2)
+        self.assertFalse(
+            self._real_statement_lines(),
+            "sin una transitoria por diario no se sabe cual pata es la del diario "
+            "real: no se crea su linea de extracto",
+        )
 
     # ------------------------------------------------------------------
     # Modo use_suspense (llamadores fuera de ventas -- ver binaural_pos_close)
@@ -707,7 +717,7 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
             use_suspense=True,
         )
 
-        self.assertEqual(move.state, "draft")
+        self.assertEqual(move.state, "posted")
         real_leg, transitory_leg = self._legs(
             move, suspense_origin, real_account=suspense_real
         )
@@ -894,14 +904,14 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
     # Regresiones ya cubiertas antes de este refactor
     # ------------------------------------------------------------------
     def test_cross_move_name_takes_journal_sequence_on_post(self):
-        """El asiento toma la secuencia de `cross_account_journal` al postearse.
+        """El asiento toma la secuencia de `cross_account_journal` al publicarse.
 
-        Antes del fix, `name` se fijaba con el literal "PoS Payment Method
-        Adjustment" en el ``create()`` del ``account.move`` -- eso bloquea
-        para siempre la asignacion nativa de secuencia
-        (``_compute_name``/``_set_next_sequence`` solo corren cuando
-        ``name`` esta vacio o es '/'). El texto descriptivo ahora va en
-        ``ref``, dejando ``name`` libre para que Odoo lo asigne al postear.
+        Antes del fix, `name` se fijaba con un literal en el ``create()`` del
+        ``account.move`` -- eso bloquea para siempre la asignacion nativa de
+        secuencia (``_compute_name``/``_set_next_sequence`` solo corren cuando
+        ``name`` esta vacio o es '/'). El texto descriptivo va en ``ref``,
+        dejando ``name`` libre para que Odoo lo asigne al publicar, que desde
+        la tarea 86801 ocurre al crear el cruce.
         """
         self._configure_cross(self.split_bank_method)
         session = self._new_session().with_company(self.company)
@@ -918,29 +928,16 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
 
         move = self._cross_moves()
         self.assertEqual(len(move), 1)
-        self.assertIn(
-            move.name,
-            (False, "/"),
-            "en draft, name debe quedar vacio/'/' -- Odoo aun no asigno secuencia",
-        )
-        original_ref = move.ref
-        self.assertTrue(
-            original_ref.startswith("PoS Payment Method Adjustment"),
-            "el texto descriptivo vive en ref, no en name",
-        )
-
-        move.action_post()
-
+        self.assertEqual(move.state, "posted")
         self.assertTrue(
             move.name and move.name != "/",
-            "al postear, Odoo debe asignar la secuencia del diario cross_account_journal",
+            "al publicar, Odoo debe asignar la secuencia del diario cross_account_journal",
         )
-        self.assertNotIn(
-            "PoS Payment Method Adjustment",
-            move.name or "",
-            "name NO debe quedar congelado con el literal viejo",
+        self.assertTrue(
+            move.ref.startswith(session.name),
+            "el texto descriptivo vive en ref, no en name",
         )
-        self.assertEqual(move.ref, original_ref, "ref se preserva tras postear")
+        self.assertNotEqual(move.name, move.ref, "name NO debe quedar congelado con el texto")
 
     # ------------------------------------------------------------------
     # Trazabilidad: distinguir los borradores entre si
@@ -1079,6 +1076,141 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
         self.assertEqual(len(moves), 1)
         self.assertIn(session.name, moves.ref)
         self.assertFalse(moves.partner_id, "combine agrupa varios clientes: sin socio")
+
+    # ------------------------------------------------------------------
+    # Diario real, etiquetas y ventas omitidas (tarea 86801)
+    # ------------------------------------------------------------------
+    def test_cross_lines_take_the_session_label(self):
+        """Las lineas del cruce llevan la ``ref`` como etiqueta, con la sesion y
+        el metodo: es lo que muestra el tablero de conciliacion del diario real,
+        donde antes todas decian "PoS Payment Method Adjustment"."""
+        self._configure_cross(self.combined_bank_method)
+        session = self._new_session().with_company(self.company)
+        self._create_paid_order(
+            session,
+            method=self.combined_bank_method,
+            amount=50.0,
+            tax_amount=8.0,
+            name="OL/CROSS/LABEL",
+        )
+
+        session._validate_cross_move()
+
+        move = self._cross_moves()
+        self.assertEqual(
+            move.ref, f"{session.name} · Sales · {self.combined_bank_method.name}"
+        )
+        self.assertEqual(set(move.line_ids.mapped("name")), {move.ref})
+
+    def test_cash_cross_creates_its_statement_line_in_the_real_journal(self):
+        """Un cruce que deja el dinero en la transitoria del diario real crea su
+        linea de extracto en ese diario: mismo monto (en la moneda del diario),
+        misma alterna, misma etiqueta. Su contrapartida cae en esa transitoria
+        con el signo contrario, asi que se concilia uno a uno con el cruce."""
+        suspense_origin, suspense_real = self._configure_use_suspense_accounts(
+            self.split_cash_method
+        )
+        suspense_real.reconcile = True
+        self._configure_cross(self.split_cash_method)
+        session = self._new_session().with_company(self.company)
+
+        move = session._create_cross_move_for(
+            self.split_cash_method,
+            amount=-25.0,
+            # La tasa del dia (``_create_rate_of_day``), como el cruce de una
+            # entrada/salida: la linea de extracto convierte a la de su fecha.
+            foreign_amount=-25.0 * 40.0,
+            foreign_rate=40.0,
+            partner=self.env["res.partner"],
+            date=fields.Datetime.now(),
+            ref="Salida",
+            use_suspense=True,
+        )
+
+        real_leg, _transitory_leg = self._legs(move, suspense_origin, real_account=suspense_real)
+        st_line = self._real_statement_lines()
+        self.assertEqual(len(st_line), 1)
+        self.assertEqual(st_line.payment_ref, "Salida")
+        self.assertEqual(st_line.date, move.date)
+        self.assertAlmostEqual(st_line.amount, real_leg.amount_currency, places=2)
+        self.assertGreater(st_line.amount, 0, "la salida de la caja entra al diario real")
+        self.assertAlmostEqual(st_line.foreign_amount, 25.0 * 40.0, places=2)
+        self.assertFalse(st_line.is_reconciled, "queda para conciliarla desde el tablero")
+
+        st_suspense = st_line.move_id.line_ids.filtered(lambda l: l.account_id == suspense_real)
+        self.assertAlmostEqual(st_suspense.balance, -real_leg.balance, places=2)
+        (st_suspense | real_leg).reconcile()
+        self.assertTrue(real_leg.reconciled)
+        self.assertTrue(st_suspense.reconciled)
+
+    def test_cash_in_and_out_get_one_statement_line_each(self):
+        """Una entrada y una salida dan una linea de extracto cada una, con signos
+        contrarios: el tablero no permite conciliar una linea neta contra dos
+        cruces de la misma transitoria."""
+        _suspense_origin, suspense_real = self._configure_use_suspense_accounts(
+            self.split_cash_method
+        )
+        self._configure_cross(self.split_cash_method)
+        session = self._new_session().with_company(self.company)
+        for amount, ref in ((50.0, "Entrada"), (-70.0, "Salida")):
+            session._create_cross_move_for(
+                self.split_cash_method,
+                amount=amount,
+                foreign_amount=amount * 36.5,
+                foreign_rate=36.5,
+                partner=self.env["res.partner"],
+                date=fields.Datetime.now(),
+                ref=ref,
+                use_suspense=True,
+            )
+
+        st_lines = self._real_statement_lines()
+        self.assertEqual(st_lines.mapped("payment_ref"), ["Entrada", "Salida"])
+        cross_legs = self._cross_moves().line_ids.filtered(lambda l: l.account_id == suspense_real)
+        self.assertAlmostEqual(
+            sum(st_lines.mapped("amount")), sum(cross_legs.mapped("amount_currency")), places=2
+        )
+        self.assertLess(st_lines[0].amount, 0, "la entrada sale del diario real")
+        self.assertGreater(st_lines[1].amount, 0, "la salida entra al diario real")
+
+    def test_bank_cross_creates_no_statement_line(self):
+        """Un cruce de banco va a la cuenta de las lineas de pago del diario real,
+        no a su transitoria: no hay linea de extracto que crear."""
+        self._configure_cross(self.split_bank_method)
+        session = self._new_session().with_company(self.company)
+        self._create_paid_order(
+            session,
+            method=self.split_bank_method,
+            amount=58.0,
+            tax_amount=8.0,
+            name="OL/CROSS/BANK-NO-ST",
+        )
+
+        session._validate_cross_move()
+
+        self.assertEqual(len(self._cross_moves()), 1)
+        self.assertFalse(self._real_statement_lines())
+
+    def test_sales_cross_skipped_when_the_method_does_not_cross_sales(self):
+        """``_crosses_sales`` en ``False`` (un cajon que cruza cada entrada/salida,
+        ``binaural_pos_close``): la venta no se cruza, ni su linea de extracto."""
+        self._configure_cross(self.split_cash_method)
+        self._configure_use_suspense_accounts(self.split_cash_method)
+        session = self._new_session().with_company(self.company)
+        self._create_paid_order(
+            session,
+            method=self.split_cash_method,
+            amount=20.0,
+            tax_amount=4.0,
+            name="OL/CROSS/NO-SALES",
+        )
+        session_class = type(self.env["pos.session"])
+
+        with patch.object(session_class, "_crosses_sales", lambda self, pm: False):
+            session._validate_cross_move()
+
+        self.assertFalse(self._cross_moves())
+        self.assertFalse(self._real_statement_lines())
 
     def test_amount_currency_uses_configured_foreign_currency_not_hardcoded_id(self):
         """Regresion del bug `currency == 3`: usa self.foreign_currency_id, no un id fijo.
