@@ -7,7 +7,8 @@
 
 - [x] 1.5 `_round_tax_details_base_lines`: con Global, la diferencia de redondeo se reparte por grupo de impuesto.
 - [x] 1.6 `_fix_base_amount_from_real_lines` también con Por línea.
-- [x] 1.7 Bump de versión `19.0.1.0.42` -> `19.0.1.0.43`.
+- [x] 1.7 `_fix_price_included_summary_from_base_lines`: el IVA incluido del registro virtual se calcula por línea.
+- [x] 1.8 Bump de versión `19.0.1.0.42` -> `19.0.1.0.43`.
 
 ## 2. Tests
 
@@ -24,3 +25,4 @@
 - [ ] 3.2 Reproducir el caso reportado (factura con precios de 4 decimales, tres líneas con IVA y una exenta
   de mayor base, redondeo global): el Exento no debe llevar el centavo del IVA.
 - [ ] 3.3 Venta de POS con precios de más de 2 decimales: comparar el total del POS con el de su factura.
+- [ ] 3.4 Factura de compra en USD con dos líneas de 12,95 con IVA 16 % incluido y redondeo global, tasa 803,34: IVA en Bs 2.869,86, total en Bs 20.806,50 y total en USD 25,90.
