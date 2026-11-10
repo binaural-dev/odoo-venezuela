@@ -9,7 +9,9 @@ _counter = itertools.count(1)
 @tagged("post_install", "-at_install", "foreign_supplier_required_fields")
 class TestForeignSupplierRequiredFields(TransactionCase):
     """Ticket 16153: taxpayer type and withholding type are not required for
-    foreign suppliers (country different from Venezuela)."""
+    foreign suppliers (country different from Venezuela).
+    Ticket 16339: the withholding type depends on the taxpayer type, but only for
+    partners that are not suppliers."""
 
     @classmethod
     def setUpClass(cls):
@@ -45,8 +47,11 @@ class TestForeignSupplierRequiredFields(TransactionCase):
         cls.type_person = cls.env.ref(
             "l10n_ve_payment_extension.type_person_l10n_ve_payment_extension"
         )
-        cls.withholding_type = cls.env["account.withholding.type"].search(
-            [("state", "=", True)], limit=1
+        cls.withholding_75 = cls.env.ref(
+            "l10n_ve_payment_extension.account_withholding_type_75"
+        )
+        cls.withholding_100 = cls.env.ref(
+            "l10n_ve_payment_extension.account_withholding_type_100"
         )
         cls.type_person_non_resident = cls.env.ref(
             "l10n_ve_payment_extension.type_person_four_l10n_ve_payment_extension"
@@ -77,7 +82,7 @@ class TestForeignSupplierRequiredFields(TransactionCase):
         else:
             form.taxpayer_type = taxpayer_type
         if withholding:
-            form.withholding_type_id = self.withholding_type
+            form.withholding_type_id = withholding
         return form
 
     def test_foreign_supplier_saves_without_taxpayer_nor_withholding(self):
@@ -89,37 +94,49 @@ class TestForeignSupplierRequiredFields(TransactionCase):
         self.assertFalse(partner.taxpayer_type)
         self.assertFalse(partner.withholding_type_id)
 
-    def test_venezuelan_ordinary_and_formal_do_not_require_withholding(self):
+    def test_venezuelan_ordinary_and_formal_have_no_withholding(self):
         for taxpayer_type in ("ordinary", "formal"):
-            partner = self._fill_form(taxpayer_type=taxpayer_type).save()
+            form = self._fill_form(supplier=False, taxpayer_type=taxpayer_type)
+            # The field is invisible, so the form refuses to write it.
+            with self.assertRaisesRegex(AssertionError, "invisible field"):
+                form.withholding_type_id = self.withholding_100
+            partner = form.save()
             self.assertTrue(partner.is_resident_person)
             self.assertFalse(partner.withholding_type_id)
 
-    @mute_logger("odoo.tests.form")
-    def test_special_resident_supplier_requires_withholding(self):
-        form = self._fill_form(taxpayer_type="special")
-        with self.assertRaisesRegex(AssertionError, "withholding_type_id"):
-            form.save()
+    def test_special_customer_defaults_withholding_to_75(self):
+        partner = self._fill_form(supplier=False, taxpayer_type="special").save()
+        self.assertEqual(partner.withholding_type_id, self.withholding_75)
+
+    def test_supplier_keeps_the_withholding_type_field_for_any_taxpayer_type(self):
+        # Retentions of a supplier read its withholding type, so the rule of the
+        # ticket does not apply: no default, no clearing, field always visible.
+        for taxpayer_type in ("ordinary", "formal", "special"):
+            form = self._fill_form(taxpayer_type=taxpayer_type)
+            self.assertFalse(form.withholding_type_id)
+            form.withholding_type_id = self.withholding_100
+            form.taxpayer_type = "ordinary"
+            self.assertEqual(form.withholding_type_id, self.withholding_100)
+            self.assertEqual(form.save().withholding_type_id, self.withholding_100)
+
+    def test_special_resident_can_choose_100(self):
+        for supplier in (True, False):
+            form = self._fill_form(supplier=supplier, taxpayer_type="special")
+            form.withholding_type_id = self.withholding_100
+            self.assertEqual(form.save().withholding_type_id, self.withholding_100)
 
     @mute_logger("odoo.tests.form")
-    def test_special_resident_customer_requires_withholding(self):
+    def test_special_customer_requires_withholding_when_cleared(self):
         form = self._fill_form(supplier=False, taxpayer_type="special")
+        form.withholding_type_id = self.env["account.withholding.type"]
         with self.assertRaisesRegex(AssertionError, "withholding_type_id"):
             form.save()
 
-    def test_special_resident_with_withholding_saves(self):
-        partner = self._fill_form(taxpayer_type="special", withholding=True).save()
-        self.assertEqual(partner.withholding_type_id, self.withholding_type)
-
-    def test_special_non_resident_does_not_require_withholding(self):
-        non_resident = self.env.ref(
-            "l10n_ve_payment_extension.type_person_four_l10n_ve_payment_extension"
-        )
-        partner = self._fill_form(
-            taxpayer_type="special", type_person=non_resident
-        ).save()
-        self.assertFalse(partner.is_resident_person)
-        self.assertFalse(partner.withholding_type_id)
+    def test_special_to_ordinary_clears_the_withholding(self):
+        form = self._fill_form(supplier=False, taxpayer_type="special")
+        self.assertEqual(form.withholding_type_id, self.withholding_75)
+        form.taxpayer_type = "ordinary"
+        self.assertFalse(form.withholding_type_id)
 
     def test_resident_person_types(self):
         ref = self.env.ref
@@ -169,8 +186,7 @@ class TestForeignSupplierRequiredFields(TransactionCase):
 
     @mute_logger("odoo.tests.form")
     def test_supplier_without_country_still_requires_taxpayer_type(self):
-        # With the withholding filled, taxpayer_type is the only missing field.
-        form = self._fill_form(taxpayer_type="ordinary", withholding=True)
+        form = self._fill_form(taxpayer_type="ordinary")
         form.country_id = self.env["res.country"]
         form.taxpayer_type = False
         with self.assertRaisesRegex(AssertionError, "taxpayer_type"):
