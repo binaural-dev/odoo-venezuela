@@ -156,17 +156,23 @@ class PosSession(models.Model):
         the native bank pipeline produces, is what lets cash and bank methods
         share this code path.
 
-        Every move is created in ``state="draft"`` (see ``_create_cross_move``)
-        — accounting reviews and posts it manually.
+        Every move is posted when created, and a cross that lands on the real
+        journal's transitory account gets its statement line in that journal
+        (see ``_create_cross_move``).
 
         Cash methods go through ``use_suspense=True`` (see
         ``_cross_move_uses_suspense``), which is what makes their move run
         between the two journals' suspense accounts.
+
+        A method whose cash in/out is already crossed movement by movement
+        does not cross its sales (``_crosses_sales``): the cash out takes that
+        money to the real journal.
         """
         for session in self:
             # Per method, not per payment: an ineligible method logs why once.
             eligible_methods = session.order_ids.payment_ids.payment_method_id.filtered(
-                lambda pm: session._is_cross_move_eligible(
+                lambda pm: session._crosses_sales(pm)
+                and session._is_cross_move_eligible(
                     pm, use_suspense=session._cross_move_uses_suspense(pm)
                 )
             )
@@ -206,7 +212,7 @@ class PosSession(models.Model):
                     # its original sale), see ``_get_combined_cross_legs``.
                     foreign_rate=method_payments[0].foreign_rate,
                     date=session.stop_at or fields.Datetime.now(),
-                    ref=session._cross_move_ref(),
+                    ref=session._cross_move_ref(payment_method=payment_method),
                     use_suspense=use_suspense,
                 )
 
@@ -344,6 +350,18 @@ class PosSession(models.Model):
                 )
             )
         )
+
+    def _crosses_sales(self, payment_method):
+        """Whether the sales of ``payment_method`` take part in the cross of
+        ``_validate_cross_move``.
+
+        Always here. A module that crosses each cash in/out of a drawer
+        (``binaural_pos_close``) answers ``False`` for the method of that
+        drawer: the cash out that empties it already takes the money of the
+        sales to the real journal, so crossing the sales as well moves it
+        twice.
+        """
+        return True
 
     def _cross_move_uses_suspense(self, payment_method):
         """Whether the SALE cross move of ``payment_method`` runs between the
@@ -739,13 +757,17 @@ class PosSession(models.Model):
             ),
         ]
 
-    def _cross_move_ref(self, payment=None):
-        """Human-readable reference identifying what a cross move clears.
+    def _cross_move_ref(self, payment=None, payment_method=None):
+        """Human-readable reference identifying what a cross move clears,
+        starting with the session (``Caja 1/00050 · Sales · Efectivo USD``).
 
         ``name`` cannot carry this text — it is the move's sequential
         "Number", assigned by the journal on posting (see
         ``_create_cross_move``) — so ``ref`` is the only field the accountant
-        sees in the journal entries list to tell one draft from another.
+        sees in the journal entries list to tell one move from another. It is
+        also the label of every line of the move, which is what the real
+        journal's reconciliation dashboard shows: with the session in it, a
+        line cannot be matched against the cross of another session.
 
         Under split granularity a session produces one draft per payment, all
         with the same date, amount shape and journal; without a discriminator
@@ -763,12 +785,14 @@ class PosSession(models.Model):
         directly.
 
         Under combine granularity a single move covers every payment of the
-        method in the session, so the session name is the right granularity.
+        method in the session, so the session and the method (``payment_method``)
+        are the right granularity.
         """
-        base = _("PoS Payment Method Adjustment")
-        if not payment:
-            return f"{base} - {self.name}"
-        return f"{base} - {payment.pos_order_id.name} - {payment.name or f'#{payment.id}'}"
+        if payment:
+            parts = [self.name, payment.pos_order_id.name, payment.name or f"#{payment.id}"]
+        else:
+            parts = [self.name, _("Sales"), payment_method.name if payment_method else ""]
+        return " · ".join(part for part in parts if part)
 
     def _cross_move_header_partner(self, partner):
         """Partner that is safe to put on the cross move's header.
@@ -906,17 +930,22 @@ class PosSession(models.Model):
                 combine granularity, where one move spans several customers.
 
         Returns:
-            account.move: PoS payment method adjustment move.
+            account.move: the posted cross move.
 
-        The move is always created in ``state="draft"`` — it is not posted
-        automatically; accounting reviews and validates it manually.
+        Every line takes ``ref`` as its label (see ``_cross_move_ref``).
+
+        The move is posted right away: a draft cannot be reconciled from the
+        real journal's dashboard, and every session close used to leave its
+        crosses in draft for accounting to post one by one. A line on the
+        real journal's transitory account then gets its statement line in
+        that journal (``_create_cross_real_statement_lines``), the one to
+        reconcile it against from the dashboard.
 
         ``name`` (the move's sequential "Number") is intentionally left
-        unset so that when accounting posts it, Odoo's native
-        ``_compute_name`` assigns the next sequence from
-        ``cross_account_journal`` — setting it explicitly here would
-        permanently block that assignment (``_compute_name`` only calls
-        ``_set_next_sequence()`` when ``name`` is empty/``'/'``). The
+        unset so that on posting Odoo's native ``_compute_name`` assigns the
+        next sequence from ``cross_account_journal`` — setting it explicitly
+        here would permanently block that assignment (``_compute_name`` only
+        calls ``_set_next_sequence()`` when ``name`` is empty/``'/'``). The
         descriptive text goes in ``ref`` instead.
 
         ``account.move.date`` is a Date: a Datetime would be cut with
@@ -934,14 +963,64 @@ class PosSession(models.Model):
                 "partner_id": self._cross_move_header_partner(partner).id,
                 "date": date,
                 "journal_id": payment_method.cross_account_journal.id,
-                "state": "draft",
-                "line_ids": line_vals,
+                "line_ids": [
+                    Command.create({**command[2], "name": ref}) for command in line_vals
+                ],
                 "foreign_currency_id": self.foreign_currency_id.id,
                 "foreign_rate": foreign_rate,
                 "company_id": self.company_id.id,
             }
         )
+        move.action_post()
+        self._create_cross_real_statement_lines(payment_method, move)
         return move
+
+    def _create_cross_real_statement_lines(self, payment_method, move):
+        """One statement line in the real journal (``cross_journal``) for each
+        line of the cross ``move`` on that journal's transitory account
+        (``suspense_account_id``), with the same amount, alternate amount,
+        partner and label.
+
+        That is where a cash cross leaves the money (``use_suspense=True``:
+        cash sales, cash in/out, see ``_get_cross_real_account``), and no
+        other movement takes it on to the real journal's own account: its
+        dashboard had nothing to reconcile and the statement lines had to be
+        entered by hand. Each statement line is left to reconcile against its
+        own cross line, one to one: Odoo does not reconcile a statement line
+        against several lines of its own transitory account ("the journal
+        entry must always have only one suspense line").
+
+        The statement line moves the real journal's account by the same
+        amount, in that journal's currency (the ``amount_currency`` of the
+        cross line, which is in that currency). Its counterpart lands on the
+        same transitory account with the opposite sign: reconciling both
+        clears it.
+
+        Nothing is created if that transitory account is also the one of the
+        method's journal: both lines of the cross are then on it and there is
+        no way to tell the real one (the configuration needs a transitory
+        account per journal).
+        """
+        self.ensure_one()
+        journal = payment_method.cross_journal
+        suspense_account = journal.suspense_account_id
+        statement_lines = self.env["account.bank.statement.line"]
+        if not suspense_account or suspense_account == payment_method.journal_id.suspense_account_id:
+            return statement_lines
+        vals_list = [
+            {
+                "journal_id": journal.id,
+                "date": move.date,
+                "payment_ref": line.name,
+                "partner_id": line.partner_id.id,
+                "amount": line.amount_currency,
+                "foreign_amount": line.foreign_debit - line.foreign_credit,
+            }
+            for line in move.line_ids.filtered(lambda l: l.account_id == suspense_account)
+        ]
+        if not vals_list:
+            return statement_lines
+        return statement_lines.with_context(no_retrieve_partner=True).create(vals_list)
 
     def action_pos_session_close(self, balancing_account=False, amount_to_balance=0, bank_payment_method_diffs=None):
         """
