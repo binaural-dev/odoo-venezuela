@@ -10,4 +10,4 @@
 
 - [x] 2.1 Cobro con retención de IVA sobre una factura con impuesto "al pagar": el IMBEF trae el monto alterno en las líneas de impuesto
 - [x] 2.2 Recalcular los IMBEF ya generados con el alterno en 0 (migración)
-- [ ] 2.3 Navegador: factura a ente público (posición fiscal Gubernamental, "16% Ventas Público"), cobrar y revisar el IMBEF
+- [x] 2.3 Factura a ente público (posición fiscal "Gubernamental" que cambia el IVA 16% por uno exigible al pagar), cobro y revisión del IMBEF: prueba con `Form` (`test_government_fiscal_position_maps_to_cash_basis_tax`). La validación manual con datos del cliente la hace funcional en el ticket
