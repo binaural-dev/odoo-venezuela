@@ -184,26 +184,31 @@ class PosSession(models.Model):
                     lambda p: p.payment_method_id == payment_method
                 )
                 use_suspense = session._cross_move_uses_suspense(payment_method)
+                sign = session._get_sales_cross_sign(payment_method)
                 if payment_method.split_transactions:
                     for payment in method_payments:
                         session._create_cross_move_for(
                             payment_method,
-                            amount=payment.amount,
-                            foreign_amount=payment.foreign_amount,
+                            amount=sign * payment.amount,
+                            foreign_amount=sign * payment.foreign_amount,
                             foreign_rate=payment.foreign_rate,
                             partner=payment.partner_id,
                             date=payment.create_date,
                             ref=session._cross_move_ref(payment),
                             use_suspense=use_suspense,
-                            **session._get_cross_currency_amount_kwargs(
-                                payment_method, payment
+                            **session._sign_cross_amounts(
+                                sign,
+                                session._get_cross_currency_amount_kwargs(payment_method, payment),
                             ),
                         )
                     continue
 
                 session._create_combined_cross_move(
                     payment_method,
-                    session._get_combined_cross_legs(payment_method, method_payments),
+                    [
+                        session._sign_cross_amounts(sign, leg)
+                        for leg in session._get_combined_cross_legs(payment_method, method_payments)
+                    ],
                     # Rate of the move header. Read it off a payment rather
                     # than off ``config_id.foreign_rate``: the config value can
                     # be edited after the session opened, while the payments
@@ -351,6 +356,33 @@ class PosSession(models.Model):
             )
         )
 
+    def _get_sales_cross_sign(self, payment_method):
+        """Sign the sales of ``payment_method`` are crossed with: ``-1`` for a
+        cash method (between the suspense accounts, see
+        ``_cross_move_uses_suspense``), ``1`` otherwise.
+
+        The cash of a sale reaches the real journal through the cash out that
+        empties the drawer, and native ``try_cash_in_out`` leaves that cash out
+        as a DEBIT on the method journal's suspense account. So the cross of a
+        cash sale is the one of a cash out of the same amount: credit that
+        suspense account, debit the ``cross_journal``'s. ``_create_cross_move_for``
+        (``use_suspense=True``, the convention of the cash in/out) reads a
+        negative amount as a cash out. Crossed with its own sign, the sale
+        debited the method's suspense account a second time and took the money
+        out of the real journal (ticket 15219, fixed in task 86801).
+        """
+        return -1 if self._cross_move_uses_suspense(payment_method) else 1
+
+    def _sign_cross_amounts(self, sign, values):
+        """``values`` (a leg of ``_get_combined_cross_legs`` or the kwargs of
+        ``_get_cross_currency_amount_kwargs``) with its amounts multiplied by
+        ``sign``; the rate and anything else stay as they are."""
+        keys = ("amount", "foreign_amount", "currency_amount", "transitory_amount_currency")
+        return {
+            key: sign * value if key in keys and value is not None else value
+            for key, value in values.items()
+        }
+
     def _crosses_sales(self, payment_method):
         """Whether the sales of ``payment_method`` take part in the cross of
         ``_validate_cross_move``.
@@ -374,9 +406,9 @@ class PosSession(models.Model):
         account is already balanced without the cross move; draining it here
         as well credited it twice and left both suspense accounts loaded with
         nothing to offset them. Routing the sale through ``use_suspense=True``
-        instead debits the method journal's suspense account and credits the
-        ``cross_journal``'s, which is what nets the sale against what the cash
-        out parked there.
+        instead credits the method journal's suspense account, where the cash
+        out parked the money as a debit, and debits the ``cross_journal``'s
+        (with the sign of ``_get_sales_cross_sign``).
 
         Bank methods keep the previous behaviour (``outstanding_account_id``
         → the ``cross_journal``'s real liquidity account): no cash out takes
@@ -384,9 +416,8 @@ class PosSession(models.Model):
 
         This only covers the sale path. Callers outside ``_validate_cross_move``
         pass their own flag: cash in/out (``binaural_pos_close``) already used
-        ``use_suspense=True``, and opening/closing differences
-        (``_post_foreign_statement_difference``) still land on the real
-        liquidity account.
+        ``use_suspense=True``, and opening/closing differences no longer cross
+        (``binaural_pos_close``, task 86801).
         """
         return payment_method.type == "cash"
 
@@ -668,7 +699,6 @@ class PosSession(models.Model):
         return [
             Command.create(
                 {
-                    "name": _("PoS Payment Method Adjustment"),
                     "account_id": real_account,
                     "partner_id": partner.id,
                     "amount_currency": real_amount_currency,
@@ -683,7 +713,6 @@ class PosSession(models.Model):
             ),
             Command.create(
                 {
-                    "name": _("PoS Payment Method Adjustment"),
                     "account_id": transitory_account,
                     "partner_id": partner.id,
                     "amount_currency": -transitory_amount,
@@ -727,7 +756,6 @@ class PosSession(models.Model):
         return [
             Command.create(
                 {
-                    "name": _("PoS Payment Method Adjustment"),
                     "account_id": transitory_account,
                     "partner_id": partner.id,
                     "amount_currency": abs(transitory_amount),
@@ -742,7 +770,6 @@ class PosSession(models.Model):
             ),
             Command.create(
                 {
-                    "name": _("PoS Payment Method Adjustment"),
                     "account_id": real_account,
                     "partner_id": partner.id,
                     "amount_currency": real_amount_currency,
@@ -957,7 +984,11 @@ class PosSession(models.Model):
         """
         if isinstance(date, datetime):
             date = fields.Date.context_today(self, date)
-        move = self.env["account.move"].create(
+        # sudo: the cross is part of closing the session or registering a cash
+        # move, which the cashier (point_of_sale.group_pos_user) does without
+        # accounting rights; the core books the session the same way
+        # (``_validate_session``: ``record.sudo()``).
+        move = self.env["account.move"].sudo().with_company(self.company_id).create(
             {
                 "ref": ref,
                 "partner_id": self._cross_move_header_partner(partner).id,
@@ -973,7 +1004,7 @@ class PosSession(models.Model):
         )
         move.action_post()
         self._create_cross_real_statement_lines(payment_method, move)
-        return move
+        return move.with_env(self.env)
 
     def _create_cross_real_statement_lines(self, payment_method, move):
         """One statement line in the real journal (``cross_journal``) for each
@@ -1012,7 +1043,9 @@ class PosSession(models.Model):
                 "journal_id": journal.id,
                 "date": move.date,
                 "payment_ref": line.name,
-                "partner_id": line.partner_id.id,
+                # ``partner_id`` of a statement line is ``check_company``, like the
+                # move header's: a customer of another company would block the close.
+                "partner_id": self._cross_move_header_partner(line.partner_id).id,
                 "amount": line.amount_currency,
                 "foreign_amount": line.foreign_debit - line.foreign_credit,
             }
@@ -1020,7 +1053,7 @@ class PosSession(models.Model):
         ]
         if not vals_list:
             return statement_lines
-        return statement_lines.with_context(no_retrieve_partner=True).create(vals_list)
+        return statement_lines.sudo().with_context(no_retrieve_partner=True).create(vals_list)
 
     def action_pos_session_close(self, balancing_account=False, amount_to_balance=0, bank_payment_method_diffs=None):
         """
