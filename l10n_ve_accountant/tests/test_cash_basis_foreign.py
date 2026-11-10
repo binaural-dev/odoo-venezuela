@@ -336,3 +336,64 @@ class TestCashBasisForeign(TransactionCase):
         self.assertAlmostEqual(sum(caba.line_ids.mapped("foreign_balance")), 0.0, 2)
         # Idempotente: una segunda corrida no encuentra nada que tocar.
         self.assertFalse(module.recompute_caba_foreign_amounts(self.env))
+
+    def test_government_fiscal_position_maps_to_cash_basis_tax(self):
+        """6. Ente publico: la posicion fiscal "Gubernamental" cambia el IVA 16%
+        por "16% Ventas Publico" (exigible al pagar). Flujo del ticket: factura
+        con Form, cobro y revision del IMBEF."""
+        tax_group = self.tax.tax_group_id
+        immediate_tax = self.env["account.tax"].create(
+            {
+                "name": "CB IVA 16% Ventas",
+                "amount": 16,
+                "amount_type": "percent",
+                "type_tax_use": "sale",
+                "company_id": self.company.id,
+                "tax_group_id": tax_group.id,
+            }
+        )
+        government_fp = self.env["account.fiscal.position"].create(
+            {"name": "Gubernamental", "company_id": self.company.id}
+        )
+        # Odoo 19: el mapeo se define en el impuesto destino.
+        self.tax.write(
+            {
+                "fiscal_position_ids": [Command.set(government_fp.ids)],
+                "original_tax_ids": [Command.set(immediate_tax.ids)],
+            }
+        )
+        self.partner.property_account_position_id = government_fp
+        self.product.taxes_id = immediate_tax
+
+        form = Form(
+            self.env["account.move"].with_context(default_move_type="out_invoice")
+        )
+        form.partner_id = self.partner
+        form.journal_id = self.sale_journal
+        form.currency_id = self.usd
+        form.invoice_date = self.today
+        with form.invoice_line_ids.new() as line:
+            line.product_id = self.product
+            line.quantity = 1
+            line.price_unit = self.BASE_USD
+        invoice = form.save()
+        self.assertEqual(invoice.fiscal_position_id, government_fp)
+        self.assertEqual(invoice.invoice_line_ids.tax_ids, self.tax)
+        invoice.action_post()
+        self._pay(invoice)
+
+        caba = self._caba_moves(invoice)
+        self.assertEqual(len(caba), 1)
+        self.assertEqual(len(caba.line_ids), 4)
+        self.assertEqual(caba.fiscal_position_id, government_fp)
+        for line in caba.line_ids:
+            self.assertTrue(
+                line.foreign_balance,
+                f"Linea {line.account_id.code} del IMBEF sin monto alterno",
+            )
+        tax_from = self._line(caba, self.acc_transition)
+        tax_to = self._line(caba, self.acc_final)
+        self.assertAlmostEqual(tax_from.foreign_debit, 16.0, 2)
+        self.assertAlmostEqual(tax_to.foreign_credit, 16.0, 2)
+        self.assertAlmostEqual(tax_from.debit, self.TAX_BS, 2)
+        self.assertAlmostEqual(sum(caba.line_ids.mapped("foreign_balance")), 0.0, 2)
