@@ -7,6 +7,8 @@ from ...tools import binaural_cne_query
 
 _logger = logging.getLogger(__name__)
 
+COMPANY_VAT_PREFIXES = ("J", "G", "C")
+
 
 class ResPartner(models.Model):
     _inherit = "res.partner"
@@ -42,6 +44,23 @@ class ResPartner(models.Model):
     def _default_company_id(self):
         company_id = self.env.company.id
         return company_id
+
+    @api.depends("has_vat", "commercial_partner_id", "prefix_vat", "country_id")
+    def _compute_is_company(self):
+        """A Venezuelan partner is a company when its RIF belongs to a legal entity: J, G or C.
+
+        Odoo 20 computes ``is_company`` from the VAT, so every partner with one counts as a
+        company, and the individual/company choice of Odoo 19 is gone. Natural persons also have
+        a RIF (V, E or P), so the prefix decides. Partners of other countries keep the core rule.
+        """
+        venezuelan = self.filtered(lambda partner: not partner.country_id or partner.country_id.code == "VE")
+        for partner in venezuelan:
+            partner.is_company = bool(
+                partner.commercial_partner_id == partner
+                and partner.has_vat
+                and partner.prefix_vat in COMPANY_VAT_PREFIXES
+            )
+        super(ResPartner, self - venezuelan)._compute_is_company()
 
     prefix_vat = fields.Selection(
         [
