@@ -22,17 +22,61 @@ Al cerrar la sesión (`_validate_cross_move`), por cada método que pase `_is_cr
 #### Scenario: Cuentas del cruce
 
 - **WHEN** se arma el cruce de un método
-- **THEN** la transitoria es la que resuelve `_get_cross_transitory_account` (efectivo: `journal_id.default_account_id`; el resto: `outstanding_account_id` o la del diario; en ambos, como último recurso, la cuenta por cobrar del PdV de la compañía) y la real la `payment_account_id` de las líneas de pago entrantes o salientes del `cross_journal`, según el signo; con `use_suspense=True` el asiento va entre las cuentas transitorias de los dos diarios, con el sentido invertido
+- **THEN** la transitoria es la que resuelve `_get_cross_transitory_account` (efectivo: `journal_id.default_account_id`; el resto: `outstanding_account_id` o la del diario; en ambos, como último recurso, la cuenta por cobrar del PdV de la compañía) y la real la `payment_account_id` de las líneas de pago entrantes o salientes del `cross_journal`, según el signo; con `use_suspense=True` el asiento va entre las cuentas transitorias de los dos diarios: una entrada/salida con el sentido invertido y una venta en efectivo como la salida que la lleva al diario real
 
 #### Scenario: Método con moneda de cobro
 
 - **WHEN** se cierra una sesión con pagos de un método con moneda de cobro y sus dos diarios
 - **THEN** su cruce se crea como el de un método en divisa y la línea del diario real lleva como `amount_currency` lo cobrado en esa moneda
 
+#### Scenario: Venta en efectivo
+
+- **WHEN** se cierra una sesión con ventas en efectivo de un método en divisa con sus dos transitorias
+- **THEN** el cruce acredita la transitoria del diario del método (donde la salida de efectivo dejó el dinero en el debe) y debita la del `cross_journal`, y su línea de extracto entra al diario real
+
+#### Scenario: Cajero sin permisos contables
+
+- **WHEN** el cruce lo dispara un usuario del PdV sin permisos contables
+- **THEN** el asiento y su línea de extracto se crean y publican igual
+
 #### Scenario: Etiqueta con la sesión
 
 - **WHEN** se cierra la sesión `Caja 1/00050` con ventas combinadas de un método en divisa
 - **THEN** la `ref` del cruce y la etiqueta de sus líneas son `Caja 1/00050 · Ventas · <método>`
+
+### Requirement: Granularidad del cross move según split_transactions
+
+La granularidad de los cross moves DEBE (MUST) seguir el flag nativo `split_transactions` del método: verdadero, un asiento por cada `pos.payment` (con su orden y pago en la referencia); falso, un único asiento por método y sesión con una pata de entradas y otra de salidas, cada una con el neto de sus pagos, y ninguno si los netos en la caja, la alterna y la moneda de cobro son todos cero. Si el partner de un pago es de otra compañía, se omite del encabezado.
+
+#### Scenario: Método identificando cliente
+
+- **WHEN** el método tiene `split_transactions` activo y la sesión registró tres pagos con él
+- **THEN** se crean tres asientos publicados, cada uno con la referencia de su pago
+
+#### Scenario: Neto cero combinado
+
+- **WHEN** el método no divide transacciones y las ventas y devoluciones del método se anulan entre sí en la caja, en la alterna y en la moneda de cobro
+- **THEN** no se crea ningún asiento para ese método
+
+#### Scenario: Venta y devolución en divisa a tasas distintas
+
+- **WHEN** el método no divide transacciones y la sesión tiene una venta de 40 a 50 por unidad y una devolución de 60 a 10 (neto −20 en la caja y +1.400 en la alterna)
+- **THEN** se crea un asiento con dos pares de líneas, la venta y la devolución, cada línea con saldo y `amount_currency` del mismo signo, y el diario real recibe −20 y +1.400
+
+#### Scenario: Venta y reembolso en euros a tasas distintas
+
+- **WHEN** el método en EUR no divide transacciones y la sesión tiene una venta de 20 € por 1.000 Bs y un reembolso de 25 € por 750 Bs
+- **THEN** se crea un asiento con dos pares de líneas y la caja real en EUR recibe −250 Bs con +5 € en `amount_currency`, sin que el cierre choque con `account_move_line_check_amount_currency_balance_sign`
+
+#### Scenario: Neto cero en la caja con divisas de diferencia
+
+- **WHEN** las ventas y reembolsos del método suman cero en la caja pero no en la alterna o en euros
+- **THEN** se crea el asiento y la diferencia en esa moneda pasa al diario real
+
+#### Scenario: Tasa de cada pata
+
+- **WHEN** el reembolso de la sesión se valoró a la tasa de su venta original y la venta a la del día
+- **THEN** las líneas de cada pata se arman con la tasa de sus pagos; es informativa, porque la línea guardada toma la del asiento y sus montos alternos son los de sus pagos
 
 ## ADDED Requirements
 

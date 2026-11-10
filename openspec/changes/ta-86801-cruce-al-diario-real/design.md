@@ -23,6 +23,13 @@ Un cruce en efectivo (`use_suspense=True`) deja el dinero en
 - **Etiqueta = `ref`**, que empieza con la sesión: es lo que muestra el tablero.
 - **`_crosses_sales`** como gancho y no dentro de `_is_cross_move_eligible`: la
   elegibilidad la usan también las entradas/salidas, que sí deben cruzar.
+- **Signo de la venta en efectivo** en el camino de las ventas
+  (`_get_sales_cross_sign`, `_sign_cross_amounts`), no en
+  `_get_cross_move_line_vals`: esa construcción la comparten las entradas/salidas
+  de `binaural_pos_close`, que ya iban bien. La venta se arma como la salida de
+  efectivo que la lleva al diario real.
+- **`sudo` en `_create_cross_move`**, el punto por el que pasan todos los
+  cruces; el asiento vuelve en el entorno de quien llama.
 
 ## Risks / Trade-offs
 

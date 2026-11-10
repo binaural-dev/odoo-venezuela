@@ -30,18 +30,32 @@ Aunque la prueba fue con euros, aplica a todos los cruces.
   o `Caja 1/00050 · <orden> · <pago>`) y es también la etiqueta de sus líneas.
 - Gancho `_crosses_sales(payment_method)` (siempre `True` aquí) que
   `_validate_cross_move` consulta para cruzar las ventas de un método.
+- La venta en efectivo se cruza como la salida que la lleva al diario real
+  (`_get_sales_cross_sign`): acredita la transitoria del diario del método, que
+  la salida de efectivo nativa deja en el debe, y debita la del `cross_journal`.
+  Antes iba al revés (ticket 15219): cargaba dos veces esa transitoria y, con el
+  cruce publicado y su línea de extracto, sacaba el dinero del diario real.
+- El cruce y su línea de extracto se crean en `sudo`: los crea el cierre o la
+  entrada/salida del cajero, sin permisos contables (como el cierre nativo).
+- La línea de extracto no lleva un socio de otra compañía (`check_company`),
+  igual que la cabecera del cruce.
 
 ## Impact
 
 - `l10n_ve_pos/models/pos_session.py`, tests de `test_pos_session_cross_account_move.py`,
-  `i18n/es_VE.po` ("Sales").
+  `test_pos_tender_currency.py` (signos de la venta en efectivo), `i18n/es_VE.po`
+  ("Sales"; sale "PoS Payment Method Adjustment", la etiqueta es la `ref`).
 - Los cruces de banco (`use_suspense=False`) también se publican; no generan
   línea de extracto (su pata real va a la cuenta de las líneas de pago).
 - `binaural_pos_close` y `binaural_pos_multicurrency` (integra-addons) usan el
-  gancho y el formato de la `ref`: se despliegan después de este módulo.
+  gancho, el signo y el formato de la `ref`: van en el MISMO despliegue que este
+  módulo. Solo odoo-venezuela volvería a cruzar las ventas de los cajones (ya
+  publicadas); solo integra-addons rompería el cierre de las cajas en otra moneda.
 - Configuración necesaria: transitoria distinta por diario y "Permitir
   conciliación" en las dos.
 - Fuera de alcance: el punto 2 de la tarea (redondeo en los asientos de salida).
 - Rama sobre la de la tarea 86066 (moneda de cobro, PR #1569 abierto): el cruce
   de un método en moneda de cobro también se publica y crea su línea de extracto
   en la moneda de su diario real (EUR). Se mergea después de #1569.
+- No toca los borradores de cruce acumulados en las bases (los de ventas de los
+  cajones se cancelan, no se publican).
