@@ -497,14 +497,17 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
         self.assertTrue(origin_leg, "falta la pata de la transitoria del diario del metodo")
         self.assertTrue(cross_leg, "falta la pata de la transitoria del diario afectado")
 
-        self.assertAlmostEqual(origin_leg.debit, payment.amount, places=2)
-        self.assertAlmostEqual(origin_leg.foreign_debit, payment.foreign_amount, places=2)
-        self.assertAlmostEqual(origin_leg.credit, 0.0, places=2)
+        # Como la salida que lleva la venta al diario real (tarea 86801): se
+        # acredita la transitoria del metodo (la salida la deja en el debe) y
+        # se debita la del diario afectado.
+        self.assertAlmostEqual(origin_leg.credit, payment.amount, places=2)
+        self.assertAlmostEqual(origin_leg.foreign_credit, payment.foreign_amount, places=2)
+        self.assertAlmostEqual(origin_leg.debit, 0.0, places=2)
         self.assertTrue(origin_leg.not_foreign_recalculate)
 
-        self.assertAlmostEqual(cross_leg.credit, payment.amount, places=2)
-        self.assertAlmostEqual(cross_leg.foreign_credit, payment.foreign_amount, places=2)
-        self.assertAlmostEqual(cross_leg.debit, 0.0, places=2)
+        self.assertAlmostEqual(cross_leg.debit, payment.amount, places=2)
+        self.assertAlmostEqual(cross_leg.foreign_debit, payment.foreign_amount, places=2)
+        self.assertAlmostEqual(cross_leg.credit, 0.0, places=2)
         self.assertTrue(cross_leg.not_foreign_recalculate)
 
         self.assertFalse(
@@ -556,17 +559,17 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
             lambda l: l.account_id == suspense_origin
         )
         cross_leg = moves.line_ids.filtered(lambda l: l.account_id == suspense_cross)
-        self.assertEqual(sorted(origin_leg.mapped("balance")), [-100.0, 40.0])
-        self.assertEqual(sorted(cross_leg.mapped("balance")), [-40.0, 100.0])
-        self.assertAlmostEqual(sum(origin_leg.mapped("balance")), -60.0, places=2, msg="40 - 100")
-        self.assertAlmostEqual(sum(cross_leg.mapped("balance")), 60.0, places=2)
+        self.assertEqual(sorted(origin_leg.mapped("balance")), [-40.0, 100.0])
+        self.assertEqual(sorted(cross_leg.mapped("balance")), [-100.0, 40.0])
+        self.assertAlmostEqual(sum(origin_leg.mapped("balance")), 60.0, places=2, msg="100 - 40")
+        self.assertAlmostEqual(sum(cross_leg.mapped("balance")), -60.0, places=2)
         self.assertGreater(
-            sum(origin_leg.mapped("foreign_credit")) - sum(origin_leg.mapped("foreign_debit")),
+            sum(origin_leg.mapped("foreign_debit")) - sum(origin_leg.mapped("foreign_credit")),
             0.0,
             "el alterno tambien se invierte",
         )
         self.assertGreater(
-            sum(cross_leg.mapped("foreign_debit")) - sum(cross_leg.mapped("foreign_credit")), 0.0
+            sum(cross_leg.mapped("foreign_credit")) - sum(cross_leg.mapped("foreign_debit")), 0.0
         )
         self.assertFalse(
             moves.line_ids.filtered(
@@ -1211,6 +1214,115 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
 
         self.assertFalse(self._cross_moves())
         self.assertFalse(self._real_statement_lines())
+
+    def test_cash_sale_cross_offsets_the_cash_out(self):
+        """La venta en efectivo se cruza como la salida que la lleva al diario
+        real: acredita la transitoria del diario del metodo, que la salida de
+        efectivo nativa deja en el debe, y debita la del ``cross_journal``
+        (antes iba al reves y la transitoria quedaba cargada dos veces, ticket
+        15219, corregido en la tarea 86801)."""
+        suspense_origin, suspense_cross = self._configure_use_suspense_accounts(
+            self.split_cash_method
+        )
+        self._configure_cross(self.split_cash_method)
+        session = self._new_session().with_company(self.company)
+        self._create_paid_order(
+            session,
+            method=self.split_cash_method,
+            amount=58.0,
+            tax_amount=8.0,
+            foreign_rate=40.0,
+            name="OL/CROSS/CASH-OUT",
+        )
+        # La salida de efectivo nativa del cierre (los 58 de la venta, en la
+        # moneda del diario): sin contrapartida explicita, su otra pata cae en la
+        # transitoria del diario del metodo.
+        journal = self.split_cash_method.journal_id
+        cash_out = self.company.currency_id._convert(
+            -58.0, journal.currency_id or self.company.currency_id, self.company, fields.Date.today()
+        )
+        self.env["account.bank.statement.line"].with_company(self.company).create(
+            {"journal_id": journal.id, "amount": cash_out, "payment_ref": "Salida"}
+        )
+
+        session._validate_cross_move()
+
+        balance = lambda account: sum(  # noqa: E731
+            self.env["account.move.line"]
+            .search([("account_id", "=", account.id), ("parent_state", "=", "posted")])
+            .mapped("balance")
+        )
+        self.assertAlmostEqual(balance(suspense_origin), 0.0, places=2)
+        # La transitoria del diario real queda con el cruce y la contrapartida de
+        # su linea de extracto, por conciliar; la venta ya esta en su cuenta.
+        self.assertAlmostEqual(balance(suspense_cross), 0.0, places=2)
+        self.assertAlmostEqual(balance(self.account_real_bank), 58.0, places=2)
+        st_line = self._real_statement_lines()
+        self.assertGreater(st_line.amount, 0, "la venta entra al diario real")
+
+    def test_cross_created_by_a_pos_user_without_accounting_rights(self):
+        """El cajero (solo usuario del PdV) cruza sin permisos contables: el
+        asiento y su linea de extracto se crean y publican en sudo, como el
+        cierre nativo de la sesion."""
+        self._configure_use_suspense_accounts(self.split_cash_method)
+        self._configure_cross(self.split_cash_method)
+        cashier = self.env["res.users"].create(
+            {
+                "name": "C Cajero 86801",
+                "login": "c_cajero_86801",
+                "company_id": self.company.id,
+                "company_ids": [(6, 0, self.company.ids)],
+                "group_ids": [(6, 0, [
+                    self.env.ref("base.group_user").id,
+                    self.env.ref("point_of_sale.group_pos_user").id,
+                ])],
+            }
+        )
+        self.assertFalse(cashier.has_group("account.group_account_invoice"))
+        session = self._new_session().with_user(cashier).with_company(self.company)
+        self.assertFalse(session.env.su)
+
+        move = session._create_cross_move_for(
+            self.split_cash_method,
+            amount=-25.0,
+            foreign_amount=-25.0 * 40.0,
+            foreign_rate=40.0,
+            partner=self.env["res.partner"],
+            date=fields.Datetime.now(),
+            ref="Salida cajero",
+            use_suspense=True,
+        )
+
+        self.assertEqual(move.env.user, cashier, "se devuelve en el entorno de quien llama")
+        self.assertEqual(move.sudo().state, "posted")
+        self.assertEqual(len(self._real_statement_lines()), 1)
+
+    def test_statement_line_drops_a_partner_of_another_company(self):
+        """La linea de extracto, como la cabecera del cruce, no lleva un socio de
+        otra compania (``check_company``): bloquearia el cierre."""
+        self._configure_use_suspense_accounts(self.split_cash_method)
+        self._configure_cross(self.split_cash_method)
+        other_company = self.env["res.company"].create({"name": "C Other Co 86801"})
+        foreign_partner = self.env["res.partner"].create(
+            {"name": "C Foreign Customer 86801", "company_id": other_company.id}
+        )
+        session = self._new_session().with_company(self.company)
+
+        move = session._create_cross_move_for(
+            self.split_cash_method,
+            amount=-25.0,
+            foreign_amount=-25.0 * 40.0,
+            foreign_rate=40.0,
+            partner=foreign_partner,
+            date=fields.Datetime.now(),
+            ref="Salida socio",
+            use_suspense=True,
+        )
+
+        self.assertEqual(move.line_ids.partner_id, foreign_partner)
+        st_line = self._real_statement_lines()
+        self.assertEqual(len(st_line), 1)
+        self.assertFalse(st_line.partner_id)
 
     def test_amount_currency_uses_configured_foreign_currency_not_hardcoded_id(self):
         """Regresion del bug `currency == 3`: usa self.foreign_currency_id, no un id fijo.

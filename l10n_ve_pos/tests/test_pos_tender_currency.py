@@ -639,11 +639,13 @@ class TestPosTenderCurrency(TestPosSessionAccountingBase):
         self.assertEqual(len(move), 1)
         eur_leg, transit_leg = self._eur_legs(move)
         self.assertEqual(eur_leg.currency_id, self.eur)
-        self.assertAlmostEqual(eur_leg.credit, self.eur_100_local, places=2)
-        self.assertAlmostEqual(eur_leg.amount_currency, -100.0, places=2)
-        self.assertAlmostEqual(eur_leg.foreign_credit, payment.foreign_amount, places=2)
-        self.assertAlmostEqual(transit_leg.debit, self.eur_100_local, places=2)
-        self.assertAlmostEqual(transit_leg.foreign_debit, payment.foreign_amount, places=2)
+        # La venta entra a la caja real en EUR (tarea 86801: se cruza como la
+        # salida que la lleva allí).
+        self.assertAlmostEqual(eur_leg.debit, self.eur_100_local, places=2)
+        self.assertAlmostEqual(eur_leg.amount_currency, 100.0, places=2)
+        self.assertAlmostEqual(eur_leg.foreign_debit, payment.foreign_amount, places=2)
+        self.assertAlmostEqual(transit_leg.credit, self.eur_100_local, places=2)
+        self.assertAlmostEqual(transit_leg.foreign_credit, payment.foreign_amount, places=2)
 
     def test_split_cash_sale_crosses_each_payment_with_its_euros(self):
         self.eur_method.split_transactions = True
@@ -654,7 +656,7 @@ class TestPosTenderCurrency(TestPosSessionAccountingBase):
         session._validate_cross_move()
 
         eur_legs, _transit = self._eur_legs()
-        self.assertEqual(sorted(eur_legs.mapped("amount_currency")), [-100.0, -50.0])
+        self.assertEqual(sorted(eur_legs.mapped("amount_currency")), [50.0, 100.0])
 
     def test_bank_method_in_tender_currency_lands_on_the_real_eur_account(self):
         session = self._new_session().with_company(self.company)
@@ -818,7 +820,7 @@ class TestPosTenderCurrency(TestPosSessionAccountingBase):
         ``account_move_line_check_amount_currency_balance_sign`` y tumbaba el
         cierre. Ahora es UN asiento con una pata de entradas y otra de
         salidas, cada línea con signos coherentes, y la caja real en EUR
-        recibe el neto de los euros."""
+        lleva el neto de los euros (−5 €: salió más de lo que entró)."""
         session = self._new_session().with_company(self.company)
         self._eur_order(session, amount=1000.0, tender_amount=20.0, name="OL/EUR/SALE")
         self._eur_order(session, amount=-750.0, tender_amount=25.0, name="OL/EUR/REFUND")
@@ -830,10 +832,10 @@ class TestPosTenderCurrency(TestPosSessionAccountingBase):
         self.assertEqual(len(move.line_ids), 4, "dos líneas por pata")
         self.assertCoherentSigns(move.line_ids)
         eur_legs, transit_legs = self._eur_legs(move)
-        self.assertEqual(sorted(eur_legs.mapped("amount_currency")), [-20.0, 25.0])
-        self.assertAlmostEqual(sum(eur_legs.mapped("balance")), -250.0, places=2)
-        self.assertAlmostEqual(sum(eur_legs.mapped("amount_currency")), 5.0, places=2)
-        self.assertAlmostEqual(sum(transit_legs.mapped("balance")), 250.0, places=2)
+        self.assertEqual(sorted(eur_legs.mapped("amount_currency")), [-25.0, 20.0])
+        self.assertAlmostEqual(sum(eur_legs.mapped("balance")), 250.0, places=2)
+        self.assertAlmostEqual(sum(eur_legs.mapped("amount_currency")), -5.0, places=2)
+        self.assertAlmostEqual(sum(transit_legs.mapped("balance")), -250.0, places=2)
 
     def test_combine_each_leg_carries_the_rate_of_its_payments(self):
         """Hallazgo S7: las líneas de la pata de salidas se arman con la tasa
@@ -856,8 +858,10 @@ class TestPosTenderCurrency(TestPosSessionAccountingBase):
         ) as line_vals:
             session._validate_cross_move()
 
+        # Montos con el signo del cruce de una venta en efectivo
+        # (``_get_sales_cross_sign``): la venta como salida, el reembolso como entrada.
         rate_by_amount = {call.args[2]: call.args[4] for call in line_vals.call_args_list}
-        self.assertEqual(rate_by_amount, {1000.0: self.PAYMENT_FOREIGN_RATE, -750.0: refund_rate})
+        self.assertEqual(rate_by_amount, {-1000.0: self.PAYMENT_FOREIGN_RATE, 750.0: refund_rate})
 
     def test_combine_zero_local_net_still_crosses_the_euros(self):
         """Neto 0 en la moneda de la caja con euros de diferencia: antes no se
@@ -873,7 +877,7 @@ class TestPosTenderCurrency(TestPosSessionAccountingBase):
         self.assertCoherentSigns(move.line_ids)
         eur_legs, _transit = self._eur_legs(move)
         self.assertAlmostEqual(sum(eur_legs.mapped("balance")), 0.0, places=2)
-        self.assertAlmostEqual(sum(eur_legs.mapped("amount_currency")), 5.0, places=2)
+        self.assertAlmostEqual(sum(eur_legs.mapped("amount_currency")), -5.0, places=2)
 
     def test_combine_all_nets_zero_creates_nothing(self):
         """Solo cuando los netos en la caja, la alterna y los euros dan todos
