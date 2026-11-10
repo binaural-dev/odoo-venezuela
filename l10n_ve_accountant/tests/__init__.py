@@ -27,3 +27,4 @@ from . import test_entry_rate_date
 from . import test_move_rate_date_form
 from . import test_alternate_totals_block
 from . import test_global_price_included_exempt
+from . import test_cash_basis_foreign

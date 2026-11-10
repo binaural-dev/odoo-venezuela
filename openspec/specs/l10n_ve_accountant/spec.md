@@ -1068,3 +1068,17 @@ El widget `account-tax-ves-totals-field` (segundo bloque de totales de la pesta�
 - **WHEN** se abre la pestaña principal
 - **THEN** el bloque inferior no se muestra
 
+### Requirement: El asiento de base efectivo trae el monto alterno en todas sus líneas
+
+Con la base efectivo activa, el asiento que genera el core al conciliar el pago de una factura (`tax_cash_basis_origin_move_id`) DEBE (MUST) traer el monto alterno (`foreign_debit`, `foreign_credit` y `foreign_balance`) en todas sus líneas, incluidas las de impuesto. Sus líneas `tax` copian el `display_type` de la factura pero nacen con `foreign_balance = 0`, por lo que NO DEBEN (MUST NOT) valorarse con ese saldo: se valoran por `amount_currency` o por la tasa, como el resto de los asientos que no son factura. Las facturas conservan su cálculo.
+
+#### Scenario: Cobro de una factura con impuesto exigible al pagar
+
+- **WHEN** se cobra una factura de 100 USD + 16% de IVA con impuesto exigible al pagar, a tasa 889,5754
+- **THEN** el asiento de base efectivo tiene 4 líneas con monto alterno: base 100 USD (débito y crédito) e IVA 16 USD (débito en la cuenta transitoria y crédito en la definitiva)
+- **AND** el asiento cuadra en bolívares y en moneda alterna
+
+#### Scenario: Cobro parcial
+
+- **WHEN** se cobra el 50% de la factura
+- **THEN** el asiento de base efectivo mueve 8 USD de IVA, también en moneda alterna
