@@ -1193,17 +1193,10 @@ class TestRetentionCurrencyPrecisionWriteoff(RetentionTestCommon):
             )
             before_usd = invoice.currency_id.round(invoice.amount_residual - theoretical)
             self._pay_in_usd(invoice, before_usd)
-            residual_before_retention = invoice.amount_residual
             retention = self._retention_for(invoice, retention_bs, "2026090000073%d" % i)
             message = self._post_error_message(retention)
-            if message is None:
-                self._assert_closed_without_overpay(invoice, "orden 2, %s USD" % amount)
-            else:
-                # Un cobro en centimos puede dejar la retencion un centimo REAL por
-                # encima del saldo: se bloquea, sin dejar polvo ni cobrar de mas.
-                self.assertEqual(retention.state, "draft")
-                self.assertAlmostEqual(invoice.amount_residual, residual_before_retention, places=2)
-                self.assertGreaterEqual(invoice.amount_residual, 0.0)
+            self.assertIsNone(message, "orden 2, %s USD: %s" % (amount, message))
+            self._assert_closed_without_overpay(invoice, "orden 2, %s USD" % amount)
 
     def test_cycle_partial_payment_before_retention(self):
         for i, amount in enumerate((333.33, 3851.37)):
@@ -1218,3 +1211,45 @@ class TestRetentionCurrencyPrecisionWriteoff(RetentionTestCommon):
             if pending > 0.0:
                 self._pay_in_usd(invoice, pending)
             self._assert_closed_without_overpay(invoice, "parcial previo, %s USD" % amount)
+
+    def test_edge_case_closes_in_document_currency_when_diff_exceeds_half_cent_in_bs(self):
+        """Caso borde (cobro previo en centavos y luego retencion): a 772,54 Bs/USD una
+        factura de 3.851,37 USD, con la retencion del 75 % del IVA (357.040,49 Bs), queda
+        tras cobrar 4.005,43 USD con 357.036,47 Bs de saldo fiscal: la retencion excede
+        en 4,02 Bs, mas de medio centimo (3,86 Bs). Pero llevada a USD con `_convert()` la
+        retencion (462,1644) redondea a 462,16, igual a la deuda comercial (462,16 USD):
+        la factura queda saldada en su moneda y la diferencia va a diferencial."""
+        invoice = self._invoice_in_usd(3851.37)
+        retention_bs = self._full_retention_bs(invoice)
+        self.assertAlmostEqual(retention_bs, 357040.49, places=2)
+        self._pay_in_usd(invoice, 4005.43)
+        self.assertAlmostEqual(abs(invoice.amount_residual_signed), 357036.47, places=2)
+        self.assertEqual(invoice.amount_residual, 462.16)
+        diff = retention_bs - abs(invoice.amount_residual_signed)
+        self.assertGreater(diff, invoice._retention_amount_tolerance(),
+                           "El caso debe superar medio centimo en VEF.")
+        self.assertTrue(invoice._retention_closes_document_currency_debt(retention_bs))
+
+        retention = self._retention_for(invoice, retention_bs, "20260900000901")
+        message = self._post_error_message(retention)
+        self.assertIsNone(message, message)
+        self.assertEqual(retention.state, "emitted")
+        self._assert_closed_without_overpay(invoice, "caso borde")
+        income = self.company.income_currency_exchange_account_id
+        writeoff = retention.payment_ids.move_id.line_ids.filtered(lambda l: l.account_id == income)
+        self.assertEqual(len(writeoff), 1)
+        # Retencion por encima del saldo, de cliente: ganancia (credito) por la diferencia.
+        self.assertAlmostEqual(writeoff.balance, -diff, places=2)
+
+    def test_one_real_cent_beyond_the_debt_is_still_rejected(self):
+        """Si la retencion, llevada a la divisa, ya no coincide con la deuda comercial
+        (un centimo completo), sigue siendo un exceso real aunque las otras reglas se
+        parezcan."""
+        invoice = self._invoice_in_usd(1000.0)
+        due = abs(invoice.amount_residual_signed)
+        one_cent = self.currency_vef.round(self._grain(invoice) * 1.2)
+        retention = self._retention_for(invoice, self.currency_vef.round(due + one_cent), "20260900000902")
+        self.assertIsNotNone(self._post_error_message(retention))
+        self.assertEqual(retention.state, "draft")
+        self.assertFalse(invoice._retention_closes_document_currency_debt(due + one_cent))
+

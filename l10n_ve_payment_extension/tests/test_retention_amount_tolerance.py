@@ -66,8 +66,11 @@ class TestRetentionAmountTolerance(RetentionTestCommon):
             document = self._invoice(self.currency_usd, self.journal_multi, date=date)
             tolerance = document._retention_amount_tolerance()
             doc_currency = document.currency_id
+            # Siempre `_convert()` a la fecha del documento, nunca una tasa multiplicada.
             rounds_to_zero = lambda diff: doc_currency.is_zero(  # noqa: E731
-                doc_currency.round(diff * document.invoice_currency_rate)
+                self.company.currency_id._convert(
+                    diff, doc_currency, self.company, document._get_invoice_currency_rate_date(),
+                )
             )
             with self.subTest(rate=rate):
                 self.assertGreater(tolerance, 0.0)
@@ -90,6 +93,52 @@ class TestRetentionAmountTolerance(RetentionTestCommon):
     def test_tolerancia_es_cero_en_moneda_de_compania(self):
         document = self._invoice(self.currency_vef, self.sale_journal)
         self.assertEqual(document._retention_amount_tolerance(), 0.0)
+        self.assertEqual(document._retention_max_accepted_difference(), 0.0)
+        self.assertFalse(document._retention_closes_document_currency_debt(
+            abs(document.amount_residual_signed)))
+        self.assertIsNone(document._retention_difference_within_currency_precision(
+            abs(document.amount_residual_signed) + 0.01))
+
+    def test_tope_aceptado_por_los_portales_es_menor_a_un_centimo_completo(self):
+        """El tope que reciben los portales es el mayor paso en moneda de compania
+        que, llevado a la moneda del documento con `_convert()`, sigue por debajo de
+        un centimo completo; mayor que la tolerancia de medio centimo."""
+        step = self.company.currency_id.rounding
+        document = self._invoice(self.currency_usd, self.journal_multi)
+        doc_currency = document.currency_id
+        date = document._get_invoice_currency_rate_date()
+        to_document = lambda amount: self.company.currency_id._convert(  # noqa: E731
+            amount, doc_currency, self.company, date, round=False)
+        top = document._retention_max_accepted_difference()
+        self.assertGreater(top, document._retention_amount_tolerance())
+        self.assertLess(to_document(top), doc_currency.rounding)
+        self.assertGreaterEqual(to_document(top + step), doc_currency.rounding)
+
+    def test_retencion_que_cierra_la_deuda_comercial_en_la_moneda_del_documento(self):
+        """Regla 2: aunque la diferencia en VEF supere medio centimo de la divisa, si la
+        retencion llevada a la divisa con `_convert()` es igual a la deuda comercial
+        (a la precision de la divisa), la diferencia es redondeo."""
+        document = self._invoice(self.currency_usd, self.journal_multi)
+        company_currency = self.company.currency_id
+        doc_currency = document.currency_id
+        due = abs(document.amount_residual_signed)
+        # Retencion que cierra la deuda en USD pero queda a mas de medio centimo del
+        # saldo en VEF: se construye desde la deuda en USD, movida casi medio centimo.
+        debt_in_bs = doc_currency._convert(
+            document.amount_residual, company_currency, self.company,
+            document._get_invoice_currency_rate_date(), round=False,
+        )
+        half_cent = document._retention_amount_tolerance()
+        retention = company_currency.round(debt_in_bs + half_cent * 0.99)
+        diff = retention - due
+        self.assertTrue(document._retention_closes_document_currency_debt(retention))
+        self.assertAlmostEqual(
+            document._retention_difference_within_currency_precision(retention), diff, places=2,
+        )
+        # Un centimo completo mas ya es otra cifra en la divisa: monto real.
+        one_cent_more = company_currency.round(debt_in_bs + document._retention_max_accepted_difference() + 1.0)
+        self.assertFalse(document._retention_closes_document_currency_debt(one_cent_more))
+        self.assertIsNone(document._retention_difference_within_currency_precision(one_cent_more))
 
 
 @tagged("post_install", "-at_install", "retention_iva_amount_single_calculation")

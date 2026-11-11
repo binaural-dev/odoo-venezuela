@@ -19,14 +19,13 @@ class AccountMoveRetention(models.Model):
 
         La retencion se calcula sobre el impuesto del asiento (VEF); lo
         adeudado de la factura vive en su propia moneda con su propia
-        precision. Reconvertir el excedente de vuelta a la moneda de la
-        factura, con la tasa de LA FACTURA (`invoice_currency_rate`, nunca
-        la de compañia ni una tasa recalculada del dia), es la unica forma
-        de confirmar sin adivinar que ese excedente es redondeo: si al
-        reconvertir desaparece (redondea a cero en la moneda del documento),
-        la factura queda saldada en los terminos en que fue emitida y el
-        sobrante es un artefacto de precision. Si no desaparece, es un
-        exceso real y no se tolera.
+        precision. Para confirmar sin adivinar que el excedente es redondeo
+        se lleva a la moneda de la factura SIEMPRE con `_convert()` a la fecha
+        del documento (`_get_invoice_currency_rate_date`; nunca multiplicando
+        por una tasa): si la diferencia desaparece, o si la retencion cierra la
+        deuda comercial en esa moneda, la factura queda saldada en los
+        terminos en que fue emitida y el sobrante es un artefacto de
+        precision. Si no, es un exceso real y no se tolera.
 
         Devuelve el excedente exacto en VEF cuando es tolerable, o None
         cuando no hay excedente que tolerar (retencion normal, con exceso
@@ -40,32 +39,73 @@ class AccountMoveRetention(models.Model):
         )
         return diff if diff and diff > 0 else None
 
+    def _retention_rate_date(self):
+        """Fecha de la tasa del documento (la misma con la que se calcula
+        `invoice_currency_rate`)."""
+        self.ensure_one()
+        return self._get_invoice_currency_rate_date()
+
+    def _retention_to_document_currency(self, amount_company_currency, rounding=True):
+        """Lleva un monto de moneda de compania a la moneda del documento.
+
+        UNICA conversion de estas reglas: `_convert()` a la fecha del documento,
+        nunca multiplicando ni dividiendo por una tasa. Con `rounding=True`
+        redondea a la precision de la moneda del documento."""
+        self.ensure_one()
+        return self.company_id.currency_id._convert(
+            amount_company_currency, self.currency_id, self.company_id,
+            self._retention_rate_date(), round=rounding,
+        )
+
+    def _retention_closes_document_currency_debt(self, retention_amount_company_currency):
+        """True si la retencion, llevada a la moneda del documento con
+        `_convert()` a la fecha del documento, es igual (a la precision de esa
+        moneda) a la deuda comercial de la factura (`amount_residual`): la factura
+        queda saldada en su propia moneda aunque en bolivares no cierre al centimo.
+        Siempre False en moneda de compania (comparacion estricta)."""
+        self.ensure_one()
+        if self.currency_id == self.company_id.currency_id:
+            return False
+        retained = self._retention_to_document_currency(abs(retention_amount_company_currency))
+        return float_compare(
+            retained, abs(self.amount_residual),
+            precision_rounding=self.currency_id.rounding,
+        ) == 0
+
     def _retention_difference_within_currency_precision(self, retention_amount_company_currency):
         """Diferencia CON SIGNO (retenido - adeudado, en VEF) cuando es
         solo redondeo entre monedas, o None.
 
+        Es redondeo cuando se cumple CUALQUIERA de estas dos (siempre con
+        `_convert()` a la fecha del documento):
+
+        1. La diferencia, llevada a la moneda del documento, redondea a cero.
+        2. La retencion, llevada a la moneda del documento, cierra la deuda
+           comercial de la factura (`amount_residual`) a la precision de esa
+           moneda.
+
+        La segunda cubre el caso en que el saldo en VEF y el de la moneda del
+        documento no coinciden al centimo (el saldo en VEF no es exactamente
+        "saldo en divisa x tasa") y la diferencia en VEF supera medio centimo
+        de la divisa aunque ambas cifras caen en el mismo centimo.
+
         Positiva: la retencion excede lo adeudado (ver
         `_retention_excess_within_currency_precision`). Negativa: la
-        retencion queda POR DEBAJO de lo adeudado y el faltante, expresado
-        en la moneda de la factura con la tasa del documento, redondea a
-        cero -la factura ya esta saldada en esa moneda, solo queda
-        polvo en VEF que, sin declararlo, deja la factura "pagada" pero sin
-        conciliar. Misma regla en ambos sentidos: la diferencia tiene que
-        desaparecer en la moneda de la factura; si no, es un monto real.
+        retencion queda POR DEBAJO de lo adeudado y la factura ya esta saldada
+        en esa moneda; solo queda polvo en VEF que, sin declararlo, deja la
+        factura "pagada" pero sin conciliar. Si no se cumple ninguna es un
+        monto real. En moneda de compania nunca hay redondeo entre monedas.
         """
         self.ensure_one()
         company_currency = self.company_id.currency_id
         diff = retention_amount_company_currency - abs(self.amount_residual_signed)
-        if company_currency.is_zero(diff):
+        if company_currency.is_zero(diff) or self.currency_id == company_currency:
             return None
-        # La regla de "es solo redondeo" vive en `_retention_amount_tolerance`
-        # (0.0 en moneda de compania: cualquier diferencia es real).
-        if float_compare(
-            abs(diff), self._retention_amount_tolerance(),
-            precision_rounding=company_currency.rounding,
-        ) > 0:
-            return None
-        return diff
+        if self.currency_id.is_zero(self._retention_to_document_currency(abs(diff))):
+            return diff
+        if self._retention_closes_document_currency_debt(retention_amount_company_currency):
+            return diff
+        return None
 
     base_currency_is_vef = fields.Boolean(
         compute="_compute_currency_fields",
@@ -181,28 +221,45 @@ class AccountMoveRetention(models.Model):
     )
 
     def _retention_amount_tolerance(self):
-        """Mayor diferencia, en moneda de compania, entre lo retenido y lo
-        adeudado que sigue siendo redondeo entre monedas: la que, reconvertida
-        a la moneda del documento con la tasa del documento
-        (`invoice_currency_rate`), redondea a cero (menos de medio centimo de esa
+        """Mayor diferencia, en moneda de compania, que todavia desaparece al
+        llevarla a la moneda del documento (menos de medio centimo de esa
         moneda). Un centimo completo ya es una diferencia real en esa moneda.
         0.0 si el documento esta en moneda de compania (comparacion estricta).
 
-        Es el UNICO lugar de la regla: la usan
-        `_retention_difference_within_currency_precision` (que decide si la
-        retencion cierra la factura) y los portales (que la envian al navegador
-        para no rechazar un redondeo que el servidor acepta)."""
+        La conversion es `_convert()` a la fecha del documento, sin
+        multiplicar por tasas. Es la regla 1 de
+        `_retention_difference_within_currency_precision`."""
+        self.ensure_one()
+        return self._retention_bound(self.currency_id.rounding / 2.0)
+
+    def _retention_max_accepted_difference(self):
+        """Mayor diferencia, en moneda de compania, que el servidor PUEDE aceptar
+        como redondeo: menos de un centimo completo de la moneda del documento
+        (la regla 2 de `_retention_difference_within_currency_precision` acepta
+        diferencias mayores a medio centimo cuando la retencion cierra la deuda
+        comercial). Los portales la usan como tope previo para no rechazar en el
+        navegador lo que el servidor acepta; el servidor decide con la regla exacta."""
+        self.ensure_one()
+        return self._retention_bound(self.currency_id.rounding)
+
+    def _retention_bound(self, document_amount):
+        """`document_amount` (en la moneda del documento) llevado a moneda de
+        compania con `_convert()`, en el mayor multiplo del paso de la moneda de
+        compania ESTRICTAMENTE menor a ese monto. 0.0 en moneda de compania."""
         self.ensure_one()
         company_currency = self.company_id.currency_id
-        if self.currency_id == company_currency or not self.invoice_currency_rate:
+        if self.currency_id == company_currency:
             return 0.0
         step = company_currency.rounding
-        limit = (self.currency_id.rounding / 2.0) / self.invoice_currency_rate
+        limit = self.currency_id._convert(
+            document_amount, company_currency, self.company_id,
+            self._retention_rate_date(), round=False,
+        )
         # Mayor multiplo del paso de la moneda de compania ESTRICTAMENTE menor al limite.
-        tolerance = float_round(limit, precision_rounding=step, rounding_method="DOWN")
-        if float_compare(tolerance, limit, precision_rounding=step / 1000.0) >= 0:
-            tolerance -= step
-        return max(tolerance, 0.0)
+        bound = float_round(limit, precision_rounding=step, rounding_method="DOWN")
+        if float_compare(bound, limit, precision_rounding=step / 1000.0) >= 0:
+            bound -= step
+        return max(bound, 0.0)
 
     @api.depends(
         "move_type",
