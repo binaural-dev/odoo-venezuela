@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="module_view_kanban_migration_state" model="ir.ui.view">
+        <field name="name">ir.module.module.kanban.migration.state</field>
+        <field name="model">ir.module.module</field>
+        <field name="inherit_id" ref="base.module_view_kanban"/>
+        <field name="arch" type="xml">
+            <xpath expr="//t[@t-name='card']//h2" position="after">
+                <field name="migration_state" widget="badge" invisible="not migration_state"
+                    decoration-success="migration_state == 'migrated'"
+                    decoration-muted="migration_state == 'pending'"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="module_tree_migration_state" model="ir.ui.view">
+        <field name="name">ir.module.module.list.migration.state</field>
+        <field name="model">ir.module.module</field>
+        <field name="inherit_id" ref="base.module_tree"/>
+        <field name="arch" type="xml">
+            <field name="state" position="after">
+                <field name="migration_state" widget="badge" optional="show"
+                    decoration-success="migration_state == 'migrated'"
+                    decoration-muted="migration_state == 'pending'"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="view_module_filter_migration_state" model="ir.ui.view">
+        <field name="name">ir.module.module.search.migration.state</field>
+        <field name="model">ir.module.module</field>
+        <field name="inherit_id" ref="base.view_module_filter"/>
+        <field name="arch" type="xml">
+            <filter name="not_installed" position="after">
+                <separator/>
+                <filter name="migrated" string="Migrated" domain="[('migration_state', '=', 'migrated')]"/>
+                <filter name="pending_migration" string="Pending migration" domain="[('migration_state', '=', 'pending')]"/>
+            </filter>
+        </field>
+    </record>
+</odoo>
