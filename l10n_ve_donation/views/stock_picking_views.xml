@@ -22,6 +22,15 @@
             <xpath expr="//button[@name='%(stock.act_stock_return_picking)d']" position="attributes">
                 <attribute name="invisible">state != 'done' or is_return or (is_donation and not sale_id)</attribute>
             </xpath>
+            <xpath expr="//button[@name='do_print_picking']" position="after">
+                <button
+                    name="print_donation_certificate"
+                    string="Print Donation Certificate"
+                    type="object"
+                    groups="stock.group_stock_user"
+                    invisible="not is_donation or sale_id or picking_type_code != 'outgoing' or state != 'done'"
+                />
+            </xpath>
         </field>
     </record>
 
