@@ -5,7 +5,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "19.0.1.0.1",
+    "version": "20.0.1.0.0",
     "depends": [
         "account",
         "l10n_ve_accountant",
@@ -14,5 +14,5 @@
         "wizard/account_payment_register.xml",
     ],
     "application": False,
-    "installable": False,
+    "installable": True,
 }
