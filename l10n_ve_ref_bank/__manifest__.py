@@ -6,7 +6,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
-    "version": "19.0.1.0.0",
+    "version": "20.0.1.0.0",
     "depends": ["l10n_ve_invoice"],
     "data": [
         "views/account_journal.xml",
@@ -14,5 +14,5 @@
     ],
     "images": ["static/description/icon.png"],
     "application": True,
-    "installable": False,
+    "installable": True,
 }
