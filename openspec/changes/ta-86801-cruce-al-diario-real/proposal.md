@@ -31,10 +31,14 @@ Aunque la prueba fue con euros, aplica a todos los cruces.
 - Gancho `_crosses_sales(payment_method)` (siempre `True` aquí) que
   `_validate_cross_move` consulta para cruzar las ventas de un método.
 - La venta en efectivo se cruza como la salida que la lleva al diario real
-  (`_get_sales_cross_sign`): acredita la transitoria del diario del método, que
-  la salida de efectivo nativa deja en el debe, y debita la del `cross_journal`.
-  Antes iba al revés (ticket 15219): cargaba dos veces esa transitoria y, con el
-  cruce publicado y su línea de extracto, sacaba el dinero del diario real.
+  (`_get_sales_cross_sign`): debita la transitoria del `cross_journal` y acredita
+  la cuenta donde quedó el dinero: la transitoria del diario de caja de la sesión
+  (donde la salida de efectivo nativa lo deja en el debe) o, en un diario al que
+  no llega ninguna salida, la cuenta de ese diario
+  (`_cross_sale_stays_in_journal`). Antes iba al revés (ticket 15219): cargaba
+  dos veces la transitoria y, con el cruce publicado y su línea de extracto,
+  sacaba el dinero del diario real. Reemplaza el change
+  `cruce-venta-efectivo-entre-transitorias` (archivado sin aplicar sus specs).
 - El cruce y su línea de extracto se crean en `sudo`: los crea el cierre o la
   entrada/salida del cajero, sin permisos contables (como el cierre nativo).
 - La línea de extracto no lleva un socio de otra compañía (`check_company`),
@@ -57,5 +61,12 @@ Aunque la prueba fue con euros, aplica a todos los cruces.
 - Rama sobre la de la tarea 86066 (moneda de cobro, PR #1569 abierto): el cruce
   de un método en moneda de cobro también se publica y crea su línea de extracto
   en la moneda de su diario real (EUR). Se mergea después de #1569.
-- No toca los borradores de cruce acumulados en las bases (los de ventas de los
-  cajones se cancelan, no se publican).
+- **Antes de desplegar:** cerrar todas las sesiones del PdV con cajones en
+  divisa o en moneda de cobro. Una sesión abierta durante el despliegue deja sus
+  entradas/salidas anteriores con el cruce en borrador, sin línea en el diario
+  real y sin vínculo, y se podrían borrar.
+- **Borradores viejos** (no los toca este cambio): los de ventas y de
+  diferencias de los cajones se cancelan; los de entradas/salidas se publican y
+  se les crea a mano la línea en el diario real, como se hacía.
+- **Consultoría:** el ticket 15219 pedía "transitoria del diario del método DEBE /
+  transitoria del diario afectado HABER"; esta tarea lo invierte.

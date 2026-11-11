@@ -29,10 +29,15 @@ Al cerrar la sesión (`_validate_cross_move`), por cada método que pase `_is_cr
 - **WHEN** se cierra una sesión con pagos de un método con moneda de cobro y sus dos diarios
 - **THEN** su cruce se crea como el de un método en divisa y la línea del diario real lleva como `amount_currency` lo cobrado en esa moneda
 
-#### Scenario: Venta en efectivo
+#### Scenario: Venta en efectivo en el diario de caja de la sesión
 
-- **WHEN** se cierra una sesión con ventas en efectivo de un método en divisa con sus dos transitorias
-- **THEN** el cruce acredita la transitoria del diario del método (donde la salida de efectivo dejó el dinero en el debe) y debita la del `cross_journal`, y su línea de extracto entra al diario real
+- **WHEN** se cierra una sesión con ventas en efectivo de un método en divisa cuyo diario es el de caja de la sesión (`cash_journal_id`, el que recibe las salidas de efectivo del core)
+- **THEN** el cruce acredita la transitoria de ese diario (donde la salida de efectivo dejó el dinero en el debe) y debita la del `cross_journal`, y su línea de extracto entra al diario real
+
+#### Scenario: Venta en efectivo en un diario al que no llegan salidas
+
+- **WHEN** se cierra una sesión con ventas en efectivo de un método en divisa en otro diario (un segundo efectivo, o sin `binaural_pos_close`)
+- **THEN** el cruce acredita la cuenta de ese diario, donde quedó la venta, y debita la transitoria del `cross_journal`; la cuenta del diario y su transitoria quedan en cero y la venta entra al diario real con su línea de extracto
 
 #### Scenario: Cajero sin permisos contables
 
@@ -66,7 +71,7 @@ La granularidad de los cross moves DEBE (MUST) seguir el flag nativo `split_tran
 #### Scenario: Venta y reembolso en euros a tasas distintas
 
 - **WHEN** el método en EUR no divide transacciones y la sesión tiene una venta de 20 € por 1.000 Bs y un reembolso de 25 € por 750 Bs
-- **THEN** se crea un asiento con dos pares de líneas y la caja real en EUR recibe −250 Bs con +5 € en `amount_currency`, sin que el cierre choque con `account_move_line_check_amount_currency_balance_sign`
+- **THEN** se crea un asiento con dos pares de líneas y la caja real en EUR lleva +250 Bs con −5 € en `amount_currency` (salió más de lo que entró), sin que el cierre choque con `account_move_line_check_amount_currency_balance_sign`
 
 #### Scenario: Neto cero en la caja con divisas de diferencia
 

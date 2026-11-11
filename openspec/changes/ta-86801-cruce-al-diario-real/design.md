@@ -1,8 +1,9 @@
 ## Context
 
 `_create_cross_move` es el único punto por el que pasan todos los cruces: ventas
-(`_validate_cross_move`), entradas/salidas y diferencias del cajón foráneo
-(`binaural_pos_close`) y las cajas en otra moneda (`binaural_pos_multicurrency`).
+(`_validate_cross_move`), entradas/salidas de los cajones (`binaural_pos_close`,
+que ya no cruza sus diferencias) y las cajas en otra moneda
+(`binaural_pos_multicurrency`).
 Un cruce en efectivo (`use_suspense=True`) deja el dinero en
 `cross_journal.suspense_account_id`.
 
@@ -23,6 +24,14 @@ Un cruce en efectivo (`use_suspense=True`) deja el dinero en
 - **Etiqueta = `ref`**, que empieza con la sesión: es lo que muestra el tablero.
 - **`_crosses_sales`** como gancho y no dentro de `_is_cross_move_eligible`: la
   elegibilidad la usan también las entradas/salidas, que sí deben cruzar.
+- **De dónde sale la venta en efectivo.** El core solo registra salidas de
+  efectivo en el diario de caja de la sesión (`cash_journal_id`), y
+  `binaural_pos_close` en sus cajones, que no cruzan ventas. En ese diario la
+  venta sale de su transitoria, donde la salida la deja en el debe; en cualquier
+  otro (`_cross_sale_stays_in_journal`) sale de la cuenta del diario, donde la
+  dejó el extracto nativo del cierre. Va por contexto
+  (`CROSS_SALE_FROM_JOURNAL_ACCOUNT`, `_get_sales_cross_session`) para no cambiar
+  la firma de `_create_cross_move_for`, que sobrescriben otros módulos.
 - **Signo de la venta en efectivo** en el camino de las ventas
   (`_get_sales_cross_sign`, `_sign_cross_amounts`), no en
   `_get_cross_move_line_vals`: esa construcción la comparten las entradas/salidas
