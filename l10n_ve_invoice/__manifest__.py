@@ -3,7 +3,7 @@
     "summary": """
         Módulo de Facturación Venezuela
     """,
-    "version": "19.0.1.0.28",
+    "version": "20.0.1.0.0",
     "license": "LGPL-3",
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
@@ -42,5 +42,5 @@
     "application": True,
     "pre_init_hook": "pre_init_hook",
     "post_init_hook": "post_init_hook",
-    "installable": False,
+    "installable": True,
 }

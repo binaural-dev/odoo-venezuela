@@ -1,8 +1,7 @@
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 import json
 import logging
 import calendar
-import pytz
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError, UserError
 from odoo.tools import format_date, float_compare, float_round, float_is_zero
@@ -523,8 +522,8 @@ class AccountMove(models.Model):
         """
         date_value = fields.Date.to_date(date_value) or fields.Date.context_today(self)
         now_local = fields.Datetime.context_timestamp(self, fields.Datetime.now())
-        local_dt = self.env.tz.localize(datetime.combine(date_value, now_local.time()))
-        return local_dt.astimezone(pytz.utc).replace(tzinfo=None)
+        local_dt = datetime.combine(date_value, now_local.time(), tzinfo=self.env.tz)
+        return local_dt.astimezone(timezone.utc).replace(tzinfo=None)
 
     @api.model_create_multi
     def create(self, vals_list):
