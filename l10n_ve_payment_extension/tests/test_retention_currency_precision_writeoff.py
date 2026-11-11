@@ -208,6 +208,7 @@ class TestRetentionCurrencyPrecisionWriteoff(RetentionTestCommon):
                 "invoice_total": invoice.amount_total,
                 "invoice_amount": invoice.amount_untaxed,
                 "retention_amount": amount_company_currency,
+                "aliquot": 16.0,
                 "foreign_currency_rate": rate,
                 "foreign_invoice_amount": invoice.amount_untaxed,
                 "foreign_retention_amount": amount_company_currency * rate,
@@ -380,6 +381,7 @@ class TestRetentionCurrencyPrecisionWriteoff(RetentionTestCommon):
                 "invoice_total": invoice.amount_total,
                 "invoice_amount": invoice.amount_untaxed,
                 "retention_amount": due + 0.02,
+                "aliquot": 16.0,
                 "foreign_currency_rate": 1.0,
                 "foreign_invoice_amount": invoice.amount_untaxed,
                 "foreign_retention_amount": due + 0.02,
@@ -868,6 +870,7 @@ class TestRetentionCurrencyPrecisionWriteoff(RetentionTestCommon):
                 "invoice_total": note.amount_total,
                 "invoice_amount": note.amount_untaxed,
                 "retention_amount": amount_company_currency,
+                "aliquot": 16.0,
                 "foreign_currency_rate": rate,
                 "foreign_invoice_amount": note.amount_untaxed,
                 "foreign_retention_amount": amount_company_currency * rate,
@@ -1051,3 +1054,167 @@ class TestRetentionCurrencyPrecisionWriteoff(RetentionTestCommon):
         self._assert_foreign_balanced(payment_move)
         partials = receivable.matched_credit_ids | receivable.matched_debit_ids
         self.assertFalse(partials.exchange_move_id)
+
+    # ------------------------------------------------------------------
+    # CICLO COMPLETO (ticket #16185): retencion de IVA al 75 % sobre una
+    # factura en USD + cobro del pendiente. La factura debe quedar en cero en
+    # ambas monedas, nunca con un centimo abierto y nunca con un cobro de mas
+    # (residual negativo / saldo a favor). Se barren montos distintos porque el
+    # centimo solo aparece en algunos (empates de medio centimo).
+    # ------------------------------------------------------------------
+
+    CYCLE_AMOUNTS = (47.77, 100.0, 333.33, 1000.0, 3851.37, 4871.17)
+
+    def _usd_bank_journal(self):
+        """Diario sin moneda propia: acepta asientos en cualquier moneda (los
+        diarios del fixture fuerzan VEF y no sirven para cobrar en USD)."""
+        journal = self.env["account.journal"].search([
+            ("company_id", "=", self.company.id), ("type", "=", "bank"),
+            ("currency_id", "=", False), ("code", "=", "BMUSD"),
+        ], limit=1)
+        if not journal:
+            journal = self.env["account.journal"].create({
+                "name": "Banco multimoneda (pruebas)", "code": "BMUSD", "type": "bank",
+                "company_id": self.company.id,
+                "default_account_id": self.account_bank_vef.id,
+            })
+        return journal
+
+    def _pay_in_usd(self, invoice, usd_amount):
+        """Cobro en la moneda de la factura (lo que la app pide como pendiente)."""
+        wizard = self.env["account.payment.register"].with_context(
+            active_model="account.move", active_ids=invoice.ids,
+        ).create({
+            "amount": usd_amount,
+            "currency_id": self.currency_usd.id,
+            "payment_date": fields.Date.today(),
+            "journal_id": self._usd_bank_journal().id,
+        })
+        wizard.action_create_payments()
+        invoice.invalidate_recordset()
+
+    def _full_retention_bs(self, invoice):
+        """Retencion al 75 % del IVA del asiento, con el calculo unico de la localizacion."""
+        return self.currency_vef.round(
+            self.env["account.retention"].compute_iva_retention_amount(
+                abs(invoice.amount_tax_signed), 75.0,
+            )
+        )
+
+    def _assert_closed_without_overpay(self, invoice, msg=""):
+        self.assertEqual(invoice.currency_id.round(invoice.amount_residual), 0.0,
+                         "Quedo saldo abierto en USD. %s" % msg)
+        self.assertEqual(self.currency_vef.round(invoice.amount_residual_signed), 0.0,
+                         "Quedo polvo en VEF. %s" % msg)
+        self.assertGreaterEqual(invoice.amount_residual, 0.0,
+                                "Se cobro de mas (residual negativo). %s" % msg)
+        self.assertIn(invoice.payment_state, ("paid", "in_payment"), msg)
+
+    def _invoice_in_usd_on(self, amount, date, rate):
+        """Factura en USD con fecha propia y su propia tasa (distinta a la de hoy)."""
+        if not self.env["res.currency.rate"].search([
+            ("currency_id", "=", self.currency_usd.id), ("name", "=", date),
+        ]):
+            self.currency_usd.write({"rate_ids": [Command.create({
+                "name": date, "rate": 1 / rate, "company_rate": 1 / rate,
+                "inverse_company_rate": rate,
+            })]})
+        invoice = self._create_invoice_reten_iva(
+            amount, self.partner_pnr_75, out_invoice="out_invoice",
+            journal=self.journal_multi.id,
+        )
+        vals = {"currency_id": self.currency_usd.id, "invoice_date": date, "date": date}
+        if "invoice_date_display" in invoice._fields:
+            vals["invoice_date_display"] = date
+        invoice.write(vals)
+        invoice.action_post()
+        return invoice
+
+    def test_cycle_retention_then_payment_closes_the_invoice(self):
+        for i, amount in enumerate(self.CYCLE_AMOUNTS):
+            invoice = self._invoice_in_usd(amount)
+            before = invoice.amount_residual
+            retention = self._retention_for(
+                invoice, self._full_retention_bs(invoice), "2026090000070%d" % i,
+            )
+            message = self._post_error_message(retention)
+            self.assertIsNone(message, "%s: %s" % (amount, message))
+            pending = invoice.amount_residual
+            self.assertGreater(pending, 0.0)
+            self.assertLess(pending, before)
+            self._pay_in_usd(invoice, pending)
+            self._assert_closed_without_overpay(invoice, "factura de %s USD" % amount)
+
+    def test_cycle_payment_first_then_retention_closes_the_invoice(self):
+        """Se cobra antes todo menos la retencion teorica; la retencion cierra la
+        factura y, si queda redondeo entre monedas, va a diferencial."""
+        for i, amount in enumerate(self.CYCLE_AMOUNTS):
+            invoice = self._invoice_in_usd(amount)
+            retention_bs = self._full_retention_bs(invoice)
+            # El cobro reduce el saldo fiscal en Bs a la tasa del dia: se cobra lo que
+            # deja el saldo en Bs mas cerca de la retencion (redondeo a centimos).
+            cash = invoice.currency_id.round(
+                (abs(invoice.amount_residual_signed) - retention_bs) / self.RATE
+            )
+            self._pay_in_usd(invoice, cash)
+            retention = self._retention_for(invoice, retention_bs, "2026090000071%d" % i)
+            message = self._post_error_message(retention)
+            self.assertIsNone(message, "%s: %s" % (amount, message))
+            self._assert_closed_without_overpay(invoice, "factura de %s USD" % amount)
+            income = self.company.income_currency_exchange_account_id
+            expense = self.company.expense_currency_exchange_account_id
+            writeoff = retention.payment_ids.move_id.line_ids.filtered(
+                lambda l: l.account_id in (income | expense)
+            )
+            tolerance = invoice._retention_amount_tolerance()
+            self.assertLessEqual(
+                abs(sum(writeoff.mapped("balance"))), tolerance + 0.005,
+                "El diferencial solo puede ser redondeo entre monedas.",
+            )
+
+    def test_cycle_invoice_of_another_date_both_orders(self):
+        """Factura de otra fecha (tasa distinta a la del dia del cobro): la
+        retencion y el pendiente se miden con la relacion propia de la factura."""
+        other_date = fields.Date.subtract(fields.Date.today(), days=3)
+        for i, amount in enumerate((100.0, 1000.0, 3851.37)):
+            # Orden 1: retencion y luego cobro del pendiente.
+            invoice = self._invoice_in_usd_on(amount, other_date, 740.0)
+            retention = self._retention_for(
+                invoice, self._full_retention_bs(invoice), "2026090000072%d" % i,
+            )
+            self.assertIsNone(self._post_error_message(retention))
+            self._pay_in_usd(invoice, invoice.amount_residual)
+            self._assert_closed_without_overpay(invoice, "orden 1, %s USD" % amount)
+            # Orden 2: cobro previo y la retencion cierra.
+            invoice = self._invoice_in_usd_on(amount, other_date, 740.0)
+            retention_bs = self._full_retention_bs(invoice)
+            theoretical = invoice.currency_id.round(
+                retention_bs * invoice.amount_residual / abs(invoice.amount_residual_signed)
+            )
+            before_usd = invoice.currency_id.round(invoice.amount_residual - theoretical)
+            self._pay_in_usd(invoice, before_usd)
+            residual_before_retention = invoice.amount_residual
+            retention = self._retention_for(invoice, retention_bs, "2026090000073%d" % i)
+            message = self._post_error_message(retention)
+            if message is None:
+                self._assert_closed_without_overpay(invoice, "orden 2, %s USD" % amount)
+            else:
+                # Un cobro en centimos puede dejar la retencion un centimo REAL por
+                # encima del saldo: se bloquea, sin dejar polvo ni cobrar de mas.
+                self.assertEqual(retention.state, "draft")
+                self.assertAlmostEqual(invoice.amount_residual, residual_before_retention, places=2)
+                self.assertGreaterEqual(invoice.amount_residual, 0.0)
+
+    def test_cycle_partial_payment_before_retention(self):
+        for i, amount in enumerate((333.33, 3851.37)):
+            invoice = self._invoice_in_usd(amount)
+            self._pay_in_usd(invoice, invoice.currency_id.round(invoice.amount_residual * 0.4))
+            retention_bs = min(self._full_retention_bs(invoice), abs(invoice.amount_residual_signed))
+            retention = self._retention_for(invoice, retention_bs, "2026090000074%d" % i)
+            message = self._post_error_message(retention)
+            self.assertIsNone(message, "%s: %s" % (amount, message))
+            pending = invoice.amount_residual
+            self.assertGreaterEqual(pending, 0.0)
+            if pending > 0.0:
+                self._pay_in_usd(invoice, pending)
+            self._assert_closed_without_overpay(invoice, "parcial previo, %s USD" % amount)
