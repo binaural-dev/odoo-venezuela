@@ -1,7 +1,6 @@
 from odoo import _, fields, models, api
 from odoo.exceptions import ValidationError, UserError
-import logging
-_logger = logging.getLogger(__name__)
+
 class AccountMoveLine(models.Model):
     _inherit = "account.move.line"
 
