@@ -22,4 +22,5 @@
     "application": True,
     "pre_init_hook": "pre_init_hook",
     "installable": True,
+    "binaural_migrated": True,
 }

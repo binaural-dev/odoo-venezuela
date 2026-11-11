@@ -11,4 +11,5 @@
         "views/res_config_settings.xml",
     ],
     "installable": True,
+    "binaural_migrated": True,
 }

@@ -10,6 +10,7 @@
     "author": "Odoo Community Association (OCA)",
     "license": "AGPL-3",
     "installable": True,
+    "binaural_migrated": True,
     "depends": [
         "account",
     ],

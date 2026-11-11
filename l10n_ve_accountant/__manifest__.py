@@ -62,4 +62,5 @@
     "pre_init_hook": "pre_init_hook",
     "post_init_hook": "set_main_company_currency_to_vef",
     "installable": True,
+    "binaural_migrated": True,
 }

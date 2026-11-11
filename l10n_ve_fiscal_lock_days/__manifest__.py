@@ -16,4 +16,5 @@
     ],
     "images": ["static/description/icon.png"],
     "installable": True,
+    "binaural_migrated": True,
 }

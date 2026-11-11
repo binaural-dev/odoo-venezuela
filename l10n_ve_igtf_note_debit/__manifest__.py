@@ -60,4 +60,5 @@
     "application": False,
     "auto_install": False,
     "installable": True,
+    "binaural_migrated": True,
 }

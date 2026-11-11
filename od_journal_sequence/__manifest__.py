@@ -22,4 +22,5 @@
     "post_init_hook": "create_journal_sequences",
     "images": ["static/description/banner.png"],
     "installable": True,
+    "binaural_migrated": True,
 }

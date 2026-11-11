@@ -24,4 +24,5 @@
     "images": ["static/description/icon.png"],
     "application": False,
     "installable": True,
+    "binaural_migrated": True,
 }

@@ -64,6 +64,7 @@ might use is ready in advance):
         'views/res_partner_views.xml',
     ],
     'installable': True,
+    'binaural_migrated': True,
     'auto_install': False,
     'license': 'LGPL-3',
 }
