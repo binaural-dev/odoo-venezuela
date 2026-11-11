@@ -1,4 +1,4 @@
-from odoo.exceptions import UserError, ValidationError, AccessError
+from odoo.exceptions import UserError, ValidationError
 from odoo import fields, Command
 from odoo.tests import TransactionCase, tagged
 from unittest.mock import patch, MagicMock
@@ -887,18 +887,15 @@ class TestAccountMoveApiCalls(TransactionCase):
 
         _logger.info("Test passed: code 200 error, UserError raised as expected.")
 
-    # Validacion de factura sin digitalizar
+    # Modo pago-primero: el posteo nunca encola/digitaliza automaticamente,
+    # y ya no bloquea en base al estado de una factura previa -- esa validacion
+    # sincronica fue removida junto con el flujo sincronico: la cola (FIFO +
+    # halt-on-error) es lo que ahora garantiza el orden.
     @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
-    def test_15_generate_document_digital_has_not_been_digitized_error(self, mock_call):
-
-        # El wizard solo aplica la logica TFHKA en diarios digitales, y para que
-        # exista una factura previa "sin digitalizar" la compania debe estar en
-        # modo pago-primero (no digitaliza automaticamente al confirmar).
+    def test_15_wizard_payment_first_mode_never_auto_enqueues(self, mock_call):
         self.journal.digital_invoice = True
         self.company.digitalization_with_payment_tfhka = True
 
-        # Ambas facturas se dejan en borrador a proposito: el posteo lo hace el
-        # propio wizard en action_confirm(), que es el flujo que este test cubre.
         self.invoice = self._create_invoice(
             products=[
                 {
@@ -913,6 +910,14 @@ class TestAccountMoveApiCalls(TransactionCase):
         self.env['move.action.post.alert.wizard'].create({
             'move_id': self.invoice.id
         }).action_confirm()
+        self.assertEqual(self.invoice.state, "posted")
+        self.assertEqual(self.invoice.tfhka_digitalization_state, "none")
+
+        seq = self.env["ir.sequence"].sudo().search(
+            [("code", "=", "invoice.correlative"), ("company_id", "=", self.company.id)], limit=1
+        )
+        if seq:
+            seq.sudo().write({"number_next_actual": seq.number_next_actual + 1})
 
         invoice = self._create_invoice(
             products=[
@@ -925,13 +930,12 @@ class TestAccountMoveApiCalls(TransactionCase):
             do_post=False,
         )
 
-        with self.assertRaises(UserError) as e:
-            self.env['move.action.post.alert.wizard'].create({
-                'move_id': invoice.id
-            }).action_confirm()
+        self.env['move.action.post.alert.wizard'].create({
+            'move_id': invoice.id
+        }).action_confirm()
 
-        _logger.info(e.exception)
-        _logger.info("Test passed: ")
+        self.assertEqual(invoice.state, "posted")
+        self.assertEqual(invoice.tfhka_digitalization_state, "none")
 
     # Validacion de fecha
     @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
@@ -1505,18 +1509,19 @@ class TestAccountMoveApiCalls(TransactionCase):
         totals, _foreign = self.env['tfhka.document.service']._prepare_totals(invoice)
         self.assertNotIn("formasPago", totals)
 
-    def test_131_uninstall_requires_tfhka_admin(self):
-        # Un usuario sin el grupo TFHKA Admin no puede desinstalar el modulo.
-        module = self.env['ir.module.module'].search(
-            [('name', '=', 'l10n_ve_invoice_digital')], limit=1
-        )
-        user = self.env['res.users'].create({
-            'name': 'No Admin TFHKA',
-            'login': 'no_admin_tfhka',
-            'groups_id': [(6, 0, [self.env.ref('base.group_user').id])],
-        })
-        with self.assertRaises(AccessError):
-            module.with_user(user)._check_tfhka_uninstall_rights()
+    def test_131_group_system_implies_tfhka_admin(self):
+        # El guard custom de desinstalacion (ir_module_module.py,
+        # _check_tfhka_uninstall_rights) se elimino por redundante: el core
+        # ya exige is_admin() (implica group_erp_manager) en
+        # button_uninstall/button_immediate_uninstall, y ir.model.access.csv
+        # solo da acceso CRUD sobre ir.module.module a base.group_system --
+        # por lo que en la practica solo un group_system puede completar la
+        # desinstalacion. Este test protege la premisa de la que depende esa
+        # conclusion: si el implied_ids de data/groups.xml llegara a
+        # quitarse, el guard custom volveria a ser necesario.
+        system_group = self.env.ref('base.group_system')
+        admin_group = self.env.ref('l10n_ve_invoice_digital.group_l10n_ve_invoice_digital_admin')
+        self.assertIn(admin_group, system_group.implied_ids)
 
     def test_65_is_eligible_for_tfhka_company_disabled(self):
         self.company.write({"invoice_digital_tfhka": False})
@@ -2117,51 +2122,6 @@ class TestAccountMoveApiCalls(TransactionCase):
         self.assertFalse(debit.show_digital_debit_note)
 
     # ------------------------------------------------------------------
-    # Cobertura adicional: ir_module_module.py (guard de desinstalación)
-    # ------------------------------------------------------------------
-
-    def test_157_check_uninstall_rights_empty_recordset(self):
-        # Recordset vacío: el for no itera, sale directo (12->exit).
-        self.env['ir.module.module'].browse([])._check_tfhka_uninstall_rights()
-
-    def test_158_check_uninstall_rights_other_modules_no_raise(self):
-        # Módulos que no son el nuestro: la condición del if da False y el
-        # for sigue de largo (13->12) sin lanzar AccessError.
-        modules = self.env['ir.module.module'].search([('name', 'in', ['base', 'web'])])
-        self.assertTrue(len(modules) >= 1)
-        modules._check_tfhka_uninstall_rights()
-
-    def test_159_button_uninstall_as_admin(self):
-        from odoo.addons.base.models.ir_module import Module
-        module = self.env['ir.module.module'].search(
-            [('name', '=', 'l10n_ve_invoice_digital')], limit=1
-        )
-        admin_group = self.env.ref('l10n_ve_invoice_digital.group_l10n_ve_invoice_digital_admin')
-        admin_user = self.env['res.users'].create({
-            'name': 'TFHKA Admin Uninstall',
-            'login': 'tfhka_admin_uninstall',
-            'groups_id': [(6, 0, [self.env.ref('base.group_user').id, admin_group.id])],
-        })
-        with patch.object(Module, 'button_uninstall', return_value=True) as mock_super:
-            module.with_user(admin_user).button_uninstall()
-            mock_super.assert_called_once()
-
-    def test_160_button_immediate_uninstall_as_admin(self):
-        from odoo.addons.base.models.ir_module import Module
-        module = self.env['ir.module.module'].search(
-            [('name', '=', 'l10n_ve_invoice_digital')], limit=1
-        )
-        admin_group = self.env.ref('l10n_ve_invoice_digital.group_l10n_ve_invoice_digital_admin')
-        admin_user = self.env['res.users'].create({
-            'name': 'TFHKA Admin Immediate Uninstall',
-            'login': 'tfhka_admin_immediate_uninstall',
-            'groups_id': [(6, 0, [self.env.ref('base.group_user').id, admin_group.id])],
-        })
-        with patch.object(Module, 'button_immediate_uninstall', return_value=True) as mock_super:
-            module.with_user(admin_user).button_immediate_uninstall()
-            mock_super.assert_called_once()
-
-    # ------------------------------------------------------------------
     # Cobertura adicional: tfhka_client.py
     # ------------------------------------------------------------------
 
@@ -2391,55 +2351,66 @@ class TestAccountMoveApiCalls(TransactionCase):
 
     def test_174_prepare_tax_subtotals_local_branch_subtotal_group(self):
         # Doble de prueba (duck-typing): _prepare_tax_subtotals solo necesita
-        # que cada elemento exponga `.tax_totals`, así que se aísla la lógica
-        # de armado del payload de la capa ORM.
-        fake = type("FakeTaxRecord", (), {"tax_totals": {
-            "groups_by_subtotal": {"Subtotal": [
-                {"tax_group_name": "IVA 16%", "tax_group_base_amount": 100.0, "tax_group_amount": 16.0},
-            ]},
-        }})()
+        # que cada elemento exponga `.tax_totals` y `.company_id` (esta
+        # ultima para el redondeo con currency.round(), Fix 4), asi que se
+        # aisla la logica de armado del payload de la capa ORM.
+        fake = type("FakeTaxRecord", (), {
+            "company_id": self.company,
+            "tax_totals": {
+                "groups_by_subtotal": {"Subtotal": [
+                    {"tax_group_name": "IVA 16%", "tax_group_base_amount": 100.0, "tax_group_amount": 16.0},
+                ]},
+            },
+        })()
         local, foreign = self.env['tfhka.document.service']._prepare_tax_subtotals([fake], "VEF")
         self.assertEqual(local[0]["codigoTotalImp"], "G")
+        self.assertEqual(local[0]["baseImponibleImp"], "100.00")
         self.assertEqual(foreign, [])
 
     def test_175_prepare_tax_subtotals_multi_currency_branch_with_igtf(self):
-        fake = type("FakeTaxRecord", (), {"tax_totals": {
-            "groups_by_subtotal": {"Subtotal": [
-                {"tax_group_name": "IVA 16%", "tax_group_base_amount": 100.0, "tax_group_amount": 16.0},
-            ]},
-            "groups_by_foreign_subtotal": {"Subtotal": [
-                {"tax_group_name": "IVA 8%", "tax_group_base_amount": 50.0, "tax_group_amount": 4.0},
-            ]},
-            "igtf": {
-                "apply_igtf": True,
-                "name": "3.0 %",
-                "igtf_base_amount": 100.0,
-                "igtf_amount": 3.0,
-                "foreign_igtf_base_amount": 200.0,
-                "foreign_igtf_amount": 6.0,
+        fake = type("FakeTaxRecord", (), {
+            "company_id": self.company,
+            "tax_totals": {
+                "groups_by_subtotal": {"Subtotal": [
+                    {"tax_group_name": "IVA 16%", "tax_group_base_amount": 100.0, "tax_group_amount": 16.0},
+                ]},
+                "groups_by_foreign_subtotal": {"Subtotal": [
+                    {"tax_group_name": "IVA 8%", "tax_group_base_amount": 50.0, "tax_group_amount": 4.0},
+                ]},
+                "igtf": {
+                    "apply_igtf": True,
+                    "name": "3.0 %",
+                    "igtf_base_amount": 100.0,
+                    "igtf_amount": 3.0,
+                    "foreign_igtf_base_amount": 200.0,
+                    "foreign_igtf_amount": 6.0,
+                },
             },
-        }})()
+        })()
         local, foreign = self.env['tfhka.document.service']._prepare_tax_subtotals([fake], "VEF", multi_currency=True)
         self.assertTrue(any(t["codigoTotalImp"] == "IGTF" for t in local))
         self.assertTrue(any(t["codigoTotalImp"] == "IGTF" for t in foreign))
 
     def test_176_prepare_tax_subtotals_foreign_branch_with_igtf(self):
-        fake = type("FakeTaxRecord", (), {"tax_totals": {
-            "groups_by_foreign_subtotal": {"Subtotal": [
-                {"tax_group_name": "IVA 16%", "tax_group_base_amount": 100.0, "tax_group_amount": 16.0},
-            ]},
-            "groups_by_subtotal": {"Subtotal": [
-                {"tax_group_name": "IVA 8%", "tax_group_base_amount": 50.0, "tax_group_amount": 4.0},
-            ]},
-            "igtf": {
-                "apply_igtf": True,
-                "name": "3.0 %",
-                "igtf_base_amount": 100.0,
-                "igtf_amount": 3.0,
-                "foreign_igtf_base_amount": 200.0,
-                "foreign_igtf_amount": 6.0,
+        fake = type("FakeTaxRecord", (), {
+            "company_id": self.company,
+            "tax_totals": {
+                "groups_by_foreign_subtotal": {"Subtotal": [
+                    {"tax_group_name": "IVA 16%", "tax_group_base_amount": 100.0, "tax_group_amount": 16.0},
+                ]},
+                "groups_by_subtotal": {"Subtotal": [
+                    {"tax_group_name": "IVA 8%", "tax_group_base_amount": 50.0, "tax_group_amount": 4.0},
+                ]},
+                "igtf": {
+                    "apply_igtf": True,
+                    "name": "3.0 %",
+                    "igtf_base_amount": 100.0,
+                    "igtf_amount": 3.0,
+                    "foreign_igtf_base_amount": 200.0,
+                    "foreign_igtf_amount": 6.0,
+                },
             },
-        }})()
+        })()
         local, foreign = self.env['tfhka.document.service']._prepare_tax_subtotals([fake], "USD", multi_currency=False)
         self.assertTrue(any(t["codigoTotalImp"] == "IGTF" for t in local))
         self.assertTrue(any(t["codigoTotalImp"] == "IGTF" for t in foreign))
@@ -2624,21 +2595,24 @@ class TestAccountMoveApiCalls(TransactionCase):
         subtotal = totals["impuestosSubtotal"][0]
         self.assertEqual(subtotal["codigoTotalImp"], "G")
         self.assertEqual(subtotal["alicuotaImp"], "16.0")
-        self.assertEqual(subtotal["baseImponibleImp"], "100.0")
-        self.assertEqual(subtotal["valorTotalImp"], "16.0")
-        self.assertEqual(totals["totalIVA"], "16.0")
+        self.assertEqual(subtotal["baseImponibleImp"], "100.00")
+        self.assertEqual(subtotal["valorTotalImp"], "16.00")
+        self.assertEqual(totals["totalIVA"], "16.00")
 
     def test_189_tax_subtotals_independent_of_subtotal_title(self):
         """Mismo payload con el titulo del subtotal en español y en ingles."""
         service = self.env['tfhka.document.service']
 
         def fake(title):
-            return type("FakeMove", (), {"tax_totals": {"groups_by_subtotal": {title: [{
-                "tax_group_name": "VAT 16%",
-                "tax_group_id": self.tax_group.id,
-                "tax_group_base_amount": 100.0,
-                "tax_group_amount": 16.0,
-            }]}}})()
+            return type("FakeMove", (), {
+                "company_id": self.company,
+                "tax_totals": {"groups_by_subtotal": {title: [{
+                    "tax_group_name": "VAT 16%",
+                    "tax_group_id": self.tax_group.id,
+                    "tax_group_base_amount": 100.0,
+                    "tax_group_amount": 16.0,
+                }]}},
+            })()
 
         es, _f1 = service._prepare_tax_subtotals([fake("Subtotal")], "VEF")
         en, _f2 = service._prepare_tax_subtotals([fake("Untaxed Amount")], "VEF")
@@ -2668,12 +2642,39 @@ class TestAccountMoveApiCalls(TransactionCase):
         ])
         totals, _foreign = self.env['tfhka.document.service']._prepare_totals(inv)
 
-        self.assertEqual(totals["montoExentoTotal"], "50.0")
-        self.assertEqual(totals["montoGravadoTotal"], "100.0")
+        self.assertEqual(totals["montoExentoTotal"], "50.00")
+        self.assertEqual(totals["montoGravadoTotal"], "100.00")
         self.assertTrue(
             any(t["codigoTotalImp"] == "E" for t in totals["impuestosSubtotal"]),
             "falta la linea exenta en impuestosSubtotal",
         )
+
+    def test_191b_exempt_amount_sums_all_exempt_groups(self):
+        """montoExentoTotal debe sumar TODOS los grupos exentos, no solo el
+        primero que encuentre (bug corregido: antes usaba next() y se
+        quedaba con un solo grupo exento).
+
+        Dos grupos fiscales distintos con alicuota 0 ("Exenta" e "IVA 0%"):
+        el monto exento total debe sumar ambas bases, y montoGravadoTotal
+        debe quedar con el resto del subtotal.
+        """
+        tax_group_exenta = self.env['account.tax.group'].create({'name': 'Exenta'})
+        tax_exenta = self.env['account.tax'].create({
+            'name': 'Exenta',
+            'amount': 0,
+            'amount_type': 'percent',
+            'type_tax_use': 'sale',
+            'tax_group_id': tax_group_exenta.id,
+        })
+        inv = self._vef_invoice([
+            {"product_id": self.product.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]},
+            {"product_id": self.product.id, "price_unit": 50, "tax_ids": [self.tax_iva0.id]},
+            {"product_id": self.product.id, "price_unit": 30, "tax_ids": [tax_exenta.id]},
+        ])
+        totals, _foreign = self.env['tfhka.document.service']._prepare_totals(inv)
+
+        self.assertEqual(totals["montoExentoTotal"], "80.00")
+        self.assertEqual(totals["montoGravadoTotal"], "100.00")
 
     def test_192_unsupported_rate_raises_user_error(self):
         """Una alicuota fuera de {0, 8, 16, 31} debe dar UserError, no KeyError."""
@@ -2715,4 +2716,485 @@ class TestAccountMoveApiCalls(TransactionCase):
         local, _foreign = service._prepare_tax_subtotals([fake], "USD", multi_currency=True)
         igtf_line = next(t for t in local if t["codigoTotalImp"] == "IGTF")
         self.assertEqual(igtf_line["alicuotaImp"], "2.0")
+
+    # ------------------------------------------------------------------
+    # _check_tfhka_payment_required(): modo de pago contado/credito
+    # (port de binaural_unidigital._check_unidigital_payment_required)
+    # ------------------------------------------------------------------
+
+    def test_194_check_tfhka_payment_required_cash_blocks_unpaid(self):
+        self.company.digitalization_with_payment_tfhka = True
+        self.company.payment_mode_tfhka = "cash"
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        with self.assertRaises(ValidationError):
+            invoice._check_tfhka_payment_required()
+
+        # Las notas de credito quedan fuera de esta validacion: deben poder
+        # digitalizarse aunque la factura asociada no este pagada.
+        credit_note = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            move_type="out_refund",
+            reversed_entry_id=invoice,
+        )
+        credit_note._check_tfhka_payment_required()
+
+    def test_195_check_tfhka_payment_required_cash_allows_paid(self):
+        self.company.digitalization_with_payment_tfhka = True
+        self.company.payment_mode_tfhka = "cash"
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        invoice.payment_state = "paid"
+        invoice._check_tfhka_payment_required()
+
+    def test_196_check_tfhka_payment_required_cash_allows_in_payment(self):
+        self.company.digitalization_with_payment_tfhka = True
+        self.company.payment_mode_tfhka = "cash"
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        invoice.payment_state = "in_payment"
+        invoice._check_tfhka_payment_required()
+
+    def test_197_check_tfhka_payment_required_cash_allows_reversed(self):
+        self.company.digitalization_with_payment_tfhka = True
+        self.company.payment_mode_tfhka = "cash"
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        invoice.payment_state = "reversed"
+        invoice._check_tfhka_payment_required()
+
+    def test_198_check_tfhka_payment_required_credit_mode_ignores_payment(self):
+        self.company.digitalization_with_payment_tfhka = True
+        self.company.payment_mode_tfhka = "credit"
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        invoice._check_tfhka_payment_required()
+
+    def test_199_check_tfhka_payment_required_noop_without_payment_first_mode(self):
+        self.company.digitalization_with_payment_tfhka = False
+        self.company.payment_mode_tfhka = "cash"
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        invoice._check_tfhka_payment_required()
+
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
+    def test_200_action_generate_digital_cash_blocks_unpaid(self, mock_call):
+        # The payment guard now lives at the enqueue boundary
+        # (action_tfhka_generate_digital), not inside generate_document_digital
+        # itself -- that call is deferred to the queue's cron, which has no
+        # context to stop an unpaid invoice from being submitted.
+        self.company.digitalization_with_payment_tfhka = True
+        self.company.payment_mode_tfhka = "cash"
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        with self.assertRaises(ValidationError):
+            invoice.action_tfhka_generate_digital()
+        mock_call.assert_not_called()
+        self.assertFalse(invoice.is_digitalized)
+        self.assertEqual(invoice.tfhka_digitalization_state, "none")
+
+    # ------------------------------------------------------------------
+    # tfhka.document.service._prepare_totals(): IGTF en totales/subtotales
+    # de impuestos, con y sin multi-moneda (restaurados de #1444, borrados
+    # al resolver el conflicto de merge contra 17.0).
+    # ------------------------------------------------------------------
+
+    def _fake_move_with_igtf(self, igtf, multi_currency=False):
+        groups = {"Subtotal": [
+            {"tax_group_name": "IVA 16%", "tax_group_base_amount": 1000.0, "tax_group_amount": 160.0},
+        ]}
+        foreign_groups = {"Subtotal": [
+            {"tax_group_name": "IVA 16%", "tax_group_base_amount": 25.0, "tax_group_amount": 4.0},
+        ]}
+        return type("FakeMove", (), {
+            "__iter__": lambda self: iter([self]),
+            "company_id": self.company,
+            "multi_currency_invoice": multi_currency,
+            "show_payment_box": False,
+            "foreign_rate": 40.0,
+            "invoice_line_ids": self.env["account.move.line"],
+            "tax_totals": {
+                "subtotal": 1000.0,
+                "amount_untaxed": 1000.0,
+                "amount_total": 1160.0,
+                "amount_total_igtf": 1160.0 + igtf["igtf_amount"],
+                "foreign_subtotal": 25.0,
+                "foreign_amount_untaxed": 25.0,
+                "foreign_amount_total": 29.0,
+                "foreign_amount_total_igtf": 29.0 + igtf["foreign_igtf_amount"],
+                "groups_by_subtotal": groups,
+                "groups_by_foreign_subtotal": foreign_groups,
+                "igtf": dict(igtf, apply_igtf=True, name="3.0 %"),
+            },
+        })()
+
+    def test_201_prepare_totals_igtf_ves_company_in_bolivares(self):
+        self._force_company_currency(self.company, self.currency_vef)
+        fake = self._fake_move_with_igtf({
+            "igtf_base_amount": 400.0,
+            "igtf_amount": 12.0,
+            "foreign_igtf_base_amount": 10.0,
+            "foreign_igtf_amount": 0.3,
+        })
+
+        totals, foreign_totals = self.env["tfhka.document.service"]._prepare_totals(fake)
+
+        self.assertEqual(totals["totalIGTF"], "12.00")
+        self.assertEqual(totals["totalIGTF_VES"], "12.00")
+        self.assertFalse(foreign_totals)
+        igtf_line = next(
+            (t for t in totals["impuestosSubtotal"] if t["codigoTotalImp"] == "IGTF"), None
+        )
+        self.assertTrue(igtf_line, "el IGTF debe viajar en impuestosSubtotal sin multimoneda")
+        self.assertEqual(igtf_line["baseImponibleImp"], "400.00")
+        self.assertEqual(igtf_line["valorTotalImp"], "12.00")
+
+    def test_202_prepare_totals_igtf_ves_company_multi_currency(self):
+        self._force_company_currency(self.company, self.currency_vef)
+        fake = self._fake_move_with_igtf({
+            "igtf_base_amount": 400.0,
+            "igtf_amount": 12.0,
+            "foreign_igtf_base_amount": 10.0,
+            "foreign_igtf_amount": 0.3,
+        }, multi_currency=True)
+
+        totals, foreign_totals = self.env["tfhka.document.service"]._prepare_totals(fake)
+
+        self.assertEqual(totals["totalIGTF"], "12.00")
+        self.assertEqual(totals["totalIGTF_VES"], "12.00")
+        self.assertEqual(foreign_totals["totalIGTF"], "0.30")
+        self.assertEqual(foreign_totals["totalIGTF_VES"], "12.00")
+
+    def test_203_prepare_totals_igtf_usd_company(self):
+        fake = self._fake_move_with_igtf({
+            "igtf_base_amount": 10.0,
+            "igtf_amount": 0.3,
+            "foreign_igtf_base_amount": 400.0,
+            "foreign_igtf_amount": 12.0,
+        })
+        fake.tax_totals.update({
+            "subtotal": 25.0,
+            "amount_untaxed": 25.0,
+            "amount_total": 29.0,
+            "amount_total_igtf": 29.3,
+            "foreign_subtotal": 1000.0,
+            "foreign_amount_untaxed": 1000.0,
+            "foreign_amount_total": 1160.0,
+            "foreign_amount_total_igtf": 1172.0,
+            "groups_by_subtotal": fake.tax_totals["groups_by_foreign_subtotal"],
+            "groups_by_foreign_subtotal": fake.tax_totals["groups_by_subtotal"],
+        })
+
+        totals, foreign_totals = self.env["tfhka.document.service"]._prepare_totals(fake)
+
+        self.assertEqual(totals["totalIGTF"], "12.00")
+        self.assertEqual(totals["totalIGTF_VES"], "12.00")
+        self.assertEqual(foreign_totals["totalIGTF"], "0.30")
+        self.assertEqual(foreign_totals["totalIGTF_VES"], "12.00")
+
+    # ------------------------------------------------------------------
+    # action_tfhka_generate_digital(): el documento anterior en la
+    # numeracion del diario debe estar 'queued' o 'success' antes de poder
+    # mandar este a digitalizar.
+    # ------------------------------------------------------------------
+
+    def test_205_action_generate_digital_blocks_when_previous_not_queued(self):
+        self.company.digitalization_with_payment_tfhka = True
+        self.company.payment_mode_tfhka = "credit"
+        inv1 = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        inv2 = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        # inv1 nunca se mando a digitalizar: sigue en 'none'.
+        with self.assertRaises(ValidationError) as e:
+            inv2.action_tfhka_generate_digital()
+        self.assertIn(inv1.name, str(e.exception))
+        self.assertEqual(inv2.tfhka_digitalization_state, "none")
+
+    def test_206_action_generate_digital_allows_when_previous_queued(self):
+        self.company.digitalization_with_payment_tfhka = True
+        self.company.payment_mode_tfhka = "credit"
+        inv1 = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        inv1.action_tfhka_generate_digital()
+        self.assertEqual(inv1.tfhka_digitalization_state, "queued")
+
+        inv2 = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        inv2.action_tfhka_generate_digital()
+        self.assertEqual(inv2.tfhka_digitalization_state, "queued")
+
+    def test_207_action_generate_digital_allows_when_previous_success(self):
+        self.company.digitalization_with_payment_tfhka = True
+        self.company.payment_mode_tfhka = "credit"
+        inv1 = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        inv1.write({"tfhka_digitalization_state": "success", "is_digitalized": True})
+
+        inv2 = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        inv2.action_tfhka_generate_digital()
+        self.assertEqual(inv2.tfhka_digitalization_state, "queued")
+
+    def test_208_action_generate_digital_blocks_when_previous_errored(self):
+        self.company.digitalization_with_payment_tfhka = True
+        self.company.payment_mode_tfhka = "credit"
+        inv1 = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        inv1.write({"tfhka_digitalization_state": "error", "tfhka_digitalization_error": "boom"})
+
+        inv2 = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        with self.assertRaises(ValidationError):
+            inv2.action_tfhka_generate_digital()
+        self.assertEqual(inv2.tfhka_digitalization_state, "none")
+
+    def test_209_action_generate_digital_allows_when_previous_processing(self):
+        # Fix bloqueante: 'processing' es un estado transitorio sano (el cron
+        # esta enviando el documento anterior en este mismo instante), no un
+        # fallo -- no debe bloquear el encolado del siguiente documento.
+        self.company.digitalization_with_payment_tfhka = True
+        self.company.payment_mode_tfhka = "credit"
+        inv1 = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        inv1.write({"tfhka_digitalization_state": "processing"})
+
+        inv2 = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        inv2.action_tfhka_generate_digital()
+        self.assertEqual(inv2.tfhka_digitalization_state, "queued")
+
+    def test_210_validate_previous_document_queued_also_blocks_in_normal_mode(self):
+        # Fix bloqueante (segunda ronda de revision): un guard que
+        # desactivaba esta validacion fuera de modo "digitalizacion con
+        # pago" fue revertido -- el posteo normal no siempre pasa por el
+        # wizard que auto-encola (p.ej. l10n_ve_donation postea una
+        # reversion con action_post() directo), así que un documento puede
+        # quedar en 'none' indefinidamente sin otro guard antes de este
+        # boton manual. La validacion debe correr sin importar el modo.
+        self.company.digitalization_with_payment_tfhka = False
+        inv1 = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        inv1.write({"tfhka_digitalization_state": "error", "tfhka_digitalization_error": "boom"})
+
+        inv2 = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        with self.assertRaises(ValidationError):
+            inv2._tfhka_validate_previous_document_queued()
+
+    def test_211_is_eligible_for_digitalization_excludes_undeterminable_document_type(self):
+        # Fix bloqueante: una NC sin reversed_entry_id no tiene tipo de
+        # documento TFHKA determinable (ver test_98). Si se encola igual,
+        # falla en el cron y, por el lock de _tfhka_cron_process_queue,
+        # bloquea la cola de toda la compania para siempre -- nada la saca
+        # de 'error' salvo un reintento exitoso, imposible para este caso.
+        self.journal.digital_invoice = True
+        credit = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            move_type="out_refund",
+        )
+        self.assertFalse(credit._tfhka_is_eligible_for_digitalization())
+
+    def test_212_enqueue_eligible_for_digitalization_skips_undeterminable_document_type(self):
+        # Mismo fix, camino automatico (post del wizard): el filtro de
+        # elegibilidad debe excluir la NC sin tipo determinable y dejar
+        # pasar la factura normal del mismo lote.
+        self.journal.digital_invoice = True
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        credit = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            move_type="out_refund",
+        )
+        (invoice | credit)._tfhka_enqueue_eligible_for_digitalization()
+        self.assertEqual(invoice.tfhka_digitalization_state, "queued")
+        self.assertEqual(credit.tfhka_digitalization_state, "none")
+
+    def test_213_action_generate_digital_blocks_undeterminable_document_type(self):
+        # Mismo fix, camino manual (modo "digitalizacion con pago"): el
+        # boton no debe encolar un documento sin tipo TFHKA determinable --
+        # debe fallar de inmediato, antes de tocar tfhka_digitalization_state.
+        self.company.digitalization_with_payment_tfhka = True
+        self.company.payment_mode_tfhka = "credit"
+        credit = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            move_type="out_refund",
+        )
+        with self.assertRaises(ValidationError):
+            credit.action_tfhka_generate_digital()
+        self.assertEqual(credit.tfhka_digitalization_state, "none")
+
+    # ------------------------------------------------------------------
+    # Cobertura adicional: fixes de revision de codigo (nroItems, moneda
+    # del bloque "otra moneda", redondeo monetario)
+    # ------------------------------------------------------------------
+
+    def test_214_nro_items_excludes_sections_and_notes(self):
+        """nroItems debe contar solo lineas de producto, igual criterio que
+        detallesItems/_prepare_detail_lines (display_type == 'product').
+
+        Antes contaba TODAS las lineas de invoice_line_ids, incluidas
+        secciones y notas, asi que nroItems no coincidia con la cantidad
+        real de items del detalle.
+        """
+        inv = self._create_invoice(
+            products=[
+                {"product_id": self.product.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]},
+                {"product_id": self.product.id, "price_unit": 50, "tax_ids": [self.tax_iva16.id]},
+            ],
+            do_post=False,
+        )
+        inv.write({
+            "invoice_line_ids": [
+                Command.create({"display_type": "line_section", "name": "Seccion 1"}),
+                Command.create({"display_type": "line_note", "name": "Nota"}),
+            ],
+        })
+        service = self.env['tfhka.document.service']
+        totals, _foreign = service._prepare_totals(inv)
+        details = service._prepare_detail_lines(inv)
+
+        self.assertEqual(len(details), 2)
+        self.assertEqual(totals["nroItems"], "2")
+        self.assertEqual(totals["nroItems"], str(len(details)))
+
+    def test_215_foreign_totals_moneda_is_company_base_currency_when_non_ves(self):
+        """En compañias con moneda base distinta de VES, 'totalesOtraMoneda'
+        debe quedar etiquetado con el codigo de la moneda BASE real de la
+        compañia (la que efectivamente contienen sus montos, leidos de los
+        campos NO 'foreign_*' de tax_totals), no con el mismo codigo que
+        termina usando el bloque local.
+
+        Bug corregido: antes 'foreign_currency_code' quedaba apuntando al
+        mismo codigo que 'currency' (el de currency_foreign_id), asi que
+        ambos bloques del payload salian etiquetados con el mismo codigo de
+        moneda pero con cifras distintas.
+        """
+        self.currency_usd.code_tfhka = "USD"
+        self.currency_vef.code_tfhka = "VES"
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]}],
+        )
+        _totals, foreign_totals = self.env['tfhka.document.service']._prepare_totals(invoice)
+        self.assertTrue(foreign_totals, "Compañia en USD debe generar totalesOtraMoneda")
+        self.assertEqual(foreign_totals["moneda"], "USD")
+
+    def test_216_prepare_totals_uses_currency_round_not_native_round(self):
+        """Los montos del payload deben venir con el redondeo de Odoo
+        (currency.round(), medio hacia arriba) y siempre con 2 decimales,
+        no con round() nativo de Python (medio al par) ni strings sin
+        ceros de relleno como "100.0".
+        """
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]}],
+        )
+        totals, foreign_totals = self.env['tfhka.document.service']._prepare_totals(invoice)
+        for key in ("montoGravadoTotal", "subtotal", "montoTotalConIVA", "totalIVA", "totalDescuento"):
+            self.assertRegex(
+                totals[key], r"^-?\d+\.\d{2}$",
+                f"{key} debe tener siempre 2 decimales: {totals[key]!r}",
+            )
+        for key in ("montoGravadoTotal", "subtotal", "montoTotalConIVA", "totalIVA", "totalDescuento"):
+            self.assertRegex(
+                foreign_totals[key], r"^-?\d+\.\d{2}$",
+                f"{key} (otra moneda) debe tener siempre 2 decimales: {foreign_totals[key]!r}",
+            )
+
+    def test_217_build_payment_info_monto_uses_currency_round(self):
+        """El monto del cuadro de pago usa currency.round(), con 2 decimales
+        siempre (antes: round() nativo + str(), p.ej. "100.0")."""
+        pay = self._create_payment(amount=100)
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]}]
+        )
+        info = self.env['tfhka.document.service']._build_payment_info(invoice, pay)
+        self.assertEqual(info["monto"], "100.00")
+
+    # ------------------------------------------------------------------
+    # _tfhka_check_sequence_gap(): hallazgo adicional de la ronda 3 de
+    # revision, portado de v19. En modo "digitalizacion con pago" el
+    # numero enviado a TFHKA es el sequence_number local (no el name), asi
+    # que un hueco ahi se reporta fuera de orden si no se bloquea aqui.
+    # ------------------------------------------------------------------
+
+    def test_218_action_generate_digital_blocks_sequence_gap_in_payment_mode(self):
+        self.company.digitalization_with_payment_tfhka = True
+        self.company.payment_mode_tfhka = "credit"
+        inv1 = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        inv1.action_tfhka_generate_digital()
+        self.assertEqual(inv1.tfhka_digitalization_state, "queued")
+
+        inv2 = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        # Simula el hueco: un numero de secuencia local saltado (p.ej. una
+        # factura cancelada que ya lo consumio), sin tocar 'name'.
+        inv2.sequence_number = inv1.sequence_number + 2
+
+        with self.assertRaises(ValidationError):
+            inv2.action_tfhka_generate_digital()
+        self.assertEqual(inv2.tfhka_digitalization_state, "none")
+
+    def test_219_check_sequence_gap_noop_in_normal_mode(self):
+        # En modo normal el numero reportado a TFHKA no es sequence_number
+        # (ver tfhka.document.service), asi que un hueco local no debe
+        # bloquear nada en ese modo.
+        self.company.digitalization_with_payment_tfhka = False
+        inv1 = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        inv2 = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        inv2.sequence_number = inv1.sequence_number + 2
+        inv2._tfhka_check_sequence_gap()
+
+    def test_220_check_sequence_gap_allows_prefix_reset(self):
+        # Hallazgo bloqueante de la ronda 4: con use_date_range el
+        # sequence_number local se reinicia a 1 en cada cambio de prefijo
+        # (p.ej. el reset anual 'INV/2025/9999' -> 'INV/2026/0001'), asi que
+        # comparar sequence_number sin exigir el mismo sequence_prefix
+        # bloqueaba por error la primera factura de cada periodo.
+        self.company.digitalization_with_payment_tfhka = True
+        self.company.payment_mode_tfhka = "credit"
+        inv1 = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        inv1.action_tfhka_generate_digital()
+        self.assertEqual(inv1.tfhka_digitalization_state, "queued")
+
+        inv2 = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        # Simula el reset: nuevo prefijo (ej. cambio de anio) con
+        # sequence_number reiniciado a 1, muy lejos del consecutivo del
+        # prefijo anterior -- esto no debe tratarse como un hueco.
+        inv2.name = "INV/2099/00000001"
+        inv2.sequence_prefix = "INV/2099/"
+        inv2.sequence_number = 1
+
+        inv2.action_tfhka_generate_digital()
+        self.assertEqual(inv2.tfhka_digitalization_state, "queued")
 

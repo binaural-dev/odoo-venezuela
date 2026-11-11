@@ -1,6 +1,4 @@
-=======================================
 Venezuela - POS (Punto de Venta)
-=======================================
 
 .. |badge1| image:: https://img.shields.io/badge/licence-LGPL--3-blue.png
     :target: http://www.gnu.org/licenses/lgpl-3.0-standalone.html
@@ -17,8 +15,22 @@ métodos de pago locales y reportes de ventas.
 .. contents::
    :local:
 
+
+Bugs are tracked on GitHub Issues. In case of trouble, please check there
+if your issue has already been reported.
+
+Credits
+
+Authors
+-------
+
+* Binauraldev
+
+Maintainers
+-----------
+
+This module is maintained by Binauraldev.
 Créditos
-========
 
 Autor/es
 ~~~~~~~~

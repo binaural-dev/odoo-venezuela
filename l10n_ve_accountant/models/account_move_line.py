@@ -332,7 +332,6 @@ class AccountMoveLine(models.Model):
         "debit",
         "credit",
         "foreign_subtotal",
-        "foreign_balance",
         "amount_currency",
         "not_foreign_recalculate",
         "foreign_debit_adjustment",
@@ -341,18 +340,23 @@ class AccountMoveLine(models.Model):
         "move_id.foreign_inverse_rate",
     )
     def _compute_foreign_debit_credit(self):
+        # foreign_balance is intentionally not a dependency: it is itself computed
+        # from foreign_debit/foreign_credit, so depending on it made a cycle.
+        # Every record must be assigned on every path: a stored computed field the
+        # compute skips is written as NULL, and NULL foreign_balance breaks the USD
+        # reports and the reconciliation residuals (ticket 15729).
         for line in self:
-            if line._skip_foreign_compute():
-                continue
-            value = line._get_foreign_value()
+            value = None if line._skip_foreign_compute() else line._get_foreign_value()
             if value is not None:
                 line._set_foreign(value)
-        
+            else:
+                line.foreign_debit = line.foreign_debit or 0.0
+                line.foreign_credit = line.foreign_credit or 0.0
+
     @api.depends("foreign_credit", "foreign_debit")
     def _compute_foreign_balance(self):
         for line in self:
-        
-            line.foreign_balance = line.foreign_debit - line.foreign_credit
+            line.foreign_balance = (line.foreign_debit or 0.0) - (line.foreign_credit or 0.0)
 
     def _inverse_foreign_balance(self):
         for line in self:

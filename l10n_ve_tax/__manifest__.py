@@ -39,7 +39,7 @@ Cambios en UI / Modelos impactados
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
-    "version": "17.0.1.0.3",
+    "version": "17.0.1.0.4",
     # any module necessary for this one to work correctly
     "depends": ["base", "account", "l10n_ve_base", "l10n_ve_rate"],
     "data": [

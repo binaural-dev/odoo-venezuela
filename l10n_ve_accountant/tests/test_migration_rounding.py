@@ -1,17 +1,11 @@
-import importlib.util
-from pathlib import Path
-
 from odoo.tests import TransactionCase, tagged
 from odoo import fields, Command
 
-MIG_56 = Path(__file__).resolve().parent.parent / "migrations" / "17.0.0.0.56" / "post-migration.py"
+from .migration_helpers import load_migration
 
 
 def _load_migration_56():
-    spec = importlib.util.spec_from_file_location("l10n_ve_accountant_mig_56", MIG_56)
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod
+    return load_migration("17.0.0.0.56", "l10n_ve_accountant_mig_56")
 
 
 @tagged("post_install", "-at_install", "l10n_ve_accountant")
