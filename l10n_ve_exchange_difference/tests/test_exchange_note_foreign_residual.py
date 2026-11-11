@@ -196,24 +196,21 @@ class TestExchangeNoteForeignResidual(ExchangeNoteCommon):
 
     def test_widget_shows_the_note_as_an_exchange_row(self):
         """En el widget de pagos de la factura la nota de diferencial se
-        muestra como una fila de diferencial (como el asiento nativo): marcada
-        `is_exchange` (sin botón de desconciliar), con su número, en moneda de la
+        muestra como diferencial (como el asiento nativo), en moneda de la
         compañía y por su monto en Bs -- no como un "pago/reverso" de $9,19 que
-        parecería descontar divisa de la factura."""
+        parecería descontar divisa de la factura. Desde Odoo 20 el widget agrupa
+        los diferenciales en `exchange_info` en lugar de listarlos como filas."""
         invoice = self._create_invoice("2026-01-01")
         invoice.with_context(move_action_post_alert=True).action_post()
         self._pay(invoice, 50.0, "2026-08-01")
         note = self._notes(invoice)
         self.assertEqual(len(note), 1)
 
-        invoice.invalidate_recordset(["invoice_payments_widget"])
-        rows = invoice.invoice_payments_widget["content"]
-        note_rows = [row for row in rows if row["move_id"] == note.id]
-        self.assertEqual(len(note_rows), 1)
-        row = note_rows[0]
-        self.assertTrue(row["is_exchange"])
-        self.assertEqual(row["currency_id"], self.company.currency_id.id)
-        self.assertAlmostEqual(row["amount"], note.amount_total, places=2)
+        widget = self._widget(invoice)
+        rows = widget["content"]
+        self.assertEqual(widget["exchange_info"]["line_ids"].count(self._receivable(note).id), 1)
+        self.assertAlmostEqual(abs(widget["exchange_info"]["exchange_amount"]), note.amount_total, places=2)
+        self.assertFalse([row for row in rows if row["move_id"] == note.id], "La nota no es un pago")
 
         payment_rows = [row for row in rows if row["move_id"] != note.id]
         self.assertEqual(len(payment_rows), 1)
@@ -222,14 +219,20 @@ class TestExchangeNoteForeignResidual(ExchangeNoteCommon):
         self.assertAlmostEqual(payment_rows[0]["amount"], 50.0, places=2)
 
 
-    def _widget_rows(self, invoice):
+    def _widget(self, invoice):
         invoice.invalidate_recordset(["invoice_payments_widget"])
-        return (invoice.invoice_payments_widget or {}).get("content", [])
+        return invoice.invoice_payments_widget or {"content": [], "exchange_info": {"line_ids": [], "exchange_amount": 0.0}}
+
+    def _widget_rows(self, invoice):
+        return self._widget(invoice)["content"]
+
+    def _widget_exchange_lines(self, invoice):
+        return self._widget(invoice)["exchange_info"]["line_ids"]
 
     def test_widget_shows_the_note_that_closes_against_the_payment(self):
         """Pago con tasa mayor que la de la factura (pago de más valor en Bs): la ND cierra contra la línea del
         PAGO, no contra la de la factura. Como el diferencial nativo, SHALL verse en el widget de pagos de la
-        factura como fila de diferencial (`is_exchange`), en moneda de la compañía y por su monto en Bs."""
+        factura como diferencial (`exchange_info` desde Odoo 20), en moneda de la compañía y por su monto en Bs."""
         invoice = self._create_invoice("2026-08-01")
         invoice.with_context(move_action_post_alert=True).action_post()
         payment = self._unreconciled_payment(100.0, "2026-01-01")
@@ -245,41 +248,43 @@ class TestExchangeNoteForeignResidual(ExchangeNoteCommon):
         )
         self.assertFalse(self._partial_between(note_line, self._receivable(invoice)))
 
-        rows = self._widget_rows(invoice)
-        note_rows = [row for row in rows if row["move_id"] == notes.id]
-        self.assertEqual(len(note_rows), 1, "La nota que cierra contra el pago debía verse en el widget")
-        self.assertTrue(note_rows[0]["is_exchange"])
-        self.assertEqual(note_rows[0]["currency_id"], self.company.currency_id.id)
-        self.assertAlmostEqual(note_rows[0]["amount"], notes.amount_total, places=2)
+        widget = self._widget(invoice)
+        rows = widget["content"]
+        self.assertEqual(
+            widget["exchange_info"]["line_ids"].count(note_line.id), 1,
+            "La nota que cierra contra el pago debía verse en el widget",
+        )
+        self.assertAlmostEqual(abs(widget["exchange_info"]["exchange_amount"]), notes.amount_total, places=2)
         payment_rows = [row for row in rows if row["move_id"] != notes.id]
         self.assertEqual(len(payment_rows), 1)
         self.assertFalse(payment_rows[0]["is_exchange"])
         self.assertAlmostEqual(payment_rows[0]["amount"], 100.0, places=2)
 
     def test_widget_note_row_disappears_when_the_partial_is_broken(self):
-        """Al desconciliar el pago la nota se revierte y su fila deja de verse."""
+        """Al desconciliar el pago la nota se revierte y deja de verse en el widget."""
         invoice = self._create_invoice("2026-08-01")
         invoice.with_context(move_action_post_alert=True).action_post()
         payment = self._unreconciled_payment(100.0, "2026-01-01")
         self._cross_from_widget(invoice, payment)
         note = self._notes(invoice)
-        self.assertTrue([row for row in self._widget_rows(invoice) if row["move_id"] == note.id])
+        note_line = self._receivable(note)
+        self.assertIn(note_line.id, self._widget_exchange_lines(invoice))
 
         partial = self._partial_between(self._receivable(invoice), self._receivable(payment.move_id))
         invoice.js_remove_outstanding_partial(partial.id)
 
         self.assertTrue(note.reversal_move_ids, "La nota debía revertirse")
-        self.assertFalse([row for row in self._widget_rows(invoice) if row["move_id"] == note.id])
+        self.assertNotIn(note_line.id, self._widget_exchange_lines(invoice))
 
     def test_widget_shows_one_row_per_installment_note_that_closes_against_the_payment(self):
-        """Dos cuotas, notas contra la MISMA línea del pago: una fila por nota, sin duplicados."""
+        """Dos cuotas, notas contra la MISMA línea del pago: cada nota una vez, sin duplicados."""
         invoice, _installments = self._two_installment_invoice("2026-08-01")
         self._pay_by_widget(invoice, 100.0, "2026-01-01")
         notes = self._notes(invoice)
         self.assertEqual(len(notes), 2)
-        rows = self._widget_rows(invoice)
+        exchange_lines = self._widget_exchange_lines(invoice)
         for note in notes:
-            self.assertEqual(len([row for row in rows if row["move_id"] == note.id]), 1)
+            self.assertEqual(exchange_lines.count(self._receivable(note).id), 1)
 
     def _two_installments_term(self):
         return self.env["account.payment.term"].create({
@@ -360,12 +365,29 @@ class TestExchangeNoteForeignResidual(ExchangeNoteCommon):
         self.assertEqual(len(note_of), 2, "Setup: una nota por cuota")
         first, second = installments
 
-        invoice.js_remove_outstanding_partial(self._partial_between(first, payment_line).id)
+        # El parcial se rompe directo: desde Odoo 20 la «x» del widget rompe toda la conciliación
+        # entre la factura y el pago (ver test_breaking_from_the_widget_reverses_every_installment_note).
+        self._partial_between(first, payment_line).unlink()
 
         self.assertTrue(note_of[first].reversal_move_ids, "La nota de la cuota rota debía revertirse")
         self.assertFalse(note_of[second].reversal_move_ids, "La nota de la otra cuota debía seguir vigente")
         self.assertTrue(self._partial_between(second, payment_line), "La otra cuota debía seguir cruzada")
         self.assertFalse(self._partial_between(first, payment_line))
+
+    def test_breaking_from_the_widget_reverses_every_installment_note(self):
+        """Desde Odoo 20 la «x» del widget de pagos rompe toda la conciliación entre la
+        factura y el pago, no un solo parcial: se revierten las notas de todas las cuotas."""
+        invoice, installments = self._two_installment_invoice("2026-01-01")
+        payment = self._pay_by_widget(invoice, 100.0, "2026-08-01")
+        payment_line = self._receivable(payment.move_id)
+        notes = self._notes(invoice)
+        self.assertEqual(len(notes), 2, "Setup: una nota por cuota")
+
+        invoice.js_remove_outstanding_partial(self._partial_between(installments[0], payment_line).id)
+
+        self.assertTrue(all(note.reversal_move_ids for note in notes), "Debían revertirse las dos notas")
+        for installment in installments:
+            self.assertFalse(self._partial_between(installment, payment_line))
 
     def test_breaking_one_installment_partial_reverses_only_its_note(self):
         """Residual del lado de la factura: una nota por cuota, cada una ligada a
