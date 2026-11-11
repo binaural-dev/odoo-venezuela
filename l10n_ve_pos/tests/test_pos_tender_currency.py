@@ -609,11 +609,14 @@ class TestPosTenderCurrency(TestPosSessionAccountingBase):
     # ------------------------------------------------------------------
     def _eur_legs(self, move=None):
         """Líneas de la transitoria de la caja real en EUR (cruce de efectivo,
-        ``use_suspense``) y de la transitoria del método."""
+        ``use_suspense``) y del lado del método: la cuenta de su diario en una
+        venta (ninguna salida de efectivo llega a ese diario, tarea 86801) o su
+        transitoria en un cruce de entrada/salida."""
         moves = move or self._cross_moves()
+        method_accounts = self.account_transit | self.account_transit_suspense
         return (
             moves.line_ids.filtered(lambda l: l.account_id == self.account_eur_suspense),
-            moves.line_ids.filtered(lambda l: l.account_id == self.account_transit_suspense),
+            moves.line_ids.filtered(lambda l: l.account_id in method_accounts),
         )
 
     def assertCoherentSigns(self, lines):

@@ -247,14 +247,14 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
         self.assertEqual(
             len(moves), 3, "1 asiento del metodo combine + 2 del metodo split"
         )
-        # El metodo bank vacia account_bank (su outstanding); el cash debita
-        # la transitoria de su propio diario. Contar por esa cuenta separa las
-        # dos granularidades dentro de la misma sesion.
+        # El metodo bank vacia account_bank (su outstanding); el cash, que no
+        # esta en el diario de caja de la sesion, la cuenta de su propio diario
+        # (tarea 86801). Contar por esa cuenta separa las dos granularidades.
         bank_moves = moves.filtered(
             lambda m: self.account_bank in m.line_ids.account_id
         )
         cash_moves = moves.filtered(
-            lambda m: cash_suspense in m.line_ids.account_id
+            lambda m: self.split_cash_method.journal_id.default_account_id in m.line_ids.account_id
         )
         self.assertEqual(len(bank_moves), 1, "combine: los 2 pagos bank en un solo asiento")
         self.assertEqual(len(cash_moves), 2, "split: un asiento por cada pago cash")
@@ -451,33 +451,29 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
         self.assertTrue(transitory_leg.not_foreign_recalculate)
 
     def test_cash_sale_moves_between_both_suspense_accounts(self):
-        """Venta en efectivo: transitoria del metodo -> transitoria del cruce.
+        """Venta en efectivo en el diario de caja de la sesion: transitoria del
+        metodo -> transitoria del cruce.
 
-        El efectivo de la sesion ya sale de la cuenta del diario del metodo
-        por la SALIDA DE EFECTIVO que el cajero registra al cerrar: el
-        ``try_cash_in_out`` nativo acredita ``journal_id.default_account_id``
-        y deja el importe en ``journal_id.suspense_account_id``. Si el cruce
-        tambien acreditara esa cuenta quedaria drenada dos veces, y las dos
-        transitorias cargadas sin nada que las compense. Por eso la venta en
-        efectivo va por ``use_suspense=True`` -- ver
-        ``_cross_move_uses_suspense``. Ticket 15219.
-
-        ``outstanding_account_id`` sigue vacio en un metodo cash
-        (``point_of_sale/views/pos_payment_method_views.xml:24``,
-        ``invisible="type != 'bank'"``), asi que no hay otra cuenta candidata.
+        El efectivo de la sesion sale de la cuenta de ese diario por la SALIDA
+        DE EFECTIVO que el cajero registra al cerrar: el ``try_cash_in_out``
+        nativo (solo en ``cash_journal_id``) acredita su ``default_account_id``
+        y deja el importe en el debe de su ``suspense_account_id``. El cruce de
+        la venta se arma como esa salida: acredita la transitoria del metodo y
+        debita la del diario afectado (ticket 15219, sentido corregido en la
+        tarea 86801).
         """
+        method = self.combined_cash_method
         self.assertFalse(
-            self.split_cash_method.outstanding_account_id,
+            method.outstanding_account_id,
             "fixture must mirror production: cash methods never have outstanding_account_id",
         )
-        self._configure_cross(self.split_cash_method)
-        suspense_origin, suspense_cross = self._configure_use_suspense_accounts(
-            self.split_cash_method
-        )
+        self._configure_cross(method)
+        suspense_origin, suspense_cross = self._configure_use_suspense_accounts(method)
         session = self._new_session().with_company(self.company)
+        self.assertEqual(session.cash_journal_id, method.journal_id)
         order = self._create_paid_order(
             session,
-            method=self.split_cash_method,
+            method=method,
             amount=58.0,
             tax_amount=8.0,
             foreign_rate=36.5,
@@ -497,9 +493,6 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
         self.assertTrue(origin_leg, "falta la pata de la transitoria del diario del metodo")
         self.assertTrue(cross_leg, "falta la pata de la transitoria del diario afectado")
 
-        # Como la salida que lleva la venta al diario real (tarea 86801): se
-        # acredita la transitoria del metodo (la salida la deja en el debe) y
-        # se debita la del diario afectado.
         self.assertAlmostEqual(origin_leg.credit, payment.amount, places=2)
         self.assertAlmostEqual(origin_leg.foreign_credit, payment.foreign_amount, places=2)
         self.assertAlmostEqual(origin_leg.debit, 0.0, places=2)
@@ -646,12 +639,14 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
         Es la configuracion POR DEFECTO de Odoo --
         ``account_journal._compute_suspense_account_id`` cae en
         ``company.account_journal_suspense_account_id`` y el plan contable se
-        la asigna a todo diario cash/bank. El asiento queda sin efecto
-        contable, y eso es lo buscado: delata la configuracion incompleta en
-        vez de esconderla, igual que ya hace el cruce del cash in/out.
-        Decision del ticket 15219.
+        la asigna a todo diario cash/bank. En el diario de caja de la sesion el
+        asiento queda sin efecto contable, y eso es lo buscado: delata la
+        configuracion incompleta en vez de esconderla, igual que ya hace el
+        cruce del cash in/out. Decision del ticket 15219. Sin linea de extracto:
+        no se sabe cual pata es la del diario real.
         """
-        self._configure_cross(self.split_cash_method)
+        method = self.combined_cash_method
+        self._configure_cross(method)
         shared_suspense = self.env["account.account"].create(
             {
                 "name": "C Shared Suspense",
@@ -660,12 +655,12 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
                 "company_ids": [(6, 0, [self.company.id])],
             }
         )
-        self.split_cash_method.journal_id.suspense_account_id = shared_suspense.id
+        method.journal_id.suspense_account_id = shared_suspense.id
         self.real_bank_journal.suspense_account_id = shared_suspense.id
         session = self._new_session().with_company(self.company)
         order = self._create_paid_order(
             session,
-            method=self.split_cash_method,
+            method=method,
             amount=58.0,
             tax_amount=8.0,
             foreign_rate=36.5,
@@ -687,9 +682,6 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
             "real: no se crea su linea de extracto",
         )
 
-    # ------------------------------------------------------------------
-    # Modo use_suspense (llamadores fuera de ventas -- ver binaural_pos_close)
-    # ------------------------------------------------------------------
     def test_use_suspense_incoming_uses_both_suspense_accounts(self):
         """``use_suspense=True``, entrada: ninguna pata usa las cuentas de
         ``use_suspense=False`` (``default_account_id`` / ``payment_account_id``
@@ -1215,50 +1207,103 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
         self.assertFalse(self._cross_moves())
         self.assertFalse(self._real_statement_lines())
 
-    def test_cash_sale_cross_offsets_the_cash_out(self):
-        """La venta en efectivo se cruza como la salida que la lleva al diario
-        real: acredita la transitoria del diario del metodo, que la salida de
-        efectivo nativa deja en el debe, y debita la del ``cross_journal``
-        (antes iba al reves y la transitoria quedaba cargada dos veces, ticket
-        15219, corregido en la tarea 86801)."""
-        suspense_origin, suspense_cross = self._configure_use_suspense_accounts(
-            self.split_cash_method
-        )
-        self._configure_cross(self.split_cash_method)
-        session = self._new_session().with_company(self.company)
-        self._create_paid_order(
-            session,
-            method=self.split_cash_method,
-            amount=58.0,
-            tax_amount=8.0,
-            foreign_rate=40.0,
-            name="OL/CROSS/CASH-OUT",
-        )
-        # La salida de efectivo nativa del cierre (los 58 de la venta, en la
-        # moneda del diario): sin contrapartida explicita, su otra pata cae en la
-        # transitoria del diario del metodo.
-        journal = self.split_cash_method.journal_id
-        cash_out = self.company.currency_id._convert(
-            -58.0, journal.currency_id or self.company.currency_id, self.company, fields.Date.today()
-        )
-        self.env["account.bank.statement.line"].with_company(self.company).create(
-            {"journal_id": journal.id, "amount": cash_out, "payment_ref": "Salida"}
-        )
-
-        session._validate_cross_move()
-
-        balance = lambda account: sum(  # noqa: E731
+    def _balance(self, account):
+        return sum(
             self.env["account.move.line"]
             .search([("account_id", "=", account.id), ("parent_state", "=", "posted")])
             .mapped("balance")
         )
-        self.assertAlmostEqual(balance(suspense_origin), 0.0, places=2)
+
+    def _journal_statement_line(self, journal, company_amount, **vals):
+        """Linea de extracto de ``company_amount`` (moneda de la compania) en
+        ``journal``, convertida a la moneda del diario."""
+        amount = self.company.currency_id._convert(
+            company_amount, journal.currency_id or self.company.currency_id, self.company,
+            fields.Date.today(),
+        )
+        return self.env["account.bank.statement.line"].with_company(self.company).create(
+            {"journal_id": journal.id, "amount": amount, "payment_ref": "E2E", **vals}
+        )
+
+    def test_cash_sale_cross_offsets_the_cash_out(self):
+        """En el diario de caja de la sesion la venta se cruza como la salida que
+        la lleva al diario real: acredita la transitoria del metodo, que la
+        salida de efectivo del core (``try_cash_in_out``, solo en ese diario)
+        deja en el debe, y debita la del ``cross_journal`` (tarea 86801)."""
+        method = self.combined_cash_method
+        suspense_origin, suspense_cross = self._configure_use_suspense_accounts(method)
+        self._configure_cross(method)
+        session = self._new_session().with_company(self.company)
+        self.assertEqual(session.cash_journal_id, method.journal_id)
+        self._create_paid_order(
+            session, method=method, amount=58.0, tax_amount=8.0, foreign_rate=40.0,
+            name="OL/CROSS/CASH-OUT",
+        )
+        # La salida de efectivo del cierre: sin contrapartida explicita, su otra
+        # pata cae en la transitoria del diario (como la del core).
+        self._journal_statement_line(method.journal_id, -58.0)
+
+        session._validate_cross_move()
+
+        self.assertAlmostEqual(self._balance(suspense_origin), 0.0, places=2)
         # La transitoria del diario real queda con el cruce y la contrapartida de
         # su linea de extracto, por conciliar; la venta ya esta en su cuenta.
-        self.assertAlmostEqual(balance(suspense_cross), 0.0, places=2)
-        self.assertAlmostEqual(balance(self.account_real_bank), 58.0, places=2)
-        st_line = self._real_statement_lines()
-        self.assertGreater(st_line.amount, 0, "la venta entra al diario real")
+        self.assertAlmostEqual(self._balance(suspense_cross), 0.0, places=2)
+        self.assertAlmostEqual(self._balance(self.account_real_bank), 58.0, places=2)
+
+    def test_cash_sale_on_another_journal_crosses_from_its_account(self):
+        """Un efectivo en divisa que no es el diario de caja de la sesion no
+        recibe ninguna salida: la venta queda en la cuenta de su diario (la
+        debita el extracto nativo del cierre) y el cruce la saca de ahi hacia la
+        transitoria del diario real, con su linea de extracto. La cuenta del
+        diario y su transitoria terminan en cero (tarea 86801, segunda
+        revision)."""
+        method = self.split_cash_method
+        suspense_origin, suspense_cross = self._configure_use_suspense_accounts(method)
+        self._configure_cross(method)
+        session = self._new_session().with_company(self.company)
+        self.assertNotEqual(session.cash_journal_id, method.journal_id)
+        self._create_paid_order(
+            session, method=method, amount=58.0, tax_amount=8.0, foreign_rate=40.0,
+            name="OL/CROSS/OTHER-JOURNAL",
+        )
+        # El extracto nativo del cierre: la venta debita la cuenta del diario.
+        self._journal_statement_line(
+            method.journal_id, 58.0, counterpart_account_id=self.account_pos_receivable.id
+        )
+
+        session._validate_cross_move()
+
+        journal_account = method.journal_id.default_account_id
+        move = self._cross_moves()
+        self.assertEqual(move.line_ids.filtered(lambda l: l.account_id == journal_account).credit, 58.0)
+        self.assertAlmostEqual(self._balance(journal_account), 0.0, places=2)
+        self.assertAlmostEqual(self._balance(suspense_origin), 0.0, places=2)
+        self.assertAlmostEqual(self._balance(suspense_cross), 0.0, places=2)
+        self.assertAlmostEqual(self._balance(self.account_real_bank), 58.0, places=2)
+        self.assertGreater(self._real_statement_lines().amount, 0, "la venta entra al diario real")
+
+    def test_cash_refund_on_another_journal_leaves_the_real_journal(self):
+        """Reembolso en efectivo (identificando cliente) en un diario al que no
+        llegan salidas: el cruce devuelve el dinero de la cuenta del diario real
+        a la del diario del metodo, con su linea de extracto negativa."""
+        method = self.split_cash_method
+        self._configure_use_suspense_accounts(method)
+        self._configure_cross(method)
+        session = self._new_session().with_company(self.company)
+        self._create_paid_order(
+            session, method=method, amount=-30.0, tax_amount=-4.0, foreign_rate=40.0,
+            name="OL/CROSS/OTHER-JOURNAL-REFUND",
+        )
+        self._journal_statement_line(
+            method.journal_id, -30.0, counterpart_account_id=self.account_pos_receivable.id
+        )
+
+        session._validate_cross_move()
+
+        self.assertAlmostEqual(self._balance(method.journal_id.default_account_id), 0.0, places=2)
+        self.assertAlmostEqual(self._balance(self.account_real_bank), -30.0, places=2)
+        self.assertLess(self._real_statement_lines().amount, 0, "el reembolso sale del diario real")
 
     def test_cross_created_by_a_pos_user_without_accounting_rights(self):
         """El cajero (solo usuario del PdV) cruza sin permisos contables: el
