@@ -47,9 +47,36 @@ class TestFeesRetentionAccumulated(TransactionCase):
         self.assertFalse(self.tariff.get_accumulated_rate(-1.0))
 
     def test_constraint_rejects_tier_without_upper_limit(self):
+        tier = self.tariff.accumulated_rate_ids.filtered(lambda t: t.name == "T1")
         with self.assertRaises(ValidationError):
-            self.tariff.accumulated_rate_ids[0].stop = 0.0
+            self.tariff.write({"accumulated_rate_ids": [(1, tier.id, {"stop": 0.0})]})
 
     def test_constraint_rejects_decreasing_limits(self):
+        tier = self.tariff.accumulated_rate_ids.filtered(lambda t: t.name == "T2")
         with self.assertRaises(ValidationError):
-            self.tariff.accumulated_rate_ids.filtered(lambda t: t.name == "T2").stop = 1500.0
+            self.tariff.write({"accumulated_rate_ids": [(1, tier.id, {"stop": 1500.0})]})
+
+    def test_tiers_can_be_edited_in_one_save(self):
+        """Only the final state is validated, not each intermediate write."""
+        t1, t2, t3 = self.tariff.accumulated_rate_ids.sorted("start")
+        self.tariff.write(
+            {
+                "accumulated_rate_ids": [
+                    (1, t1.id, {"stop": 3500.0}),
+                    (1, t2.id, {"stop": 4000.0}),
+                ]
+            }
+        )
+        self.assertEqual(t1.stop, 3500.0)
+
+    def test_add_fourth_tier(self):
+        t3 = self.tariff.accumulated_rate_ids.filtered(lambda t: t.name == "T3")
+        self.tariff.write(
+            {
+                "accumulated_rate_ids": [
+                    (1, t3.id, {"stop": 5000.0}),
+                    (0, 0, {"name": "T4", "start": 5001.0, "stop": 0.0, "percentage": 40.0}),
+                ]
+            }
+        )
+        self.assertEqual(self.tariff.get_accumulated_rate(6000.0).percentage, 40.0)
