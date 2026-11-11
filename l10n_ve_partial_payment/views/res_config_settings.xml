@@ -1,0 +1,23 @@
+<odoo>
+    <record id="res_config_settings_l10n_ve_partial_payment" model="ir.ui.view">
+        <field name="name">res.config.settings.l10n_ve_partial_payment</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="l10n_ve_base.l10n_ve_base_view_res_config_settings"/>
+        <field name="arch" type="xml">
+            <xpath expr="//app[@name='l10n_ve_base']" position="inside">
+
+                <!-- Visible only to group_partial_payment_apply, per that
+                     group's dual role: it gates both this section and the
+                     "Add" popover it configures (see security/res_groups.xml). -->
+                <block title="Partial Payments" name="l10n_ve_partial_payment_settings"
+                       groups="l10n_ve_partial_payment.group_partial_payment_apply">
+                    <setting string="Partial payment application management"
+                             help="Lets you enter the exact amount to apply when using 'Add' in an invoice's outstanding payments widget, instead of always reconciling the full residual.">
+                        <field name="partial_pay_from_outstanding"/>
+                    </setting>
+                </block>
+
+            </xpath>
+        </field>
+    </record>
+</odoo>
