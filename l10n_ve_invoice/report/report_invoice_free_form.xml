@@ -161,7 +161,7 @@
                                                 <span t-field="line.product_id.default_code"/>
                                             </td>
                                             <td name="account_invoice_line_name">
-                                                <span t-field="line.name" t-options="{'widget': 'text'}"/>
+                                                <span t-out="line._get_free_form_description()" t-options="{'widget': 'text'}"/>
                                                 <span t-if="all(tax.amount == 0.0 for tax in line.tax_ids)">(E)</span>
                                             </td>
                                             <td class="text-start">
