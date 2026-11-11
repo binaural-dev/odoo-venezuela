@@ -57,24 +57,40 @@ class AccountMove(models.Model):
         return self.env.ref("l10n_ve_donation.action_donation_certificate_account_move").report_action(self)
 
     def action_post(self):
+        # Only the invoices that are posted by this call get a credit note:
+        # calling it on an already posted one must not reverse it again.
+        draft_invoices = self.filtered(
+            lambda m: m.state == "draft" and m.is_donation and m.move_type == "out_invoice"
+        )
         res = super().action_post()
-        donation_moves = self.filtered(lambda m: m.is_donation and m.move_type == "out_invoice")
+
+        # The l10n_ve_accountant alert wizard returns an action instead of
+        # posting: the donation flow resumes when the wizard calls
+        # `action_post` again.
+        if isinstance(res, dict):
+            return res
+
+        donation_moves = draft_invoices.filtered(lambda m: m.state == "posted")
         donation_entries = self.filtered(lambda m: m.is_donation and m.move_type == "entry")
         for move in donation_moves:
-            # ! FIXME: Buscar la manera de no ejecutar _post acá
-            move._post(soft=True)
             wizard = self.env["account.move.reversal"].with_context(
                 active_ids=move.ids,
-                active_model="account.move"
-            ).create({"date": fields.Date.context_today(self), "journal_id": move.journal_id.id})
+                active_model="account.move",
+            ).create({
+                "date": fields.Date.context_today(self),
+                "journal_id": move.journal_id.id,
+            })
             wizard.reverse_moves()
             credit_note = wizard.new_move_ids
-            credit_note.action_post()
-            return res
+            if credit_note.state == "draft":
+                credit_note.action_post()
         for move in donation_entries:
             company_partner = move.company_id.partner_id or self.env.company.partner_id
             for line in move.line_ids:
-                line.write({"partner_id": company_partner.id})
+                vals_to_write = {"partner_id": company_partner.id}
+                if move.ref and move.ref not in (line.name or ""):
+                    vals_to_write["name"] = f"{line.name} - {move.ref}" if line.name else move.ref
+                line.write(vals_to_write)
         return res
 
     def _l10n_ve_skip_refund_origin_validation(self):
@@ -97,9 +113,15 @@ class AccountMove(models.Model):
         donation_moves = self.filtered(lambda move: move.is_donation and move.move_type != "entry")
         if donation_moves:
             reverse_moves = self.env['account.move']
+            other_moves = self.env['account.move']
+            other_default_values_list = []
             default_values_list = default_values_list or [{} for _move in self]
             for move, default_values in zip(self, default_values_list):
-                if not (move.is_donation and move.move_type != "entry"):
+                if move not in donation_moves:
+                    # A batch can mix donation invoices with other moves:
+                    # the others are reversed by the standard flow below.
+                    other_moves += move
+                    other_default_values_list.append(default_values)
                     continue
                 invoice_line_vals = move.product_line_donation()
                 move_vals = {
@@ -113,24 +135,29 @@ class AccountMove(models.Model):
                     "is_donation": True,
                     "invoice_line_ids": invoice_line_vals,
                 }
-                # `l10n_ve_skip_refund_origin_validation` -- redundante
-                # desde que la exclusión se decide por `is_donation` (ver
-                # `_l10n_ve_skip_refund_origin_validation()`); se deja por
-                # si el `create()` llegara a validar algo en el futuro.
+                # The exemption from the origin validation of
+                # `l10n_ve_invoice` is decided by the stored `is_donation`
+                # (see `_l10n_ve_skip_refund_origin_validation()`), not by a
+                # context key: the credit note is posted in a later call.
+                # Sin `skip_invoice_sync`: con esa llave el core no genera las
+                # líneas de impuesto ni de cobro y la nota queda en cero (ver
+                # `ea52357301`, que ya la quitó en 17.0).
                 reverse_move = self.env['account.move'].with_context(
                     check_move_validity=False,
-                    skip_invoice_sync=True,
-                    l10n_ve_skip_refund_origin_validation=True,
                 ).create(move_vals)
                 reverse_moves += reverse_move
+            if other_moves:
+                reverse_moves += super(AccountMove, other_moves)._reverse_moves(
+                    other_default_values_list, cancel
+                )
             return reverse_moves
 
         return super()._reverse_moves(default_values_list, cancel)
 
     def product_line_donation(self):
         """Adds the donation product lines to invoice_line_ids grouped by tax.
-        Uses skip_invoice_sync=True to maintain consistency with manually 
-        constructed tax lines in _reverse_moves.
+        The tax and payment term lines are generated by the core when the
+        credit note is created in `_reverse_moves`.
         """
         product = self.env["product.template"].with_company(self.company_id).search(
             [("is_donation_product", "=", True)], limit=1
