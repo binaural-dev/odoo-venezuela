@@ -1,22 +1,21 @@
 # -*- coding: utf-8 -*-
-from odoo.tests import tagged
-from odoo.exceptions import ValidationError
 from odoo import Command
+from odoo.exceptions import ValidationError
+from odoo.tests import tagged
 
-from odoo.addons.l10n_ve_stock_account.tests.common import StockAccountTestCommon
+from .common import TestDonationCommon
 
 
 @tagged("post_install", "-at_install", "l10n_ve_donation")
-class TestDonationSaleOrder(StockAccountTestCommon):
-    """Coverage for the `is_donation` onchanges/constraint that
-    `l10n_ve_donation` adds to `sale.order`."""
+class TestDonationSaleOrder(TestDonationCommon):
+    """`is_donation` on `sale.order`: the contact is NOT forced to the
+    company (the header keeps the real donor/beneficiary), the document is
+    an invoice and the warehouse is the donation one of the company."""
 
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
         cls.company_partner = cls.company.partner_id
-        cls.partner = cls.env["res.partner"].create({"name": "Donation SO Test Partner"})
-
         cls.product = cls.env["product.product"].create({
             "name": "Donation SO Coverage Product",
             "type": "consu",
@@ -34,26 +33,50 @@ class TestDonationSaleOrder(StockAccountTestCommon):
             })],
         })
 
-    def test_onchange_is_donation_sets_company_partner_and_document(self):
+    def test_onchange_is_donation_sets_document_and_donation_warehouse(self):
         order = self._create_order()
         order.is_donation = True
         order._onchange_is_donation()
-        self.assertEqual(order.partner_id, order.company_id.partner_id)
         self.assertEqual(order.document, "invoice")
+        self.assertEqual(order.warehouse_id, self.warehouse_donation)
 
-    def test_onchange_partner_id_donation_sets_document(self):
-        order = self._create_order(partner=self.company_partner, is_donation=True)
-        order.partner_id = self.company_partner
-        order._onchange_partner_id_donation()
-        self.assertEqual(order.document, "invoice")
+    def test_onchange_is_donation_keeps_the_real_contact(self):
+        order = self._create_order()
+        order.is_donation = True
+        order._onchange_is_donation()
+        self.assertEqual(order.partner_id, self.partner)
 
-    def test_onchange_partner_id_donation_raises_for_other_partner(self):
+    def test_changing_the_contact_of_a_donation_is_allowed(self):
         order = self._create_order(partner=self.company_partner, is_donation=True)
         order.partner_id = self.partner
+        self.assertEqual(order.partner_id, self.partner)
+
+    def test_onchange_is_donation_requires_a_donation_warehouse(self):
+        self.warehouse_donation.is_donation_warehouse = False
+        order = self._create_order()
+        order.is_donation = True
         with self.assertRaises(ValidationError):
-            order._onchange_partner_id_donation()
+            order._onchange_is_donation()
+
+    def test_onchange_is_donation_off_restores_a_regular_warehouse(self):
+        order = self._create_order(is_donation=True)
+        order.is_donation = False
+        order._onchange_is_donation()
+        self.assertFalse(order.warehouse_id.is_donation_warehouse)
+
+    def test_is_donation_cannot_change_on_a_confirmed_order(self):
+        order = self._create_order(is_donation=True)
+        order.state = "sale"
+        with self.assertRaises(ValidationError):
+            order.write({"is_donation": False})
+        order.write({"is_donation": True})  # same value: allowed
 
     def test_prepare_invoice_propagates_is_donation(self):
-        order = self._create_order(partner=self.company_partner, is_donation=True)
+        order = self._create_order(partner=self.partner, is_donation=True)
         invoice_vals = order._prepare_invoice()
         self.assertTrue(invoice_vals.get("is_donation"))
+        self.assertEqual(invoice_vals.get("partner_id"), self.partner.id)
+
+    def test_prepare_invoice_regular_order_is_not_a_donation(self):
+        order = self._create_order(is_donation=False)
+        self.assertFalse(order._prepare_invoice().get("is_donation"))
