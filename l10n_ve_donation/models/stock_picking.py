@@ -2,10 +2,6 @@ from odoo import models, fields, api, _
 from odoo.exceptions import UserError
 from odoo.tools.misc import format_datetime
 
-import logging
-
-_logger = logging.getLogger(__name__)
-
 
 class StockPicking(models.Model):
     _inherit = "stock.picking"
