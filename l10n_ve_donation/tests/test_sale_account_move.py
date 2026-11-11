@@ -311,8 +311,110 @@ class TestSaleAccountMove(TestDonationCommon):
         move.with_context(move_action_post_alert=True).action_post()
         for line in move.line_ids:
             self.assertEqual(line.partner_id, self.company.partner_id)
+        # The reference of the entry is not appended to the label.
         debit_line = move.line_ids.filtered(lambda l: l.debit > 0)
-        self.assertIn("Donation Ref", debit_line.name)
+        self.assertEqual(debit_line.name, "Line 1")
+
+    def _entry_vals(self, journal=None, is_donation=True, ref="Entry Ref"):
+        return {
+            "move_type": "entry",
+            "is_donation": is_donation,
+            "journal_id": (journal or self.journal_general).id,
+            "ref": ref,
+            "line_ids": [
+                Command.create({
+                    "account_id": self.account_expense.id,
+                    "debit": 100, "credit": 0, "name": "Entry 1",
+                }),
+                Command.create({
+                    "account_id": self.account_receivable.id,
+                    "debit": 0, "credit": 100,
+                }),
+            ],
+        }
+
+    def test_09a_lines_of_a_new_donation_entry_get_the_company_partner(self):
+        """The partner is set while the entry is a draft, not when posted."""
+        move = self.env["account.move"].create(self._entry_vals())
+        self.assertEqual(move.state, "draft")
+        self.assertEqual(move.line_ids.mapped("partner_id"), self.company.partner_id)
+
+    def test_09c_marking_an_existing_entry_as_donation_fills_the_partner(self):
+        move = self.env["account.move"].create(self._entry_vals(is_donation=False))
+        self.assertFalse(move.line_ids.mapped("partner_id"))
+        move.is_donation = True
+        self.assertEqual(move.line_ids.mapped("partner_id"), self.company.partner_id)
+
+    def test_09f_lines_created_with_an_empty_partner_get_the_company_partner(self):
+        """The web client sends `partner_id: False` in the lines it creates
+        (a value in the creation values is not computed)."""
+        vals = self._entry_vals()
+        for command in vals["line_ids"]:
+            command[2]["partner_id"] = False
+        move = self.env["account.move"].create(vals)
+        self.assertEqual(move.line_ids.mapped("partner_id"), self.company.partner_id)
+
+        # Lines added later to the same draft entry.
+        move.write({"line_ids": [
+            Command.create({
+                "account_id": self.account_expense.id, "debit": 10, "credit": 0, "partner_id": False,
+            }),
+            Command.create({
+                "account_id": self.account_receivable.id, "debit": 0, "credit": 10, "partner_id": False,
+            }),
+        ]})
+        self.assertEqual(move.line_ids.mapped("partner_id"), self.company.partner_id)
+
+    def test_09g_partner_emptied_in_draft_is_filled_before_posting(self):
+        move = self.env["account.move"].create(self._entry_vals())
+        move.line_ids.partner_id = False
+        self.assertFalse(move.line_ids.mapped("partner_id"))
+        move.with_context(move_action_post_alert=True).action_post()
+        self.assertEqual(move.state, "posted")
+        self.assertEqual(move.line_ids.mapped("partner_id"), self.company.partner_id)
+
+    def test_09d_regular_entry_lines_keep_no_partner(self):
+        move = self.env["account.move"].create(self._entry_vals(is_donation=False))
+        self.assertFalse(move.line_ids.mapped("partner_id"))
+
+    def test_09e_posting_a_donation_entry_writes_nothing_on_its_lines(self):
+        move = self.env["account.move"].create(self._entry_vals())
+        lines_before = {line.id: (line.name, line.partner_id.id) for line in move.line_ids}
+        move.with_context(move_action_post_alert=True).action_post()
+        self.assertEqual(
+            {line.id: (line.name, line.partner_id.id) for line in move.line_ids}, lines_before
+        )
+
+    def test_09b_post_donation_entry_in_a_hashed_journal(self):
+        """A journal that locks the posted entries with a hash must still
+        accept the donation entry: nothing is written on its lines when it
+        is posted."""
+        journal = self.env["account.journal"].create({
+            "name": "Hashed Donation Journal",
+            "code": "HDJ",
+            "type": "general",
+            "company_id": self.company.id,
+            "restrict_mode_hash_table": True,
+        })
+        move = self.env["account.move"].create({
+            "move_type": "entry",
+            "is_donation": True,
+            "journal_id": journal.id,
+            "ref": "Hashed Ref",
+            "line_ids": [
+                Command.create({
+                    "account_id": self.account_expense.id,
+                    "debit": 100, "credit": 0, "name": "Hashed 1",
+                }),
+                Command.create({
+                    "account_id": self.account_receivable.id,
+                    "debit": 0, "credit": 100,
+                }),
+            ],
+        })
+        move.with_context(move_action_post_alert=True).action_post()
+        self.assertEqual(move.state, "posted")
+        self.assertEqual(move.line_ids.mapped("partner_id"), self.company.partner_id)
 
     def test_10_account_move_reverse_donation(self):
         """Reverse a donation invoice creates refund with donation lines."""
@@ -595,3 +697,16 @@ class TestSaleAccountMove(TestDonationCommon):
         move.with_context(move_action_post_alert=True).action_post()
         self.assertEqual(move.state, "posted")
         self.assertTrue(self.env["account.move"].search([("reversed_entry_id", "=", move.id)]))
+
+    def test_21_is_donation_is_editable_on_new_manual_entry(self):
+        """Manual donation entries (money donations) are marked by the
+        user: the field must be visible and editable on a draft entry, and
+        not editable on an invoice (those take the mark from the sale
+        order)."""
+        entry_form = Form(self.env["account.move"].with_context(default_move_type="entry"))
+        entry_form.is_donation = True
+        self.assertTrue(entry_form.is_donation)
+
+        invoice_form = Form(self.env["account.move"].with_context(default_move_type="out_invoice"))
+        with self.assertRaises(AssertionError):
+            invoice_form.is_donation = True

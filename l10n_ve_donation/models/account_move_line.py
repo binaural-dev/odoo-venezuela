@@ -5,6 +5,17 @@ _logger = logging.getLogger(__name__)
 class AccountMoveLine(models.Model):
     _inherit = "account.move.line"
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        """The new lines of a donation entry take the company partner (see
+        `account.move._fill_donation_entry_line_partner()`). It is done after
+        the creation and not in the compute of the field: the web client
+        sends `partner_id: False` for the lines it creates, and a value in
+        the creation values is not computed."""
+        lines = super().create(vals_list)
+        lines.move_id._fill_donation_entry_line_partner()
+        return lines
+
     @api.constrains('account_id', 'display_type')
     def _check_payable_receivable(self):
         """
