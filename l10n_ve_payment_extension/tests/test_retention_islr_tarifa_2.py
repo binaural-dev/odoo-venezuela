@@ -52,6 +52,7 @@ class TestRetentionISLRTarifa2(TransactionCase):
             'name': 'UT Test',
             'value': 43.0,
             'status': True,
+            'available_date': '2024-01-01',
         })
 
         # Crear tarifa acumulada para el concepto
