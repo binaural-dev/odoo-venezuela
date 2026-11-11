@@ -20,6 +20,20 @@ Asistente de conciliación manual que aplica un pago o anticipo contra una o var
 - **WHEN** se seleccionan dos pagos sin factura, o dos facturas sin pago
 - **THEN** `handled` es falso
 
+### Requirement: Anticipos disponibles, incluido el residual de un pago hecho de más
+
+El clasificador DEBE (MUST) decidir por la línea y no por el asiento si algo es un anticipo disponible, porque `is_advance_move` marca tanto el asiento de cruce (que consume el anticipo) como el residual "RESTANTE DE PAGO EN DIVISA" que deja un pago hecho de más desde la factura (que lo deja disponible). Es un anticipo disponible la línea del lado del anticipo en su cuenta de anticipos (crédito en la de clientes, débito en la de proveedores) de un asiento con pago de origen, sea un anticipo registrado a mano o ese residual. El lado que consume sigue siendo un cruce y se bloquea. El pago de origen DEBE (MUST) leerse como en `_create_advance_payment_move`: `origin_payment_advanced_payment_id` y, si no, `origin_payment_id`; así la vista previa conoce el diario de IGTF del pago original.
+
+#### Scenario: Cruzar el residual de un pago hecho de más
+
+- **WHEN** se paga desde una factura de 100 USD un monto de 150 USD con diario de IGTF y luego se selecciona el residual de anticipo y otra factura de 40 USD
+- **THEN** la selección es un anticipo contra una factura, la fila marca el diario con IGTF, el monto ofrecido coincide con el del widget de esa factura y al confirmar queda pagada
+
+#### Scenario: Línea que consume el anticipo
+
+- **WHEN** se selecciona la línea de la cuenta de anticipos que consume el anticipo en un asiento de cruce
+- **THEN** la selección se bloquea como cruce de anticipo
+
 ### Requirement: Un solo origen contra una o varias facturas
 
 El asistente DEBE (MUST) admitir un único pago o anticipo contra una o varias facturas, sin límite de facturas. Con más de un origen DEBE (MUST) bloquear explicando que cada pago se concilia por separado, porque cada pago convierte solo lo que le queda y cada anticipo crea sus propios asientos de cruce, de modo que el resultado dependería del orden.

@@ -108,6 +108,14 @@ class TestClassifier(ReconcileAssistantCommon):
         result = self._classify(*[self._receivable_line(invoice) for invoice in invoices], first, second)
         self._assert_blocked(result, "single payment or advance")
 
+    def test_advance_account_lines_are_told_apart_by_side_and_origin(self):
+        """`is_advance_move` marca tanto el cruce como el residual de un pago hecho de más: se decide por
+        la línea. Sin pago de origen, el lado del anticipo es `other` y el que consume es `cross`."""
+        credit = self._entry_line(self.advance_account, 0.0, 50.0, post=False)
+        debit = self._entry_line(self.advance_account, 50.0, 0.0, is_advance_move=True, post=False)
+        self.assertEqual(credit._l10n_ve_reconcile_kind(), "other")
+        self.assertEqual(debit._l10n_ve_reconcile_kind(), "cross")
+
     def test_open_amount_is_always_positive(self):
         invoice = self._invoice("2026-08-01", 100.0)
         payment = self._outstanding_line(self.bank["VEF"], 40.0, self.vef, "2026-08-01")

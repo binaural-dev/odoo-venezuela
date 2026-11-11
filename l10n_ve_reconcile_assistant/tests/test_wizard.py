@@ -1,6 +1,6 @@
 from unittest.mock import patch
 
-from odoo import Command
+from odoo import Command, fields
 from odoo.exceptions import AccessError, UserError
 from odoo.tests import Form, tagged
 
@@ -285,6 +285,40 @@ class TestAssistantWizard(ReconcileAssistantCommon):
         self._assert_preview_matches(wizard, applied)
         self.assertTrue(first.payment_state == second.payment_state == "paid")
         self.assertAlmostEqual(abs(advance.amount_residual_currency), rows[1].origin_remaining, places=2)
+
+    def test_the_residual_of_an_overpayment_is_an_advance_that_can_be_crossed(self):
+        """Pagar de más desde la factura deja un asiento "RESTANTE DE PAGO EN DIVISA" (`is_advance_move`,
+        con el pago en `origin_payment_advanced_payment_id` y sin `origin_payment_id`). Su línea en la
+        cuenta de anticipos es un anticipo válido, el widget de otra factura lo ofrece, y el asistente
+        debe tomarlo como tal y leer el pago como el motor (diario con IGTF incluido)."""
+        today = fields.Date.today()
+        first = self._invoice(today, 100.0, self.usd)
+        second = self._invoice(today, 40.0, self.usd)
+        with Form.from_action(self.env, first.action_register_payment()) as form:
+            form.journal_id = self.bank["USD"]
+            form.payment_date = today
+            form.save()
+            form.amount = 150.0
+            form.save()
+        payment = self.env["account.payment"].browse(form.record.action_create_payments().get("res_id"))
+        residual = payment.advanced_move_ids
+        self.assertTrue(residual.is_advance_move)
+        self.assertFalse(residual.origin_payment_id)
+        advance_line = residual.line_ids.filtered(
+            lambda line: line.account_id.is_advance_account and line.credit > 0)
+        self.assertEqual(advance_line._l10n_ve_reconcile_kind(), "advance")
+        self.assertEqual((residual.line_ids - advance_line)._l10n_ve_reconcile_kind(), "cross")
+        wizard = self._open_assistant(advance_line + self._receivable_line(second))
+        self.assertEqual(wizard.case, "advance")
+        row = wizard.item_ids
+        self.assertIn("IGTF journal", row.origin_conditions)
+        self.assertAlmostEqual(row.igtf_amount, 1.2, places=2)
+        offered = wizard._widget_entry(second, advance_line)
+        self.assertAlmostEqual(row.widget_amount, offered["amount"], places=2)
+        applied = self._confirm(wizard)
+        self._assert_preview_matches(wizard, applied)
+        self.assertEqual(second.payment_state, "paid")
+        self.assertAlmostEqual(abs(advance_line.amount_residual_currency), row.origin_remaining, places=2)
 
     def test_part_of_a_bolivar_advance_that_keeps_its_value_uses_the_advance_date(self):
         """Con "mantener valor" ambos cruces convierten a la fecha del anticipo (tasa 40): 4.000 y 3.200 Bs,
