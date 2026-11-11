@@ -19,7 +19,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "19.0.1.2.22",
+    "version": "20.0.1.0.0",
 
     "depends": [
         "base",
@@ -48,5 +48,5 @@
     },
     "application": True,
     "pre_init_hook": "pre_init_hook",
-     "installable": False,
+     "installable": True,
 }
