@@ -44,8 +44,10 @@ facturarle.
 ## Non-goals
 
 - Corregir los contactos existentes o las órdenes ya pagadas con un contacto de
-  otra empresa: se arreglan a mano (cambiar la compañía del contacto y "Crear
-  factura").
+  otra empresa: se arreglan a mano asignándole a la orden (editable mientras no
+  tenga factura) un contacto de la empresa de la caja y usando "Crear factura".
+  No se cambia la compañía del contacto: la otra empresa dejaría de poder
+  facturarle.
 - Compartir contactos entre empresas (`binaural_partner_multi_company`,
   en integra-addons): si está instalado, la búsqueda lo respeta
   porque usa la misma regla `_check_company_domain`.
@@ -64,5 +66,10 @@ facturarle.
   `tests/test_kiosk_public_routes.py`). Versión `19.0.1.7.0` → `19.0.1.7.1`.
 - **Despliegue**: `-u l10n_ve_pos_self_order` (o reinicio: el cambio es solo
   Python). Sin cambio de esquema ni de datos.
-- **Comportamiento visible**: un cliente cuya cédula solo existe en otra empresa
-  ve el formulario de registro una vez en el Kiosko.
+- **Comportamiento visible**: con el control de cédula duplicada por compañía de
+  `l10n_ve_contact` (como en Monfarmacia), un cliente cuya cédula solo existe en
+  otra empresa ve el formulario de registro una vez en el Kiosko. Con el control
+  global (el valor por defecto) ese cliente no puede registrarse: el Kiosko le
+  dice que no existe y el registro lo rechaza con el mensaje de la validación.
+  En bases con varias empresas, activar la validación por compañía o compartir
+  el contacto con `binaural_partner_multi_company`.
