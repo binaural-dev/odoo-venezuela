@@ -62,6 +62,8 @@ class AccountMove(models.Model):
         draft_invoices = self.filtered(
             lambda m: m.state == "draft" and m.is_donation and m.move_type == "out_invoice"
         )
+        # Last chance to fill the partner of the lines, still in draft.
+        self._fill_donation_entry_line_partner()
         res = super().action_post()
 
         # The l10n_ve_accountant alert wizard returns an action instead of
@@ -71,7 +73,6 @@ class AccountMove(models.Model):
             return res
 
         donation_moves = draft_invoices.filtered(lambda m: m.state == "posted")
-        donation_entries = self.filtered(lambda m: m.is_donation and m.move_type == "entry")
         for move in donation_moves:
             wizard = self.env["account.move.reversal"].with_context(
                 active_ids=move.ids,
@@ -84,14 +85,26 @@ class AccountMove(models.Model):
             credit_note = wizard.new_move_ids
             if credit_note.state == "draft":
                 credit_note.action_post()
-        for move in donation_entries:
-            company_partner = move.company_id.partner_id or self.env.company.partner_id
-            for line in move.line_ids:
-                vals_to_write = {"partner_id": company_partner.id}
-                if move.ref and move.ref not in (line.name or ""):
-                    vals_to_write["name"] = f"{line.name} - {move.ref}" if line.name else move.ref
-                line.write(vals_to_write)
         return res
+
+    def write(self, vals):
+        res = super().write(vals)
+        if vals.get("is_donation"):
+            self._fill_donation_entry_line_partner()
+        return res
+
+    def _fill_donation_entry_line_partner(self):
+        """The journal items of a donation entry carry the company partner
+        (see `_check_partner_donation`). It is set while the entry is a
+        draft, not when it is posted: a journal that locks the posted
+        entries with a hash does not accept to write the partner of the
+        lines of a posted entry. The lines that already have a partner are
+        left as they are."""
+        for move in self.filtered(
+            lambda m: m.is_donation and m.move_type == "entry" and m.state == "draft"
+        ):
+            partner = move.company_id.partner_id or self.env.company.partner_id
+            move.line_ids.filtered(lambda line: not line.partner_id).partner_id = partner
 
     def _l10n_ve_skip_refund_origin_validation(self):
         # La NC de donación nunca repite el producto de la factura original
