@@ -9,6 +9,10 @@ from .test_withholding_common_VEF import RetentionTestCommon
 _logger = logging.getLogger(__name__)
 
 
+IVA_FORM_VIEW = "l10n_ve_payment_extension.view_retention_iva_form_l10n_ve_payment_extension"
+ISLR_FORM_VIEW = "l10n_ve_payment_extension.view_retention_islr_form_l10n_ve_payment_extension"
+
+
 @tagged("manual_retention_flow", "-at_install", "post_install")
 class TestManualRetentionFlow(RetentionTestCommon):
     """Tests for manual retention creation via Form views (real user flow)."""
@@ -37,7 +41,7 @@ class TestManualRetentionFlow(RetentionTestCommon):
         action_ref = self.env.ref('l10n_ve_payment_extension.action_retention_iva_supplier')
         action_data = action_ref.read()[0]
         ctx = safe_eval(action_data.get('context', '{}'))
-        with Form(self.env[action_data['res_model']].with_context(ctx)) as ret_form:
+        with Form(self.env[action_data['res_model']].with_context(ctx), view=IVA_FORM_VIEW) as ret_form:
             ret_form.partner_id = invoice.partner_id
             ret_form.date_accounting = fields.Date.today()
             
@@ -78,7 +82,7 @@ class TestManualRetentionFlow(RetentionTestCommon):
         action_ref = self.env.ref('l10n_ve_payment_extension.action_retention_iva_supplier')
         action_data = action_ref.read()[0]
         ctx = safe_eval(action_data.get('context', '{}'))
-        with Form(self.env[action_data['res_model']].with_context(ctx)) as ret_form:
+        with Form(self.env[action_data['res_model']].with_context(ctx), view=IVA_FORM_VIEW) as ret_form:
             ret_form.partner_id = invoice.partner_id
             ret_form.date_accounting = fields.Date.today()
             #with ret_form.retention_line_ids.new() as ret_line:
@@ -153,7 +157,7 @@ class TestManualRetentionFlow(RetentionTestCommon):
         action_ref = self.env.ref('l10n_ve_payment_extension.action_retention_iva_supplier')
         action_data = action_ref.read()[0]
         ctx = safe_eval(action_data.get('context', '{}'))
-        with Form(self.env[action_data['res_model']].with_context(ctx)) as ret_form:
+        with Form(self.env[action_data['res_model']].with_context(ctx), view=IVA_FORM_VIEW) as ret_form:
             ret_form.partner_id = invoice.partner_id
             ret_form.date_accounting = fields.Date.today()
             
@@ -202,7 +206,7 @@ class TestManualRetentionFlow(RetentionTestCommon):
         action_ref = self.env.ref('l10n_ve_payment_extension.action_retention_iva_client')
         action_data = action_ref.read()[0]
         ctx = safe_eval(action_data.get('context', '{}'))
-        with Form(self.env[action_data['res_model']].with_context(ctx)) as ret_form:
+        with Form(self.env[action_data['res_model']].with_context(ctx), view=IVA_FORM_VIEW) as ret_form:
             ret_form.partner_id = invoice.partner_id
             ret_form.number = "12345678901234"
             ret_form.date_accounting = fields.Date.today()
@@ -245,7 +249,7 @@ class TestManualRetentionFlow(RetentionTestCommon):
         action_ref = self.env.ref('l10n_ve_payment_extension.action_retention_iva_client')
         action_data = action_ref.read()[0]
         ctx = safe_eval(action_data.get('context', '{}'))
-        with Form(self.env[action_data['res_model']].with_context(ctx)) as ret_form:
+        with Form(self.env[action_data['res_model']].with_context(ctx), view=IVA_FORM_VIEW) as ret_form:
             ret_form.partner_id = invoice.partner_id
             ret_form.number = "12345678901234"
             ret_form.date_accounting = fields.Date.today()
@@ -304,7 +308,7 @@ class TestManualRetentionFlow(RetentionTestCommon):
         action_ref = self.env.ref('l10n_ve_payment_extension.action_retention_iva_client')
         action_data = action_ref.read()[0]
         ctx = safe_eval(action_data.get('context', '{}'))
-        with Form(self.env[action_data['res_model']].with_context(ctx)) as ret_form:
+        with Form(self.env[action_data['res_model']].with_context(ctx), view=IVA_FORM_VIEW) as ret_form:
             ret_form.partner_id = invoice.partner_id
             ret_form.number = "12345678901234"
             ret_form.date_accounting = fields.Date.today()
@@ -350,7 +354,7 @@ class TestManualRetentionFlow(RetentionTestCommon):
         action_ref = self.env.ref('l10n_ve_payment_extension.action_retention_iva_client')
         action_data = action_ref.read()[0]
         ctx = safe_eval(action_data.get('context', '{}'))
-        with Form(self.env[action_data['res_model']].with_context(ctx)) as ret_form:
+        with Form(self.env[action_data['res_model']].with_context(ctx), view=IVA_FORM_VIEW) as ret_form:
             ret_form.partner_id = invoice.partner_id
             ret_form.number = "12345678901234"
             ret_form.date_accounting = fields.Date.today()
@@ -398,7 +402,7 @@ class TestManualRetentionFlow(RetentionTestCommon):
         action_ref = self.env.ref('l10n_ve_payment_extension.action_retention_islr_supplier')
         action_data = action_ref.read()[0]
         ctx = safe_eval(action_data.get('context', '{}'))
-        with Form(self.env[action_data['res_model']].with_context(ctx)) as ret_form:
+        with Form(self.env[action_data['res_model']].with_context(ctx), view=ISLR_FORM_VIEW) as ret_form:
             ret_form.partner_id = invoice.partner_id
             ret_form.date_accounting = fields.Date.today()
             with ret_form.retention_line_ids.new() as ret_line:
@@ -438,7 +442,7 @@ class TestManualRetentionFlow(RetentionTestCommon):
         action_ref = self.env.ref('l10n_ve_payment_extension.action_retention_islr_supplier')
         action_data = action_ref.read()[0]
         ctx = safe_eval(action_data.get('context', '{}'))
-        with Form(self.env[action_data['res_model']].with_context(ctx)) as ret_form:
+        with Form(self.env[action_data['res_model']].with_context(ctx), view=ISLR_FORM_VIEW) as ret_form:
             ret_form.partner_id = invoice.partner_id
             ret_form.date_accounting = fields.Date.today()
             with ret_form.retention_line_ids.new() as ret_line:
@@ -507,7 +511,7 @@ class TestManualRetentionFlow(RetentionTestCommon):
         action_ref = self.env.ref('l10n_ve_payment_extension.action_retention_islr_supplier')
         action_data = action_ref.read()[0]
         ctx = safe_eval(action_data.get('context', '{}'))
-        with Form(self.env[action_data['res_model']].with_context(ctx)) as ret_form:
+        with Form(self.env[action_data['res_model']].with_context(ctx), view=ISLR_FORM_VIEW) as ret_form:
             ret_form.partner_id = invoice.partner_id
             ret_form.date_accounting = fields.Date.today()
             with ret_form.retention_line_ids.new() as ret_line:
@@ -554,7 +558,7 @@ class TestManualRetentionFlow(RetentionTestCommon):
         action_ref = self.env.ref('l10n_ve_payment_extension.action_retention_islr_client')
         action_data = action_ref.read()[0]
         ctx = safe_eval(action_data.get('context', '{}'))
-        with Form(self.env[action_data['res_model']].with_context(ctx)) as ret_form:
+        with Form(self.env[action_data['res_model']].with_context(ctx), view=ISLR_FORM_VIEW) as ret_form:
             ret_form.partner_id = invoice.partner_id
             ret_form.date_accounting = fields.Date.today()
             ret_form.number = "12345678901234"
@@ -606,7 +610,7 @@ class TestManualRetentionFlow(RetentionTestCommon):
         action_ref = self.env.ref('l10n_ve_payment_extension.action_retention_islr_client')
         action_data = action_ref.read()[0]
         ctx = safe_eval(action_data.get('context', '{}'))
-        with Form(self.env[action_data['res_model']].with_context(ctx)) as ret_form:
+        with Form(self.env[action_data['res_model']].with_context(ctx), view=ISLR_FORM_VIEW) as ret_form:
             ret_form.partner_id = invoice.partner_id
             ret_form.date_accounting = fields.Date.today()
             ret_form.number = "12345678901234"

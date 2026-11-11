@@ -348,7 +348,7 @@ class TestAccountMoveThirdParty(RetentionTestCommon):
             "is_third_party_retention": True,
             "date": fields.Date.today(),
             "date_accounting": fields.Date.today(),
-            "retention_line_ids": [Command.create({
+            "retention_line_ids": [Command.create({"aliquot": 16.0,
                 "move_id": invoice.id,
                 "name": "Third Party IVA",
                 "invoice_total": 232.0,
@@ -399,7 +399,7 @@ class TestAccountMoveThirdParty(RetentionTestCommon):
             "is_third_party_retention": True,
             "date": fields.Date.today(),
             "date_accounting": fields.Date.today(),
-            "retention_line_ids": [Command.create({
+            "retention_line_ids": [Command.create({"aliquot": 16.0,
                 "move_id": invoice.id,
                 "name": "Third Party IVA",
                 "invoice_total": 232.0,
@@ -461,7 +461,7 @@ class TestAccountRetentionLineExtras(RetentionTestCommon):
             "partner_id": self.partner_pnr_75.id,
             "date": fields.Date.today(),
             "date_accounting": fields.Date.today(),
-            "retention_line_ids": [Command.create({
+            "retention_line_ids": [Command.create({"aliquot": 16.0,
                 "move_id": invoice.id,
             })],
         })
@@ -510,7 +510,7 @@ class TestAccountRetentionLineExtras(RetentionTestCommon):
             "partner_id": self.partner_pnr_75.id,
             "date": fields.Date.today(),
             "date_accounting": fields.Date.today(),
-            "retention_line_ids": [Command.create({
+            "retention_line_ids": [Command.create({"aliquot": 16.0,
                 "move_id": invoice.id,
                 "name": "IVA Line",
                 "invoice_total": 232.0,
