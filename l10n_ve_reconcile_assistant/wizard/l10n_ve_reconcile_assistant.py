@@ -119,7 +119,7 @@ class L10nVeReconcileAssistant(models.TransientModel):
         pending = {}
         rows = []
         for origin, invoice in pairs:
-            payment = origin.move_id.origin_payment_id
+            payment = origin.move_id._l10n_ve_reconcile_origin_payment()
             company = invoice.company_id
             full = abs(origin.amount_residual_currency)
             balance = remaining.get(origin.id, full)

@@ -15,6 +15,16 @@ class AccountMove(models.Model):
             or getattr(self, "l10n_ve_exchange_diff_entry", False)
         )
 
+    def _l10n_ve_reconcile_origin_payment(self):
+        """Pago del que viene el asiento, con el mismo criterio que `_create_advance_payment_move`.
+
+        Un anticipo registrado a mano trae su pago en `origin_payment_id`; el residual de un pago
+        hecho desde la factura ("RESTANTE DE PAGO EN DIVISA") trae el pago en
+        `origin_payment_advanced_payment_id` y deja `origin_payment_id` vacío.
+        """
+        self.ensure_one()
+        return self.origin_payment_advanced_payment_id or self.origin_payment_id
+
     def _l10n_ve_reconcile_apply_context(self):
         """Contexto con el que se aplica el origen a esta factura. Gancho para módulos que
         necesiten fijar valores por defecto (p. ej. la sucursal) en los asientos que se crean."""

@@ -15,18 +15,36 @@ class AccountMoveLine(models.Model):
         for line in self:
             line.l10n_ve_open_amount = abs(line.amount_residual_currency)
 
+    def _l10n_ve_reconcile_is_available_advance(self):
+        """True si la línea es un anticipo que todavía se puede cruzar contra una factura.
+
+        Es la línea del lado del anticipo en su cuenta de anticipos (crédito en la de clientes,
+        débito en la de proveedores) de un asiento con pago de origen: el anticipo registrado a
+        mano o el residual que deja un pago hecho de más desde la factura. Se decide por la
+        línea y no por el asiento porque `is_advance_move` marca tanto el cruce (que consume el
+        anticipo) como ese residual (que lo deja disponible).
+        """
+        self.ensure_one()
+        account = self.account_id
+        payment = self.move_id._l10n_ve_reconcile_origin_payment()
+        if not account.is_advance_account or not payment:
+            return False
+        is_advance_side = self.balance < 0 if account.account_type == "liability_current" else self.balance > 0
+        return is_advance_side and bool(payment.is_advance_payment or self.move_id.is_advance_move)
+
     def _l10n_ve_reconcile_kind(self):
         """Clase de la línea para el asistente: `invoice`, `payment`, `advance`, `cross`
         (asiento de cruce de anticipo), `note` (nota que se concilia desde su documento) u `other`."""
         self.ensure_one()
         move = self.move_id
+        if self._l10n_ve_reconcile_is_available_advance():
+            return "advance"
         if move.is_advance_move:
             return "cross"
         if move._l10n_ve_reconcile_is_special_note():
             return "note"
         if self.account_id.is_advance_account:
-            payment = move.origin_payment_id
-            return "advance" if payment and payment.is_advance_payment else "other"
+            return "other"
         if self.account_id.account_type not in RECEIVABLE_PAYABLE:
             return "other"
         if move.is_invoice(include_receipts=True):
