@@ -1,5 +1,6 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
+from odoo.tools.misc import format_datetime
 
 import logging
 
@@ -30,6 +31,23 @@ class StockPicking(models.Model):
                 picking.is_donation = picking.sale_id.is_donation
             else:
                 picking.is_donation = picking.is_donation
+
+    @api.depends("is_donation", "sale_id")
+    def _compute_button_visibility(self):
+        """A donation delivery without sale order is not invoiced: the
+        'Create Invoice' button would issue a regular fiscal invoice to the
+        beneficiary, with no donation mark and no credit note."""
+        super()._compute_button_visibility()
+        for picking in self.filtered(lambda p: p.is_donation and not p.sale_id):
+            picking.show_create_invoice = False
+
+    @api.depends("is_donation")
+    def _compute_match_guide_dispatch_domain(self):
+        """A donation delivery has its own certificate, which replaces the
+        dispatch guide: it is not listed in the dispatch guides."""
+        super()._compute_match_guide_dispatch_domain()
+        for picking in self.filtered("is_donation"):
+            picking.match_guide_dispatch_domain = False
 
     @api.model
     def default_get(self, fields_list):
@@ -176,3 +194,45 @@ class StockPicking(models.Model):
                     location=location.display_name,
                 ))
         return errors
+
+    def _get_donation_product_lines(self):
+        """Per-line detail (code, description, qty, uom, lot, expiration,
+        cost) -- from the value stored in the stock move
+        (`stock.move.value`), not `product_id.standard_price`, so reprinting
+        always gives the same number.
+
+        `expiration_date` is resolved here (not in the shared report
+        sub-template): `stock.lot.expiration_date` only exists when
+        `product_expiry` is installed, an optional dependency this module
+        does not require. It is formatted with `format_datetime` (user's
+        language/timezone), with `dt_format=False` so it uses the user's
+        language date/time format -- same style `t-field` would use
+        elsewhere in this same document -- rather than left as a raw
+        datetime; the shared template only does `t-out` on the
+        already-resolved value, not `t-field`."""
+        self.ensure_one()
+        data = []
+        for line in self.move_line_ids:
+            move = line.move_id
+            valued_qty = move._get_valued_qty() if move.state == "done" else 0.0
+            unit_cost = abs(move.value / valued_qty) if valued_qty else 0.0
+            expiration_date = (
+                format_datetime(self.env, line.lot_id.expiration_date, dt_format=False)
+                if line.lot_id and "expiration_date" in line.lot_id._fields and line.lot_id.expiration_date
+                else False
+            )
+            data.append({
+                "line": line,
+                "unit_cost": unit_cost,
+                "total_value": unit_cost * line.quantity_product_uom,
+                "expiration_date": expiration_date,
+            })
+        return data
+
+    def _get_donation_grand_total(self):
+        self.ensure_one()
+        return sum(row["total_value"] for row in self._get_donation_product_lines())
+
+    def print_donation_certificate(self):
+        self.ensure_one()
+        return self.env.ref("l10n_ve_donation.action_donation_delivery_certificate").report_action(self)
