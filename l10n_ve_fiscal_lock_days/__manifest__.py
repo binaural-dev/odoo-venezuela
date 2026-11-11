@@ -5,7 +5,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "19.0.1.0.0",
+    "version": "20.0.1.0.0",
     "depends": [
         "base",
         "account_accountant",
@@ -15,5 +15,5 @@
         "views/res_config_settings.xml",
     ],
     "images": ["static/description/icon.png"],
-    "installable": False,
+    "installable": True,
 }
