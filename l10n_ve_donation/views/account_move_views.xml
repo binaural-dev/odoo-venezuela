@@ -24,7 +24,7 @@
             </xpath>
             <xpath expr="//field[@name='ref']" position="after">
                 <field name="can_reverse_donation_move" invisible="1"/>
-                <field name="is_donation" readonly="state != 'draft' or move_type != 'entry'" invisible="move_type != 'entry' or not is_donation"/>
+                <field name="is_donation" readonly="state != 'draft' or move_type != 'entry'"/>
             </xpath>
         </field>
     </record>
