@@ -6,6 +6,8 @@ from odoo import _, api, exceptions, fields, models
 from odoo.exceptions import ValidationError
 from odoo.tools import float_is_zero
 
+from odoo.addons.account_fiscal_year_closing.models.account_fiscalyear_closing import grouped_sums
+
 _logger = logging.getLogger(__name__)
 
 
@@ -218,12 +220,7 @@ class AccountFiscalyearClosing(models.Model):
             ("move_id.state", "!=", "cancel"),
         ]
 
-        balances = self.env["account.move.line"].read_group(
-            domain=domain,
-            fields=["balance", "foreign_balance", "account_id"],
-            groupby=["account_id"],
-        )
-        return balances
+        return grouped_sums(self.env["account.move.line"], domain, "account_id", ["balance", "foreign_balance"])
 
     def _create_closing_moves(self, config, balances, dest_account, currencies):
         vals = []
@@ -353,16 +350,8 @@ class AccountFiscalyearClosingMapping(models.Model):
             ("date", "<=", end),
             ("move_id.state", "!=", "cancel"),
         ]
-        return self.env["account.move.line"].read_group(
-            domain=domain,
-            fields=[
-                "debit",
-                "credit",
-                "foreign_debit",
-                "foreign_credit",
-                "account_id",
-            ],
-            groupby=["account_id"],
+        return grouped_sums(
+            self.env["account.move.line"], domain, "account_id", ["debit", "credit", "foreign_debit", "foreign_credit"]
         )
 
     def account_partners_get(self, account):
@@ -370,13 +359,14 @@ class AccountFiscalyearClosingMapping(models.Model):
         start = self.fyc_config_id.fyc_id.date_start
         end = self.fyc_config_id.fyc_id.date_end
         company_id = self.fyc_config_id.fyc_id.company_id.id
-        return self.env["account.move.line"].read_group(
+        return grouped_sums(
+            self.env["account.move.line"],
             [
                 ("company_id", "=", company_id),
                 ("account_id", "=", account.id),
                 ("date", ">=", start),
                 ("date", "<=", end),
             ],
-            ["partner_id", "credit", "debit"],
-            ["partner_id"],
+            "partner_id",
+            ["credit", "debit"],
         )

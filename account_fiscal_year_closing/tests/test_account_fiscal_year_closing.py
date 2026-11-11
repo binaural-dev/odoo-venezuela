@@ -31,8 +31,8 @@ class TestAccountFiscalYearClosing(AccountTestInvoicingCommon):
                 "name": "Test Account manager",
                 "login": "accountmanager",
                 "password": "accountmanager",
-                "groups_id": [
-                    (6, 0, cls.env.user.groups_id.ids),
+                "group_ids": [
+                    (6, 0, cls.env.user.group_ids.ids),
                     (4, cls.env.ref("account.group_account_manager").id),
                 ],
                 "company_ids": [(6, 0, cls.account_user.company_ids.ids)],

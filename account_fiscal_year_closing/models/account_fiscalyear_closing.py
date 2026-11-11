@@ -13,6 +13,20 @@ from odoo.tools import float_is_zero
 _logger = logging.getLogger(__name__)
 
 
+def grouped_sums(move_lines, domain, groupby, sums):
+    """Sum the ``sums`` fields of the journal items of ``domain`` per ``groupby`` record.
+
+    Returns one dict per group, with ``groupby`` as ``(id, display_name)`` or ``False``, which is
+    what ``read_group`` returned up to Odoo 19. Since Odoo 20 ``read_group`` takes the aggregates
+    with their function and returns tuples.
+    """
+    groups = move_lines._read_group(domain, [groupby], [f"{name}:sum" for name in sums])
+    return [
+        {groupby: (record.id, record.display_name) if record else False, **dict(zip(sums, values))}
+        for record, *values in groups
+    ]
+
+
 class AccountFiscalyearClosing(models.Model):
     _inherit = "account.fiscalyear.closing.abstract"
     _name = "account.fiscalyear.closing"
@@ -644,15 +658,16 @@ class AccountFiscalyearClosingMapping(models.Model):
         start = self.fyc_config_id.fyc_id.date_start
         end = self.fyc_config_id.fyc_id.date_end
         company_id = self.fyc_config_id.fyc_id.company_id.id
-        return self.env["account.move.line"].read_group(
+        return grouped_sums(
+            self.env["account.move.line"],
             [
                 ("company_id", "=", company_id),
                 ("account_id", "=", account.id),
                 ("date", ">=", start),
                 ("date", "<=", end),
             ],
-            ["partner_id", "credit", "debit"],
-            ["partner_id"],
+            "partner_id",
+            ["credit", "debit"],
         )
 
 
