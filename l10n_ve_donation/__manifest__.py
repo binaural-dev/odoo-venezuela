@@ -1,6 +1,6 @@
 {
     "name": "Venezuela - Donaciones",
-    "version": "19.0.2.0.6",
+    "version": "19.0.3.0.0",
     "category": "Accounting/Accounting",
     "summary": "Venezuela - Donaciones",
     "author": "",
@@ -17,6 +17,7 @@
     "data": [
         "data/donation_certificate_paperformat.xml",
         "security/res_groups.xml",
+        "security/ir.model.access.csv",
         "report/donation_certificate_report.xml",
         "report/donation_certificate_template.xml",
         "views/account_move_views.xml",
@@ -24,7 +25,6 @@
         "views/res_config_setting_views.xml",
         "views/sale_order_views.xml",
         "views/stock_picking_views.xml",
-        "views/stock_scrap_views.xml",
         "views/stock_warehouse_views.xml",
     ],
     "installable": True,
