@@ -7,7 +7,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accountant/Accountant",
-    "version": "19.0.2.2.7",
+    "version": "20.0.1.0.0",
     "depends": [
         "base",
         "account",
@@ -20,7 +20,6 @@
         "product",
     ],
     "data": [
-        "security/ir.model.access.csv",
         "data/sequence_data.xml",
         "data/type_person_data.xml",
         "data/account_withholding_type_data.xml",
@@ -63,5 +62,5 @@
     "images": ["static/description/icon.png"],
     "application": True,
     "pre_init_hook": "pre_init_hook",
-    "installable": False,
+    "installable": True,
 }

@@ -426,8 +426,8 @@ class TestRetentionTi14548Rules(RetentionTestCommon):
         reached. See
         test_cross_retention_third_party_municipal_duplicate_activity_blocks_on_emitted
         for a case that actually exercises that per-activity rule."""
-        country = self.env["res.country"].search([("code", "=", "TC14548")], limit=1) or \
-            self.env["res.country"].create({"name": "Test Country 14548", "code": "TC14548"})
+        country = self.env["res.country"].search([("code", "=", "QT")], limit=1) or \
+            self.env["res.country"].create({"name": "Test Country 14548", "code": "QT"})
         state = self.env["res.country.state"].search([("code", "=", "TS14548")], limit=1) or \
             self.env["res.country.state"].create(
                 {"name": "Test State 14548", "code": "TS14548", "country_id": country.id}
@@ -503,8 +503,8 @@ class TestRetentionTi14548Rules(RetentionTestCommon):
         check, so the per-activity cross-retention rule
         (_check_municipal_duplicate_lines) is the one that must reject the
         second retention once the first is already 'emitted', naming it."""
-        country = self.env["res.country"].search([("code", "=", "TC14548")], limit=1) or \
-            self.env["res.country"].create({"name": "Test Country 14548", "code": "TC14548"})
+        country = self.env["res.country"].search([("code", "=", "QT")], limit=1) or \
+            self.env["res.country"].create({"name": "Test Country 14548", "code": "QT"})
         state = self.env["res.country.state"].search([("code", "=", "TS14548")], limit=1) or \
             self.env["res.country.state"].create(
                 {"name": "Test State 14548", "code": "TS14548", "country_id": country.id}
