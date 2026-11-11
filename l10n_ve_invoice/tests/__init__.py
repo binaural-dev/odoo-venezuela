@@ -18,4 +18,5 @@ from . import test_check_price_in_zero
 from . import test_note_dates_from_origin
 from . import test_accounting_reports_branches
 from . import test_vendor_accounting_date
+from . import test_invoice_date_display_datetime
 from . import test_contingency_name_editable

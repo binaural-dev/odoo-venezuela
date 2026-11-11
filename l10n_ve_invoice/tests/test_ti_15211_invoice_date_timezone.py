@@ -12,7 +12,14 @@ _EXPECTED_CARACAS_DATE = fields.Date.to_date("2026-09-14")
 _EXPECTED_UTC_DATE = fields.Date.to_date("2026-09-15")
 
 
-class _FrozenDatetime(real_datetime):
+class _AnyDatetime(type):
+    # fields_temporal hace isinstance(value, datetime) con el nombre ya
+    # parcheado: cualquier datetime real tiene que seguir contando.
+    def __instancecheck__(cls, obj):
+        return isinstance(obj, real_datetime)
+
+
+class _FrozenDatetime(real_datetime, metaclass=_AnyDatetime):
     """Minimal stand-in for `datetime.now()` -- `Date.context_today` (see
     `odoo/orm/fields_temporal.py`) always calls `datetime.now()` with no
     arguments (naive, then localized as UTC), so only that path needs to be

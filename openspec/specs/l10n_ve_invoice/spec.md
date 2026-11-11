@@ -320,12 +320,27 @@ La opción de apagarla existe solo por criterio del consultor, para ajustes o ca
 
 ### Requirement: Registro de la fecha-hora de emisión
 
-Al crear o modificar `invoice_date_display`, el sistema DEBE (MUST) almacenar en `invoice_date_display_datetime` esa fecha combinada con la hora actual, y limpiarlo cuando la fecha se vacía.
+Al crear un documento o al cambiar su `invoice_date_display`, el sistema DEBE (MUST) almacenar en `invoice_date_display_datetime` esa fecha combinada con la hora local actual, y limpiarlo cuando la fecha se vacía. Día y hora DEBEN (MUST) salir de la misma zona horaria: la del contexto o la del usuario, la misma que usa `context_today` para el default de `invoice_date_display`. Si el documento se crea sin fecha se toma la de hoy en esa zona horaria. El valor se guarda en UTC, como todo `Datetime`, de modo que al mostrarlo en hora local el día coincide con `invoice_date_display`. Un `write()` que no cambia `invoice_date_display` NO DEBE (MUST NOT) cambiar la hora. Al instalar el módulo, el `post_init_hook` completa los documentos sin fecha-hora con el mismo cálculo, en la zona horaria de la compañía (`America/Caracas` si no tiene).
 
 #### Scenario: Establecer la fecha de factura
 
 - **WHEN** se crea una factura con `invoice_date_display`
-- **THEN** `invoice_date_display_datetime` queda con esa fecha y la hora del momento del registro
+- **THEN** `invoice_date_display_datetime` queda con esa fecha y la hora local del momento del registro
+
+#### Scenario: Registro después de las 20:00 en Venezuela
+
+- **WHEN** un usuario con zona horaria `America/Caracas` registra una factura el 14/09 a las 22:30 (15/09 02:30 UTC)
+- **THEN** `invoice_date_display_datetime` muestra 14/09 22:30 en hora local, no 13/09
+
+#### Scenario: Fecha retroactiva
+
+- **WHEN** ese mismo usuario registra una factura con fecha 10/09
+- **THEN** `invoice_date_display_datetime` muestra 10/09 22:30 en hora local
+
+#### Scenario: Registros guardados con el día anterior
+
+- **WHEN** se actualiza el módulo a `19.0.1.0.27` y hay documentos cuyo `invoice_date_display_datetime`, en la zona horaria de su compañía (`America/Caracas` si no tiene), cae en un día distinto de `invoice_date_display`
+- **THEN** se les pone el día de `invoice_date_display` conservando la hora local, y el resto de los documentos no se toca
 
 ### Requirement: Período fiscal según tipo de contribuyente
 
@@ -436,12 +451,17 @@ El campo `next_installment_date` DEBE (MUST) calcularse como el menor `date_matu
 
 ### Requirement: Dominio de los libros fiscales
 
-El wizard `wizard.accounting.reports` DEBE (MUST) seleccionar para el libro los documentos de las compañías del alcance del libro (`report_company_ids`, ver «Alcance del libro con sucursales nativas») con estado `posted` o `cancel`, `correlative` asignado (distinto de `/` y de vacío), fecha contable dentro del rango solicitado, y tipo según el libro (`out_invoice`/`out_refund` para ventas; `in_invoice`/`in_refund`/`in_debit` para compras), ordenados por correlativo en ventas y por fecha de documento en compras; cuando todas las columnas internacionales están ocultas por configuración, el libro de compras excluye los diarios internacionales.
+El wizard `wizard.accounting.reports` DEBE (MUST) seleccionar para el libro los documentos de las compañías del alcance del libro (`report_company_ids`, ver «Alcance del libro con sucursales nativas») con estado `posted` o `cancel`, `correlative` asignado (distinto de `/` y de vacío), fecha contable dentro del rango solicitado, y tipo según el libro (`out_invoice`/`out_refund` para ventas; `in_invoice`/`in_refund`/`in_debit` para compras), ordenados por fecha de documento (`invoice_date_display`); en ventas, los documentos de un mismo día se desempatan por fecha-hora de registro (`invoice_date_display_datetime`) y luego por `id`, de modo que el orden es estable entre generaciones aunque las facturas se modifiquen después de publicarse; `l10n_ve_iot_mf` usa el mismo criterio; cuando todas las columnas internacionales están ocultas por configuración, el libro de compras excluye los diarios internacionales.
 
 #### Scenario: Generación del libro de ventas
 
 - **WHEN** se genera el libro de ventas de un período
 - **THEN** solo aparecen documentos de venta publicados o anulados con número de control dentro del rango de fechas
+
+#### Scenario: Varias facturas de venta del mismo día
+
+- **WHEN** se genera el libro de ventas y hay varias facturas con la misma fecha de documento, algunas modificadas después de publicarse (pago, digitalización)
+- **THEN** salen ordenadas por la fecha-hora en que se registraron y luego por `id`, y el orden se repite igual en cada generación
 
 ### Requirement: Alcance del libro con sucursales nativas
 

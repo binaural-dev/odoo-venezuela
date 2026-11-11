@@ -9,9 +9,9 @@ class InvoiceDetailsWizard(models.TransientModel):
     _check_company_auto = True
 
     company_id = fields.Many2one("res.company", default=lambda self: self.env.company.id)
-    date_from = fields.Date(required=True, default=datetime.today().replace(day=1))
+    date_from = fields.Date(required=True, default=lambda self: fields.Date.context_today(self).replace(day=1))
     date_to = fields.Date(
-        required=True, default=datetime.today().replace(day=1) + relativedelta(months=1, days=-1)
+        required=True, default=lambda self: fields.Date.context_today(self).replace(day=1) + relativedelta(months=1, days=-1)
     )
     show_documents = fields.Boolean(default=True)
 

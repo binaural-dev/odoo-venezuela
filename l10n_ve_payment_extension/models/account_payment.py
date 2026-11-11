@@ -22,6 +22,23 @@ class AccountPayment(models.Model):
     )
     retention_id = fields.Many2one("account.retention", ondelete="cascade")
 
+    retention_resync_pending = fields.Boolean(
+        string="Retention Resync Pending",
+        compute="_compute_retention_resync_pending",
+        help=(
+            "True when this is a retention payment and its retention no"
+            " longer matches its invoice's current data (see"
+            " account.retention.retention_resync_pending)."
+        ),
+    )
+
+    @api.depends("is_retention", "retention_id.retention_resync_pending")
+    def _compute_retention_resync_pending(self):
+        for payment in self:
+            payment.retention_resync_pending = bool(
+                payment.is_retention and payment.retention_id.retention_resync_pending
+            )
+
     retention_line_ids = fields.One2many(
         "account.retention.line",
         "payment_id",
@@ -48,6 +65,42 @@ class AccountPayment(models.Model):
     retention_foreign_amount = fields.Float(
         compute="_compute_retention_foreign_amount", store=True, copy=False
     )
+
+    def _get_retention_foreign_rate_date(self):
+        """Fecha de tasa con la que se valora en moneda alterna el asiento de
+        una retencion: la fecha de la factura retenida.
+
+        Es la MISMA regla que usa cada linea del asiento
+        (`account.move.line._get_foreign_rate_date`), que delega aqui para
+        que el importe alterno del pago y el del asiento no puedan divergir.
+        Devuelve False si no aplica (no es retencion, o sus lineas no
+        pertenecen a una unica factura con fecha); en ese caso quien llama
+        usa el criterio por defecto.
+        """
+        self.ensure_one()
+        if not self.is_retention:
+            return False
+        invoice = self.retention_line_ids.mapped("move_id")
+        if len(invoice) != 1:
+            return False
+        return invoice.invoice_date or invoice.date or False
+
+    @api.depends("amount", "currency_id", "date", "is_retention", "retention_line_ids.move_id")
+    def _compute_foreign_amount(self):
+        """El importe alterno de una retencion se convierte con la fecha de
+        tasa de su asiento (la de la factura retenida), no con `date` (la
+        fecha contable de la retencion): con tasas distintas entre ambas
+        fechas el campo quedaba distinto al monto alterno del asiento."""
+        super()._compute_foreign_amount()
+        for payment in self.filtered("is_retention"):
+            rate_date = payment._get_retention_foreign_rate_date()
+            if rate_date and payment.currency_id != payment.foreign_currency_id:
+                payment.foreign_amount = payment.currency_id._convert(
+                    payment.amount,
+                    payment.foreign_currency_id,
+                    payment.company_id,
+                    rate_date,
+                )
 
     def _synchronize_to_moves(self, changed_fields):
         """

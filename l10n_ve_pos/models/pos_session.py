@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from odoo import models, fields, api, _, Command
 from odoo.tools import float_is_zero, float_compare
 from odoo.osv.expression import AND, OR
@@ -22,8 +24,16 @@ class PosSession(models.Model):
         IMPORTANT: Odoo 19 load_data response must contain only model keys.
         Adding ad-hoc top-level keys (e.g. ``prefix_vats``) breaks RecordStore
         parsing with "Index 'id' not defined for model ..." in POS bootstrap.
+
+        With ``pos_show_just_products_with_available_qty`` the products come
+        back whole on every load (new session, opening from the backend), not
+        only the ones modified since the browser cache, so the PoS gets the
+        current stock. Costs like the first load. See ``pos.load.mixin``.
         """
-        return super().load_data(models_to_load)
+        session = self
+        if self.config_id.pos_show_just_products_with_available_qty:
+            session = self.with_context(pos_reload_stock_dependent_data=True)
+        return super(PosSession, session).load_data(models_to_load)
 
     def get_pos_ui_product_pricelist_item_by_product(
         self, product_tmpl_ids, product_ids, config_id
@@ -655,7 +665,9 @@ class PosSession(models.Model):
             payment_method (pos.payment.method): method being cleared.
             line_vals (list): ``Command`` list of move lines to create.
             foreign_rate (float): operative rate stamped on the move.
-            date (datetime): accounting date of the move.
+            date (date | datetime): accounting date of the move. A Datetime
+                (``stop_at``, a payment's ``create_date``) is in UTC and is
+                turned into the user's day, see below.
             ref (str): reference identifying what is being cleared (see
                 ``_cross_move_ref``).
             partner (res.partner): partner for the move header; empty under
@@ -674,7 +686,16 @@ class PosSession(models.Model):
         permanently block that assignment (``_compute_name`` only calls
         ``_set_next_sequence()`` when ``name`` is empty/``'/'``). The
         descriptive text goes in ``ref`` instead.
+
+        ``account.move.date`` is a Date: a Datetime would be cut with
+        ``.date()`` to the UTC day, which from 8 pm in Caracas is already the
+        next one. ``l10n_ve_accountant`` then asks for that day's rate, which
+        does not exist yet, and the session cannot be closed (ticket 16145).
+        The core dates its own payment moves the same way
+        (``fields.Date.context_today(self, timestamp=payment.payment_date)``).
         """
+        if isinstance(date, datetime):
+            date = fields.Date.context_today(self, date)
         move = self.env["account.move"].create(
             {
                 "ref": ref,

@@ -21,6 +21,34 @@ patch(PosStore.prototype, {
     return context;
   },
 
+  /**
+   * "Permitir crear productos" (allow_product_creation_in_pos), apagado por
+   * defecto. Solo un true explícito la enciende: con la sesión abierta antes
+   * de actualizar el módulo, la caja sale de la caché del PdV sin el campo
+   * (undefined) hasta "Volver a cargar datos", y en la base ya vale false.
+   */
+  get isProductCreationAllowed() {
+    return this.config.allow_product_creation_in_pos === true;
+  },
+
+  // El core muestra "Crear producto" del menú según este getter.
+  get hasProductCreationAccess() {
+    return this.isProductCreationAllowed && super.hasProductCreationAccess;
+  },
+
+  /**
+   * editProduct() sin producto abre el formulario de producto nuevo: lo usan
+   * "Crear producto" del menú y "Crear manualmente" de la pantalla de
+   * productos vacía. Con la creación apagada no se abre; editar un producto
+   * existente no cambia.
+   */
+  async editProduct(product) {
+    if (!product && !this.isProductCreationAllowed) {
+      return;
+    }
+    return await super.editProduct(...arguments);
+  },
+
   async pay() {
     if (!(await this._checkOrderBeforePayment(this.getOrder()))) {
       return;
@@ -90,8 +118,8 @@ patch(PosStore.prototype, {
 
   /**
    * "Cantidad en 0" (amount_to_zero): productos almacenables cuya cantidad en
-   * la orden supera el stock a mano del almacén de la caja. Las líneas
-   * negativas (devoluciones) no cuentan: devuelven stock.
+   * la orden supera el stock a mano de la ubicación origen de la caja. Las
+   * líneas negativas (devoluciones) no cuentan: devuelven stock.
    */
   async _getStockShortages(order) {
     const qtyByProduct = {};
@@ -116,8 +144,7 @@ patch(PosStore.prototype, {
         throw error;
       }
       // Sin conexión: aproximación con el stock cargado al abrir la caja
-      // (puede estar desactualizado y se calcula por almacén, no por la
-      // ubicación origen de la caja).
+      // (de la misma ubicación origen, pero puede estar desactualizado).
       return Object.entries(qtyByProduct)
         .map(([productId, requested]) => ({
           product: this.models["product.product"].get(parseInt(productId)),

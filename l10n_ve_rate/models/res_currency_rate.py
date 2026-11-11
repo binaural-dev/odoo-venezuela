@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
 import logging
@@ -65,6 +67,14 @@ class ResCurrencyRate(models.Model):
 
         if not foreign_currency_id:
             return {}
+
+        # Un Datetime (p. ej. date_order) esta en UTC: se pasa a la fecha del usuario
+        # (context_today) y no a su .date() UTC, que a las 8 pm de Caracas ya es el dia
+        # siguiente. Sin fecha se usa el "hoy" del usuario, no el del servidor.
+        if isinstance(rate_date, datetime):
+            rate_date = fields.Date.context_today(self, rate_date)
+        elif not rate_date:
+            rate_date = fields.Date.context_today(self)
 
         company = self.env.company
         # las tasas solo viven en la compañía raíz (res.currency.rate._check_company_id);

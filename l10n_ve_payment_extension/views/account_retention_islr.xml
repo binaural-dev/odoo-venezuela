@@ -22,6 +22,11 @@
                         <field name="state" widget="statusbar" nolabel="1" />
                     </header>
                     <sheet>
+                        <field name="retention_resync_pending" invisible="1" />
+                        <div class="alert alert-warning" role="alert"
+                             invisible="not retention_resync_pending">
+                            Warning: this retention's declared base/amount no longer match its invoice's current data. Recalculate it from the invoice (button "Recalculate Retentions") to bring it up to date.
+                        </div>
                         <group colspan="4" col="4">
                             <!-- Invisible fields -->
                             <field name="name" invisible="1" force_save="1" />
@@ -240,6 +245,24 @@
                     </sheet>
                     <chatter/>
                 </form>
+            </field>
+        </record>
+
+        <record id="view_retention_islr_list_l10n_ve_payment_extension" model="ir.ui.view">
+            <field name="name">Retention ISLR list</field>
+            <field name="model">account.retention</field>
+            <field name="type">list</field>
+            <field name="arch" type="xml">
+                <list string="Retention">
+                    <field name="number" />
+                    <field name="type" />
+                    <field name="partner_id" />
+                    <field name="date" />
+                    <field name="date_accounting" />
+                    <field name="is_third_party_retention" optional="show" />
+                    <field name="company_id" optional="hide" groups="base.group_multi_company" />
+                    <field name="state" />
+                </list>
             </field>
         </record>
 

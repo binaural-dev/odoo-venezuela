@@ -27,9 +27,9 @@ class RetentionIslrReport(models.TransientModel):
         "Report type",
         required=True,
     )
-    date_start = fields.Date("Date start", default=date.today().replace(day=1))
+    date_start = fields.Date("Date start", default=lambda self: fields.Date.context_today(self).replace(day=1))
     date_end = fields.Date(
-        "Date end", default=date.today().replace(day=1) + relativedelta(months=1, days=-1)
+        "Date end", default=lambda self: fields.Date.context_today(self).replace(day=1) + relativedelta(months=1, days=-1)
     )
     file = fields.Binary(readonly=True)
     filename = fields.Char()
