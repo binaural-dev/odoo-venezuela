@@ -17,6 +17,11 @@
                 <attribute name="readonly">is_donation or state == 'done'</attribute>
             </xpath>
 
+            <!-- Donations are not returned (see stock.return.picking). The
+                 base condition already hides the button for returns. -->
+            <xpath expr="//button[@name='%(stock.act_stock_return_picking)d']" position="attributes">
+                <attribute name="invisible">state != 'done' or is_return or (is_donation and not sale_id)</attribute>
+            </xpath>
         </field>
     </record>
 
