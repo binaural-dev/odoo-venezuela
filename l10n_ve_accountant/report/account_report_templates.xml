@@ -115,8 +115,8 @@
             <div class="row mt-3">
                 <div class="col-6" t-if="o.partner_bank_id">
                     <strong>Cuenta Receptora: </strong>
-                    <t t-if="o.partner_bank_id.bank_id">
-                        <span t-out="o.partner_bank_id.bank_id.name + ' - ' + o.partner_bank_id.acc_number"/>
+                    <t t-if="o.partner_bank_id.bank_name">
+                        <span t-out="o.partner_bank_id.bank_name + ' - ' + o.partner_bank_id.account_number"/>
                     </t>
                     <t t-else="">
                         <span t-field="o.partner_bank_id"/>

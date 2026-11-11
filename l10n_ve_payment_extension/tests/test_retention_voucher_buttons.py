@@ -2,6 +2,8 @@ import logging
 import re
 from datetime import timedelta
 
+from markupsafe import escape
+
 from odoo import fields
 from odoo.exceptions import UserError
 from odoo.tests import tagged
@@ -237,3 +239,14 @@ class TestRetentionVoucherButtons(RetentionTestCommon):
             ).action_download_retention_voucher()
             self._assert_report_context_is_retention(action, retention)
         _logger.info("========= test_16 passed =========")
+
+    def test_17_voucher_prints_the_data_of_the_retention(self):
+        """The voucher prints the number and the partner of the retention, not only its labels."""
+        for index, retention_type in enumerate(TYPES):
+            number = f"2026110000{index}"
+            retention = self._create_retention(retention_type, number=number)
+            html = self.env["ir.actions.report"]._render_qweb_html(REPORT_REF, retention.ids)[0]
+            html = html.decode() if isinstance(html, bytes) else str(html)
+            self.assertIn(number, html, retention_type)
+            self.assertIn(str(escape(retention.partner_id.name)).upper(), html.upper(), retention_type)
+        _logger.info("========= test_17 passed =========")

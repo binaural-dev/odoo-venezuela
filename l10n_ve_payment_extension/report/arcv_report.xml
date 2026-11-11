@@ -93,7 +93,7 @@
 					    <span class="tal">Nombre o Razón Social:</span><br/>
 					    <span class="fw tal" t-out="res_company.name"/><br/>
 					    <span class="tal">Dirección:</span><br/>
-					    <span class="fw tal" t-out="res_company.partner_id.street"/><span t-esc="res_company.partner_id.street2"/><br/>
+					    <span class="fw tal" t-out="res_company.partner_id.street"/><span t-out="res_company.partner_id.street2"/><br/>
 					    <span class="tal">Teléfono: </span>
 					    <span class="fw tal" t-out="res_company.partner_id.phone"/><br/>
 					    <span class="tal">RIF: </span>
@@ -103,7 +103,7 @@
 					    <span class="tal">Nombre o Razón Social:</span><br/>
 					    <span class="fw tal" t-out="data['partner']['name']"/><br/>
 					    <span class="tal">Dirección:</span><br/>
-					    <span class="fw tal" t-out="data['partner']['street']"/><span t-esc="data['partner']['street2']"/><br/>
+					    <span class="fw tal" t-out="data['partner']['street']"/><span t-out="data['partner']['street2']"/><br/>
 					    <span class="tal">Teléfono: </span>
 					    <span class="fw tal" t-out="data['partner']['phone']"/><br/>
 					    <span class="tal">RIF: </span>

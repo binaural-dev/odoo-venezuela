@@ -25,7 +25,7 @@
                                     <div class="col-6 text-right" style="margin-top:22px;">
                                         <t t-if="date">
                                             <strong>Emisión :</strong>
-                                            <span t-esc="date" t-options='{"widget": "date"}'/>
+                                            <span t-out="date" t-options='{"widget": "date"}'/>
                                         </t>
                                     </div>
                                     
@@ -33,11 +33,11 @@
                                 <div class="row">
                                     <div class="col-12">
                                         <t t-if="res_company.name">
-                                            <span t-esc="res_company.name"/>
+                                            <span t-out="res_company.name"/>
                                             <br/>
                                         </t>
                                         <t t-if="res_company.vat">Rif:&amp;nbsp;
-                                            <span t-esc="(res_company.partner_id.prefix_vat or '') + (res_company.vat or '')"/>
+                                            <span t-out="(res_company.partner_id.prefix_vat or '') + (res_company.vat or '')"/>
                                             <br/>
                                         </t>
                                     </div>
@@ -47,16 +47,16 @@
 		                        <table class="table-condensed table-bordered border-light" style="width:100%;height:100%;font-size:14px">
 		                            <tr>
 			                            <td>
-				                            <span><b><span t-esc="payment_type"/></b></span>
+				                            <span><b><span t-out="payment_type"/></b></span>
 			                            </td>
 		                               <td>
-				                            <span>Diario: <b><span t-esc="journal" /></b></span>
+				                            <span>Diario: <b><span t-out="journal" /></b></span>
 			                            </td>
                                         <td>
-				                            <span>Desde: <b><span t-esc="data.get('start_date')" t-options='{"widget": "date"}'/></b></span>
+				                            <span>Desde: <b><span t-out="data.get('start_date')" t-options='{"widget": "date"}'/></b></span>
 			                            </td>
                                         <td>
-				                            <span>Hasta: <b><span t-esc="data.get('end_date')" t-options='{"widget": "date"}'/></b></span>
+				                            <span>Hasta: <b><span t-out="data.get('end_date')" t-options='{"widget": "date"}'/></b></span>
 			                            </td>
 		                            </tr>
 		                        </table>
@@ -101,20 +101,20 @@
                                         <tbody>
 		                                    <tr t-foreach="docs" t-as="o">
                                                 <td style="text-align: center">
-			                                        <span t-esc="o.name"/>
+			                                        <span t-out="o.name"/>
 		                                        </td>
                                                 <td colspan="2" style="text-align: center">
-                                                    <span t-esc="o.partner_id.prefix_vat"/>-<span t-esc="o.partner_id.vat"/>
-			                                        <span t-esc="o.partner_id.name"/><!--Razon social-->
+                                                    <span t-out="o.partner_id.prefix_vat"/>-<span t-out="o.partner_id.vat"/>
+			                                        <span t-out="o.partner_id.name"/><!--Razon social-->
 		                                        </td>
                                                 <td style="text-align: center">
-			                                        <span t-esc="o.date" t-options='{"widget": "date"}'/>
+			                                        <span t-out="o.date" t-options='{"widget": "date"}'/>
 		                                        </td>
 		                                        <td style="text-align: right">
-			                                        <t t-esc="'{0:,.2f}'.format(float(o.amount)).replace (',',' ').replace ('.',',').replace (' ','.')"/>
+			                                        <t t-out="'{0:,.2f}'.format(float(o.amount)).replace (',',' ').replace ('.',',').replace (' ','.')"/>
 		                                        </td>
                                                 <td style="text-align: center">
-			                                        <span t-esc="o.write_uid.name"/><!--create_uid-->
+			                                        <span t-out="o.write_uid.name"/><!--create_uid-->
 		                                        </td>
 
                                                 <t t-set="qty" t-value="qty + 1"/>
@@ -126,12 +126,12 @@
 		                            </table>
                                     <table class="table-condensed" style="width:100%;font-size:10px;table-layout: fixed;margin-top: 20px;">
 		                                <tr class="cltt">
-		                                    <td style="text-align: left" class="" rowspan="1" colspan="">Cantidad de operaciones: <t t-esc="qty"/></td>
+		                                    <td style="text-align: left" class="" rowspan="1" colspan="">Cantidad de operaciones: <t t-out="qty"/></td>
                                             
                                             
 		                                    
 		                                    
-		                                    <td style="text-align: right" class="" rowspan="1" colspan="">Total: <t t-esc="'{0:,.2f}'.format(float(total)).replace (',',' ').replace ('.',',').replace (' ','.')"/></td>
+		                                    <td style="text-align: right" class="" rowspan="1" colspan="">Total: <t t-out="'{0:,.2f}'.format(float(total)).replace (',',' ').replace ('.',',').replace (' ','.')"/></td>
 		                                    
 		                                </tr>
 		                            </table>
@@ -142,7 +142,7 @@
                                     <br/>
                                     <br/>
                                     <br/>
-                                    <p>Elaborado por:  <span t-esc="name_user"/> <br/><br/></p>
+                                    <p>Elaborado por:  <span t-out="name_user"/> <br/><br/></p>
                                     <br/>
                                     <!--   create_uid write_uid Ultima modificacion por: <span t-field="o.write_uid.name"/>-->
                                     <div style="text-align: center;float:left; margin: 5px 0px ;border-top: 1px solid #000;width:45%; padding-top:10px;"></div>
