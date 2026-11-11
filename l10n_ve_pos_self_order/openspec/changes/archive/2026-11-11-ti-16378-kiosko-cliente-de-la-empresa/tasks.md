@@ -50,5 +50,5 @@
 
 ## 3. Cierre
 
-- [ ] 3.1 Archivar el change y volcarlo en
+- [x] 3.1 Archivar el change y volcarlo en
       `openspec/specs/pos-self-order-kiosk-identification/spec.md`
