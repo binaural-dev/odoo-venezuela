@@ -8,6 +8,11 @@ import logging
 
 _logger = logging.getLogger(__name__)
 
+# Contexto del cruce de una venta en efectivo que quedó en la cuenta de su propio
+# diario (``PosSession._cross_sale_stays_in_journal``): su transitoria es esa
+# cuenta, no la ``suspense_account_id`` del diario.
+CROSS_SALE_FROM_JOURNAL_ACCOUNT = "l10n_ve_pos_cross_sale_from_journal_account"
+
 
 class PosSession(models.Model):
     _inherit = "pos.session"
@@ -185,9 +190,10 @@ class PosSession(models.Model):
                 )
                 use_suspense = session._cross_move_uses_suspense(payment_method)
                 sign = session._get_sales_cross_sign(payment_method)
+                cross_session = session._get_sales_cross_session(payment_method)
                 if payment_method.split_transactions:
                     for payment in method_payments:
-                        session._create_cross_move_for(
+                        cross_session._create_cross_move_for(
                             payment_method,
                             amount=sign * payment.amount,
                             foreign_amount=sign * payment.foreign_amount,
@@ -203,7 +209,7 @@ class PosSession(models.Model):
                         )
                     continue
 
-                session._create_combined_cross_move(
+                cross_session._create_combined_cross_move(
                     payment_method,
                     [
                         session._sign_cross_amounts(sign, leg)
@@ -361,17 +367,47 @@ class PosSession(models.Model):
         cash method (between the suspense accounts, see
         ``_cross_move_uses_suspense``), ``1`` otherwise.
 
-        The cash of a sale reaches the real journal through the cash out that
-        empties the drawer, and native ``try_cash_in_out`` leaves that cash out
-        as a DEBIT on the method journal's suspense account. So the cross of a
-        cash sale is the one of a cash out of the same amount: credit that
-        suspense account, debit the ``cross_journal``'s. ``_create_cross_move_for``
-        (``use_suspense=True``, the convention of the cash in/out) reads a
-        negative amount as a cash out. Crossed with its own sign, the sale
-        debited the method's suspense account a second time and took the money
-        out of the real journal (ticket 15219, fixed in task 86801).
+        A cash sale is crossed like the cash out that takes it to the real
+        journal: credit the account its cash is on and debit the
+        ``cross_journal``'s suspense account. On the session's cash journal that
+        account is the method journal's suspense account, where native
+        ``try_cash_in_out`` leaves the cash out as a DEBIT; on any other journal
+        it is the journal's own account (``_cross_sale_stays_in_journal``).
+        ``_create_cross_move_for`` (``use_suspense=True``, the convention of the
+        cash in/out) reads a negative amount as a cash out. Crossed with its own
+        sign, the sale debited the method's suspense account a second time and
+        took the money out of the real journal (ticket 15219, fixed in task
+        86801).
         """
         return -1 if self._cross_move_uses_suspense(payment_method) else 1
+
+    def _cross_sale_stays_in_journal(self, payment_method):
+        """Whether the cash of a sale of ``payment_method`` stays on its
+        journal's own account (``default_account_id``, debited by the native
+        closing statement line) because no cash out reaches that journal.
+
+        The core registers cash in/out only on the session's cash journal
+        (``cash_journal_id``, see its ``try_cash_in_out``), and
+        ``binaural_pos_close`` only on its drawers, whose methods do not cross
+        their sales. A cash method on any other journal (a second cash method in
+        a foreign currency, or any foreign cash method without
+        ``binaural_pos_close``) keeps its sales on its journal's account, so its
+        cross takes them from there.
+        """
+        return payment_method.type == "cash" and payment_method.journal_id != self.cash_journal_id
+
+    def _get_sales_cross_session(self, payment_method):
+        """The session the sales cross of ``payment_method`` is created with:
+        with ``CROSS_SALE_FROM_JOURNAL_ACCOUNT`` when its cash stays on its
+        journal's account (``_cross_sale_stays_in_journal``), so that
+        ``_get_cross_transitory_account`` drains that account instead of the
+        journal's suspense account. The real side is the same (the
+        ``cross_journal``'s suspense account, with its statement line)."""
+        if self._cross_move_uses_suspense(payment_method) and self._cross_sale_stays_in_journal(
+            payment_method
+        ):
+            return self.with_context(**{CROSS_SALE_FROM_JOURNAL_ACCOUNT: True})
+        return self
 
     def _sign_cross_amounts(self, sign, values):
         """``values`` (a leg of ``_get_combined_cross_legs`` or the kwargs of
@@ -530,9 +566,8 @@ class PosSession(models.Model):
         Which account that is depends on *what created the balance being
         cleared*, not just the payment method type:
 
-        - ``use_suspense=False`` (bank sales, opening/closing differences): the
-          account where native Odoo parked the money once the session
-          closed / the difference was posted.
+        - ``use_suspense=False`` (bank sales): the account where native Odoo
+          parked the money once the session closed.
 
           - ``bank``: ``_create_combine_account_payment`` posts an
             ``account.payment`` with ``force_outstanding_account_id =
@@ -546,9 +581,9 @@ class PosSession(models.Model):
             because Odoo routes cash straight to the journal. The statement
             line debits the journal's own default account and credits the
             POS receivable (``_get_combine_statement_line_vals``, native
-            line 1452) or, for differences, the configured loss/profit
-            account (``_post_foreign_statement_difference``) — either way
-            the leftover balance sits in ``journal_id.default_account_id``.
+            line 1452), so the balance sits in ``journal_id.default_account_id``.
+            A cash sale on a journal no cash out reaches crosses from there
+            even under ``use_suspense=True`` (``_get_sales_cross_session``).
 
           The company's default POS receivable account stays on as a
           last-resort fallback so that an incomplete journal setup degrades
@@ -571,6 +606,10 @@ class PosSession(models.Model):
           branch for why draining it requires inverting debit/credit too).
         """
         if use_suspense:
+            if self.env.context.get(CROSS_SALE_FROM_JOURNAL_ACCOUNT):
+                # Venta en efectivo que quedó en la cuenta de su diario
+                # (``_get_sales_cross_session``).
+                return payment_method.journal_id.default_account_id
             return payment_method.journal_id.suspense_account_id
         if payment_method.type == "cash":
             account = payment_method.journal_id.default_account_id
@@ -584,7 +623,7 @@ class PosSession(models.Model):
     def _get_cross_real_account(self, payment_method, outbound, use_suspense=False):
         """Return the ``cross_journal`` account that receives/gives the value.
 
-        ``use_suspense=False`` (bank sales, opening/closing differences): the
+        ``use_suspense=False`` (bank sales): the
         journal's own inbound/outbound payment method line account — the
         confirmed liquidity account, same as the native ``account.payment``/
         bank pipeline would use.
@@ -796,7 +835,7 @@ class PosSession(models.Model):
         journal's reconciliation dashboard shows: with the session in it, a
         line cannot be matched against the cross of another session.
 
-        Under split granularity a session produces one draft per payment, all
+        Under split granularity a session produces one move per payment, all
         with the same date, amount shape and journal; without a discriminator
         they are indistinguishable in that list (the move header carries no
         partner either — the partner lives on the lines). So the reference
@@ -1036,7 +1075,8 @@ class PosSession(models.Model):
         journal = payment_method.cross_journal
         suspense_account = journal.suspense_account_id
         statement_lines = self.env["account.bank.statement.line"]
-        if not suspense_account or suspense_account == payment_method.journal_id.suspense_account_id:
+        transitory_account = self._get_cross_transitory_account(payment_method, use_suspense=True)
+        if not suspense_account or suspense_account == transitory_account:
             return statement_lines
         vals_list = [
             {
@@ -1053,7 +1093,12 @@ class PosSession(models.Model):
         ]
         if not vals_list:
             return statement_lines
-        return statement_lines.sudo().with_context(no_retrieve_partner=True).create(vals_list)
+        return (
+            statement_lines.sudo()
+            .with_company(self.company_id)
+            .with_context(no_retrieve_partner=True)
+            .create(vals_list)
+        )
 
     def action_pos_session_close(self, balancing_account=False, amount_to_balance=0, bank_payment_method_diffs=None):
         """
