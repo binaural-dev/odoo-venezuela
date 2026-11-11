@@ -8,6 +8,7 @@
             <field name="invoice_has_outstanding" position="after">
                 <field name="is_contingency" invisible="1" />
                 <field name="entry_in_period" invisible="1" />
+                <field name="name_placeholder_hint" invisible="1" />
             </field>
             <xpath expr="//field[@name='ref']" position="after">
                 <field name="tax_base_for_international_purchase" invisible="not is_purchase_international" required="is_purchase_international" readonly="state == 'posted'"/>
@@ -24,19 +25,21 @@
                     'in_receipt') and not posted_before and not is_contingency</attribute>
             </xpath>
             <!-- Odoo only shows the number field when there is a number, a
-                 sequence preview (name_placeholder) or quick edit mode, and
-                 shows a fixed "Draft" otherwise. Moving a draft to another
-                 journal clears its number, and there is no preview once the
-                 journal has any previous number. On a contingency journal the
-                 number is typed by hand, so it must stay editable anyway. -->
+                 sequence preview (name_placeholder), quick edit mode or an
+                 editable sequence, and shows a fixed "Draft" otherwise. Moving
+                 a draft to another journal clears its number, and there is no
+                 preview once the journal has any previous number. On a
+                 contingency journal the number is typed by hand, so it must
+                 stay editable anyway. The hint comes from name_placeholder_hint
+                 because Odoo ignores a static placeholder on this field. -->
             <field name="name" position="attributes">
-                <attribute name="invisible">not (name or name_placeholder or quick_edit_mode or is_contingency)</attribute>
+                <attribute name="invisible">not (name or name_placeholder or quick_edit_mode or document_sequence_editable or is_contingency)</attribute>
                 <attribute name="readonly">(move_type in ('out_invoice', 'out_refund') or not is_contingency) and state == 'posted'</attribute>
 		        <attribute name="required">move_type in ('in_invoice', 'in_refund', 'in_receipt') or is_contingency</attribute>
-                <attribute name="placeholder">JRNL/2016/00001</attribute>
+                <attribute name="options">{'placeholder_field': 'name_placeholder_hint'}</attribute>
             </field>
             <xpath expr="//div[hasclass('oe_title')]/h1/span" position="attributes">
-                <attribute name="invisible">name or name_placeholder or quick_edit_mode or is_contingency</attribute>
+                <attribute name="invisible">name or name_placeholder or quick_edit_mode or document_sequence_editable or is_contingency</attribute>
             </xpath>
             <xpath expr="//div[hasclass('oe_title')]/h1" position="after">
                 <div class="inline-block"></div>

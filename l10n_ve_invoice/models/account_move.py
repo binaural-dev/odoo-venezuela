@@ -9,6 +9,9 @@ from odoo.tools import format_date, float_compare, float_round, float_is_zero
 _logger = logging.getLogger(__name__)
 
 
+NAME_PLACEHOLDER = "JRNL/2016/00001"
+
+
 class AccountMove(models.Model):
     _name = "account.move"
     _inherit = "account.move"
@@ -43,6 +46,7 @@ class AccountMove(models.Model):
     last_payment_date = fields.Date(compute="_compute_payment_dates", store=True)
     first_payment_date = fields.Date(compute="_compute_payment_dates", store=True)
     is_contingency = fields.Boolean(related="journal_id.is_contingency")
+    name_placeholder_hint = fields.Char(compute="_compute_name_placeholder_hint")
 
     discount_type = fields.Selection(related="company_id.discount_type")
 
@@ -89,6 +93,16 @@ class AccountMove(models.Model):
     import_file_number_purchase_international = fields.Char(
         string="Import File Number Purchase International"
     )
+
+    @api.depends("name_placeholder")
+    def _compute_name_placeholder_hint(self):
+        """Hint of the number field: the next number Odoo previews, or an example of the format.
+
+        Since Odoo 20 a field with ``placeholder_field`` no longer falls back to its static
+        ``placeholder`` when that field is empty, so the view cannot give the example by itself.
+        """
+        for move in self:
+            move.name_placeholder_hint = move.name_placeholder or NAME_PLACEHOLDER
 
     @api.depends("invoice_date", "state", "move_type")
     def _compute_entry_in_period(self):
