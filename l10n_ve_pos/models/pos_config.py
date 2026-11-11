@@ -367,8 +367,8 @@ class PosConfig(models.Model):
         Same idea as the native ``_check_profit_loss_cash_journal``: a
         foreign-currency method with both cross journals set will need the
         accounts listed by ``pos.session._get_cross_move_missing_accounts``
-        (on opening, with the foreign cash drawer's opening difference, and on
-        closing). Without them the cross move used to be built with a NULL
+        (on closing, and on each cash in/out of a ``binaural_pos_close``
+        drawer). Without them the cross move used to be built with a NULL
         ``account_id`` and the opening crashed on
         ``account_move_line_check_accountable_required_fields``.
         """
