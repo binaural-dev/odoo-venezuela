@@ -3994,3 +3994,10 @@ msgstr "No puede registrar un sector económico con el mismo nombre."
 #: model:ir.model.constraint,message:l10n_ve_payment_extension.constraint_payment_concept_line_unique_code
 msgid "The concept code already exists"
 msgstr "El código del concepto ya existe"
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/res_partner.py:0
+msgid "A non resident partner cannot be a special taxpayer."
+msgstr "Un contacto no residente no puede ser contribuyente especial."
