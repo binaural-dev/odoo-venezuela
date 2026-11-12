@@ -1,5 +1,5 @@
 id,name,model_id,group_id/id,operation,domain
-access_res_city,master_cities,res.country.city,base.group_user,crud,
+access_res_city,master_cities,res.city,base.group_user,crud,
 access_res_municipality,master_minicipalities,res.country.municipality,base.group_user,crud,
 access_country_parish,master_parish,res.country.parish,base.group_user,crud,
 access_res_partner_zone,master_partner_zone,res.partner.zone,base.group_user,crud,

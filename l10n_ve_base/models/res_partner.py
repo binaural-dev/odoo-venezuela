@@ -30,15 +30,30 @@ class ResPartner(models.Model):
         cities of the localization exist, the key in the database is the right one: it is kept,
         and ``l10n_ve_location`` checks it when it loads.
 
-        It does not cover the modules loaded before this one (``bus``) nor the first installation
-        of ``base_address_extended`` in a database that comes from 19: R-49 is still open.
+        Since 20.0.1.0.1 ``l10n_ve_location`` moves its cities to ``res.city`` and the key points
+        there: this only acts on a database whose cities have not been moved yet, until
+        ``l10n_ve_location`` is updated (R-49).
         """
         result = super()._auto_init()
         field = self._fields.get("city_id")
-        if field is not None and field.comodel_name == "res.city" and sql.table_exists(self.env.cr, "res_country_city"):
+        if field is not None and field.comodel_name == "res.city" and self._city_key_points_to_localization():
             # The key is queued with post_init, after every _auto_init: drop it after that.
             self.pool.post_init(self._keep_localization_city_foreign_key)
         return result
+
+    def _city_key_points_to_localization(self):
+        """The key of city_id in the database still points to the old cities of l10n_ve_location."""
+        if not sql.table_exists(self.env.cr, "res_country_city"):
+            return False
+        self.env.cr.execute(
+            """
+            SELECT 1 FROM pg_constraint fk
+            JOIN pg_attribute a ON a.attrelid = fk.conrelid AND a.attnum = fk.conkey[1]
+            WHERE fk.contype = 'f' AND fk.conrelid = 'res_partner'::regclass
+              AND a.attname = 'city_id' AND fk.confrelid = 'res_country_city'::regclass
+            """
+        )
+        return bool(self.env.cr.fetchone())
 
     def _keep_localization_city_foreign_key(self):
         self.pool._foreign_keys.pop((self._table, "city_id"), None)

@@ -7,7 +7,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Technical",
-    "version": "20.0.1.0.2",
+    "version": "20.0.1.0.3",
     "depends": ["base", "web"],
     "auto_install": False,
     "data": [

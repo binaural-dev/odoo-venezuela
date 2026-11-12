@@ -1,12 +1,12 @@
 {
     "name": "Venezuela - Localización",
-    "summary": "Modelos de ciudades, municipios y parroquias de Venezuela.",
+    "summary": "Municipios y parroquias de Venezuela; las ciudades son las de Odoo.",
     "license": "LGPL-3",
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "20.0.1.0.0",
-    "depends": ["base", "contacts"],
+    "version": "20.0.1.0.1",
+    "depends": ["base", "contacts", "base_address_extended"],
     "data": [
         "data/res_country_state_data.xml",
         "data/res_country_municipality_data.xml",
