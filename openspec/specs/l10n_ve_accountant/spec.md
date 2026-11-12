@@ -17,7 +17,7 @@ Los asientos (`account.move`), pagos (`account.payment`) y el wizard de registro
 
 ### Requirement: Cálculo automático de la tasa según la fecha del documento
 
-El sistema DEBE (MUST) calcular `foreign_rate` y `foreign_inverse_rate` de cada `account.move` invocando `res.currency.rate.compute_rate` sobre la moneda alterna del documento (`foreign_currency_id`) con la fecha de tasa del documento: `invoice_date` ("Rate Date") para todas las facturas, ventas y compras por igual, con `date` como respaldo si está vacía; los asientos (`entry`) usan siempre `date`, porque su `invoice_date` solo trae el "hoy" por defecto; si ninguna está definida usa la fecha actual del usuario (`context_today`). La regla es la misma para todos los tipos de documento: `_compute_rate_for_documents` recibe solo los documentos, sin distinguir ventas de compras. El recálculo (`_compute_rate`) DEBE (MUST) depender tanto de `invoice_date` como de `date`, porque `date` es el respaldo cuando `invoice_date` está vacía: editar únicamente `date` en un documento sin `invoice_date` DEBE (MUST) recalcular la tasa, mientras que en un documento con `invoice_date` (por ejemplo una compra) cambiar solo `date` NO DEBE (MUST NOT) moverla. En la creación del asiento se omite para los documentos `in_invoice`, que conservan la tasa por defecto calculada a la fecha de hoy. Los documentos con `manually_set_rate` activo quedan excluidos del recálculo. `compute_rate` busca la tasa únicamente en la fecha exacta del documento (sin usar la más cercana, anterior ni posterior): si esa fecha no tiene tasa cargada, la creación o contabilización del documento se bloquea con un `UserError` que indica la moneda y la fecha.
+El sistema DEBE (MUST) calcular `foreign_rate` y `foreign_inverse_rate` de cada `account.move` invocando `res.currency.rate.compute_rate` sobre la moneda alterna del documento (`foreign_currency_id`) con la fecha de tasa del documento: `invoice_date` ("Rate Date") para todas las facturas, ventas y compras por igual, con `date` como respaldo si está vacía; los asientos (`entry`) usan siempre `date`, porque su `invoice_date` solo trae el "hoy" por defecto; si ninguna está definida usa la fecha actual del usuario (`context_today`). La regla es la misma para todos los tipos de documento: `_compute_rate_for_documents` recibe solo los documentos, sin distinguir ventas de compras. El recálculo (`_compute_rate`) DEBE (MUST) depender tanto de `invoice_date` como de `date`, porque `date` es el respaldo cuando `invoice_date` está vacía: editar únicamente `date` en un documento sin `invoice_date` DEBE (MUST) recalcular la tasa, mientras que en un documento con `invoice_date` (por ejemplo una compra) cambiar solo `date` NO DEBE (MUST NOT) moverla. `foreign_rate` y `foreign_inverse_rate` NO TIENEN (MUST NOT) un `default=` propio: se calculan siempre con la fecha del documento, incluso en la creación (`create`) de cualquier tipo, `in_invoice` incluido. Los documentos con `manually_set_rate` activo y con tasa ya fijada quedan excluidos del recálculo; uno marcado manual sin tasa se calcula. Ticket #16148. `compute_rate` busca la tasa únicamente en la fecha exacta del documento (sin usar la más cercana, anterior ni posterior): si esa fecha no tiene tasa cargada, la creación o contabilización del documento se bloquea con un `UserError` que indica la moneda y la fecha.
 
 #### Scenario: Factura de venta
 
@@ -39,15 +39,20 @@ El sistema DEBE (MUST) calcular `foreign_rate` y `foreign_inverse_rate` de cada 
 - **WHEN** se edita `date` en un asiento (`entry`), o en un documento sin `invoice_date`, sin tasa manual
 - **THEN** `foreign_rate` y `foreign_inverse_rate` se recalculan con la tasa vigente a la nueva `date`
 
-#### Scenario: Factura de proveedor recién creada
+#### Scenario: Factura de proveedor o de cliente creada con fecha pasada
 
-- **WHEN** se crea un documento `in_invoice`
-- **THEN** la creación no dispara el recálculo de tasa y el documento conserva la tasa por defecto de la fecha actual
+- **WHEN** se crea un documento `in_invoice` u `out_invoice` (por código o desde el formulario) con `invoice_date` pasada y sin tasa manual
+- **THEN** el documento toma la tasa de esa fecha y no la de hoy
 
 #### Scenario: Tasa fijada manualmente
 
 - **WHEN** un documento tiene `manually_set_rate` en verdadero
 - **THEN** el recálculo automático no modifica su tasa
+
+#### Scenario: Tasa manual sin valor útil
+
+- **WHEN** un documento tiene `manually_set_rate` en verdadero pero su `foreign_rate` es cero, o un residuo menor a la precisión `Tasa` (6 decimales)
+- **THEN** se trata como "sin tasa" y se calcula por la Rate Date; la comparación contra la tasa vigente para avisar un cambio manual usa esa misma precisión
 
 #### Scenario: Documento con fecha sin tasa cargada
 
@@ -987,6 +992,38 @@ Todo cálculo de tasa o conversión de `account.move` y `account.payment` que us
 - **WHEN** se crea un asiento (`entry`) con `date` pasada o futura, hay tasa para esa fecha y no la hay para el día de hoy
 - **THEN** el asiento toma la tasa de su `date`; la consulta de tasa del `create` usa `date` en los asientos y `invoice_date` (o el «hoy» del usuario) en los demás documentos
 
+### Requirement: Los campos de tasa viajan en el formulario de la factura
+
+El formulario de `account.move` DEBE (MUST) incluir `foreign_rate` y `foreign_inverse_rate` ocultos (`invisible="1"`) con `force_save="1"`, para que el onchange de `invoice_date` / `invoice_date_display` los recalcule en el formulario y lo calculado sea lo que se guarda. Ticket #16148.
+
+#### Scenario: Cambio de la fecha en el formulario
+
+- **WHEN** se cambia la fecha de una factura (nueva o guardada en borrador) desde el formulario
+- **THEN** el formulario ya muestra la tasa de esa fecha y al guardar se persiste esa misma tasa
+
+#### Scenario: Borrador que vuelve a su fecha original
+
+- **WHEN** en un borrador ya guardado la fecha se cambia y se devuelve a la original dentro del mismo formulario
+- **THEN** la tasa vuelve a la que el documento ya tenía y no se recalcula con la tasa actual del día
+
+### Requirement: La fecha tasa de la factura la fija la configuración al crearla
+
+La fecha tasa (`invoice_date`, "Rate Date") es la única que determina la tasa de la factura; la configuración solo decide qué fecha se le pone al crearla desde una orden y si queda bloqueada. Con el ajuste "usar la tasa de la orden en la factura" de su tipo (ventas→`out_invoice`, compras→`in_invoice`) y una sola orden vinculada, la factura nace con la fecha de tasa de la orden y la Rate Date queda en solo lectura con un aviso arriba; sin el ajuste, la factura nace con su propia fecha y se recalcula si esta cambia. `account.move` expone el gancho `_is_rate_date_locked()` (falso por defecto) que ventas implementa para que `_onchange_invoice_date_display` no copie la fecha de la factura a la Rate Date cuando está bloqueada. Activar o desactivar el ajuste NO DEBE (MUST NOT) recalcular ningún documento existente: solo afecta a las facturas que se creen después. `manually_set_rate` no interviene en este flujo y nunca se establece desde él. La vista decide el bloqueo con el ajuste, el tipo de documento y el contador de órdenes vinculadas del core (`sale_order_count` / `purchase_order_count`). Ticket #16148.
+
+#### Scenario: Ajuste desactivado
+
+- **WHEN** el ajuste del tipo de documento no está activo
+- **THEN** la tasa sigue a `invoice_date` y se recalcula si esta cambia
+
+#### Scenario: Ajuste activo
+
+- **WHEN** el ajuste está activo y se cambia la fecha de la factura
+- **THEN** la Rate Date no se mueve y la tasa sigue siendo la de la orden
+
+#### Scenario: Cambio del ajuste con facturas existentes
+
+- **WHEN** se activa o desactiva el ajuste de la compañía
+- **THEN** ninguna factura existente (borrador o publicada) cambia su tasa
 ### Requirement: Segundo bloque de totales con la moneda alterna cuando el documento está en la moneda de la compañía
 
 El widget `account-tax-ves-totals-field` (segundo bloque de totales de la pestaña principal, debajo del nativo) DEBE (MUST) mostrar los montos de `tax_totals` según la moneda del documento: si `currency_id` es distinta de la moneda de la compañía muestra los montos en VES (`*_currency_ves`); si `currency_id` es la moneda de la compañía muestra los montos en la moneda alterna (`foreign_currency_id`: claves `*_foreign_currency` de subtotal, Total G de cada grupo de impuestos, impuesto y total), formateados con esa moneda. Si el documento está en la moneda de la compañía y la compañía no tiene `foreign_currency_id`, el bloque NO DEBE (MUST NOT) mostrarse. En la vista de factura el grupo contenedor (`o_ve_invoice_totals`) solo se oculta con `currency_id == company_currency_id and not foreign_currency_id`. El widget solo presenta los montos que `_get_tax_totals_summary` ya calcula; no los recalcula (ti-85450). El bloque alterno NO DEBE (MUST NOT) mostrar ningún monto adeudado: el formulario no incluye `amount_residual_company` ("residual amount" / "Importe adeudado" en la moneda de la compañía), con el documento en cualquier moneda. El único monto adeudado visible es el nativo (`amount_residual`). Motivo: `amount_residual_company` está en la moneda de la compañía (VEF) y no corresponde a los montos alternos que calcula `tax_totals` (moneda de referencia), ni necesariamente a la moneda del documento; por ejemplo, con un documento en EUR el bloque alterno está en USD, `amount_residual_company` en VEF y `amount_residual` en EUR, tres monedas distintas, por lo que no se usa en este bloque.
