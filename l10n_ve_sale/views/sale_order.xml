@@ -22,14 +22,12 @@
                 <field name="vat" />
             </xpath>
 
-            <xpath expr="//notebook/page/field[@name='order_line']/list/field[@name='price_unit']"
+            <xpath expr="//field[@name='order_line']/list/column[@name='price_unit']"
                 position="after">
                 <field name="foreign_price" />
             </xpath>
 
-            <xpath
-                expr="//notebook/page/field[@name='order_line']/list/field[@name='price_subtotal']"
-                position="after">
+            <xpath expr="//field[@name='order_line']/list/widget[@name='section_state']" position="before">
                 <field name="foreign_subtotal" />
                 <field name="foreign_rate" optional="hide" readonly="1"/>
                 <field
@@ -81,39 +79,13 @@
                     groups="!l10n_ve_sale.create_invoice_sale_order_group" />
             </xpath>
 
-            <xpath expr="//sheet[1]/group[1]/group[2]/div[@class='o_row'][1]" position="after">
-				<label for="pricelist_id" groups="product.group_product_pricelist"/>
-                <field name="pricelist_id" invisible="1" />
-                <div groups="l10n_ve_sale.pricelist_sale_order_group" class="o_row">
-                    <field name="pricelist_id" readonly="1"
-                        options="{'no_open':True,'no_create': True}" />
-                    <button name="action_update_prices" type="object"
-                        string=" Update Prices"
-                        help="Recompute all prices based on this pricelist"
-                        class="btn-link mb-1 px-0" icon="refresh"
-                        confirm="This will update all unit prices based on the currently set pricelist."
-                        invisible="not show_update_pricelist or state in ['sale', 'done', 'cancel']" />
+            <xpath expr="//group[@name='order_details']/div[@groups='product.group_product_pricelist']" position="replace">
+                <div groups="l10n_ve_sale.pricelist_sale_order_group" class="o_row" invisible="not has_active_pricelist">
+                    <field name="pricelist_id" readonly="1" options="{'no_open': True, 'no_create': True}"/>
                 </div>
-                            
-                <div groups="!l10n_ve_sale.pricelist_sale_order_group" class="o_row">
-                    <field name="pricelist_id" readonly="state != 'draft'" options="{'no_open':True,'no_create': True}" />
-                    <button name="action_update_prices" type="object"
-                        string=" Update Prices"
-                        help="Recompute all prices based on this pricelist"
-                        class="btn-link mb-1 px-0" icon="refresh"
-                        confirm="This will update all unit prices based on the currently set pricelist."
-                        invisible="not show_update_pricelist or state in ['sale', 'done', 'cancel']" />
+                <div groups="!l10n_ve_sale.pricelist_sale_order_group" class="o_row" invisible="not has_active_pricelist">
+                    <field name="pricelist_id" readonly="state != 'draft'" options="{'no_open': True, 'no_create': True}"/>
                 </div>
-            </xpath>
-
-
-            <xpath expr="//group[@name='order_details']/div[@groups='product.group_product_pricelist']"
-                    position="attributes">
-                    <attribute name="invisible">1</attribute>
-            </xpath>
-            <xpath expr="//sheet//group[@name='order_details']/label[@for='pricelist_id'][2]"
-                    position="attributes">
-                    <attribute name="invisible">1</attribute>
             </xpath>
             
             <field name="payment_term_id" position="replace">

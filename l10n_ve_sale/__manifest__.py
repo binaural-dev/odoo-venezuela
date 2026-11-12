@@ -7,7 +7,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Sales/Sales",
-    "version": "19.0.1.0.11",
+    "version": "20.0.1.0.0",
     # any module necessary for this one to work correctly
     "depends": [
         "base",
@@ -18,9 +18,10 @@
         "l10n_ve_invoice",
         "l10n_ve_filter_partner",
         "l10n_ve_stock",
+        "sale_stock",
     ],
     "data": [
-        "security/ir.model.access.csv",
+        "security/ir.access.csv",
         "security/res_groups.xml",
         "data/ir_cron.xml",
         "report/report_sale_document.xml",
@@ -33,5 +34,6 @@
     "images": ["static/description/icon.png"],
     "application": True,
     "pre_init_hook": "pre_init_hook",
-    "installable": False,
+    "installable": True,
+    "binaural_migrated": True,
 }
