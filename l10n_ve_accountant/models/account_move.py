@@ -1351,9 +1351,23 @@ class AccountMove(models.Model):
 
         total_currency = abs(move.amount_total)
         rate_date = move.invoice_date or move.date or fields.Date.context_today(move)
+        if move.currency_id == move.company_id.currency_foreign_id:
+            # `move.currency_id` is the company's foreign currency here, so
+            # this conversion runs foreign -> company. `ResCurrencyRate.
+            # compute_rate` stores that direction's multiplier in
+            # `foreign_rate`, not `foreign_inverse_rate` (the two are only
+            # interchangeable when the foreign currency isn't USD, where
+            # both end up equal to `company_rate`). Using
+            # `foreign_inverse_rate` here converted e.g. a 1845.46 USD
+            # total into ~2 Bs instead of ~1,651,479 Bs, dumping the whole
+            # invoice as a bogus "rounding gap" onto whichever non-PT line
+            # ended up smallest.
+            custom_rate = move.foreign_rate or 0.0
+        else:
+            custom_rate = move.foreign_inverse_rate or 0.0
         expected_total = cc.round(move.currency_id._convert(
             total_currency, cc, move.company_id, rate_date,
-            custom_rate=move.foreign_inverse_rate or 0.0,
+            custom_rate=custom_rate,
         ))
         sign = -1 if move.amount_total_signed > 0 else 1
         expected_total *= sign
@@ -1415,6 +1429,22 @@ class AccountMove(models.Model):
 
 
     @api.model
+    def _max_safe_units(self, cur_bal, sign, currency):
+        """Units of `sign` direction that `cur_bal` can absorb without its
+        balance crossing zero.
+
+        Growing further from zero (same sign, or starting at zero) is
+        always safe -- returns ``None`` for "no cap". Shrinking towards
+        zero is capped at exactly reaching it: going past would flip the
+        line's balance sign relative to its (untouched) amount_currency,
+        tripping `account_move_line_check_amount_currency_balance_sign`
+        for any line whose currency differs from the company's.
+        """
+        if cur_bal == 0 or (cur_bal > 0) == (sign > 0):
+            return None
+        return int(abs(cur_bal) / currency.rounding + 1e-6)
+
+    @api.model
     def _distribute_to_lines(self, lines, amount, currency):
         if currency.is_zero(amount) or not lines:
             return
@@ -1431,23 +1461,55 @@ class AccountMove(models.Model):
         remaining_units = round(abs_amount / currency.rounding)
         n = len(sorted_ids)
 
+        units_map = {}
         for i, line_id in enumerate(sorted_ids):
-            if remaining_units <= 0:
-                break
             cur_bal = bal_map[line_id]
+            if remaining_units <= 0:
+                units_map[line_id] = 0
+                continue
             if i < n - 1:
                 ratio = abs(cur_bal) / total_abs
                 share = currency.round(ratio * abs_amount)
                 units = round(share / currency.rounding)
-                if units > remaining_units:
-                    units = remaining_units
+                units = min(units, remaining_units)
             else:
                 units = remaining_units
-            new_balance = currency.round(cur_bal + sign * units * currency.rounding)
-            lines.browse(line_id).balance = new_balance
+            safe_cap = self._max_safe_units(cur_bal, sign, currency)
+            if safe_cap is not None:
+                units = min(units, safe_cap)
+            units_map[line_id] = units
             remaining_units -= units
 
-    
+        # Lines capped above to avoid flipping their sign leave a leftover:
+        # hand it to whichever line still has safe room, largest balance
+        # first. A rounding/real-portion gap is never worth crossing a
+        # line's balance through zero to close.
+        if remaining_units > 0:
+            for line_id in sorted_ids:
+                if remaining_units <= 0:
+                    break
+                cur_bal = bal_map[line_id]
+                safe_cap = self._max_safe_units(cur_bal, sign, currency)
+                room = remaining_units if safe_cap is None else max(0, safe_cap - units_map[line_id])
+                extra = min(remaining_units, room)
+                if extra:
+                    units_map[line_id] += extra
+                    remaining_units -= extra
+
+        if remaining_units > 0:
+            _logger.warning(
+                "Real portion: %s %s of %s %s could not be distributed "
+                "across %s without flipping a line's sign; left unassigned.",
+                remaining_units, currency.rounding, abs_amount, currency.name, lines.ids,
+            )
+
+        for line_id, units in units_map.items():
+            if not units:
+                continue
+            new_balance = currency.round(bal_map[line_id] + sign * units * currency.rounding)
+            lines.browse(line_id).balance = new_balance
+
+
     def _reverse_moves(self, default_values_list=None, cancel=False):
         """
         Reverse moves and swap foreign adjustment fields by matching line indices
