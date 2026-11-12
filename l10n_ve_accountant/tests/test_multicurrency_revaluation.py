@@ -8,11 +8,17 @@ alterno (los bolívares del ajuste convertidos a dólares), de modo que los repo
 en USD mostraban cuentas por cobrar y ganancias en dólares que no existen.
 """
 
+import json
 from datetime import date
 
-from odoo.tests import TransactionCase, tagged
+from odoo.tests import TransactionCase, freeze_time, tagged
 
 
+# `create_entries` crea la reversión con la fecha de hoy antes de asignarle la de
+# reversión, y busca la tasa exacta de ese día: se congela el "hoy" para que las
+# pruebas no dependan de la fecha en que se corren. Mediodía para que la zona
+# horaria del usuario no mueva `context_today` al día anterior.
+@freeze_time("2026-11-09 12:00:00")
 @tagged("post_install", "-at_install", "l10n_ve_accountant_multicurrency_revaluation")
 class TestMulticurrencyRevaluation(TransactionCase):
     def setUp(self):
@@ -31,15 +37,16 @@ class TestMulticurrencyRevaluation(TransactionCase):
             }
         )
 
-        # Factura del 5-oct a 300 Bs/USD; cierre del 31-oct a 330; reversión del
-        # 15-nov a 360 y pago del 5-nov a 345 (tasas distintas a propósito).
+        # Factura del 5-oct a 300 Bs/USD; cierre del 31-oct a 330; pago del 5-nov a
+        # 345; reversión del 15-nov a 360 (tasas distintas a propósito). El 9-nov es
+        # el "hoy" congelado: la reversión nace con esa fecha antes de moverse.
         for day, vef_per_usd in (
             ("2026-10-05", 300.0),
             ("2026-10-31", 330.0),
             ("2026-11-01", 340.0),
             ("2026-11-05", 345.0),
-            ("2026-11-15", 360.0),
             ("2026-11-09", 345.0),
+            ("2026-11-15", 360.0),
         ):
             self.env["res.currency.rate"].create(
                 {
@@ -215,14 +222,16 @@ class TestMulticurrencyRevaluation(TransactionCase):
         for line in reversal.line_ids:
             self.assertEqual(line.foreign_debit, 0.0)
             self.assertEqual(line.foreign_credit, 0.0)
-        # En bolívares sí se anulan exactamente.
-        self.assertAlmostEqual(sum(move.line_ids.mapped("balance")) + sum(reversal.line_ids.mapped("balance")), 0.0, places=2)
+        # En bolívares sí se anulan exactamente, también la cuenta por cobrar.
         self.assertAlmostEqual(
-            sum(move.line_ids.filtered(lambda l: l.account_id.account_type == "asset_receivable").mapped("balance"))
-            + sum(reversal.line_ids.filtered(lambda l: l.account_id.account_type == "asset_receivable").mapped("balance")),
+            sum(move.line_ids.mapped("balance")) + sum(reversal.line_ids.mapped("balance")),
             0.0,
             places=2,
         )
+        receivable = (move | reversal).line_ids.filtered(
+            lambda l: l.account_id.account_type == "asset_receivable"
+        )
+        self.assertAlmostEqual(sum(receivable.mapped("balance")), 0.0, places=2)
 
     def test_receivable_alternate_balance_does_not_change(self):
         """El saldo de la CxC en USD es 100 antes, durante y después del ajuste."""
@@ -314,5 +323,15 @@ class TestMulticurrencyRevaluation(TransactionCase):
         """La vista previa del cuadro "Crear asiento de ajuste" no se rompe."""
         self._post_usd_invoice()
         wizard = self._revaluation_wizard()
-        self.assertTrue(wizard.preview_data)
-        self.assertIn("3", wizard.preview_data)
+        preview = json.loads(wizard.preview_data)
+        self.assertEqual(
+            [col["field"] for col in preview["options"]["columns"]],
+            ["account_id", "name", "debit", "credit"],
+        )
+        self.assertTrue(preview["groups_vals"])
+        # Los 3.000 Bs del ajuste siguen saliendo en débito y crédito.
+        amounts = sorted(
+            (cmd[2]["debit"], cmd[2]["credit"])
+            for cmd in wizard._get_move_vals()["line_ids"]
+        )
+        self.assertEqual(amounts, [(0.0, 3000.0), (3000.0, 0.0)])

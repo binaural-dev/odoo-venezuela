@@ -6,23 +6,24 @@ class AccountMulticurrencyRevaluationWizard(models.TransientModel):
 
     @api.model
     def _get_move_vals(self):
-        """EXTENDS core: el asiento de ajuste de monedas no realizadas solo
-        mueve la moneda de la compañía (VEF).
+        """EXTENDS core: the unrealized currency adjustment entry only moves the
+        company currency (VEF).
 
-        El asistente nativo ajusta únicamente `debit`/`credit` y crea las
-        líneas con `amount_currency = 0`: en moneda alterna no hay diferencia
-        alguna (100 USD siguen siendo 100 USD, solo cambia lo que valen en
-        bolívares). Sin esta marca, `_get_foreign_value` descarta la rama de
-        "línea ya en moneda alterna" por ser `amount_currency` cero y, al no
-        ser factura, cae en `_get_non_invoice_foreign_value`, que convierte los
-        bolívares del ajuste a dólares con la tasa de la fecha y deja importes
-        alternos que no existen (cuentas por cobrar y por pagar y ganancia o
-        pérdida cambiaria en USD).
+        The native wizard adjusts only `debit`/`credit` and creates the lines
+        with `amount_currency = 0`: in the alternate currency there is no
+        difference at all (100 USD are still 100 USD, only their VEF value
+        changes). Without this flag, `_get_foreign_value` discards the
+        "line already in alternate currency" branch because `amount_currency`
+        is zero and, since the entry is not an invoice, falls back to
+        `_get_non_invoice_foreign_value`, which converts the VEF adjustment to
+        USD at the date rate and leaves alternate amounts that do not exist
+        (receivable, payable and exchange gain/loss in USD).
 
-        `not_foreign_recalculate` hace que `_skip_foreign_compute` y el cálculo
-        del asiento salten estas líneas, y `foreign_debit`/`foreign_credit` se
-        fijan en 0. La reversión que crea `create_entries` copia las líneas
-        (y esta marca), por lo que también queda en 0 en la moneda alterna.
+        `not_foreign_recalculate` makes `_skip_foreign_compute` and the
+        entry-level computation skip these lines, and `foreign_debit` /
+        `foreign_credit` are set to 0. The reversal created by `create_entries`
+        copies the lines (and this flag), so it also stays at 0 in the
+        alternate currency.
         """
         move_vals = super()._get_move_vals()
         for command in move_vals.get("line_ids", []):

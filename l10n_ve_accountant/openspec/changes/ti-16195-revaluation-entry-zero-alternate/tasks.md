@@ -16,7 +16,7 @@
 - [x] 2.1 Heredar `account.multicurrency.revaluation.wizard` y sobrescribir
       `_get_move_vals` con `not_foreign_recalculate` y alternos en 0
 - [x] 2.2 Registrar el archivo en `wizard/__init__.py`
-- [x] 2.3 Bump de manifest `19.0.1.0.42` → `19.0.1.0.43`
+- [x] 2.3 Bump de manifest `19.0.1.0.43` → `19.0.1.0.44` (la base ya estaba en `.43`)
 
 ## 3. Tests
 
@@ -24,4 +24,4 @@
       reversión en 0, saldo CxC alterno estable con reversión movida, pago
       intermedio, cuentas por pagar, asiento manual no afectado y vista previa
 - [x] 3.2 Comprobado en rojo sin el fix (6 de 7 fallan) y en verde con él
-- [x] 3.3 Suite completa de `l10n_ve_accountant`: 407 pruebas, 0 fallos
+- [x] 3.3 Suite completa de `l10n_ve_accountant`: 408 pruebas, 0 fallos
