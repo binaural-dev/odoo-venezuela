@@ -1,4 +1,5 @@
-from odoo import api, models, fields
+from odoo import _, api, fields, models
+from odoo.exceptions import ValidationError
 
 
 class ResPartner(models.Model):
@@ -100,29 +101,101 @@ class ResPartner(models.Model):
         # Only adds type_person_id to the dependencies of l10n_ve_tax_payer.
         super()._compute_is_foreign_partner()
 
+    allowed_type_person_ids = fields.Many2many(
+        "type.person",
+        compute="_compute_allowed_type_person_ids",
+        string="Allowed Type Persons",
+    )
+    is_non_resident_person = fields.Boolean(
+        compute="_compute_is_non_resident_person",
+        string="Is Non Resident Person",
+    )
+
+    def _get_allowed_type_persons(self):
+        """Ticket 86944: a person can only be PN Residente or PN No Residente;
+        every other type is a legal entity (PJ) and belongs to a company."""
+        self.ensure_one()
+        if self.is_company:
+            return self._get_type_persons_by_xmlid(
+                (
+                    "type_person_three_l10n_ve_payment_extension",
+                    "type_person_four_l10n_ve_payment_extension",
+                    "type_person_five_l10n_ve_payment_extension",
+                    "type_person_six_l10n_ve_payment_extension",
+                    "type_person_seven_l10n_ve_payment_extension",
+                )
+            )
+        return self._get_type_persons_by_xmlid(
+            (
+                "type_person_l10n_ve_payment_extension",
+                "type_person_two_l10n_ve_payment_extension",
+            )
+        )
+
+    @api.depends("is_company")
+    def _compute_allowed_type_person_ids(self):
+        for partner in self:
+            partner.allowed_type_person_ids = partner._get_allowed_type_persons()
+
+    @api.depends("type_person_id")
+    def _compute_is_non_resident_person(self):
+        non_resident_persons = self._get_non_resident_type_persons()
+        for partner in self:
+            partner.is_non_resident_person = bool(
+                partner.type_person_id
+                and partner.type_person_id in non_resident_persons
+                and not partner._is_company_partner()
+            )
+
+    @api.onchange("is_company")
+    def _onchange_is_company_type_person(self):
+        for partner in self:
+            if (
+                partner.type_person_id
+                and partner.type_person_id not in partner._get_allowed_type_persons()
+            ):
+                partner.type_person_id = False
+
+    @api.onchange("type_person_id")
+    def _onchange_type_person_taxpayer_withholding(self):
+        """Ticket 86944: a non resident partner has neither taxpayer type nor
+        withholding type."""
+        for partner in self:
+            if partner._is_company_partner():
+                continue
+            if partner.is_non_resident_person:
+                partner.taxpayer_type = "ordinary"
+                partner.withholding_type_id = False
+            elif partner.taxpayer_type == "special" and not partner.withholding_type_id:
+                partner.withholding_type_id = self.env.ref(
+                    "l10n_ve_payment_extension.account_withholding_type_75",
+                    raise_if_not_found=False,
+                )
+
     @api.onchange("taxpayer_type")
     def _onchange_taxpayer_type_withholding_type(self):
-        """Keeps the withholding type coherent with the taxpayer type (ticket 16339):
-
-        - A special taxpayer gets the 75% withholding type by default.
-        - Any other taxpayer type has no withholding type.
-        The withholding type is only handled for partners that are not suppliers:
-        the IVA retentions of a supplier read it whatever its taxpayer type is, so
-        it is neither defaulted nor cleared for them.
-        The partner of a company is left as it is: its withholding type comes from
-        the company configuration.
-        """
+        """A special taxpayer gets the 75% withholding type by default and any
+        other taxpayer type has none (ticket 16339). The partner of a company is
+        left as it is: its withholding type comes from the company
+        configuration."""
         withholding_75 = self.env.ref(
             "l10n_ve_payment_extension.account_withholding_type_75",
             raise_if_not_found=False,
         )
         for partner in self:
-            if partner._is_company_partner():
-                continue
-            if partner.supplier_rank > 0:
+            if partner._is_company_partner() or partner.is_non_resident_person:
                 continue
             if partner.taxpayer_type == "special":
-                if not partner.withholding_type_id and withholding_75:
-                    partner.withholding_type_id = withholding_75
+                partner.withholding_type_id = withholding_75
             else:
                 partner.withholding_type_id = False
+
+    @api.constrains("type_person_id", "taxpayer_type")
+    def _check_non_resident_taxpayer_type(self):
+        # Only the special taxpayer type is rejected: existing flows (IVA
+        # retentions) still read the withholding type of non resident partners.
+        for partner in self:
+            if partner.is_non_resident_person and partner.taxpayer_type == "special":
+                raise ValidationError(
+                    _("A non resident partner cannot be a special taxpayer.")
+                )

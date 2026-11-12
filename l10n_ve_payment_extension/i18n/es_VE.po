@@ -3906,3 +3906,9 @@ msgstr ""
 "municipal de esta sucursal usan el correlativo de la empresa matriz en lugar "
 "de una secuencia independiente. Solo aplica si la sucursal comparte el RIF "
 "de la empresa matriz."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/res_partner.py:0
+msgid "A non resident partner cannot be a special taxpayer."
+msgstr "Un contacto no residente no puede ser contribuyente especial."
