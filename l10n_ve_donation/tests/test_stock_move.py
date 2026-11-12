@@ -1,4 +1,5 @@
 from odoo import Command
+from odoo.exceptions import UserError
 from odoo.tests import tagged
 
 from .common import TestDonationCommon
@@ -193,3 +194,17 @@ class TestStockMove(TestDonationCommon):
         delivery_of_sale = self._create_donation_picking()
         delivery_of_sale.sale_id = order
         self.assertFalse(delivery_of_sale.move_ids._is_donation_delivery_move())
+
+    def test_10_valuation_entry_has_no_donation_certificate(self):
+        """The valuation entry of a donation delivery is marked as donation
+        but its certificate is the delivery certificate of the picking: the
+        entry certificate is refused and points to the picking."""
+        picking = self._create_donation_picking(reason="Medication", validate=True)
+        entry = self._entry(picking)
+        self.assertTrue(entry.is_donation)
+        self.assertTrue(entry.is_stock_valuation_entry)
+        with self.assertRaises(UserError) as error:
+            entry.print_donation_certificate()
+        self.assertIn(picking.name, error.exception.args[0])
+        # The picking does have its own certificate.
+        self.assertIsInstance(picking.print_donation_certificate(), dict)

@@ -1,12 +1,23 @@
 from odoo import models, fields, api, _, Command
 from odoo.exceptions import UserError, ValidationError
 
+# Names of the bolivar currency (the current VES and the former VEF).
+BOLIVAR_CURRENCY_NAMES = ("VES", "VEF")
+
+
 class AccountMove(models.Model):
     _inherit = "account.move"
 
     is_donation = fields.Boolean(string="Is Donation", tracking=True)
 
     can_reverse_donation_move = fields.Boolean(compute="_compute_can_reverse_donation_move")
+
+    is_stock_valuation_entry = fields.Boolean(compute="_compute_is_stock_valuation_entry")
+
+    @api.depends("stock_move_ids")
+    def _compute_is_stock_valuation_entry(self):
+        for move in self:
+            move.is_stock_valuation_entry = bool(move.stock_move_ids)
 
     def _compute_can_reverse_donation_move(self):
         for move in self:
@@ -53,8 +64,77 @@ class AccountMove(models.Model):
                     )
 
     def print_donation_certificate(self):
+        """The certificate of the journal entry is the one of a money
+        donation. The valuation entry of a donation delivery has no
+        certificate of its own: the delivery certificate of its picking
+        lists the products and their cost."""
         self.ensure_one()
+        if self.is_stock_valuation_entry:
+            pickings = self.stock_move_ids.picking_id
+            raise UserError(_(
+                "This entry is the stock valuation of a donation delivery and has no donation "
+                "certificate. Print the Delivery Certificate from the donation picking: %(pickings)s.",
+                pickings=", ".join(pickings.mapped("name")) or "-",
+            ))
         return self.env.ref("l10n_ve_donation.action_donation_certificate_account_move").report_action(self)
+
+    def _get_donation_certificate_amounts(self):
+        """Amounts of the donation for the certificate: the total debit and
+        the alternate amount of the entry, at the rates stored in it (the
+        rates of its date), so that a reprint always gives the same
+        numbers. See `_compute_donation_amounts`."""
+        self.ensure_one()
+        return self._compute_donation_amounts(
+            self.company_id.currency_id,
+            self.foreign_currency_id,
+            sum(self.line_ids.mapped("debit")),
+            self.foreign_debit,
+            self.foreign_rate,
+            self.foreign_inverse_rate,
+        )
+
+    @api.model
+    def _compute_donation_amounts(
+        self, company_currency, foreign_currency, company_amount, foreign_amount,
+        foreign_rate, foreign_inverse_rate,
+    ):
+        """The amount of a donation document, the bolivar first, and its
+        equivalent in the other currency with the rate (bolivars per unit of
+        the other currency).
+
+        `l10n_ve_rate` stores, for the alternate currency of the entry, the
+        inverse of the company rate in `foreign_rate` and the company rate
+        in `foreign_inverse_rate`. So the bolivars per unit of the other
+        currency are `foreign_rate` when the company currency is the
+        bolivar (alternate currency USD) and `foreign_inverse_rate` when the
+        alternate currency is the bolivar (company currency USD, as in
+        Higea). Returns `currency`, `amount`, `equivalent_currency`,
+        `equivalent_amount` and `rate`; the equivalent is `False` when the
+        entry has no alternate amount or rate."""
+        result = {
+            "currency": company_currency,
+            "amount": company_amount,
+            "equivalent_currency": False,
+            "equivalent_amount": 0.0,
+            "rate": 0.0,
+        }
+        if not (foreign_currency and foreign_currency != company_currency and foreign_amount):
+            return result
+        if (
+            foreign_currency.name in BOLIVAR_CURRENCY_NAMES
+            and company_currency.name not in BOLIVAR_CURRENCY_NAMES
+        ):
+            result.update(currency=foreign_currency, amount=foreign_amount)
+            equivalent_currency, equivalent_amount, rate = company_currency, company_amount, foreign_inverse_rate
+        else:
+            equivalent_currency, equivalent_amount, rate = foreign_currency, foreign_amount, foreign_rate
+        if rate:
+            result.update(
+                equivalent_currency=equivalent_currency,
+                equivalent_amount=equivalent_amount,
+                rate=rate,
+            )
+        return result
 
     def action_post(self):
         # Only the invoices that are posted by this call get a credit note:

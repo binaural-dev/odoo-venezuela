@@ -20,10 +20,11 @@
                     string="Generar Certificado de Donación"
                     type="object"
                     class="btn-primary"
-                    invisible="not is_donation or (state != 'posted' or move_type != 'entry')"/>
+                    invisible="not is_donation or (state != 'posted' or move_type != 'entry') or is_stock_valuation_entry"/>
             </xpath>
             <xpath expr="//field[@name='ref']" position="after">
                 <field name="can_reverse_donation_move" invisible="1"/>
+                <field name="is_stock_valuation_entry" invisible="1"/>
                 <field name="is_donation" readonly="state != 'draft' or move_type != 'entry'"/>
             </xpath>
         </field>

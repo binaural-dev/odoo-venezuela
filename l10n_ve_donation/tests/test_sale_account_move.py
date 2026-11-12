@@ -710,3 +710,101 @@ class TestSaleAccountMove(TestDonationCommon):
         invoice_form = Form(self.env["account.move"].with_context(default_move_type="out_invoice"))
         with self.assertRaises(AssertionError):
             invoice_form.is_donation = True
+
+    def _render_certificate(self, move):
+        report = self.env.ref("l10n_ve_donation.action_donation_certificate_account_move")
+        html, _report_type = report._render_qweb_html(report.report_name, move.ids)
+        return html.decode()
+
+    def test_22_certificate_of_a_money_entry_states_the_sum(self):
+        """The certificate of a manual entry is the one of a money
+        donation: it states the numeric sum, its equivalent in
+        the alternate currency at the rate of the entry, and the concept;
+        it does not talk about goods."""
+        move = self.env["account.move"].create(self._entry_vals(ref="Aporte para el comedor"))
+        move.with_context(move_action_post_alert=True).action_post()
+        self.assertEqual(move.state, "posted")
+
+        amounts = move._get_donation_certificate_amounts()
+        self.assertEqual(amounts["currency"], self.company.currency_id)
+        self.assertEqual(amounts["amount"], 100.0)
+        self.assertEqual(amounts["equivalent_currency"], self.company.foreign_currency_id)
+        self.assertEqual(amounts["equivalent_amount"], move.foreign_debit)
+        self.assertEqual(amounts["rate"], move.foreign_rate)
+
+        html = self._render_certificate(move)
+        self.assertIn("la suma de", html)
+        # The sum is numeric (no amount in words) and the rate shows 4 decimals.
+        self.assertNotIn(amounts["currency"].amount_to_text(amounts["amount"]), html)
+        rate_html = self.env["ir.qweb.field.float"].value_to_html(amounts["rate"], {"precision": 4})
+        self.assertIn(rate_html, html)
+        self.assertNotIn(self.env["ir.qweb.field.float"].value_to_html(amounts["rate"], {"precision": 6}), html)
+        self.assertIn("equivalente a", html)
+        self.assertIn("tasa BCV", html)
+        self.assertIn("Aporte para el comedor", html)
+        self.assertNotIn("bienes", html)
+
+    def test_23_certificate_without_alternate_amount_omits_the_equivalent(self):
+        move = self.env["account.move"].create(self._entry_vals())
+        move.foreign_currency_id = self.company.currency_id
+        move.with_context(move_action_post_alert=True).action_post()
+        amounts = move._get_donation_certificate_amounts()
+        self.assertFalse(amounts["equivalent_currency"])
+        self.assertEqual(amounts["equivalent_amount"], 0.0)
+
+        html = self._render_certificate(move)
+        self.assertIn("la suma de", html)
+        self.assertNotIn("equivalente a", html)
+        self.assertNotIn("tasa BCV", html)
+
+    def test_23b_amounts_with_the_bolivar_as_company_currency(self):
+        """Company in bolivars, alternate currency USD: the bolivar amount
+        comes first and the rate is `foreign_rate` (bolivars per USD)."""
+        vef = self.company.currency_id
+        usd = self.env.ref("base.USD")
+        amounts = self.env["account.move"]._compute_donation_amounts(
+            vef, usd, 38000.0, 84.44, 450.0, 0.0022222
+        )
+        self.assertEqual(amounts["currency"], vef)
+        self.assertEqual(amounts["amount"], 38000.0)
+        self.assertEqual(amounts["equivalent_currency"], usd)
+        self.assertEqual(amounts["equivalent_amount"], 84.44)
+        self.assertEqual(amounts["rate"], 450.0)
+
+    def test_23c_amounts_with_the_bolivar_as_alternate_currency(self):
+        """Company in USD, alternate currency the bolivar (Higea): the
+        bolivar amount still comes first and the rate is the company rate
+        (`foreign_inverse_rate`: bolivars per USD), not the inverse one."""
+        vef = self.company.currency_id
+        usd = self.env.ref("base.USD")
+        amounts = self.env["account.move"]._compute_donation_amounts(
+            usd, vef, 84.44, 38000.0, 0.0022222, 450.0
+        )
+        self.assertEqual(amounts["currency"], vef)
+        self.assertEqual(amounts["amount"], 38000.0)
+        self.assertEqual(amounts["equivalent_currency"], usd)
+        self.assertEqual(amounts["equivalent_amount"], 84.44)
+        self.assertEqual(amounts["rate"], 450.0)
+
+    def test_23d_amounts_without_alternate_amount_or_rate(self):
+        vef = self.company.currency_id
+        usd = self.env.ref("base.USD")
+        Move = self.env["account.move"]
+        for args in (
+            (vef, False, 100.0, 0.0, 0.0, 0.0),
+            (vef, vef, 100.0, 100.0, 1.0, 1.0),
+            (vef, usd, 100.0, 0.0, 450.0, 0.0022),
+            (vef, usd, 100.0, 0.22, 0.0, 0.0),
+            (usd, vef, 0.22, 100.0, 0.0, 0.0),
+        ):
+            with self.subTest(args=args):
+                amounts = Move._compute_donation_amounts(*args)
+                self.assertFalse(amounts["equivalent_currency"])
+                self.assertEqual(amounts["rate"], 0.0)
+
+    def test_24_manual_entry_is_not_a_stock_valuation_entry(self):
+        move = self.env["account.move"].create(self._entry_vals())
+        move.with_context(move_action_post_alert=True).action_post()
+        self.assertFalse(move.is_stock_valuation_entry)
+        action = move.print_donation_certificate()
+        self.assertIsInstance(action, dict)
