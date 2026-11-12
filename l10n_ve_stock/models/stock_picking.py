@@ -55,7 +55,7 @@ class StockPicking(models.Model):
                 raise UserError(_("does not have results from other pickings"))
             picking_id = pickings[0]
         action["context"] = dict(
-            self._context,
+            self.env.context,
             default_partner_id=self.partner_id.id,
             default_picking_type_id=picking_id.picking_type_id.id,
             default_origin=self.name,

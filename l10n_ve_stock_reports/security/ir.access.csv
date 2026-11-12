@@ -1,0 +1,2 @@
+id,name,model_id,group_id/id,operation,domain
+access_l10n_ve_stock_report,wizard_stock_book_report,wizard.stock.book.report,base.group_everyone,crud,

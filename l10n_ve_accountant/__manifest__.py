@@ -25,7 +25,6 @@
     "data": [
         "security/res_groups.xml",
         "security/ir.model.access.csv",
-        "security/ir_rule.xml",
         "data/account_data.xml",
         "data/ir_actions_server.xml",
         "data/paperformats.xml",
@@ -53,6 +52,7 @@
         "wizard/invoices_details.xml",
         "wizard/payment_report.xml",
         "wizard/move_action_post_alert_views.xml",
+        'security/ir.access.csv',
     ],
     "images": ["static/description/icon.png"],
     "assets": {

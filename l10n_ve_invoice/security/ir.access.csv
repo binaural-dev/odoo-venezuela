@@ -1,0 +1,5 @@
+id,name,model_id,group_id/id,operation,domain
+access_wizard_accounting_reports,binaural_wizard_accounting_reports,wizard.accounting.reports,base.group_user,crud,
+wizard_accounting_reports_restricted_multi_company,Wizard Accounting Reports multi-company,wizard.accounting.reports,,crud,"
+            ['|',('company_id','=',False),('company_id', 'in', company_ids)]
+        "

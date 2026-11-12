@@ -25,13 +25,13 @@
                 <field name="picks_count" invisible="1"/>
                 <field name="packs_count" invisible="1"/>
                 <field name="outs_count" invisible="1"/>
-                <button type="object" name="action_get_picks" class="oe_stat_button" icon="fa-cubes" groups="stock.group_stock_user" invisible="picks_count &lt; 1">
+                <button type="object" name="action_get_picks" class="oe_stat_button" icon="inventory_2" groups="stock.group_stock_user" invisible="picks_count &lt; 1">
                     <field name="picks_count" widget="statinfo" string="PICKS"/>
                 </button>
-                <button type="object" name="action_get_packs" class="oe_stat_button" icon="fa-cube" groups="stock.group_stock_user" invisible="packs_count &lt; 1">
+                <button type="object" name="action_get_packs" class="oe_stat_button" icon="deployed_code" groups="stock.group_stock_user" invisible="packs_count &lt; 1">
                     <field name="packs_count" widget="statinfo" string="PACKS"/>
                 </button>
-                <button type="object" name="action_get_outs" class="oe_stat_button" icon="fa-truck" groups="stock.group_stock_user" invisible="outs_count &lt; 1">
+                <button type="object" name="action_get_outs" class="oe_stat_button" icon="local_shipping" groups="stock.group_stock_user" invisible="outs_count &lt; 1">
                     <field name="outs_count" widget="statinfo" string="OUTS"/>
                 </button>
             </xpath>

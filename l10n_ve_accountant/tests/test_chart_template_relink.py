@@ -85,7 +85,7 @@ class TestChartTemplateRelink(TransactionCase):
         self.env.cr.execute("UPDATE ir_model_data SET res_id = 999999999 WHERE id = %s", [imd.id])
         imd.invalidate_recordset()
         self.env["ir.model.data"].invalidate_model()
-        self.env.registry.clear_cache()  # el ormcache de _xmlid_lookup ocultaría el huérfano
+        self.env.transaction.invalidate_ormcache()  # el ormcache de _xmlid_lookup ocultaría el huérfano
         accounts = self._account_count()
         self._create_branch()
         self.assertEqual(self._account_count(), accounts)
@@ -145,7 +145,7 @@ class TestChartTemplateRelink(TransactionCase):
         self.env.cr.execute("UPDATE ir_model_data SET res_id = 999999999 WHERE id = %s", [imd.id])
         imd.invalidate_recordset()
         self.env["ir.model.data"].invalidate_model()
-        self.env.registry.clear_cache()
+        self.env.transaction.invalidate_ormcache()
         with self.assertLogs(LOGGER, level="WARNING") as logs, self.assertRaises(ValueError):
             self._create_branch()
         self.assertTrue(any(self.recv_xmlid in line for line in logs.output))

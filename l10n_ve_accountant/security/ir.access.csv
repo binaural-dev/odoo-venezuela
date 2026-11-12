@@ -1,0 +1,8 @@
+id,name,model_id,group_id/id,operation,domain
+access_account_invoices_details,access_account_invoices_details,account.invoices.details,base.group_everyone,crud,
+access_payment_report,access_payment_report,payment.report,base.group_everyone,crud,
+access_ut_fiscal_user,access_ut_fiscal_user,tax.unit,l10n_ve_accountant.group_fiscal_config_user,cr,
+access_ut_fiscal_user_support,access_ut_fiscal_user_support,tax.unit,l10n_ve_accountant.group_fiscal_config_support,cru,
+tax_support_no_archive_rule,Impuestos: No archivar para Soporte Fiscal,account.tax,l10n_ve_accountant.group_fiscal_config_support,cru,"[('active', '=', True)]"
+access_sequence_fiscal_user_support,access_sequence_fiscal_user_support,ir.sequence,l10n_ve_accountant.group_fiscal_config_support,cru,
+access_move_action_post_alert_wizard,access_move_action_post_alert_wizard,move.action.post.alert.wizard,base.group_user,crud,

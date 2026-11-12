@@ -1,0 +1,10 @@
+id,name,model_id,group_id/id,operation,domain
+account_retention_alert_wizard_access,account_retention_alert_wizard,account.retention.alert.wizard,base.group_user,crud,
+access_tfhka_annul_wizard_user,tfhka.annul.wizard,tfhka.annul.wizard,base.group_user,crud,
+access_payment_method_tfhka_user,access.payment.method.tfhka.user,payment.method.tfhka,base.group_user,r,
+access_payment_method_tfhka_admin,access.payment.method.tfhka.admin,payment.method.tfhka,l10n_ve_invoice_digital.group_l10n_ve_invoice_digital_admin,crud,
+access_tfhka_api_log_admin,tfhka.api.log.admin,tfhka.api.log,l10n_ve_invoice_digital.group_l10n_ve_invoice_digital_admin,r,
+access_tfhka_api_log_system,tfhka.api.log.system,tfhka.api.log,base.group_system,crud,
+tfhka_api_log_multi_company,TFHKA API Log multi-company,tfhka.api.log,,crud,"
+            ['|',('company_id','=',False),('company_id', 'in', company_ids)]
+        "

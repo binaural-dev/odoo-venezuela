@@ -8,12 +8,12 @@
                 <button 
                     class="btn btn-primary fiscal-report-btn"
                     t-on-click="printReportX">
-                    <i class="fa fa-file-text-o"/> Reporte X
+                    <i class="oi" data-icon="article"/> Reporte X
                 </button>
                 <button 
                     class="btn btn-danger fiscal-report-btn"
                     t-on-click="printReportZ">
-                    <i class="fa fa-file-text"/> Reporte Z (Cierre)
+                    <i class="oi oi-filled" data-icon="article"/> Reporte Z (Cierre)
                 </button>
             </div>
         </div>

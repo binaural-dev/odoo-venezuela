@@ -46,18 +46,14 @@ class AccountMove(models.Model):
         self.ensure_one()
         return self.invoice_date_display or self.date
 
-    _sql_constraints = [
-        (
-            "unique_name",
-            "",
-            "Another entry with the same name already exists.",
-        ),
-        (
-            "unique_name_ve",
-            "",
-            "Another entry with the same name already exists.",
-        ),
-    ]
+    _unique_name = models.Constraint(
+        '',
+        "Another entry with the same name already exists.",
+    )
+    _unique_name_ve = models.Constraint(
+        '',
+        "Another entry with the same name already exists.",
+    )
 
     company_currency_rate = fields.Float(
         string="Tasa de moneda de la compañía",
@@ -325,18 +321,14 @@ class AccountMove(models.Model):
         store=True,
     )
 
-    _sql_constraints = [
-        (
-            "unique_name",
-            "",
-            "Another entry with the same name already exists.",
-        ),
-        (
-            "unique_name_ve",
-            "",
-            "Another entry with the same name already exists.",
-        ),
-    ]
+    _unique_name = models.Constraint(
+        '',
+        "Another entry with the same name already exists.",
+    )
+    _unique_name_ve = models.Constraint(
+        '',
+        "Another entry with the same name already exists.",
+    )
 
     detailed_amounts = fields.Binary(compute="_compute_detailed_amounts")
 
@@ -2494,5 +2486,5 @@ class AccountMove(models.Model):
     @api.ondelete(at_uninstall=False)
     def _unlink_except_posted_or_was_posted(self):
         for move in self:
-            if move.posted_before and not self._context.get('force_delete'):
+            if move.posted_before and not self.env.context.get('force_delete'):
                 raise UserError(_("You cannot delete a journal item that is posted, cancelled, or has been previously posted."))
