@@ -53,7 +53,7 @@ class TestAlterLocationMoves(TransactionCase):
                         {
                             "product_id": product.id,
                             "product_uom_qty": qty,
-                            "product_uom": product.uom_id.id,
+                            "uom_id": product.uom_id.id,
                             "location_id": source.id,
                             "location_dest_id": destination.id,
                         },
@@ -100,7 +100,7 @@ class TestAlterLocationMoves(TransactionCase):
                 {
                     "product_id": product.id,
                     "product_uom_qty": 1.0,
-                    "product_uom": product.uom_id.id,
+                    "uom_id": product.uom_id.id,
                     "location_id": source.id,
                     "location_dest_id": destination.id,
                 }
@@ -121,7 +121,7 @@ class TestAlterLocationMoves(TransactionCase):
             {
                 "product_id": self.product.id,
                 "product_uom_qty": 1.0,
-                "product_uom": self.product.uom_id.id,
+                "uom_id": self.product.uom_id.id,
                 "location_id": self.supplier_location.id,
                 "location_dest_id": self.shelf.id,
             }
@@ -167,7 +167,7 @@ class TestAlterLocationMoves(TransactionCase):
                         {
                             "product_id": self.product.id,
                             "product_uom_qty": 2.0,
-                            "product_uom": self.product.uom_id.id,
+                            "uom_id": self.product.uom_id.id,
                             "location_id": self.supplier_location.id,
                             "location_dest_id": self.stock_location.id,
                         },

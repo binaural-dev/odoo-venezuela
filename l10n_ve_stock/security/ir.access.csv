@@ -8,3 +8,5 @@ access_stock_picking_alter_location_line_edit,access.stock.picking.alter.locatio
 stock_picking_alter_location_line_company_rule,Stock Picking Alter Location Line: Multi-Company,stock.picking.alter.location.line,,crud,"['|', ('company_id', 'in', company_ids), ('company_id', '=', False)]"
 access_move_alter_location_qtities_wizard,access.move.alter.location.qtities.wizard,move.alter.location.qtities.wizard,base.group_user,crud,
 product_category_multi_company_rule,Product Category: Multi-Company,product.category,,crud," ['|', ('company_id', 'in', company_ids), ('company_id', '=', False)]"
+stock.access_stock_picking_user,stock.picking user,stock.picking,stock.group_stock_user,cru,
+access_stock_inventory_valuation_wizard,access.stock.inventory.valuation.wizard,stock.inventory.valuation.wizard,stock.group_stock_user,cru,
