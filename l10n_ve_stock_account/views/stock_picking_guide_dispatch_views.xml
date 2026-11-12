@@ -41,28 +41,28 @@
                 <button 
                     name="action_create_invoice" 
                     class="btn btn-link text-info" 
-                    icon="fa-file-text" 
+                    icon="article" icon_class="oi-filled" 
                     string="Create Invoice" 
                     type="object"
                     invisible="not show_create_invoice"/>
                 <button 
                     name="create_bill" 
                     class="btn btn-link text-info" 
-                    icon="fa-file-text" 
+                    icon="article" icon_class="oi-filled" 
                     string="Create Bill" 
                     type="object"
                     invisible="not show_create_bill"/>
                 <button 
                     name="create_customer_credit" 
                     class="btn btn-link text-info" 
-                    icon="fa-file-text" 
+                    icon="article" icon_class="oi-filled" 
                     string="Create Credit Note" 
                     type="object"
                     invisible="not show_create_customer_credit"/>
                 <button 
                     name="create_vendor_credit" 
                     class="btn btn-link text-info" 
-                    icon="fa-file-text" 
+                    icon="article" icon_class="oi-filled" 
                     string="Create Vendor Credit" 
                     type="object"
                     invisible="not show_create_vendor_credit"/>

@@ -6,7 +6,7 @@
             <header class="fiscal-debugger-header">
                 <h2>🛠️ Fiscalizador - Debugger de Máquina Fiscal</h2>
                 <button class="btn btn-sm btn-secondary" t-on-click="close">
-                    <i class="fa fa-times"/> Cerrar
+                    <i class="oi" data-icon="close"/> Cerrar
                 </button>
             </header>
 
@@ -46,10 +46,10 @@
                 <div t-if="state.activeTab === 'monitor'" class="tab-panel">
                     <div class="monitor-controls">
                         <button class="btn btn-sm btn-primary" t-on-click="clearLog">
-                            <i class="fa fa-trash"/> Limpiar Log
+                            <i class="oi oi-filled" data-icon="delete"/> Limpiar Log
                         </button>
                         <button class="btn btn-sm btn-success" t-on-click="exportLog">
-                            <i class="fa fa-download"/> Exportar Log
+                            <i class="oi" data-icon="download"/> Exportar Log
                         </button>
                         <label class="auto-scroll-toggle">
                             <input 
@@ -99,7 +99,7 @@
                 <div t-if="state.activeTab === 'status'" class="tab-panel">
                     <div class="status-controls">
                         <button class="btn btn-sm btn-primary" t-on-click="refreshStatus">
-                            <i class="fa fa-refresh"/> Refrescar Status
+                            <i class="oi" data-icon="refresh"/> Refrescar Status
                         </button>
                         <label class="auto-refresh-toggle">
                             <input 
@@ -170,7 +170,7 @@
                 <div t-if="state.activeTab === 's3'" class="tab-panel">
                     <div class="status-controls">
                         <button class="btn btn-sm btn-primary" t-on-click="refreshS3Data">
-                            <i class="fa fa-refresh"/> Leer S3
+                            <i class="oi" data-icon="refresh"/> Leer S3
                         </button>
                     </div>
 
@@ -252,19 +252,19 @@
                             <h5>⚡ Accesos Rápidos</h5>
                             <div class="quick-actions-buttons">
                                 <button class="btn btn-primary" t-on-click="testConnection">
-                                    <i class="fa fa-plug"/> Test Conexión
+                                    <i class="oi" data-icon="power"/> Test Conexión
                                 </button>
                                 <button class="btn btn-info" t-on-click="() => this.quickCommand('D')">
-                                    <i class="fa fa-file-text-o"/> Programación
+                                    <i class="oi" data-icon="article"/> Programación
                                 </button>
                                 <button class="btn btn-success" t-on-click="() => this.quickCommand('I0X')">
-                                    <i class="fa fa-bar-chart"/> Reporte X
+                                    <i class="oi" data-icon="bar_chart"/> Reporte X
                                 </button>
                                 <button class="btn btn-warning" t-on-click="() => this.quickCommand('I0Z')">
-                                    <i class="fa fa-calendar-check-o"/> Reporte Z
+                                    <i class="oi" data-icon="event_available"/> Reporte Z
                                 </button>
                                 <button class="btn btn-secondary" t-on-click="() => this.quickCommand('0')">
-                                    <i class="fa fa-inbox"/> Abrir Gaveta
+                                    <i class="oi" data-icon="inbox"/> Abrir Gaveta
                                 </button>
                             </div>
                         </div>
@@ -285,7 +285,7 @@
                                 t-model="state.rawCommand"
                                 placeholder="Ej: I0X"/>
                             <button class="btn btn-primary" t-on-click="sendRawCommand">
-                                <i class="fa fa-paper-plane"/> Enviar
+                                <i class="oi oi-filled" data-icon="send"/> Enviar
                             </button>
                         </div>
 
@@ -331,7 +331,7 @@
                             </div>
 
                             <button class="btn btn-warning" t-on-click="sendFlag">
-                                <i class="fa fa-flag"/> Enviar Flag
+                                <i class="oi oi-filled" data-icon="flag"/> Enviar Flag
                             </button>
                         </div>
 

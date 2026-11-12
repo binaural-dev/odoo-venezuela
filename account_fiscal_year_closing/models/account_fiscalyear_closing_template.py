@@ -1,5 +1,3 @@
-# Copyright 2016 Tecnativa - Antonio Espinosa
-# Copyright 2017 Tecnativa - Pedro M. Baeza
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
 from odoo import fields, models
@@ -15,6 +13,13 @@ class AccountFiscalyearClosingTemplate(models.Model):
         comodel_name="account.fiscalyear.closing.config.template",
         inverse_name="template_id",
         string="Moves configuration",
+    )
+    chart_template = fields.Selection(
+        string="Available for",
+        selection=lambda self: self.env[
+            "account.chart.template"
+        ]._select_chart_template(),
+        required=True,
     )
 
 
@@ -54,13 +59,10 @@ class AccountFiscalyearClosingConfigTemplate(models.Model):
         required=True,
     )
 
-    _sql_constraints = [
-        (
-            "code_uniq",
-            "unique(code, template_id)",
-            "Code must be unique per fiscal year closing!",
-        ),
-    ]
+    _code_uniq = models.Constraint(
+        "unique(code, template_id)",
+        "Code must be unique per fiscal year closing!",
+    )
 
 
 class AccountFiscalyearClosingMappingTemplate(models.Model):

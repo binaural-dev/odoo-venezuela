@@ -19,7 +19,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "19.0.1.2.22",
+    "version": "20.0.1.0.0",
 
     "depends": [
         "base",
@@ -30,7 +30,6 @@
     ],
     "data": [
         "security/res_groups.xml",
-        "security/ir.model.access.csv",
         "report/invoice_free_form.xml",
         "views/account_journal.xml",
         "views/account_account.xml",
@@ -40,6 +39,7 @@
         "views/res_config_settings.xml",
         "views/res_partner.xml",
         "wizard/move_action_cancel_advance_payment.xml",
+        'security/ir.access.csv',
         
     ],
     "images": ["static/description/icon.png"],
@@ -48,5 +48,6 @@
     },
     "application": True,
     "pre_init_hook": "pre_init_hook",
-     "installable": False,
+     "installable": True,
+     "binaural_migrated": True,
 }

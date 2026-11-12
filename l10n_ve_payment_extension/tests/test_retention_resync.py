@@ -61,8 +61,8 @@ class TestRetentionResync(RetentionTestCommon):
         return retention
 
     def _get_economic_activity(self):
-        country = self.env["res.country"].search([("code", "=", "TC83486")], limit=1) or \
-            self.env["res.country"].create({"name": "Test Country 83486", "code": "TC83486"})
+        country = self.env["res.country"].search([("code", "=", "QU")], limit=1) or \
+            self.env["res.country"].create({"name": "Test Country 83486", "code": "QU"})
         state = self.env["res.country.state"].search([("code", "=", "TS83486")], limit=1) or \
             self.env["res.country.state"].create(
                 {"name": "Test State 83486", "code": "TS83486", "country_id": country.id}
