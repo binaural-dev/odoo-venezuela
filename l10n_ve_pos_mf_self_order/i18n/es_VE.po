@@ -258,3 +258,161 @@ msgstr "Orden no encontrada para esta caja"
 #, python-format
 msgid "This order already has a fiscal number"
 msgstr "Esta orden ya tiene un número fiscal"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/overrides/self_order_fiscal.js:0
+msgid "Unknown error"
+msgstr "Error desconocido"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/overrides/self_order_fiscal.js:0
+msgid ""
+"The Z report was printed, but the S1 status could not be read to sync Odoo. "
+"Check the sales book manually."
+msgstr ""
+"El Reporte Z se imprimió, pero no se pudo leer el estado S1 para sincronizar "
+"Odoo. Verifica el libro de ventas manualmente."
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/overrides/self_order_fiscal.js:0
+msgid "No response from server"
+msgstr "Sin respuesta del servidor"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_debug_dialog_fiscal.js:0
+msgid "Confirm Z report"
+msgstr "Confirmar Reporte Z"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_debug_dialog_fiscal.js:0
+msgid ""
+"The Z report will close the current fiscal day. This action is irreversible."
+" Do you want to continue?"
+msgstr ""
+"El Reporte Z cerrará el día fiscal actual. Esta acción es irreversible. "
+"¿Deseas continuar?"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_debug_dialog_fiscal.js:0
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_debug_dialog_fiscal.xml:0
+msgid "Close session and print Z"
+msgstr "Cerrar sesión e imprimir Z"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_debug_dialog_fiscal.js:0
+msgid "%s order(s) without a fiscal invoice."
+msgstr "%s orden(es) sin factura fiscal."
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_debug_dialog_fiscal.js:0
+msgid "Cancelled."
+msgstr "Cancelado."
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_debug_dialog_fiscal.js:0
+msgid "Z report printed with a warning"
+msgstr "Reporte Z impreso con advertencia"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_debug_dialog_fiscal.js:0
+msgid "Error printing the Z report"
+msgstr "Error al imprimir el Reporte Z"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_debug_dialog_fiscal.js:0
+msgid ""
+"The Z report was printed, but Odoo could not be updated (reason: %s). The "
+"session was not closed. Check the sales book and close the session from the "
+"backend."
+msgstr ""
+"El Reporte Z se imprimió, pero no se pudo actualizar Odoo (motivo: %s). La "
+"sesión no se cerró. Verifica el libro de ventas y cierra la sesión desde el "
+"backend."
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_debug_dialog_fiscal.js:0
+msgid ""
+"The Z report was printed and synced, but the session could not be closed "
+"(reason: %s). Close it from the backend."
+msgstr ""
+"El Reporte Z se imprimió y sincronizó, pero la sesión no se pudo cerrar "
+"(motivo: %s). Ciérrala desde el backend."
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_debug_dialog_fiscal.js:0
+msgid "Session not closed"
+msgstr "Sesión no cerrada"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_debug_dialog_fiscal.js:0
+msgid "Z report printed and session closed."
+msgstr "Reporte Z impreso y sesión cerrada."
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_debug_dialog_fiscal.js:0
+msgid ""
+"There are %(count)s order(s) without a fiscal invoice in this session. "
+"Create their invoice or print them from Orders before closing:\n"
+"\n"
+"%(orders)s"
+msgstr ""
+"Hay %(count)s orden(es) sin factura fiscal en esta sesión. Crea su factura o "
+"imprímelas desde Órdenes antes de cerrar:\n"
+"\n"
+"%(orders)s"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_debug_dialog_fiscal.js:0
+msgid ""
+"%(orders)s\n"
+"... and %(more)s more"
+msgstr ""
+"%(orders)s\n"
+"... y %(more)s más"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_debug_dialog_fiscal.js:0
+msgid "The session cannot be closed"
+msgstr "No se puede cerrar la sesión"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-python
+#: code:addons/l10n_ve_pos_mf_self_order/controllers/main.py:0
+#, python-format
+msgid "Invalid Z report data"
+msgstr "Datos del Reporte Z no válidos"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-python
+#: code:addons/l10n_ve_pos_mf_self_order/controllers/main.py:0
+#, python-format
+msgid "There are %s order(s) without a fiscal invoice in this session."
+msgstr "Hay %s orden(es) sin factura fiscal en esta sesión."
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-python
+#: code:addons/l10n_ve_pos_mf_self_order/controllers/main.py:0
+#, python-format
+msgid ""
+"The session could not be closed from the Kiosk (the closing entry needs "
+"review). Close it from the backend."
+msgstr ""
+"No se pudo cerrar la sesión desde el Kiosko (hay que revisar el asiento de "
+"cierre). Ciérrala desde el backend."

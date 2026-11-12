@@ -584,4 +584,128 @@ patch(SelfOrder.prototype, {
             await this._releaseFiscalPrinterConnection(printer);
         }
     },
+
+    // --- Cierre de sesión con Reporte Z (ticket 16406) ---------------------
+    // Espejo de `ClosePosPopup.closeSessionAndPrintZ` de la caja
+    // (l10n_ve_pos_mf). El panel de Debug (`kiosk_debug_dialog_fiscal.js`)
+    // orquesta los pasos; aquí viven la impresión y las llamadas al servidor.
+
+    /**
+     * Órdenes de la sesión abierta sin número fiscal (las que bloquean la Z y
+     * el cierre, igual que `_getUnfiscalizedOrders` en la caja).
+     * @returns {Promise<Array<{id:number, name:string, pos_reference:string, is_invoiced:boolean}>>}
+     */
+    async getKioskCloseSessionPendingOrders() {
+        const res = await rpc("/l10n_ve_pos_mf_self_order/kiosk/close_session/check", {
+            access_token: this.access_token,
+        });
+        return (res && res.pending_orders) || [];
+    },
+
+    /**
+     * Imprime el Reporte Z y lee S1 para sincronizarlo con Odoo (espejo de
+     * `ClosePosPopup._printFiscalReportZ`). Conecta bajo demanda y libera el
+     * puerto al terminar, como el resto de operaciones del Kiosko.
+     *
+     * `printed` dice si la Z salió: con `printed: true` y `success: false` el
+     * día fiscal ya se cerró en la máquina aunque Odoo no se haya sincronizado.
+     *
+     * @returns {Promise<{success:boolean, printed:boolean, value?:Object, error?:string}>}
+     */
+    async printKioskReportZ() {
+        const printer = await this.ensureFiscalPrinterConnected();
+        if (!printer || !printer.isConnected) {
+            return { success: false, printed: false, error: _t("Fiscal machine not connected") };
+        }
+        let printed = false;
+        try {
+            const zResult = await printer.printReportZ();
+            if (!zResult || !zResult.success) {
+                return {
+                    success: false,
+                    printed: false,
+                    error: (zResult && zResult.error) || _t("Unknown error"),
+                };
+            }
+            printed = true;
+            const s1Result = await printer._readS1Data();
+            const dailyClosureCounter = s1Result?.data?.dailyClosureCounter;
+            if (
+                !s1Result?.success ||
+                !s1Result.data?.registeredMachineNumber ||
+                !Number.isInteger(dailyClosureCounter)
+            ) {
+                return {
+                    success: false,
+                    printed: true,
+                    error: _t(
+                        "The Z report was printed, but the S1 status could not be read to sync Odoo. Check the sales book manually."
+                    ),
+                };
+            }
+            return {
+                success: true,
+                printed: true,
+                value: {
+                    valid: true,
+                    data: {
+                        _registeredMachineNumber: s1Result.data.registeredMachineNumber,
+                        _dailyClosureCounter: dailyClosureCounter,
+                    },
+                },
+            };
+        } catch (error) {
+            console.error("[MF Kiosk] error al imprimir el Reporte Z", error);
+            return {
+                success: false,
+                printed,
+                error: String((error && error.message) || error),
+            };
+        } finally {
+            await this._releaseFiscalPrinterConnection(printer);
+        }
+    },
+
+    /**
+     * Sincroniza la Z impresa con Odoo (`account.move.report_z` +
+     * `pos.session.set_report_z`, como la caja) por la ruta pública del Kiosko.
+     * @returns {Promise<{success:boolean, error?:string}>}
+     */
+    async syncKioskReportZ(value) {
+        try {
+            const res = await rpc("/l10n_ve_pos_mf_self_order/kiosk/report_z", {
+                access_token: this.access_token,
+                value,
+            });
+            return res || { success: false, error: _t("No response from server") };
+        } catch (error) {
+            console.error("[MF Kiosk] report_z falló", error);
+            return {
+                success: false,
+                error: String(error?.data?.message || error?.message || error),
+            };
+        }
+    },
+
+    /**
+     * Cierra la sesión del Kiosko con el cierre nativo
+     * (`pos.config.action_close_kiosk_session`) por la ruta pública. Si el
+     * cierre falla, el servidor revierte todo y responde con el error (el
+     * motivo viene en `error.data.message` del RPCError).
+     * @returns {Promise<{success:boolean, error?:string, pending_orders?:Array}>}
+     */
+    async closeKioskSession() {
+        try {
+            const res = await rpc("/l10n_ve_pos_mf_self_order/kiosk/close_session", {
+                access_token: this.access_token,
+            });
+            return res || { success: false, error: _t("No response from server") };
+        } catch (error) {
+            console.error("[MF Kiosk] close_session falló", error);
+            return {
+                success: false,
+                error: String(error?.data?.message || error?.message || error),
+            };
+        }
+    },
 });
