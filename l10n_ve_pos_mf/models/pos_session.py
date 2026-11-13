@@ -17,25 +17,17 @@ class PosSession(models.Model):
 
         ``values["data"]`` trae ``_dailyClosureCounter`` y
         ``_registeredMachineNumber`` (serial). Además del número de Z, guarda
-        el serial y la fecha y hora, y llena el serial de la caja si estaba
-        vacío (el campo de la caja se "detecta al conectar", pero nada lo
-        escribía).
+        el serial y la fecha y hora. El serial de la caja
+        (``pos.config.serial_machine``) no se toca.
         """
         data = values["data"]
-        serial = data.get("_registeredMachineNumber") or False
         self.write(
             {
                 "report_z": int(data["_dailyClosureCounter"]) + 1,
-                "serial_machine": serial,
+                "serial_machine": data.get("_registeredMachineNumber") or False,
                 "report_z_date": fields.Datetime.now(),
             }
         )
-        if serial:
-            # sudo: el cajero (o el usuario del Kiosko) no puede escribir en
-            # pos.config; solo se completa un serial que falta.
-            self.config_id.filtered(lambda config: not config.serial_machine).sudo().write(
-                {"serial_machine": serial}
-            )
 
     @api.model
     def _load_pos_data_fields(self, config):

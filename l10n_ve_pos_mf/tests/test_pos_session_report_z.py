@@ -1,9 +1,8 @@
 """Reporte Z de la sesión del PdV (ticket 16406).
 
 ``pos.session.set_report_z`` registra en la sesión el número de Z, el serial de
-la máquina que la imprimió y la fecha y hora; y completa el serial de la caja
-si estaba vacío. Lo usan la caja (``ClosePosPopup``) y el Kiosko
-(``l10n_ve_pos_mf_self_order``).
+la máquina que la imprimió y la fecha y hora, sin tocar el serial de la caja.
+Lo usan la caja (``ClosePosPopup``) y el Kiosko (``l10n_ve_pos_mf_self_order``).
 """
 
 from odoo import fields
@@ -71,18 +70,13 @@ class TestPosSessionReportZ(TransactionCase):
         self.assertTrue(self.session.report_z_date)
         self.assertGreaterEqual(self.session.report_z_date, before.replace(microsecond=0))
 
-    def test_set_report_z_fills_empty_box_serial(self):
+    def test_set_report_z_does_not_touch_box_serial(self):
+        """La sesión guarda el serial de la máquina que imprimió la Z; el de la
+        caja no cambia, esté vacío o cargado."""
+        self.session.set_report_z(self._value(serial="Z7C0000001"))
         self.assertFalse(self.config.serial_machine)
 
-        self.session.set_report_z(self._value())
-
-        self.assertEqual(self.config.serial_machine, "Z7C0000001")
-
-    def test_set_report_z_keeps_existing_box_serial(self):
-        """No pisa el serial de la caja; la sesión guarda el de la máquina que
-        imprimió la Z."""
         self.config.serial_machine = "Z7C0000099"
-
         self.session.set_report_z(self._value(serial="Z7C0000001"))
 
         self.assertEqual(self.config.serial_machine, "Z7C0000099")
@@ -99,7 +93,7 @@ class TestPosSessionReportZ(TransactionCase):
 
     def test_set_report_z_as_pos_user(self):
         """El cajero (usuario de PdV, sin permisos sobre la caja) puede
-        registrar la Z y completar el serial de la caja."""
+        registrar la Z de su sesión."""
         cashier = self.env["res.users"].create(
             {
                 "name": "MF Report Z Cashier",
@@ -113,4 +107,4 @@ class TestPosSessionReportZ(TransactionCase):
         self.session.with_user(cashier).with_company(self.company).set_report_z(self._value())
 
         self.assertEqual(self.session.report_z, "42")
-        self.assertEqual(self.config.serial_machine, "Z7C0000001")
+        self.assertEqual(self.session.serial_machine, "Z7C0000001")
