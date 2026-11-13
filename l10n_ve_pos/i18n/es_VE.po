@@ -675,12 +675,6 @@ msgid ""
 msgstr "Por favor cree/seleccione un Punto de Venta arriba para mostrar las opciones de configuración."
 
 #. module: l10n_ve_pos
-#. odoo-python
-#: code:addons/l10n_ve_pos/models/pos_session.py:0
-msgid "PoS Payment Method Adjustment"
-msgstr ""
-
-#. module: l10n_ve_pos
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
 msgid "Point of Sale"
 msgstr "Punto de Venta"
@@ -866,6 +860,12 @@ msgstr ""
 #: code:addons/l10n_ve_pos/static/src/overrides/screens/payment_line/payment_line.xml:0
 msgid "Reverse Payment"
 msgstr ""
+
+#. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_session.py:0
+msgid "Sales"
+msgstr "Ventas"
 
 #. module: l10n_ve_pos
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
