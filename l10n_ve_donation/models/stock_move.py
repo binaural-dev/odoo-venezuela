@@ -1,4 +1,4 @@
-from odoo import models, api, fields, Command
+from odoo import _, models, api, fields, Command
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -6,11 +6,54 @@ _logger = logging.getLogger(__name__)
 class StockMove(models.Model):
     _inherit = "stock.move"
 
+    is_donation = fields.Boolean(string="Is Donation", default=False)
+    scrap_location_domain = fields.Char(
+        string="Picking Type Domain",
+        compute="_compute_scrap_location_domain",
+    )
+
+    @api.depends("is_donation")
+    def _compute_scrap_location_domain(self):
+        native_domain = "[('usage', '=', 'inventory')]"
+        for move in self:
+            if move.is_donation:
+                move.scrap_location_domain = "[('is_donation_warehouse', '=', True)]"
+            else:
+                move.scrap_location_domain = native_domain
+
+    @api.depends("picking_id.location_dest_id", "is_scrap", "is_donation")
+    def _compute_location_dest_id(self):
+        """A donation is a scrap that goes to the donation warehouse, not to the scrap location.
+
+        In Odoo 20 a scrap is a stock move (``stock.scrap`` is gone) and its destination is the scrap
+        location of the company unless an inventory location was chosen.
+        """
+        super()._compute_location_dest_id()
+        for move in self.filtered(lambda move: move.is_scrap and move.is_donation):
+            if move.location_dest_id.is_donation_warehouse:
+                continue
+            location = self.env["stock.location"].search(
+                [("is_donation_warehouse", "=", True), ("company_id", "=", move.company_id.id)],
+                limit=1,
+            )
+            if location:
+                move.location_dest_id = location
+
+    def _prepare_scrap_move_vals(self):
+        vals = super()._prepare_scrap_move_vals()
+        if self.is_donation:
+            vals["reference"] = self.env["ir.sequence"].next_by_code("stock.donation") or _("New")
+        return vals
+
+    def _action_scrap(self):
+        self.filtered("is_donation").should_replenish_scrapped = False
+        return super()._action_scrap()
+
     def _create_account_move(self):
         """ Create account move for specific location or analytic.
             This function is a override of the original function to add the donation logic.
         """
-        donation_moves = self.filtered(lambda move: move.scrap_id and move.scrap_id.is_donation)
+        donation_moves = self.filtered(lambda move: move.is_scrap and move.is_donation)
         regular_moves = self - donation_moves
         account_moves = self.env["account.move"]
 
@@ -41,8 +84,8 @@ class StockMove(models.Model):
             "date": self.env.context.get("force_period_date") or fields.Date.context_today(self),
         }
 
-        reasons = [', '.join(m.scrap_id.scrap_reason_tag_ids.mapped('name'))
-                   for m in donation_moves if m.scrap_id.scrap_reason_tag_ids]
+        reasons = [', '.join(m.scrap_reason_tag_ids.mapped('name'))
+                   for m in donation_moves if m.scrap_reason_tag_ids]
         ref = ' - '.join(filter(None, reasons))
 
         move_vals.update({
