@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- To-do shown in the Activities of every discount approver while a document
+         waits for the approval of its discount. -->
+    <record id="mail_activity_type_discount_approval" model="mail.activity.type">
+        <field name="name">Discount Approval</field>
+        <field name="icon">fa-percent</field>
+        <field name="delay_count">0</field>
+    </record>
+</odoo>
