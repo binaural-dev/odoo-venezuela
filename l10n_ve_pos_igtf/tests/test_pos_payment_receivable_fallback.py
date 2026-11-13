@@ -124,15 +124,25 @@ class TestPosPaymentReceivableFallback(TestPoSCommon):
         data["igtf_amount"] = 0
         return order_data
 
-    def test_payment_falls_back_to_invoice_receivable_account(self):
+    def test_payment_reconciles_invoice_when_partner_has_no_receivable_account(self):
         """Si el partner no tiene cuenta por cobrar propia, la línea de
         crédito del pago debe usar la misma cuenta por cobrar que ya tiene
-        la factura que se está pagando, para que ambas concilien. Usar en
-        cambio la cuenta por cobrar por defecto de la compañía
-        (account_default_pos_receivable_account_id) dejaba el pago
-        acreditado en una cuenta distinta a la de la factura, que entonces
-        quedaba sin conciliar aunque estuviera completamente pagada
-        (hallazgo de validación en staging del ticket 15968)."""
+        la factura que se está pagando, y la factura debe quedar conciliada
+        (pagada).
+
+        Dos hallazgos de validación en staging del ticket 15968, ambos
+        sobre el mismo fallback:
+        - Usar la cuenta por cobrar por defecto de la compañía
+          (account_default_pos_receivable_account_id) dejaba el pago
+          acreditado en una cuenta distinta a la de la factura, que
+          quedaba sin conciliar aunque estuviera completamente pagada.
+        - Incluso ya usando la cuenta de la factura en la línea de pago,
+          `_apply_invoice_payments` (estándar de Odoo 17) busca las líneas
+          a conciliar por `partner.property_account_receivable_id`
+          directo: como el partner no tiene ninguna, no encontraba nada y
+          nunca conciliaba. Se sobreescribe para resolver esa cuenta con
+          el mismo fallback de `_get_pos_receivable_account`.
+        """
         self.open_new_session()
         order_data = self._add_foreign_ui_fields(
             self.create_ui_order_data(
@@ -165,6 +175,12 @@ class TestPosPaymentReceivableFallback(TestPoSCommon):
             "La línea de crédito del pago debió usar la misma cuenta por "
             "cobrar que la factura, para que ambas concilien.",
         )
+        self.assertEqual(
+            order.account_move.payment_state,
+            "paid",
+            "La factura debió quedar conciliada (pagada) con su pago, no "
+            "solo compartir la misma cuenta.",
+        )
 
     def test_payment_without_any_receivable_account_raises_user_error(self):
         """Si tampoco hay cuenta por cobrar en la factura ni por defecto en
@@ -181,5 +197,35 @@ class TestPosPaymentReceivableFallback(TestPoSCommon):
                 payments=[(self.cash_pm1, 25.61)],
             )
         )
+        with self.assertRaises(UserError):
+            self.env["pos.order"].create_from_ui([order_data])
+
+    def test_igtf_payment_without_account_raises_user_error(self):
+        """Si la compañía de la orden no tiene cuenta IGTF configurada, se
+        debe mostrar un UserError claro en vez de dejar que PostgreSQL
+        aborte la transacción con un mensaje genérico. Antes se leía
+        `self.env.company.customer_account_igtf_id` (la compañía activa)
+        en vez de `order.company_id`, sin validar que existiera."""
+        self.open_new_session()
+        self.company.customer_account_igtf_id = False
+
+        order_data = self.create_ui_order_data(
+            [(self.product_a, 1)],
+            customer=self.pos_customer_no_account,
+            is_invoiced=True,
+            payments=[(self.cash_pm1, 25.61)],
+        )
+        data = order_data["data"]
+        payment_vals = data["statement_ids"][0][2]
+        payment_vals["foreign_amount"] = round(25.61 * self.FOREIGN_RATE, 2)
+        payment_vals["foreign_rate"] = self.FOREIGN_RATE
+        payment_vals["include_igtf"] = True
+        payment_vals["igtf_amount"] = 0.77
+        payment_vals["foreign_igtf_amount"] = round(0.77 * self.FOREIGN_RATE, 2)
+        data["foreign_amount_total"] = payment_vals["foreign_amount"]
+        data["foreign_currency_rate"] = self.FOREIGN_RATE
+        data["foreign_inverse_rate"] = self.FOREIGN_RATE
+        data["igtf_amount"] = 0.77
+
         with self.assertRaises(UserError):
             self.env["pos.order"].create_from_ui([order_data])
