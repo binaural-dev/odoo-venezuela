@@ -1,0 +1,195 @@
+<odoo>
+    <!-- Common body of the Donation Receipt delivered to the BENEFICIARY. The
+         caller (account.move or stock.picking) sets before the t-call:
+           - o: the document (the data of the company comes from it)
+           - receipt_number, receipt_date: number and date of the receipt
+           - beneficiary: contact of the beneficiary (res.partner, may be empty)
+           - amounts: dict of `account.move._compute_donation_amounts`
+           - concept_lines: list of texts of the concept (money)
+           - donation_line_data, donation_grand_total, donation_cost_currency:
+             detail of the goods for `donation_product_table` (goods)
+           - observations: free text (may be empty)
+         Other modules extend it through the elements with an id:
+         `donation_receipt_beneficiary_extra` and `donation_receipt_legal`. -->
+    <template id="donation_receipt_body" name="Donation Receipt - Body">
+        <!-- Half letter: compact font and spacing. The columns are tables
+             because in PDF the Bootstrap columns are not placed side by side. -->
+        <style>
+            .donation-receipt { font-size: 10.5px; line-height: 1.3; }
+            .donation-receipt p { margin: 0; }
+            .donation-receipt table { width: 100%; border-collapse: collapse; }
+            .donation-receipt td { vertical-align: top; padding: 0 4px 0 0; }
+            .donation-receipt h3 { font-size: 16px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 3px 0; }
+            .donation-receipt h5 { font-size: 11.5px; font-weight: bold; margin: 7px 0 2px 0; }
+            .donation-receipt .receipt-legal { text-align: left; line-height: 1.4; margin-top: 8px; }
+            .donation-receipt .receipt-signature { border-top: 1px solid #000; padding-top: 2px; margin: 0 22px; text-align: center; }
+        </style>
+        <div class="donation-receipt">
+            <!-- ===== HEADER: logo | company data | title and receipt data ===== -->
+            <table>
+                <tr>
+                    <td t-if="o.company_id.logo" style="width: 16%;">
+                        <img t-att-src="image_data_uri(o.company_id.logo)"
+                            style="max-height: 52pt; max-width: 100%;"
+                            alt="Logo" />
+                    </td>
+                    <td style="width: 50%;">
+                        <p>
+                            <span class="fw-bold">Razón Social: </span><span t-out="o.company_id.name" /><br />
+                            <span class="fw-bold">RIF: </span><span t-out="o.company_id.vat or ''" /><br />
+                            <span class="fw-bold">Dirección Fiscal: </span><span t-out="o.company_id.street or ''" /><t t-if="o.company_id.city"><span t-out="', ' + o.company_id.city" /></t><br />
+                            <span class="fw-bold">Teléfono: </span><span t-out="o.company_id.phone or ''" />
+                        </p>
+                    </td>
+                    <td style="width: 34%; text-align: right;">
+                        <h3>Recibo de Donación</h3>
+                        <p><span class="fw-bold">No. de recibo: </span><span t-out="receipt_number" /></p>
+                        <p>
+                            <span class="fw-bold">Fecha del recibo: </span>
+                            <span t-out="receipt_date" t-options="{'widget': 'date'}" />
+                        </p>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- ===== BENEFICIARY ===== -->
+            <h5>Datos del beneficiario</h5>
+            <table>
+                <tr>
+                    <td style="width: 55%;">
+                        <p>
+                            <span class="fw-bold">Nombre / Razón social: </span>
+                            <span t-out="beneficiary.name or '____________________'" />
+                        </p>
+                        <p>
+                            <span class="fw-bold">RIF / Cédula: </span>
+                            <span t-out="((beneficiary.prefix_vat or '') + '-' + beneficiary.vat) if beneficiary and beneficiary.vat else '____________________'" />
+                        </p>
+                        <p>
+                            <span class="fw-bold">Dirección: </span>
+                            <span t-out="(beneficiary and (beneficiary.contact_address or beneficiary.street)) or '____________________'" />
+                        </p>
+                        <p t-if="beneficiary and beneficiary.phone">
+                            <span class="fw-bold">Teléfono: </span>
+                            <span t-out="beneficiary.phone" />
+                        </p>
+                    </td>
+                    <td style="width: 45%;">
+                        <div id="donation_receipt_beneficiary_extra" />
+                    </td>
+                </tr>
+            </table>
+
+            <!-- ===== AMOUNT ===== -->
+            <h5>Monto de la donación</h5>
+            <table>
+                <tr>
+                    <td style="width: 50%;">
+                        <p>
+                            <span class="fw-bold">Monto: </span>
+                            <span t-out="amounts['amount']" t-options="{'widget': 'monetary', 'display_currency': amounts['currency']}" />
+                        </p>
+                    </td>
+                    <td t-if="amounts['equivalent_currency']" style="width: 50%;">
+                        <p>
+                            <span class="fw-bold">Equivalente en <span t-out="amounts['equivalent_currency'].name" />: </span>
+                            <span t-out="amounts['equivalent_amount']" t-options="{'widget': 'monetary', 'display_currency': amounts['equivalent_currency']}" />
+                        </p>
+                        <p>
+                            <span class="fw-bold">Tasa (BCV): </span>
+                            <span t-out="amounts['rate']" t-options="{'widget': 'float', 'precision': 4}" />
+                            <span t-out="amounts['currency'].name" /> por <span t-out="amounts['equivalent_currency'].name" />
+                        </p>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- ===== CONCEPT ===== -->
+            <h5>Concepto</h5>
+            <t t-if="donation_line_data">
+                <t t-call="l10n_ve_donation.donation_product_table" />
+            </t>
+            <t t-elif="concept_lines">
+                <p t-foreach="concept_lines" t-as="concept_line" t-out="concept_line" />
+            </t>
+            <t t-else="">
+                <p>______________________________________________________________________________</p>
+            </t>
+
+            <!-- ===== OBSERVATIONS ===== -->
+            <h5>Observaciones</h5>
+            <p t-if="observations" t-out="observations" />
+            <t t-else="">
+                <p>______________________________________________________________________________</p>
+            </t>
+
+            <!-- ===== LEGAL TEXT ===== -->
+            <p id="donation_receipt_legal" class="receipt-legal">
+                Por medio del presente recibo, <strong><span t-out="o.company_id.name" /></strong>, RIF
+                <strong><span t-out="o.company_id.vat or ''" /></strong>, deja constancia de haber otorgado a
+                <strong><span t-out="beneficiary.name or '____________________'" /></strong> la donación aquí descrita, en forma
+                pura, simple e irrevocable.
+            </p>
+
+            <!-- ===== SIGNATURES ===== -->
+            <table style="margin-top: 80px;">
+                <tr>
+                    <td style="width: 50%;">
+                        <div class="receipt-signature">
+                            <strong>Representante Legal de la Institución</strong><br />
+                            <span style="font-size: 9px;">Nombre, Firma y Sello</span>
+                        </div>
+                    </td>
+                    <td style="width: 50%;">
+                        <div class="receipt-signature">
+                            <strong>Beneficiario</strong><br />
+                            <span style="font-size: 9px;">Nombre, Cédula y Firma</span>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </template>
+
+    <!-- Donation receipt (money) - account.move -->
+    <template id="donation_receipt_template_account_move" name="Donation Receipt Account Move">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.basic_layout">
+                    <div class="page">
+                        <t t-set="receipt_number" t-value="o.name" />
+                        <t t-set="receipt_date" t-value="o.date" />
+                        <t t-set="beneficiary" t-value="o._get_donation_beneficiary()" />
+                        <t t-set="amounts" t-value="o._get_donation_amounts()" />
+                        <t t-set="concept_lines" t-value="o._get_donation_concept_lines()" />
+                        <t t-set="donation_line_data" t-value="False" />
+                        <t t-set="observations" t-value="o.ref" />
+                        <t t-call="l10n_ve_donation.donation_receipt_body" />
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <!-- Donation receipt (goods) - stock.picking -->
+    <template id="donation_receipt_template_stock_picking" name="Donation Receipt Stock Picking">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.basic_layout">
+                    <div class="page">
+                        <t t-set="receipt_number" t-value="o.name" />
+                        <t t-set="receipt_date" t-value="o.date_done" />
+                        <t t-set="beneficiary" t-value="o.partner_id" />
+                        <t t-set="amounts" t-value="o._get_donation_receipt_amounts()" />
+                        <t t-set="concept_lines" t-value="[]" />
+                        <t t-set="donation_line_data" t-value="o._get_donation_product_lines()" />
+                        <t t-set="donation_grand_total" t-value="o._get_donation_grand_total()" />
+                        <t t-set="donation_cost_currency" t-value="o.company_id.currency_id" />
+                        <t t-set="observations" t-value="o.donation_reason" />
+                        <t t-call="l10n_ve_donation.donation_receipt_body" />
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

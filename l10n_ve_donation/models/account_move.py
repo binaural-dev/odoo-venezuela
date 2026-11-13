@@ -63,23 +63,46 @@ class AccountMove(models.Model):
                         )
                     )
 
-    def print_donation_certificate(self):
-        """The certificate of the journal entry is the one of a money
-        donation. The valuation entry of a donation delivery has no
-        certificate of its own: the delivery certificate of its picking
-        lists the products and their cost."""
+    def print_donation_receipt(self):
+        """The receipt of the journal entry is the one of a money donation
+        given. The valuation entry of a donation delivery has no receipt of
+        its own: the receipt of its picking lists the products and their
+        cost."""
         self.ensure_one()
         if self.is_stock_valuation_entry:
             pickings = self.stock_move_ids.picking_id
             raise UserError(_(
                 "This entry is the stock valuation of a donation delivery and has no donation "
-                "certificate. Print the Delivery Certificate from the donation picking: %(pickings)s.",
+                "receipt. Print the Donation Receipt from the donation picking: %(pickings)s.",
                 pickings=", ".join(pickings.mapped("name")) or "-",
             ))
-        return self.env.ref("l10n_ve_donation.action_donation_certificate_account_move").report_action(self)
+        return self.env.ref("l10n_ve_donation.action_donation_receipt_account_move").report_action(self)
 
-    def _get_donation_certificate_amounts(self):
-        """Amounts of the donation for the certificate: the total debit and
+    def _get_donation_beneficiary(self):
+        """Contact of the beneficiary of a donation entry: the contact of the
+        header, unless it is the company itself (an entry without a
+        beneficiary)."""
+        self.ensure_one()
+        partner = self.partner_id
+        return partner if partner != self.company_id.partner_id else partner.browse()
+
+    def _get_donation_concept_lines(self):
+        """Descriptions of the concept of the receipt of a money donation:
+        the debit lines that are not cash, bank or receivable/payable
+        accounts (the expense of the donation), without repeating them."""
+        self.ensure_one()
+        liquidity_and_partner_types = ("asset_cash", "asset_receivable", "liability_payable")
+        names = []
+        for line in self.line_ids:
+            if not line.debit or line.account_id.account_type in liquidity_and_partner_types:
+                continue
+            name = (line.name or "").strip()
+            if name and name != self.ref and name not in names:
+                names.append(name)
+        return names
+
+    def _get_donation_amounts(self):
+        """Amounts of the donation for its documents: the total debit and
         the alternate amount of the entry, at the rates stored in it (the
         rates of its date), so that a reprint always gives the same
         numbers. See `_compute_donation_amounts`."""
