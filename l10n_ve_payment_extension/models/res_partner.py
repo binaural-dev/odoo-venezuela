@@ -110,6 +110,10 @@ class ResPartner(models.Model):
         compute="_compute_is_non_resident_person",
         string="Is Non Resident Person",
     )
+    is_natural_resident_person = fields.Boolean(
+        compute="_compute_is_natural_resident_person",
+        string="Is Natural Resident Person",
+    )
 
     def _get_allowed_type_persons(self):
         """Ticket 86944: a person can only be PN Residente or PN No Residente;
@@ -147,6 +151,17 @@ class ResPartner(models.Model):
                 and not partner._is_company_partner()
             )
 
+    @api.depends("type_person_id")
+    def _compute_is_natural_resident_person(self):
+        natural_resident = self.env.ref(
+            "l10n_ve_payment_extension.type_person_l10n_ve_payment_extension",
+            raise_if_not_found=False,
+        )
+        for partner in self:
+            partner.is_natural_resident_person = bool(
+                natural_resident and partner.type_person_id == natural_resident
+            )
+
     @api.onchange("is_company")
     def _onchange_is_company_type_person(self):
         for partner in self:
@@ -156,39 +171,46 @@ class ResPartner(models.Model):
             ):
                 partner.type_person_id = False
 
-    @api.onchange("type_person_id")
-    def _onchange_type_person_taxpayer_withholding(self):
-        """Ticket 86944: a non resident partner has neither taxpayer type nor
-        withholding type."""
-        for partner in self:
-            if partner._is_company_partner():
-                continue
-            if partner.is_non_resident_person:
-                partner.taxpayer_type = "ordinary"
-                partner.withholding_type_id = False
-            elif partner.taxpayer_type == "special" and not partner.withholding_type_id:
-                partner.withholding_type_id = self.env.ref(
-                    "l10n_ve_payment_extension.account_withholding_type_75",
-                    raise_if_not_found=False,
-                )
-
-    @api.onchange("taxpayer_type")
-    def _onchange_taxpayer_type_withholding_type(self):
-        """A special taxpayer gets the 75% withholding type by default and any
-        other taxpayer type has none (ticket 16339). The partner of a company is
-        left as it is: its withholding type comes from the company
+    def _apply_default_withholding_type(self):
+        """Ticket 86944 (sheet "Matriz de retenciones"): the withholding type of
+        a PN Residente is 100% for an ordinary or formal taxpayer and none for a
+        special one; any other resident type has 75% for a special taxpayer and
+        none otherwise. A non resident one never has it. The partner of a company
+        is left as it is: its withholding type comes from the company
         configuration."""
+        withholding_100 = self.env.ref(
+            "l10n_ve_payment_extension.account_withholding_type_100",
+            raise_if_not_found=False,
+        )
         withholding_75 = self.env.ref(
             "l10n_ve_payment_extension.account_withholding_type_75",
             raise_if_not_found=False,
         )
         for partner in self:
-            if partner._is_company_partner() or partner.is_non_resident_person:
+            if partner._is_company_partner():
                 continue
-            if partner.taxpayer_type == "special":
-                partner.withholding_type_id = withholding_75
-            else:
+            special = partner.taxpayer_type == "special"
+            if partner.is_non_resident_person:
                 partner.withholding_type_id = False
+            elif partner.is_natural_resident_person:
+                partner.withholding_type_id = False if special else withholding_100
+            else:
+                partner.withholding_type_id = withholding_75 if special else False
+
+    @api.onchange("type_person_id")
+    def _onchange_type_person_taxpayer_withholding(self):
+        """A non resident partner has neither taxpayer type nor withholding type
+        (ticket 86944)."""
+        for partner in self:
+            if partner._is_company_partner():
+                continue
+            if partner.is_non_resident_person:
+                partner.taxpayer_type = "ordinary"
+        self._apply_default_withholding_type()
+
+    @api.onchange("taxpayer_type")
+    def _onchange_taxpayer_type_withholding_type(self):
+        self._apply_default_withholding_type()
 
     @api.constrains("type_person_id", "taxpayer_type")
     def _check_non_resident_taxpayer_type(self):
