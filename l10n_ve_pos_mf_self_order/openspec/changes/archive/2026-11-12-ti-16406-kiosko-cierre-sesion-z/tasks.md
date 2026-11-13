@@ -78,8 +78,7 @@
         la pagada como pendiente de factura, sin llamadas a la máquina
       - con las órdenes resueltas: confirmación → Z → S1 → puerto liberado →
         sincronización → cierre; sesión `closed` con Reporte Z 42, serial
-        `Z7CE2E0001`, fecha y hora, la caja con ese serial, asiento de cierre
-        publicado, carrito borrado y el Kiosko deja de recibir pedidos
+        `Z7CE2E0001`, fecha y hora, asiento de cierre publicado, carrito borrado y el Kiosko deja de recibir pedidos
       - asiento de cierre descuadrado: el cierre nativo revierte y devuelve el
         asistente; la ruta responde con error y la sesión queda abierta (la Z
         ya sincronizada se mantiene, como en la caja)

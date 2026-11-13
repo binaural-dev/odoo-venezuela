@@ -25,12 +25,16 @@ hora de la Z, en este mismo PR, para la caja y el Kiosko.
   el formulario de la sesión junto a "Reporte Z".
 - `pos.session.set_report_z` (lo llaman la caja y el Kiosko) guarda, además del
   número de Z, el serial que devuelve el S1 (`_registeredMachineNumber`) y la
-  fecha y hora, y llena `pos.config.serial_machine` si estaba vacío.
+  fecha y hora. El serial de la caja (`pos.config.serial_machine`) no se toca.
 - `i18n/es_VE.po`: "Fecha del Reporte Z" y la traducción del serial con el
   texto de origen del campo.
 
 ## Non-goals
 
+- Llenar el serial de la caja con el de la Z: se descartó en el code review
+  (2026-11-12, decisión del usuario) porque escribirlo con `sudo` dispara todo
+  `pos.config.write` (p. ej. recrea el botón "Order Now" del Kiosko) desde un
+  RPC del cajero o la ruta pública del Kiosko; el de la caja es informativo.
 - Llenar el serial de las sesiones anteriores: no se sabe qué máquina sacó su
   Z (ni si la sacaron), así que quedan vacías.
 - Cambiar el número de Z que se guarda (`_dailyClosureCounter + 1`); queda por
