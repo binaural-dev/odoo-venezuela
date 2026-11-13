@@ -1,7 +1,7 @@
 from odoo import models, fields, api, _, Command
 from odoo.exceptions import UserError
 from odoo.tools.safe_eval import safe_eval
-from odoo.tools import float_compare
+from odoo.tools import float_compare, float_round
 from collections import defaultdict
 import logging
 
@@ -10,6 +10,91 @@ _logger = logging.getLogger(__name__)
 
 class AccountMoveRetention(models.Model):
     _inherit = "account.move"
+
+    def _retention_excess_within_currency_precision(self, retention_amount_company_currency):
+        """Positive rounding difference (retained - due, in company currency) or None.
+
+        Thin wrapper over `_retention_difference_within_currency_precision` that
+        only reports excesses; None for normal, really excessive or short
+        retentions and for documents in company currency.
+        """
+        diff = self._retention_difference_within_currency_precision(
+            retention_amount_company_currency
+        )
+        return diff if diff and diff > 0 else None
+
+    def _retention_rate_date(self):
+        """Rate date of the document (the one `invoice_currency_rate` uses)."""
+        self.ensure_one()
+        return self._get_invoice_currency_rate_date()
+
+    def _retention_to_document_currency(self, amount_company_currency, rounding=True):
+        """Convert a company-currency amount to the document currency.
+
+        Single conversion of these rules: `_convert()` at the document date.
+        The rate date is the source of truth of the whole engine; if that
+        date's rate changes after posting, the process is to reset the
+        document to draft and set the date again so it recomputes.
+        """
+        self.ensure_one()
+        return self.company_id.currency_id._convert(
+            amount_company_currency, self.currency_id, self.company_id,
+            self._retention_rate_date(), round=rounding,
+        )
+
+    def _retention_closes_document_currency_debt(self, retention_amount_company_currency):
+        """True if the retention, converted to the document currency, equals the
+        invoice residual at that currency's precision. Always False in company
+        currency (strict comparison).
+        """
+        self.ensure_one()
+        if self.currency_id == self.company_id.currency_id:
+            return False
+        retained = self._retention_to_document_currency(abs(retention_amount_company_currency))
+        return float_compare(
+            retained, abs(self.amount_residual),
+            precision_rounding=self.currency_id.rounding,
+        ) == 0
+
+    def _retention_difference_within_currency_precision(self, retention_amount_company_currency):
+        """Signed difference (retained - due, in company currency) when it is
+        only rounding between currencies, else None.
+
+        Always converts with `_convert()` at the document date. It is rounding
+        when either rule holds:
+
+        1. abs(diff) <= `_retention_amount_tolerance()` (it vanishes in the
+           document currency).
+        2. The retention closes the commercial debt in the document currency
+           and abs(diff) <= `_retention_max_accepted_difference()`.
+
+        Positive: the retention exceeds the due amount. Negative: it falls
+        short but the invoice is already settled in the document currency.
+        Never rounding when the document is in company currency or the company
+        currency is not the Venezuelan bolivar.
+        """
+        self.ensure_one()
+        company_currency = self.company_id.currency_id
+        diff = retention_amount_company_currency - abs(self.amount_residual_signed)
+        if (
+            not company_currency.is_venezuelan_bolivar()
+            or self.currency_id == company_currency
+            or company_currency.is_zero(diff)
+        ):
+            return None
+        step = company_currency.rounding
+
+        def within(bound):
+            # float_compare: the residual subtraction carries float noise.
+            return float_compare(abs(diff), bound, precision_rounding=step) <= 0
+
+        if within(self._retention_amount_tolerance()):
+            return diff
+        if within(self._retention_max_accepted_difference()) and (
+            self._retention_closes_document_currency_debt(retention_amount_company_currency)
+        ):
+            return diff
+        return None
 
     base_currency_is_vef = fields.Boolean(
         compute="_compute_currency_fields",
@@ -123,6 +208,41 @@ class AccountMoveRetention(models.Model):
             " to draft, edited and reposted)."
         ),
     )
+
+    def _retention_amount_tolerance(self):
+        """Rule 1 bound: largest difference, in company currency, that still
+        vanishes in the document currency (below half a cent of it). 0.0 for
+        documents in company currency (strict comparison)."""
+        self.ensure_one()
+        return self._retention_bound(self.currency_id.rounding / 2.0)
+
+    def _retention_max_accepted_difference(self):
+        """Rule 2 bound: largest difference, in company currency, accepted as
+        rounding when the retention closes the commercial debt (below one full
+        cent of the document currency). Enforced by the server in
+        `_retention_difference_within_currency_precision`; portals may use it
+        as a pre-check."""
+        self.ensure_one()
+        return self._retention_bound(self.currency_id.rounding)
+
+    def _retention_bound(self, document_amount):
+        """`document_amount` converted to company currency at the document date, as
+        the largest multiple of the company rounding step STRICTLY below it.
+        0.0 in company currency.
+        """
+        self.ensure_one()
+        company_currency = self.company_id.currency_id
+        if self.currency_id == company_currency:
+            return 0.0
+        step = company_currency.rounding
+        limit = self.currency_id._convert(
+            document_amount, company_currency, self.company_id,
+            self._retention_rate_date(), round=False,
+        )
+        bound = float_round(limit, precision_rounding=step, rounding_method="DOWN")
+        if float_compare(bound, limit, precision_rounding=step / 1000.0) >= 0:
+            bound -= step
+        return max(bound, 0.0)
 
     @api.depends(
         "move_type",

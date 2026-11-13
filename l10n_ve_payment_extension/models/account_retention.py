@@ -545,7 +545,11 @@ class AccountRetention(models.Model):
 
             for move, retention_amount in retention_amounts_by_move.items():
                 invoice_total = abs(move.amount_residual_signed)
-                if invoice_total < retention_amount:
+                # An excess that is only currency rounding is not a real excess.
+                if (
+                    invoice_total < retention_amount
+                    and move._retention_excess_within_currency_precision(retention_amount) is None
+                ):
                     error_msg = _(
                         "The retention amount (%s) cannot be greater than the invoice total signed amount (%s) for invoice %s."
                     ) % (retention_amount, invoice_total, move.name)
@@ -1203,6 +1207,14 @@ class AccountRetention(models.Model):
             ).js_assign_outstanding_line(lines[0].id)
 
     @api.model
+    def compute_iva_retention_amount(self, tax_amount, withholding_percentage):
+        """Single computation of the IVA retention amount (company currency).
+
+        Used by line loading, retention lines and portals (own percentage).
+        """
+        return abs(tax_amount * (withholding_percentage / 100))
+
+    @api.model
     def compute_retention_lines_data(self, invoice_id, payment=None):
         """
         Computes the retention lines data for the given invoice.
@@ -1235,7 +1247,9 @@ class AccountRetention(models.Model):
             if not taxes:
                 continue
             tax = taxes[0]
-            retention_amount = abs(tax_group["tax_amount"] * (withholding_amount / 100))
+            retention_amount = self.compute_iva_retention_amount(
+                tax_group["tax_amount"], withholding_amount
+            )
             line_data = {
                 "name": _("Iva Retention"),
                 "invoice_type": invoice_id.move_type,
@@ -1578,6 +1592,49 @@ class AccountRetention(models.Model):
 
         if not is_refund and has_subsidiary and self.env.company.subsidiary:
             res["account_analytic_id"] = move.account_analytic_id.id
+
+        # Declare a currency-rounding difference as a write-off in the payment
+        # itself (native `write_off_line_vals`), so reconciliation closes the invoice.
+        retained_company_currency = sum(abs(a) for a in lines.mapped("retention_amount"))
+        diff = move._retention_difference_within_currency_precision(retained_company_currency)
+        if diff is not None:
+            company_currency = self.company_currency_id
+            # diff = retained - due; counterpart = -liquidity - writeoff, so the
+            # sign flips for inbound and mirrors for outbound.
+            signed_writeoff = -diff if p_type == "inbound" else diff
+            # Credit is a gain, debit is a loss.
+            if signed_writeoff < 0:
+                exchange_account = move.company_id.income_currency_exchange_account_id
+                account_label = _("Exchange Gain Account")
+            else:
+                exchange_account = move.company_id.expense_currency_exchange_account_id
+                account_label = _("Exchange Loss Account")
+            if exchange_account:
+                res["write_off_line_vals"] = [{
+                    "name": _("Currency precision rounding"),
+                    "account_id": exchange_account.id,
+                    "partner_id": move.partner_id.id,
+                    "currency_id": company_currency.id,
+                    "amount_currency": signed_writeoff,
+                    "balance": signed_writeoff,
+                }]
+            else:
+                # No account to record the write-off: fail instead of leaving a
+                # silent residual (which account is needed depends on the sign).
+                raise UserError(
+                    _(
+                        "The company must have an '%(account)s' configured to "
+                        "issue this retention: invoice %(invoice)s has a "
+                        "currency-precision difference of %(amount)s %(currency)s "
+                        "that needs to be recorded there."
+                    )
+                    % {
+                        "account": account_label,
+                        "invoice": move.display_name,
+                        "amount": abs(diff),
+                        "currency": company_currency.name,
+                    }
+                )
 
         # l10n_ve_igtf's js_assign_outstanding_line picks conversion_date over
         # payment.date for the advance-crossing move's date/rate unless this is

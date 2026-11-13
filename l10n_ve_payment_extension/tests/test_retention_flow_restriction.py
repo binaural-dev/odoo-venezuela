@@ -12,6 +12,8 @@ class TestRetentionFlowRestriction(TransactionCase):
     def setUpClass(cls):
         super(TestRetentionFlowRestriction, cls).setUpClass()
         cls.company = cls.env.user.company_id
+        # La moneda debe estar activa: sin esto publicar facturas falla segun los modulos instalados.
+        (cls.env.ref('base.VEF') | cls.env.ref('base.USD')).sudo().write({'active': True})
         cls.company.currency_id = cls.env.ref('base.VEF')
         cls.company.foreign_currency_id = cls.env.ref("base.USD")
         seed_foreign_rate(cls.env)
