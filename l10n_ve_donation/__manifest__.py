@@ -20,6 +20,8 @@
         "security/res_groups.xml",
         "security/ir.model.access.csv",
         "report/donation_product_table_template.xml",
+        "report/donation_certificate_report.xml",
+        "report/donation_certificate_template.xml",
         "report/donation_receipt_report.xml",
         "report/donation_receipt_template.xml",
         "views/account_move_views.xml",
