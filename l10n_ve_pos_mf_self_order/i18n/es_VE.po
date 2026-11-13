@@ -269,11 +269,11 @@ msgstr "Error desconocido"
 #. odoo-javascript
 #: code:addons/l10n_ve_pos_mf_self_order/static/src/overrides/self_order_fiscal.js:0
 msgid ""
-"The Z report was printed, but the S1 status could not be read to sync Odoo. "
-"Check the sales book manually."
+"The S1 status of the fiscal machine could not be read, so the Z report was "
+"not printed. Check the connection and try again."
 msgstr ""
-"El Reporte Z se imprimió, pero no se pudo leer el estado S1 para sincronizar "
-"Odoo. Verifica el libro de ventas manualmente."
+"No se pudo leer el estado S1 de la máquina fiscal, así que no se imprimió el "
+"Reporte Z. Revisa la conexión e inténtalo de nuevo."
 
 #. module: l10n_ve_pos_mf_self_order
 #. odoo-javascript

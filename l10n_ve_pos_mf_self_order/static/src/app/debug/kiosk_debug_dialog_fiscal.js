@@ -90,7 +90,7 @@ patch(KioskDebugDialog.prototype, {
      * caja (`ClosePosPopup.closeSessionAndPrintZ` de l10n_ve_pos_mf):
      *  1. si hay órdenes de la sesión sin número fiscal, avisa y no sigue;
      *  2. pide confirmación (la Z es irreversible);
-     *  3. imprime la Z y lee S1;
+     *  3. lee S1 e imprime la Z;
      *  4. sincroniza la Z con Odoo;
      *  5. cierra la sesión con el cierre nativo del Kiosko.
      * Cualquier fallo corta el flujo en ese paso. Antes de empezar, tampoco
@@ -130,12 +130,7 @@ patch(KioskDebugDialog.prototype, {
 
             const zResult = await this.selfOrder.printKioskReportZ();
             if (!zResult.success) {
-                this._mfAlert(
-                    zResult.printed
-                        ? _t("Z report printed with a warning")
-                        : _t("Error printing the Z report"),
-                    zResult.error
-                );
+                this._mfAlert(_t("Error printing the Z report"), zResult.error);
                 return { valid: false, message: zResult.error };
             }
 

@@ -617,31 +617,22 @@ patch(SelfOrder.prototype, {
     },
 
     /**
-     * Imprime el Reporte Z y lee S1 para sincronizarlo con Odoo (espejo de
+     * Lee S1 e imprime el Reporte Z para sincronizarlo con Odoo (espejo de
      * `ClosePosPopup._printFiscalReportZ`). Conecta bajo demanda y libera el
      * puerto al terminar, como el resto de operaciones del Kiosko.
      *
-     * `printed` dice si la Z salió: con `printed: true` y `success: false` el
-     * día fiscal ya se cerró en la máquina aunque Odoo no se haya sincronizado.
+     * S1 se lee ANTES de la Z, como el flujo IoT: su contador es el de la
+     * última Z impresa y el servidor le suma 1. Si S1 no responde, la Z no se
+     * imprime. Con `success: false` la Z nunca salió.
      *
-     * @returns {Promise<{success:boolean, printed:boolean, value?:Object, error?:string}>}
+     * @returns {Promise<{success:boolean, value?:Object, error?:string}>}
      */
     async printKioskReportZ() {
         const printer = await this.ensureFiscalPrinterConnected();
         if (!printer || !printer.isConnected) {
-            return { success: false, printed: false, error: _t("Fiscal machine not connected") };
+            return { success: false, error: _t("Fiscal machine not connected") };
         }
-        let printed = false;
         try {
-            const zResult = await printer.printReportZ();
-            if (!zResult || !zResult.success) {
-                return {
-                    success: false,
-                    printed: false,
-                    error: (zResult && zResult.error) || _t("Unknown error"),
-                };
-            }
-            printed = true;
             const s1Result = await printer._readS1Data();
             const dailyClosureCounter = s1Result?.data?.dailyClosureCounter;
             if (
@@ -651,15 +642,20 @@ patch(SelfOrder.prototype, {
             ) {
                 return {
                     success: false,
-                    printed: true,
                     error: _t(
-                        "The Z report was printed, but the S1 status could not be read to sync Odoo. Check the sales book manually."
+                        "The S1 status of the fiscal machine could not be read, so the Z report was not printed. Check the connection and try again."
                     ),
+                };
+            }
+            const zResult = await printer.printReportZ();
+            if (!zResult || !zResult.success) {
+                return {
+                    success: false,
+                    error: (zResult && zResult.error) || _t("Unknown error"),
                 };
             }
             return {
                 success: true,
-                printed: true,
                 value: {
                     valid: true,
                     data: {
@@ -672,7 +668,6 @@ patch(SelfOrder.prototype, {
             console.error("[MF Kiosk] error al imprimir el Reporte Z", error);
             return {
                 success: false,
-                printed,
                 error: String((error && error.message) || error),
             };
         } finally {

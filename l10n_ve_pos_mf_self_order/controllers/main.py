@@ -171,9 +171,10 @@ class L10nVePosMfSelfOrderController(PosSelfOrderController):
     def l10n_ve_kiosk_report_z(self, access_token, value):
         """Sincroniza con Odoo el Reporte Z que el Kiosko acaba de imprimir.
 
-        Recibe el mismo ``value`` que arma la caja tras leer S1
-        (``{"valid": True, "data": {"_registeredMachineNumber",
-        "_dailyClosureCounter"}}``) y delega en los mismos métodos:
+        Recibe el mismo ``value`` que arma la caja con el S1 leído antes de
+        imprimir la Z (``{"valid": True, "data": {"_registeredMachineNumber",
+        "_dailyClosureCounter"}}``; el contador es el de la última Z, los
+        métodos le suman 1) y delega en los mismos métodos:
         ``account.move.report_z`` (marca el Z en las facturas y órdenes de la
         máquina que no lo tienen) y ``pos.session.set_report_z`` (número, serial
         y fecha de la Z en la sesión).
