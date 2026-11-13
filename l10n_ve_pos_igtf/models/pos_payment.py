@@ -63,6 +63,28 @@ class PosPayment(models.Model):
             )
         return account
 
+    def _get_igtf_account(self, order):
+        """Return the IGTF account configured on the order's own company.
+
+        Using ``self.env.company`` here (the currently active company)
+        instead of ``order.company_id`` could silently credit the IGTF
+        amount to the wrong company's account when paying from a different
+        active company than the order's, and reading it without validation
+        could create an ``account.move.line`` with an empty ``account_id``
+        if the IGTF account isn't configured, aborting the transaction the
+        same way an unset receivable account did.
+        """
+        company = order.company_id
+        account = company.customer_account_igtf_id
+        if not account:
+            raise UserError(
+                _(
+                    "Company %(company)s has no IGTF account configured.",
+                    company=company.display_name,
+                )
+            )
+        return account
+
     def _create_payment_moves(self, is_reverse=False):
         result = self.env["account.move"]
         for payment in self:
@@ -121,7 +143,7 @@ class PosPayment(models.Model):
 
                 credit_line_vals = pos_session._credit_amounts(
                     {
-                        "account_id": self.env.company.customer_account_igtf_id.id,
+                        "account_id": self._get_igtf_account(order).id,
                         "partner_id": accounting_partner.id,
                         "move_id": payment_move.id,
                     },
