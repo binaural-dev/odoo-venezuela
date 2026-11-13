@@ -102,13 +102,17 @@ class TestAccumulatedRate(TransactionCase):
         # pase a la linea) y las lineas de retencion violan el constraint
         # _constraint_amounts_in_zero de l10n_ve_payment_extension.
         self.currency_vef.active = True
+        # Fecha dinamica, no fija: l10n_ve_accountant.AccountMove.create()
+        # busca la tasa por la fecha EXACTA de invoice_date (fields.Date.today()
+        # en este archivo, ver mas abajo) -- una fecha fija como 2020-01-01
+        # nunca calza y el create() explota con "no rate assigned" apenas pasa
+        # esa fecha (ver el mismo fix en test_account_move.TestAccountMoveApiCalls).
         self.env["res.currency.rate"].create({
-            "name": date(2020, 1, 1),
+            "name": fields.Date.today(),
             "currency_id": self.currency_vef.id,
             "company_rate": 2.0,
             "company_id": self.company.id,
         })
-
 
         iva_sequence = self.env["ir.sequence"].create({
             "name": "Secuencia de iva para proveedores",

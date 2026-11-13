@@ -1,7 +1,6 @@
 from odoo import fields, models, api, _
 from odoo.exceptions import ValidationError, UserError
 import json
-import requests
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -98,21 +97,12 @@ class ResCompany(models.Model):
         self.ensure_one()
         self._validate_tfhka_credentials()
 
-        url = self.url_tfhka.rstrip("/") + "/Autenticacion"
         payload = {
             "usuario": self.username_tfhka,
             "clave": self.password_tfhka
         }
-
-        try:
-            response = requests.post(url, json=payload, timeout=10)
-            self._handle_tfhka_response(response, payload)
-        except requests.exceptions.RequestException as e:
-            _logger.error("Error connecting to the TFHKA API: %s", e)
-            self.env["tfhka.api.client"]._log_call(
-                self, "/Autenticacion", payload, None, None, str(e), False
-            )
-            raise ValidationError(_("Error connecting to the TFHKA API: %s", e))
+        response = self.env["tfhka.api.client"].authenticate(self, payload)
+        self._handle_tfhka_response(response, payload)
 
     def _validate_tfhka_credentials(self):
         if not self.username_tfhka:
@@ -150,9 +140,34 @@ class ResCompany(models.Model):
         if "token" in data:
             self.token_auth_tfhka = data["token"]
             _logger.info("TFHKA token generated successfully.")
+            self._sync_tfhka_series()
         else:
             _logger.error("The 'token' field is not found in the response: %s", data)
             raise ValidationError(_("TFHKA API response does not contain 'token'."))
+
+    def _sync_tfhka_series(self):
+        """Importa a tfhka.serie las series que esta compañía ya tiene
+        registradas en TFHKA (vía /ConsultaNumeraciones), para que los diarios
+        las elijan de una lista en vez de escribir el prefijo a mano -- ver
+        account.journal.tfhka_serie_id / _get_tfhka_series().
+
+        No debe impedir guardar el token si falla: el token ya se obtuvo (lo
+        de arriba ya corrió), que el import de series tropiece (compañía sin
+        series registradas todavía, error transitorio de red) no es motivo
+        para abortar la generación del token.
+
+        ``sudo()`` porque tfhka.serie es de solo lectura para todos los
+        usuarios (ver ir.model.access.csv) -- nadie la crea ni la edita a
+        mano, solo este sync, sin importar qué usuario haya generado el
+        token."""
+        self.ensure_one()
+        try:
+            numberings = self.env["tfhka.api.client"].list_numberings(self)
+            self.env["tfhka.serie"].sudo()._sync_from_tfhka(self, numberings)
+        except Exception:
+            _logger.exception(
+                "TFHKA: no se pudieron sincronizar las series tras generar el token."
+            )
 
     def _handle_tfhka_http_error(self, response, data):
         message = data.get("mensaje")
