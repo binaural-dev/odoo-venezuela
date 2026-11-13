@@ -14,6 +14,35 @@ class AccountMove(models.Model):
 
     is_stock_valuation_entry = fields.Boolean(compute="_compute_is_stock_valuation_entry")
 
+    is_incoming_donation = fields.Boolean(
+        string="Received Donation",
+        compute="_compute_is_incoming_donation",
+        help="The entry is a donation RECEIVED by the company. Not stored: a view "
+        "cannot call `_is_incoming_donation()`, so it is exposed as a computed "
+        "field to decide which document to offer.",
+    )
+
+    @api.depends("is_donation", "move_type", "company_id.donation_income_account_ids", "line_ids.account_id")
+    def _compute_is_incoming_donation(self):
+        for move in self:
+            move.is_incoming_donation = move._is_incoming_donation()
+
+    def _is_incoming_donation(self):
+        """True if the entry is a donation RECEIVED by the company: a manual
+        entry marked as donation with some line on one of the received
+        donations accounts of the company. The direction is told by the
+        account and not by the journal: one journal can hold both directions.
+        Only manual entries (`entry`): a donation invoice (given) can use the
+        same income account through the donation product."""
+        self.ensure_one()
+        income_accounts = self.company_id.donation_income_account_ids
+        return bool(
+            self.is_donation
+            and self.move_type == "entry"
+            and income_accounts
+            and income_accounts & self.line_ids.account_id
+        )
+
     @api.depends("stock_move_ids")
     def _compute_is_stock_valuation_entry(self):
         for move in self:
@@ -28,6 +57,8 @@ class AccountMove(models.Model):
     @api.constrains("is_donation", "line_ids", "line_ids.partner_id")
     def _check_partner_donation(self):
         """Validate journal items of a donation move use the company partner.
+        The entries of a donation RECEIVED are not validated: their lines
+        carry the donor (see `_is_incoming_donation`).
 
         Only the LINES are validated here -- the header (`move.partner_id`)
         is intentionally NOT constrained to the company partner: it
@@ -47,7 +78,7 @@ class AccountMove(models.Model):
         beneficiary (see sale_order.py), invoice lines are expected and
         allowed to follow it, exactly like any regular sale."""
         for move in self:
-            if not move.is_donation or move.move_type != "entry":
+            if not move.is_donation or move.move_type != "entry" or move._is_incoming_donation():
                 continue
             company_partner = move.company_id.partner_id or self.env.company.partner_id
             for line in move.line_ids.filtered(lambda l: l.partner_id):
@@ -202,9 +233,11 @@ class AccountMove(models.Model):
         draft, not when it is posted: a journal that locks the posted
         entries with a hash does not accept to write the partner of the
         lines of a posted entry. The lines that already have a partner are
-        left as they are."""
+        left as they are. The entries of a donation RECEIVED are not filled:
+        their lines carry the donor."""
         for move in self.filtered(
             lambda m: m.is_donation and m.move_type == "entry" and m.state == "draft"
+            and not m._is_incoming_donation()
         ):
             partner = move.company_id.partner_id or self.env.company.partner_id
             move.line_ids.filtered(lambda line: not line.partner_id).partner_id = partner
