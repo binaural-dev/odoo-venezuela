@@ -4,16 +4,119 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 19.0+e-20251118\n"
+"Project-Id-Version: Odoo Server 19.0+e-20261023\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-14 19:37+0000\n"
-"PO-Revision-Date: 2026-01-14 19:37+0000\n"
+"POT-Creation-Date: 2026-11-13 18:13+0000\n"
+"PO-Revision-Date: 2026-11-13 18:13+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
+"Language: es_VE\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
 "Plural-Forms: \n"
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/l10n_ve_discount_document.py:0
+msgid ""
+"%(document)s is waiting for the approval of its discount: %(applied)s%% "
+"against a maximum of %(limit)s%%."
+msgstr ""
+"%(document)s está esperando la aprobación de su descuento: %(applied)s%% "
+"frente a un máximo de %(limit)s%%."
+
+#. module: l10n_ve_sale
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.view_order_form_l10n_ve_discount
+msgid ""
+"<strong>The discount exceeds the maximum allowed.</strong> When you confirm the\n"
+"                    order it will go to a discount approval stage."
+msgstr ""
+"<strong>El descuento excede el máximo permitido.</strong> Al confirmar el "
+"pedido pasará a una etapa de aprobación del descuento."
+
+#. module: l10n_ve_sale
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.view_move_form_l10n_ve_discount
+msgid ""
+"<strong>The discount exceeds the maximum allowed.</strong> When you post the\n"
+"                    invoice it will go to a discount approval stage."
+msgstr ""
+"<strong>El descuento excede el máximo permitido.</strong> Al publicar la "
+"factura pasará a una etapa de aprobación del descuento."
+
+#. module: l10n_ve_sale
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.view_order_form_l10n_ve_discount
+msgid ""
+"<strong>To Approve:</strong> the discount exceeds the maximum allowed. A discount\n"
+"                    approver must approve it: approving confirms the order. Lowering the discount\n"
+"                    under the limit also takes it out of this stage."
+msgstr ""
+"<strong>Por aprobar:</strong> el descuento excede el máximo permitido. Un "
+"aprobador de descuentos debe aprobarlo: al aprobarlo se confirma el pedido. "
+"Bajar el descuento por debajo del límite también lo saca de esta etapa."
+
+#. module: l10n_ve_sale
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.view_move_form_l10n_ve_discount
+msgid ""
+"<strong>To Approve:</strong> the discount exceeds the maximum allowed. A discount\n"
+"                    approver must approve it: approving posts the invoice."
+msgstr ""
+"<strong>Por aprobar:</strong> el descuento excede el máximo permitido. Un "
+"aprobador de descuentos debe aprobarlo: al aprobarlo se publica la factura."
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,help:l10n_ve_sale.field_res_company__discount_approval_enabled
+#: model:ir.model.fields,help:l10n_ve_sale.field_res_config_settings__discount_approval_enabled
+msgid ""
+"A discount above the maximum can be applied, but the document moves to 'To "
+"Approve' until a discount approver validates it."
+msgstr ""
+"Se puede aplicar un descuento superior al máximo, pero el documento pasa a "
+"'Por aprobar' hasta que un aprobador de descuentos lo valide."
+
+#. module: l10n_ve_sale
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.res_config_settings_l10n_ve_sale_discount_limits
+msgid ""
+"A discount above the maximum moves the document to 'To Approve' until a "
+"discount approver validates it."
+msgstr ""
+"Un descuento superior al máximo pasa el documento a 'Por aprobar' hasta que "
+"un aprobador de descuentos lo valide."
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/l10n_ve_discount_document.py:0
+msgid ""
+"A global discount is applied to this document. Remove it before discounting "
+"individual lines."
+msgstr ""
+"Este documento tiene un descuento global. Quítelo antes de aplicar "
+"descuentos por línea."
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,help:l10n_ve_sale.field_res_company__global_discount_account_id
+#: model:ir.model.fields,help:l10n_ve_sale.field_res_config_settings__global_discount_account_id
+msgid ""
+"Account where the global discounts of customer invoices are recorded. It can"
+" differ from the line discount account."
+msgstr ""
+"Cuenta donde se registran los descuentos globales de las facturas de "
+"cliente. Puede ser distinta a la de los descuentos por línea."
+
+#. module: l10n_ve_sale
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.res_config_settings_l10n_ve_sale_global_discount
+msgid ""
+"Account where the global discounts of customer invoices are recorded. "
+"Required to apply a global discount."
+msgstr ""
+"Cuenta donde se registran los descuentos globales de las facturas de "
+"cliente. Obligatoria para aplicar un descuento global."
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/l10n_ve_discount_document.py:0
+msgid "Add at least one product line before applying a discount."
+msgstr "Agregue al menos una línea de producto antes de aplicar un descuento."
 
 #. module: l10n_ve_sale
 #. odoo-python
@@ -22,9 +125,67 @@ msgid "All products must contain only one tax."
 msgstr "Todos los productos deben contener solo un impuesto."
 
 #. module: l10n_ve_sale
-#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.report_sale_document_l10n_ve_sale
-msgid "BORRADOR"
-msgstr ""
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_res_company__discount_allow_line_amount
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_res_config_settings__discount_allow_line_amount
+msgid "Allow Fixed Amount on Lines"
+msgstr "Permitir importe fijo en líneas"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_res_company__discount_allow_global_subtotal
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_res_config_settings__discount_allow_global_subtotal
+msgid "Allow Global Discount over the Subtotal"
+msgstr "Permitir descuento global sobre el subtotal"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_res_company__discount_allow_global_total
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_res_config_settings__discount_allow_global_total
+msgid "Allow Global Discount over the Total"
+msgstr "Permitir descuento global sobre el total"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_res_company__discount_allow_line_percent
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_res_config_settings__discount_allow_line_percent
+msgid "Allow Percentage on Lines"
+msgstr "Permitir porcentaje en líneas"
+
+#. module: l10n_ve_sale
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.res_config_settings_l10n_ve_sale_discount_limits
+msgid ""
+"Allowed methods (a method that is not ticked cannot be applied by anyone)"
+msgstr "Métodos permitidos (un método sin marcar no lo puede aplicar nadie)"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_l10n_ve_discount_wizard__scheme
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.l10n_ve_discount_wizard_form
+msgid "Apply"
+msgstr "Aplicar"
+
+#. module: l10n_ve_sale
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.view_move_form_l10n_ve_discount
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.view_order_form_l10n_ve_discount
+msgid "Approve Discount"
+msgstr "Aprobar descuento"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_res_company__discount_approval_enabled
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_res_config_settings__discount_approval_enabled
+#: model:res.groups,name:l10n_ve_sale.group_discount_approver
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.res_config_settings_l10n_ve_sale_discount_limits
+msgid "Approve Excess Discounts"
+msgstr "Aprobar descuentos excedentes"
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/l10n_ve_discount_document.py:0
+msgid "Approve the discount of %s"
+msgstr "Aprobar el descuento de %s"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__account_move__discount_approval_state__approved
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__l10n_ve_discount_document_mixin__discount_approval_state__approved
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__sale_order__discount_approval_state__approved
+msgid "Approved"
+msgstr "Aprobado"
 
 #. module: l10n_ve_sale
 #. odoo-python
@@ -61,6 +222,11 @@ msgstr ""
 "especificado."
 
 #. module: l10n_ve_sale
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.view_order_form_l10n_ve_discount
+msgid "Cancel"
+msgstr ""
+
+#. module: l10n_ve_sale
 #: model:ir.actions.server,name:l10n_ve_sale.ir_cron_cancel_orders_after_date_ir_actions_server
 msgid "Cancel Orders After Day"
 msgstr "Cancelar Presupuestos Luego de 24h de Creado"
@@ -95,29 +261,31 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:l10n_ve_sale.res_config_settings_l10n_ve_sale
 msgid ""
 "Check this if you want to convert the price unit of the customer invoice "
-"lines based on the sale order, using the invoice rate. It cannot be "
-"combined with pricelist rules for the same products."
+"lines based on the sale order, using the invoice rate. It cannot be combined"
+" with pricelist rules for the same products."
 msgstr ""
-"Marque esta opción si desea convertir el precio unitario de las líneas de "
-"la factura de cliente en base al pedido de venta, usando la tasa de la "
+"Marque esta opción si desea convertir el precio unitario de las líneas de la"
+" factura de cliente en base al pedido de venta, usando la tasa de la "
 "factura. No se puede combinar con reglas de tarifa para los mismos "
 "productos."
 
 #. module: l10n_ve_sale
+#: model:ir.model.fields,help:l10n_ve_sale.field_account_bank_statement_line__convert_currency_from_sale_order
+#: model:ir.model.fields,help:l10n_ve_sale.field_account_move__convert_currency_from_sale_order
 #: model:ir.model.fields,help:l10n_ve_sale.field_res_company__convert_currency_from_sale_order
 #: model:ir.model.fields,help:l10n_ve_sale.field_res_config_settings__convert_currency_from_sale_order
 msgid ""
 "Check this if you want to convert the price unit of the customer invoice "
-"lines based on the sale order, using the invoice rate. It cannot be "
-"combined with pricelist rules for the same products: if the invoice "
-"pricelist defines a rule for a product, the recalculation raises an error "
-"instead of overriding it."
+"lines based on the sale order, using the invoice rate. It cannot be combined"
+" with pricelist rules for the same products: if the invoice pricelist "
+"defines a rule for a product, the recalculation raises an error instead of "
+"overriding it."
 msgstr ""
-"Marque esta opción si desea convertir el precio unitario de las líneas de "
-"la factura de cliente en base al pedido de venta, usando la tasa de la "
+"Marque esta opción si desea convertir el precio unitario de las líneas de la"
+" factura de cliente en base al pedido de venta, usando la tasa de la "
 "factura. No se puede combinar con reglas de tarifa para los mismos "
-"productos: si la tarifa de la factura define una regla para un producto, "
-"el recálculo lanza un error en vez de sobrescribirla."
+"productos: si la tarifa de la factura define una regla para un producto, el "
+"recálculo lanza un error en vez de sobrescribirla."
 
 #. module: l10n_ve_sale
 #: model_terms:ir.ui.view,arch_db:l10n_ve_sale.res_config_settings_l10n_ve_sale
@@ -145,6 +313,8 @@ msgid "Configuration Sales: Generals"
 msgstr "Configuración Ventas: Generales"
 
 #. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_account_bank_statement_line__convert_currency_from_sale_order
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_account_move__convert_currency_from_sale_order
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_res_company__convert_currency_from_sale_order
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_res_config_settings__convert_currency_from_sale_order
 msgid "Convert Currency From Sale Order"
@@ -156,13 +326,181 @@ msgid "Create Invoice"
 msgstr "Crear factura"
 
 #. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_l10n_ve_discount_wizard__create_uid
+msgid "Created by"
+msgstr "Creado por"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_l10n_ve_discount_wizard__create_date
+msgid "Created on"
+msgstr "Creado el"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_l10n_ve_discount_wizard__current_mode
+msgid "Current Mode"
+msgstr "Modo actual"
+
+#. module: l10n_ve_sale
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.res_config_settings_l10n_ve_sale_global_discount
+msgid "Customer Invoices"
+msgstr "Facturas de cliente"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,help:l10n_ve_sale.field_sale_order__foreign_rate_date
+msgid ""
+"Date whose exchange rate is used for this order's alternate currency "
+"amounts. It is not date_order: the core rewrites date_order with the "
+"confirmation date, and when the rate is frozen ('Update sale order rate "
+"using date order' disabled) this field keeps the date the rate was actually "
+"taken from. It is the date passed to the invoice so both convert with the "
+"same rate."
+msgstr ""
+
+#. module: l10n_ve_sale
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.tax_groups_totals_global_discount
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.tax_groups_totals_ve_global_discount
+msgid "Descuento global"
+msgstr "Descuento global"
+
+#. module: l10n_ve_sale
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.view_order_form_l10n_ve_discount
+msgid "Disc. Amt"
+msgstr "Desc. importe"
+
+#. module: l10n_ve_sale
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.l10n_ve_discount_wizard_form
+msgid "Discard"
+msgstr "Descartar"
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/account_move_line.py:0
+#: code:addons/l10n_ve_sale/models/l10n_ve_discount_document.py:0
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_l10n_ve_discount_wizard__value
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.l10n_ve_discount_wizard_form
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.view_move_form_l10n_ve_discount
+msgid "Discount"
+msgstr "Descuento"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order_line__discount_fixed
+msgid "Discount (Fixed)"
+msgstr "Descuento (importe fijo)"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_account_bank_statement_line__discount_approval_state
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_account_move__discount_approval_state
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_l10n_ve_discount_document_mixin__discount_approval_state
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__discount_approval_state
+#: model:mail.activity.type,name:l10n_ve_sale.mail_activity_type_discount_approval
+#: model:res.groups.privilege,name:l10n_ve_sale.res_groups_privilege_discount_approval
+msgid "Discount Approval"
+msgstr "Aprobación del descuento"
+
+#. module: l10n_ve_sale
+#: model:ir.module.category,name:l10n_ve_sale.module_category_discount_control
+msgid "Discount Control"
+msgstr "Control de descuentos"
+
+#. module: l10n_ve_sale
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.res_config_settings_l10n_ve_sale_discount_limits
+msgid "Discounts"
+msgstr "Descuentos"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_account_bank_statement_line__discount_methods_available
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_account_move__discount_methods_available
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_l10n_ve_discount_document_mixin__discount_methods_available
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__discount_methods_available
+msgid "Discount Methods Available"
+msgstr "Métodos de descuento disponibles"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_account_bank_statement_line__discount_mode
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_account_move__discount_mode
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_l10n_ve_discount_document_mixin__discount_mode
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__discount_mode
+msgid "Discount Scheme"
+msgstr "Esquema de descuento"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_l10n_ve_discount_wizard__discount_type
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__discount_type
+msgid "Discount Type"
+msgstr "Tipo de descuento"
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/l10n_ve_discount_document.py:0
+msgid "Discount approval"
+msgstr "Aprobación del descuento"
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/l10n_ve_discount_document.py:0
+msgid "Discount approved"
+msgstr "Descuento aprobado"
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/l10n_ve_discount_document.py:0
+msgid "Discount rejected"
+msgstr "Descuento rechazado"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,help:l10n_ve_sale.field_account_bank_statement_line__discount_mode
+#: model:ir.model.fields,help:l10n_ve_sale.field_account_move__discount_mode
+#: model:ir.model.fields,help:l10n_ve_sale.field_l10n_ve_discount_document_mixin__discount_mode
+#: model:ir.model.fields,help:l10n_ve_sale.field_sale_order__discount_mode
+msgid ""
+"Discount scheme applied to this document. Only one scheme can be active at a"
+" time; remove the discount to switch."
+msgstr ""
+"Esquema de descuento aplicado a este documento. Solo puede haber un esquema "
+"activo a la vez; quite el descuento para cambiarlo."
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__sale_order__state__to_approve
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__account_move__discount_stage__to_approve
+msgid "Discount to Approve"
+msgstr "Descuento por aprobar"
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/wizard/l10n_ve_discount_wizard.py:0
+msgid "Discounts can only be applied to customer invoices."
+msgstr "Los descuentos solo se pueden aplicar a facturas de cliente."
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/wizard/l10n_ve_discount_wizard.py:0
+msgid "Discounts cannot be applied to this kind of document."
+msgstr "No se pueden aplicar descuentos a este tipo de documento."
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_account_move__display_name
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_account_move_line__display_name
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_account_tax__display_name
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_l10n_ve_discount_document_mixin__display_name
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_l10n_ve_discount_wizard__display_name
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_product_pricelist_item__display_name
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_res_company__display_name
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_res_config_settings__display_name
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__display_name
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order_line__display_name
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_report__display_name
 msgid "Display Name"
 msgstr "Nombre en pantalla"
+
+#. module: l10n_ve_sale
+#: model:ir.model,name:l10n_ve_sale.model_l10n_ve_discount_document_mixin
+msgid "Document discount scheme"
+msgstr "Esquema de descuento del documento"
+
+#. module: l10n_ve_sale
+#: model:ir.model,name:l10n_ve_sale.model_l10n_ve_discount_wizard
+msgid "Document discount wizard"
+msgstr "Asistente de descuento del documento"
 
 #. module: l10n_ve_sale
 #. odoo-python
@@ -175,6 +513,13 @@ msgstr "No tiene suficientes unidades disponibles para el producto "
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_res_config_settings__not_allow_sell_products
 msgid "Dont allow sell products without quantity"
 msgstr "No permitir vender inventario en cero"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__account_move__discount_approval_state__exceeds
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__l10n_ve_discount_document_mixin__discount_approval_state__exceeds
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__sale_order__discount_approval_state__exceeds
+msgid "Exceeds the Maximum"
+msgstr "Excede el máximo"
 
 #. module: l10n_ve_sale
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__filter_partner
@@ -191,6 +536,30 @@ msgstr ""
 "necesite)"
 
 #. module: l10n_ve_sale
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__account_move__global_discount_type__amount
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__l10n_ve_discount_document_mixin__global_discount_type__amount
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__l10n_ve_discount_wizard__discount_type__amount
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__l10n_ve_discount_wizard__type_global_subtotal__amount
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__l10n_ve_discount_wizard__type_global_total__amount
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__l10n_ve_discount_wizard__type_lines__amount
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__sale_order__discount_type__amount
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__sale_order__global_discount_type__amount
+msgid "Fixed Amount"
+msgstr "Importe fijo"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,help:l10n_ve_sale.field_sale_order_line__discount_fixed
+msgid ""
+"Fixed amount discount on the line's gross subtotal (price_unit * quantity), "
+"subtracted before taxes. Used instead of Discount (%) when the line uses "
+"fixed amount discounts. Applies on create/write, not only through the form."
+msgstr ""
+"Descuento de importe fijo sobre el subtotal bruto de la línea (precio "
+"unitario * cantidad), restado antes de impuestos. Se usa en lugar de "
+"Descuento (%) cuando la línea usa descuentos de importe fijo. Aplica al "
+"crear o escribir, no solo desde el formulario."
+
+#. module: l10n_ve_sale
 #: model_terms:ir.ui.view,arch_db:l10n_ve_sale.view_quotation_tree
 msgid "Foreign Amount total"
 msgstr "Monto total alterno"
@@ -198,14 +567,9 @@ msgstr "Monto total alterno"
 #. module: l10n_ve_sale
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__foreign_currency_id
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order_line__foreign_currency_id
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_report__foreign_currency_id
 msgid "Foreign Currency"
 msgstr "Moneda alterna"
-
-#. module: l10n_ve_sale
-#. odoo-python
-#: code:addons/l10n_ve_sale/models/sale_order.py:0
-msgid "Foreign Currency "
-msgstr "Moneda Alterna"
 
 #. module: l10n_ve_sale
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__foreign_inverse_rate
@@ -251,6 +615,7 @@ msgstr "Base imponible alterna de la factura"
 
 #. module: l10n_ve_sale
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__foreign_total_billed
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_report__foreign_total_billed
 msgid "Foreign Total Billed"
 msgstr "Total alterno facturado"
 
@@ -260,14 +625,106 @@ msgid "Foreign Total Billed of the invoice"
 msgstr "Total alterno facturado de la factura"
 
 #. module: l10n_ve_sale
-#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.view_sale_order_form_l10n_ve_sales
-msgid "Foreign currency"
-msgstr "Moneda alterna"
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_report__foreign_untaxed_total
+msgid "Foreign Untaxed Total"
+msgstr ""
 
 #. module: l10n_ve_sale
 #: model_terms:ir.ui.view,arch_db:l10n_ve_sale.view_sale_order_form_l10n_ve_sales
 msgid "Foreign inverse rate"
 msgstr "Tasa inversa alterna"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__foreign_rate_date
+msgid "Foreign rate date"
+msgstr ""
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_account_bank_statement_line__global_discount_percent
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_account_move__global_discount_percent
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_l10n_ve_discount_document_mixin__global_discount_percent
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__global_discount_percent
+msgid "Global Discount (%)"
+msgstr "Descuento global (%)"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_res_company__global_discount_account_id
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_res_config_settings__global_discount_account_id
+msgid "Global Discount Account (Customer Invoices)"
+msgstr "Cuenta de descuento global (facturas de cliente)"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_account_bank_statement_line__global_discount_amount
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_account_move__global_discount_amount
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_l10n_ve_discount_document_mixin__global_discount_amount
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__global_discount_amount
+msgid "Global Discount Amount"
+msgstr "Monto del descuento global"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_account_bank_statement_line__global_total_discount
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_account_move__global_total_discount
+msgid "Global Discount Over Total"
+msgstr "Descuento global sobre el total"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_account_bank_statement_line__global_total_discount_company
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_account_move__global_total_discount_company
+msgid "Global Discount Over Total (Company Currency)"
+msgstr "Descuento global sobre el total (moneda de la compañía)"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_account_bank_statement_line__global_discount_type
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_account_move__global_discount_type
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_l10n_ve_discount_document_mixin__global_discount_type
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__global_discount_type
+msgid "Global Discount Type"
+msgstr "Tipo de descuento global"
+
+#. module: l10n_ve_sale
+#. odoo-javascript
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/account_move_line.py:0
+#: code:addons/l10n_ve_sale/static/src/components/tax_totals/tax_totals.xml:0
+msgid "Global discount"
+msgstr "Descuento global"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__l10n_ve_discount_wizard__scheme__global_subtotal
+msgid "Global discount over the subtotal"
+msgstr "Descuento global sobre el subtotal"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__l10n_ve_discount_wizard__scheme__global_total
+msgid "Global discount over the total"
+msgstr "Descuento global sobre el total"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,help:l10n_ve_sale.field_account_bank_statement_line__global_total_discount
+#: model:ir.model.fields,help:l10n_ve_sale.field_account_move__global_total_discount
+msgid "Global discount over the total, in the document currency."
+msgstr "Descuento global sobre el total, en la moneda del documento."
+
+#. module: l10n_ve_sale
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.res_config_settings_l10n_ve_sale_global_discount
+msgid "Global discounts:"
+msgstr "Descuentos globales:"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__account_move__discount_mode__global_subtotal
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__l10n_ve_discount_document_mixin__discount_mode__global_subtotal
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__l10n_ve_discount_wizard__current_mode__global_subtotal
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__sale_order__discount_mode__global_subtotal
+msgid "Global on Subtotal"
+msgstr "Global sobre subtotal"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__account_move__discount_mode__global_total
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__l10n_ve_discount_document_mixin__discount_mode__global_total
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__l10n_ve_discount_wizard__current_mode__global_total
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__sale_order__discount_mode__global_total
+msgid "Global on Total"
+msgstr "Global sobre total"
 
 #. module: l10n_ve_sale
 #: model:res.groups,name:l10n_ve_sale.contact_filter_sale_order_group
@@ -290,11 +747,17 @@ msgid "Hide pricelist (sale)"
 msgstr "Ocultar Tarifas (venta)"
 
 #. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_account_move__id
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_account_move_line__id
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_account_tax__id
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_l10n_ve_discount_document_mixin__id
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_l10n_ve_discount_wizard__id
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_product_pricelist_item__id
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_res_company__id
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_res_config_settings__id
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__id
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order_line__id
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_report__id
 msgid "ID"
 msgstr ""
 
@@ -324,14 +787,53 @@ msgid "In payment process"
 msgstr "En proceso de pago"
 
 #. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__invoice_status
+msgid "Invoice Status"
+msgstr "Estado de la factura"
+
+#. module: l10n_ve_sale
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order_line__invoiced
 msgid "Invoiced"
 msgstr ""
 
 #. module: l10n_ve_sale
+#: model:ir.model,name:l10n_ve_sale.model_account_move
+msgid "Journal Entry"
+msgstr "Asiento contable"
+
+#. module: l10n_ve_sale
+#: model:ir.model,name:l10n_ve_sale.model_account_move_line
+msgid "Journal Item"
+msgstr "Apunte contable"
+
+#. module: l10n_ve_sale
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__last_foreign_rate
 msgid "Last Foreign Rate"
 msgstr "Ultima tasa"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_l10n_ve_discount_wizard__write_uid
+msgid "Last Updated by"
+msgstr "Última actualización por"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_l10n_ve_discount_wizard__write_date
+msgid "Last Updated on"
+msgstr "Última actualización el"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_res_company__discount_method_limit_enabled
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_res_config_settings__discount_method_limit_enabled
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.res_config_settings_l10n_ve_sale_discount_limits
+msgid "Limit Discount Method"
+msgstr "Limitar método de descuento"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_res_company__discount_max_limit_enabled
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_res_config_settings__discount_max_limit_enabled
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.res_config_settings_l10n_ve_sale_discount_limits
+msgid "Limit the Maximum Discount"
+msgstr "Limitar el descuento máximo"
 
 #. module: l10n_ve_sale
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_res_company__are_sale_lines_limited
@@ -340,9 +842,37 @@ msgid "Limit the number of lines in the budget/sales order"
 msgstr "Limitar el número de líneas en el presupuesto/pedido de venta"
 
 #. module: l10n_ve_sale
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__account_move__discount_mode__line_amount
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__l10n_ve_discount_document_mixin__discount_mode__line_amount
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__l10n_ve_discount_wizard__current_mode__line_amount
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__sale_order__discount_mode__line_amount
+msgid "Lines (Fixed Amount)"
+msgstr "Líneas (importe fijo)"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__account_move__discount_mode__line_percent
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__l10n_ve_discount_document_mixin__discount_mode__line_percent
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__l10n_ve_discount_wizard__current_mode__line_percent
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__sale_order__discount_mode__line_percent
+msgid "Lines (Percentage)"
+msgstr "Líneas (porcentaje)"
+
+#. module: l10n_ve_sale
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__manually_set_rate
 msgid "Manually Set Rate"
 msgstr "Tasa Actualizada manualmente"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_res_company__discount_max_global_subtotal
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_res_config_settings__discount_max_global_subtotal
+msgid "Maximum Global over Subtotal (%)"
+msgstr "Máximo global sobre subtotal (%)"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_res_company__discount_max_global_total
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_res_config_settings__discount_max_global_total
+msgid "Maximum Global over Total (%)"
+msgstr "Máximo global sobre total (%)"
 
 #. module: l10n_ve_sale
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_res_company__maximum_sales_line_limit
@@ -351,9 +881,29 @@ msgid "Maximum Sales Line Limit"
 msgstr "Límite máximo de línea de venta"
 
 #. module: l10n_ve_sale
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.res_config_settings_l10n_ve_sale_discount_limits
+msgid ""
+"Maximum discount percentage per scheme. Fixed amounts are compared as a "
+"percentage. Independent of the discount method limit."
+msgstr ""
+"Porcentaje máximo de descuento por esquema. Los importes fijos se comparan "
+"como porcentaje. Es independiente del límite de método de descuento."
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_res_company__discount_max_line
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_res_config_settings__discount_max_line
+msgid "Maximum on Lines (%)"
+msgstr "Máximo en líneas (%)"
+
+#. module: l10n_ve_sale
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__mobile
 msgid "Mobile"
 msgstr "Teléfono"
+
+#. module: l10n_ve_sale
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.report_sale_document_l10n_ve_sale
+msgid "NO FISCAL"
+msgstr ""
 
 #. module: l10n_ve_sale
 #. odoo-python
@@ -378,6 +928,44 @@ msgid "Not paid"
 msgstr "No pagado"
 
 #. module: l10n_ve_sale
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__l10n_ve_discount_wizard__scheme__lines
+msgid "On all the lines of the document"
+msgstr "En todas las líneas del documento"
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/l10n_ve_discount_document.py:0
+msgid "Only a discount approver can approve this discount."
+msgstr "Solo un aprobador de descuentos puede aprobar este descuento."
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/l10n_ve_discount_document.py:0
+msgid "Only a discount approver can reject this discount."
+msgstr "Solo un aprobador de descuentos puede rechazar este descuento."
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,help:l10n_ve_sale.field_res_company__discount_method_limit_enabled
+#: model:ir.model.fields,help:l10n_ve_sale.field_res_config_settings__discount_method_limit_enabled
+msgid ""
+"Only the discount methods ticked here can be applied, by any user. "
+"Independent of the maximum discount."
+msgstr ""
+"Solo se pueden aplicar los métodos de descuento marcados aquí, por cualquier"
+" usuario. Es independiente del descuento máximo."
+
+#. module: l10n_ve_sale
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.res_config_settings_l10n_ve_sale_discount_limits
+msgid "Only the methods ticked below can be applied, by any user."
+msgstr ""
+"Solo se pueden aplicar los métodos marcados abajo, por cualquier usuario."
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__sale_order__invoice_status__partially_billed
+msgid "Partially billed"
+msgstr "Parcialmente facturado"
+
+#. module: l10n_ve_sale
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__partner_id_domain
 msgid "Partner Id Domain"
 msgstr "Dominio ID de socio"
@@ -387,6 +975,18 @@ msgstr "Dominio ID de socio"
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_res_config_settings__block_order_invoice_payment_state
 msgid "Payment State"
 msgstr "Estado de pago"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__account_move__global_discount_type__percent
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__l10n_ve_discount_document_mixin__global_discount_type__percent
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__l10n_ve_discount_wizard__discount_type__percent
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__l10n_ve_discount_wizard__type_global_subtotal__percent
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__l10n_ve_discount_wizard__type_global_total__percent
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__l10n_ve_discount_wizard__type_lines__percent
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__sale_order__discount_type__percent
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__sale_order__global_discount_type__percent
+msgid "Percentage"
+msgstr "Porcentaje"
 
 #. module: l10n_ve_sale
 #. odoo-python
@@ -419,7 +1019,7 @@ msgstr "El precio no puede ser negativo"
 #. module: l10n_ve_sale
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__pricelist_id
 msgid "Pricelist"
-msgstr "Tarifa"
+msgstr "Lista de precios"
 
 #. module: l10n_ve_sale
 #: model:ir.model,name:l10n_ve_sale.model_product_pricelist_item
@@ -450,9 +1050,35 @@ msgid "Recompute all prices based on this pricelist"
 msgstr "Recomputar todos los precios basados en esta Tarifa"
 
 #. module: l10n_ve_sale
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.view_move_form_l10n_ve_discount
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.view_order_form_l10n_ve_discount
+msgid "Reject Discount"
+msgstr "Rechazar descuento"
+
+#. module: l10n_ve_sale
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.l10n_ve_discount_wizard_form
+msgid "Remove discount"
+msgstr "Quitar descuento"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_l10n_ve_discount_wizard__res_id
+msgid "Res"
+msgstr ""
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_l10n_ve_discount_wizard__res_model
+msgid "Res Model"
+msgstr "Modelo del documento"
+
+#. module: l10n_ve_sale
 #: model_terms:ir.ui.view,arch_db:l10n_ve_sale.report_sale_document_l10n_ve_sale
 msgid "SIN DERECHO A CRÉDITO FISCAL"
 msgstr ""
+
+#. module: l10n_ve_sale
+#: model:ir.model,name:l10n_ve_sale.model_sale_report
+msgid "Sales Analysis Report"
+msgstr "Reporte del análisis de ventas"
 
 #. module: l10n_ve_sale
 #: model:ir.model,name:l10n_ve_sale.model_sale_order
@@ -470,6 +1096,28 @@ msgid "See Pricelist Items"
 msgstr "Ver Normas de Precio"
 
 #. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/wizard/l10n_ve_discount_wizard.py:0
+msgid ""
+"Set the Global Discount Account in the Binaural settings before applying a "
+"global discount."
+msgstr ""
+"Configure la Cuenta de descuento global en los ajustes de Binaural antes de "
+"aplicar un descuento global."
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,help:l10n_ve_sale.field_res_company__discount_max_limit_enabled
+#: model:ir.model.fields,help:l10n_ve_sale.field_res_config_settings__discount_max_limit_enabled
+msgid "Set the maximum discount percentage allowed for each scheme."
+msgstr ""
+"Establece el porcentaje máximo de descuento permitido para cada esquema."
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__state
+msgid "Status"
+msgstr "Estado"
+
+#. module: l10n_ve_sale
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__address
 msgid "Street"
 msgstr "Dirección"
@@ -477,8 +1125,26 @@ msgstr "Dirección"
 #. module: l10n_ve_sale
 #. odoo-python
 #: code:addons/l10n_ve_sale/models/sale_order.py:0
+#: code:addons/l10n_ve_sale/report/sale_report.py:0
 msgid "Subtotal"
 msgstr "Subtotal"
+
+#. module: l10n_ve_sale
+#: model:ir.model,name:l10n_ve_sale.model_account_tax
+msgid "Tax"
+msgstr "Impuesto"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,help:l10n_ve_sale.field_account_bank_statement_line__discount_methods_available
+#: model:ir.model.fields,help:l10n_ve_sale.field_account_move__discount_methods_available
+#: model:ir.model.fields,help:l10n_ve_sale.field_l10n_ve_discount_document_mixin__discount_methods_available
+#: model:ir.model.fields,help:l10n_ve_sale.field_sale_order__discount_methods_available
+msgid ""
+"Technical: whether the company lets anybody apply some discount method. The "
+"Discount button is hidden when none is allowed."
+msgstr ""
+"Técnico: indica si la compañía deja aplicar algún método de descuento. El "
+"botón Descuento se oculta cuando no se permite ninguno."
 
 #. module: l10n_ve_sale
 #. odoo-python
@@ -498,6 +1164,95 @@ msgstr "No se puede confirmar el presupuesto. Tiene %s Facturas (%s)."
 
 #. module: l10n_ve_sale
 #. odoo-python
+#: code:addons/l10n_ve_sale/models/l10n_ve_discount_document.py:0
+msgid ""
+"The discount (%(applied)s%%) exceeds the maximum allowed (%(limit)s%%)."
+msgstr ""
+"El descuento (%(applied)s%%) excede el máximo permitido (%(limit)s%%)."
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/l10n_ve_discount_document.py:0
+msgid "The discount amount must be less than the subtotal (%s)."
+msgstr "El monto del descuento debe ser menor que el subtotal (%s)."
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/l10n_ve_discount_document.py:0
+msgid ""
+"The discount approval is active but there is no discount approver assigned. "
+"Give the permission \"Approve Excess Discounts\" to a user before sending a "
+"discount to approval."
+msgstr ""
+"La aprobación de descuentos está activa pero no hay ningún aprobador de "
+"descuentos asignado. Asigne el permiso \"Aprobar descuentos excedentes\" a "
+"un usuario antes de enviar un descuento a aprobación."
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/l10n_ve_discount_document.py:0
+msgid "The discount cannot be changed on this document."
+msgstr "El descuento no se puede cambiar en este documento."
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/l10n_ve_discount_document.py:0
+msgid ""
+"The discount exceeds the maximum allowed: the document is now waiting for a "
+"discount approver."
+msgstr ""
+"El descuento excede el máximo permitido: el documento queda a la espera de "
+"un aprobador de descuentos."
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/l10n_ve_discount_document.py:0
+msgid "The discount must be greater than zero."
+msgstr "El descuento debe ser mayor que cero."
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/l10n_ve_discount_document.py:0
+msgid "The discount of %(document)s was approved by %(user)s."
+msgstr "El descuento de %(document)s fue aprobado por %(user)s."
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/l10n_ve_discount_document.py:0
+msgid "The discount of %(document)s was rejected by %(user)s and removed."
+msgstr "El descuento de %(document)s fue rechazado por %(user)s y se quitó."
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/l10n_ve_discount_document.py:0
+#: code:addons/l10n_ve_sale/models/sale_order.py:0
+msgid "The discount of this document is waiting for approval."
+msgstr "El descuento de este documento está pendiente de aprobación."
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/l10n_ve_discount_document.py:0
+msgid "The discount percentage cannot exceed 100."
+msgstr "El porcentaje de descuento no puede exceder 100."
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/l10n_ve_discount_document.py:0
+msgid ""
+"The discount scheme and its approval can only be changed with the Discount "
+"button."
+msgstr ""
+"El esquema de descuento y su aprobación solo se pueden cambiar con el botón "
+"Descuento."
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/wizard/l10n_ve_discount_wizard.py:0
+msgid "The document no longer exists."
+msgstr "El documento ya no existe."
+
+#. module: l10n_ve_sale
+#. odoo-python
 #: code:addons/l10n_ve_sale/models/sale_order.py:0
 msgid "The order line limit must not exceed %s."
 msgstr "El límite de la línea de pedido no debe exceder de %s."
@@ -506,20 +1261,13 @@ msgstr "El límite de la línea de pedido no debe exceder de %s."
 #. odoo-python
 #: code:addons/l10n_ve_sale/models/account_move.py:0
 msgid ""
-"The pricelist %(pricelist)s defines a rule for the following products, so "
-"their price cannot be recalculated from the sale order: %(products)s.\n"
+"The pricelist %(pricelist)s defines a rule for the following products, so their price cannot be recalculated from the sale order: %(products)s.\n"
 "\n"
-"Both mechanisms set the same unit price and one would override the other. "
-"Either remove the pricelist rule or disable \"Convert Currency From Sale "
-"Order\"."
+"Both mechanisms set the same unit price and one would override the other. Either remove the pricelist rule or disable \"Convert Currency From Sale Order\"."
 msgstr ""
-"La tarifa %(pricelist)s define una regla para los siguientes productos, "
-"por lo que su precio no se puede recalcular a partir del pedido de venta: "
-"%(products)s.\n"
+"La tarifa %(pricelist)s define una regla para los siguientes productos, por lo que su precio no se puede recalcular a partir del pedido de venta: %(products)s.\n"
 "\n"
-"Ambos mecanismos fijan el mismo precio unitario y uno sobrescribiría al "
-"otro. Elimine la regla de la tarifa o desactive \"Convertir Moneda Desde "
-"la Orden de Venta\"."
+"Ambos mecanismos fijan el mismo precio unitario y uno sobrescribiría al otro. Elimine la regla de la tarifa o desactive \"Convertir Moneda Desde la Orden de Venta\"."
 
 #. module: l10n_ve_sale
 #. odoo-python
@@ -536,6 +1284,59 @@ msgid "The rate that is gonna be always shown to the user."
 msgstr "La tasa que se va a mostrar siempre al usuario."
 
 #. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/l10n_ve_discount_document.py:0
+msgid ""
+"This discount method is not allowed by the company settings, so nobody can "
+"apply it."
+msgstr ""
+"Este método de descuento no está permitido en la configuración de la "
+"compañía, por lo que nadie puede aplicarlo."
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/l10n_ve_discount_document.py:0
+msgid ""
+"This document is deductible, so it cannot have a discount. Turn off the "
+"deductible before applying a discount."
+msgstr ""
+"Este documento es deducible, por lo que no puede tener descuento. Desactive "
+"el deducible antes de aplicar un descuento."
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/l10n_ve_discount_document.py:0
+msgid ""
+"This document uses fixed amount discounts on its lines. Remove the discount "
+"before using a percentage."
+msgstr ""
+"Este documento usa descuentos de importe fijo en sus líneas. Quite el "
+"descuento antes de usar un porcentaje."
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/l10n_ve_discount_document.py:0
+msgid ""
+"This document uses percentage discounts on its lines. Remove the discount "
+"before using a fixed amount."
+msgstr ""
+"Este documento usa descuentos porcentuales en sus líneas. Quite el descuento"
+" antes de usar un importe fijo."
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/sale_order.py:0
+#: code:addons/l10n_ve_sale/models/sale_order_line.py:0
+msgid ""
+"This order is waiting for a discount approval and cannot be edited. A "
+"discount approver can approve or reject the discount, or the order can be "
+"cancelled."
+msgstr ""
+"Este pedido está esperando la aprobación de un descuento y no se puede "
+"editar. Un aprobador de descuentos puede aprobar o rechazar el descuento, o "
+"se puede cancelar el pedido."
+
+#. module: l10n_ve_sale
 #: model_terms:ir.ui.view,arch_db:l10n_ve_sale.view_sale_order_form_l10n_ve_sales
 msgid "This will update all unit prices based on the currently set pricelist."
 msgstr ""
@@ -543,8 +1344,16 @@ msgstr ""
 "actualmente establecida."
 
 #. module: l10n_ve_sale
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__account_move__discount_approval_state__to_approve
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__l10n_ve_discount_document_mixin__discount_approval_state__to_approve
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__sale_order__discount_approval_state__to_approve
+msgid "To Approve"
+msgstr "Por aprobar"
+
+#. module: l10n_ve_sale
 #. odoo-python
 #: code:addons/l10n_ve_sale/models/sale_order.py:0
+#: code:addons/l10n_ve_sale/report/sale_report.py:0
 msgid "Total"
 msgstr "Total"
 
@@ -573,6 +1382,25 @@ msgstr "Total sin impuesto firmado"
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_res_config_settings__block_order_invoice_total_amount_overdue
 msgid "Total amount overdue"
 msgstr "Monto total vencido"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_l10n_ve_discount_wizard__type_global_subtotal
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_l10n_ve_discount_wizard__type_global_total
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_l10n_ve_discount_wizard__type_lines
+msgid "Type"
+msgstr "Tipo"
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/l10n_ve_discount_document.py:0
+msgid "Unknown discount scheme."
+msgstr "Esquema de descuento desconocido."
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/l10n_ve_discount_document.py:0
+msgid "Unknown discount type."
+msgstr "Tipo de descuento desconocido."
 
 #. module: l10n_ve_sale
 #. odoo-python
@@ -622,7 +1450,7 @@ msgstr ""
 #. module: l10n_ve_sale
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__foreign_untaxed_total
 msgid "foreign untaxed total"
-msgstr "Total sin impuesto foraneo" 
+msgstr "Total sin impuesto foraneo"
 
 #. module: l10n_ve_sale
 #. odoo-python
@@ -649,3 +1477,54 @@ msgid ""
 msgstr ""
 "Este documento usa la tasa de su orden de venta: la fecha de tasa está bloqueada y la tasa "
 "no se recalculará al cambiar la fecha de la factura."
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.res_config_settings_l10n_ve_sale_discount_limits
+msgid "Line Discount Type"
+msgstr "Tipo de descuento en líneas"
+
+#. module: l10n_ve_sale
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.res_config_settings_l10n_ve_sale_discount_limits
+msgid ""
+"Discount field shown on the lines of sale orders and invoices: percentage "
+"or fixed amount."
+msgstr ""
+"Campo de descuento mostrado en las líneas de pedidos de venta y facturas: "
+"porcentaje o monto fijo."
+
+#. module: l10n_ve_sale
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.res_config_settings_l10n_ve_sale_discount_limits
+msgid "Show Discount on Invoices"
+msgstr "Mostrar descuento en facturas"
+
+#. module: l10n_ve_sale
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.res_config_settings_l10n_ve_sale_discount_limits
+msgid "Enable discount column visibility on invoice lines."
+msgstr "Habilitar visibilidad de la columna de descuento en líneas de factura."
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_account_move__discount_stage
+msgid "Stage"
+msgstr "Etapa"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,help:l10n_ve_sale.field_account_move__discount_stage
+msgid ""
+"The state of the invoice with the discount approval as one more stage, like "
+"the sale order: a single status bar."
+msgstr ""
+"El estado de la factura con la aprobación del descuento como una etapa más, "
+"como el pedido de venta: una sola barra de estado."
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__account_move__discount_stage__draft
+msgid "Draft"
+msgstr "Borrador"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__account_move__discount_stage__posted
+msgid "Posted"
+msgstr "Registrado"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__account_move__discount_stage__cancel
+msgid "Cancelled"
+msgstr "Cancelado"

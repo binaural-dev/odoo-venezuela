@@ -855,16 +855,14 @@ msgstr "Descuento (Fijo)"
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,help:l10n_ve_invoice.field_account_move_line__discount_fixed
 msgid ""
-"Fixed amount discount on the line's gross subtotal (price_unit * "
-"quantity), subtracted before taxes. Used instead of Discount (%) when the "
-"company's Invoice Line Discount Type is set to Fixed Amount. Applies on "
-"create/write, not only through the form."
+"Fixed amount discount on the line's gross subtotal (price_unit * quantity), "
+"subtracted before taxes. Used instead of Discount (%) when the line uses "
+"fixed amount discounts. Applies on create/write, not only through the form."
 msgstr ""
-"Descuento en monto fijo sobre el subtotal bruto de la línea (precio "
-"unitario * cantidad), restado antes de impuestos. Se usa en vez del "
-"Descuento (%) cuando el Tipo de Descuento en Línea de Factura de la "
-"compañía está en Importe Fijo. Aplica en create/write, no solo desde el "
-"formulario."
+"Descuento de importe fijo sobre el subtotal bruto de la línea (precio "
+"unitario * cantidad), restado antes de impuestos. Se usa en lugar de "
+"Descuento (%) cuando la línea usa descuentos de importe fijo. Aplica al "
+"crear o escribir, no solo desde el formulario."
 
 #. module: l10n_ve_invoice
 #. odoo-python
@@ -879,20 +877,20 @@ msgstr ""
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_company__discount_type
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_config_settings__discount_type
-msgid "Invoice Line Discount Type"
-msgstr "Tipo de Descuento en Línea de Factura"
+msgid "Line Discount Type"
+msgstr "Tipo de descuento en líneas"
 
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,help:l10n_ve_invoice.field_res_company__discount_type
 #: model:ir.model.fields,help:l10n_ve_invoice.field_res_config_settings__discount_type
 msgid ""
-"Discount field shown on invoice lines, applied to all invoices and lines "
-"of this company: native percentage, or a fixed amount discount_fixed "
-"converted to its % equivalent."
+"Discount field shown on the lines of sale orders and invoices, applied to "
+"all the documents and lines of this company: native percentage, or a fixed "
+"amount discount_fixed converted to its % equivalent."
 msgstr ""
-"Campo de descuento mostrado en las líneas de factura, aplicado a todas "
-"las facturas y líneas de esta compañía: porcentaje nativo, o un monto "
-"fijo discount_fixed convertido a su % equivalente."
+"Campo de descuento mostrado en las líneas de pedidos de venta y facturas, "
+"aplicado a todos los documentos y líneas de esta compañía: porcentaje "
+"nativo, o un monto fijo discount_fixed convertido a su % equivalente."
 
 #. module: l10n_ve_invoice
 #: selection:res.company,discount_type:percent
@@ -966,3 +964,8 @@ msgstr ""
 msgid "Free Form"
 msgstr "Forma Libre"
 
+
+#. module: l10n_ve_invoice
+#: model:ir.model,name:l10n_ve_invoice.model_l10n_ve_discount_line_mixin
+msgid "Line fixed amount discount"
+msgstr "Descuento de importe fijo de línea"

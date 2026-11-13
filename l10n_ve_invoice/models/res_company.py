@@ -17,10 +17,11 @@ class ResCompany(models.Model):
     block_invoice_display_date_upper_than_date = fields.Boolean(default=True)
     discount_type = fields.Selection(
         [("percent", "Percentage"), ("amount", "Fixed Amount")],
-        string="Invoice Line Discount Type",
+        string="Line Discount Type",
         default="percent",
         required=True,
-        help="Discount field shown on invoice lines, applied to all "
-        "invoices and lines of this company: native percentage, or a fixed "
-        "amount discount_fixed converted to its % equivalent.",
+        help="Discount field shown on the lines of sale orders and invoices, "
+        "applied to all the documents and lines of this company: native "
+        "percentage, or a fixed amount discount_fixed converted to its % "
+        "equivalent.",
     )

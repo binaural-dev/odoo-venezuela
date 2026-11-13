@@ -1740,3 +1740,15 @@ msgid "The selected invoices were queued for TFHKA batch digitalization."
 msgstr ""
 "Las facturas seleccionadas fueron encoladas para su digitalización por "
 "lote en TFHKA."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/services/tfhka_document_service.py:0
+msgid ""
+"A global discount over the total cannot be sent to TFHKA: the digital "
+"document needs the discount before the VAT. Remove it and apply the discount "
+"over the subtotal."
+msgstr ""
+"Un descuento global sobre el total no se puede enviar a TFHKA: el documento "
+"digital necesita el descuento antes del IVA. Quítelo y aplique el descuento "
+"sobre el subtotal."

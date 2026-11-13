@@ -2,11 +2,13 @@
 from odoo import fields
 from odoo.tests import TransactionCase, tagged
 from odoo.exceptions import ValidationError
+from .common import enable_historical_rate_fixtures
 
 @tagged("post_install", "-at_install", "l10n_ve_invoice")
 class TestInvoiceTaxConstraint(TransactionCase):
     def setUp(self):
         super(TestInvoiceTaxConstraint, self).setUp()
+        enable_historical_rate_fixtures(self)
         self.company = self.env.ref("base.main_company")
 
         self.currency_usd = self.env.ref("base.USD")

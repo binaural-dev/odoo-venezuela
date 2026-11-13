@@ -630,9 +630,13 @@ class AccountTax(models.Model):
             value=res.get('tax_amount', 0.0),
             currency_obj=ves_currency
         )
+        # A draft invoice must not read `amount_total_signed` here: its compute
+        # (`_compute_amount`) reads `tax_totals` -- the field being computed --
+        # and gets False back, so the residual of the draft is stored as 0 and
+        # the invoice shows up as "Paid". Its totals are the ones of this summary.
         total_ves = (
             abs(record.amount_total_signed)
-            if record._name == 'account.move'
+            if record._name == 'account.move' and record.state != 'draft'
             else abs(res.get('total_amount', 0.0))
         )
         res['formatted_total_amount_currency_ves'] = formatLang(

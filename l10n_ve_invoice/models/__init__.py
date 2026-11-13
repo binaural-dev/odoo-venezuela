@@ -1,3 +1,4 @@
+from . import l10n_ve_discount_line
 from . import account_move
 from . import account_move_line
 from . import account_tax

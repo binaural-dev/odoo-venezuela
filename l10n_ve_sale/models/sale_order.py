@@ -3,6 +3,11 @@ import logging
 
 from lxml import etree
 from odoo import _, api, fields, models
+from .l10n_ve_discount_document import (
+    DiscountDocumentMixin,
+    discount_apply,
+    is_discount_applying,
+)
 from odoo.exceptions import UserError, ValidationError
 from odoo.tools.float_utils import float_is_zero
 
@@ -11,7 +16,7 @@ _logger = logging.getLogger(__name__)
 
 class SaleOrder(models.Model):
     _name = "sale.order"
-    _inherit = ["sale.order", "filter.partner.mixin"]
+    _inherit = ["sale.order", "filter.partner.mixin", "l10n_ve.discount.document.mixin"]
 
     def default_alternate_currency(self):
         """
@@ -154,7 +159,7 @@ class SaleOrder(models.Model):
 
         for order in self:
 
-            if order.state in ["draft", "cancel"]:
+            if order.state in ["draft", "to_approve", "cancel"]:
                 continue
 
             if len(order.order_line) <= maximum_sales_line_limit:
@@ -437,7 +442,85 @@ class SaleOrder(models.Model):
             return res
         return res[:limit]
 
+    discount_type = fields.Selection(
+        [("percent", "Percentage"), ("amount", "Fixed Amount")],
+        compute="_compute_discount_type",
+    )
+
+    @api.depends(
+        "company_id.discount_type",
+        "discount_mode",
+        "global_discount_type",
+        "order_line.discount",
+        "order_line.discount_fixed",
+    )
+    def _compute_discount_type(self):
+        for order in self:
+            order.discount_type = order._get_doc_discount_type()
+
+    @api.readonly
+    def action_open_discount_wizard(self):
+        self.ensure_one()
+        return DiscountDocumentMixin.action_open_discount_wizard(self)
+
+    state = fields.Selection(
+        selection_add=[("to_approve", "Discount to Approve"), ("sale",)],
+        ondelete={"to_approve": "set default"},
+    )
+
+    def _discount_lines(self):
+        self.ensure_one()
+        return self.order_line.filtered(
+            lambda line: not line.display_type
+            and not line.is_downpayment
+            and not line._is_global_discount()
+        )
+
+    def _discount_line_gross(self, line):
+        return line.price_unit * line.product_uom_qty
+
+    def _discount_is_editable(self):
+        self.ensure_one()
+        # An order waiting for approval is locked: nothing can be changed there.
+        return self.state in ("draft", "sent")
+
+    def _discount_owners(self):
+        self.ensure_one()
+        return self.user_id | self.create_uid
+
+    def _discount_after_approval(self):
+        """Approving the discount takes the order to its natural next stage:
+        Sales Order."""
+        return self.action_confirm()
+
+    def action_draft(self):
+        res = super().action_draft()
+        self.filtered(lambda order: order.state == "draft")._reset_discount_approval()
+        return res
+
+    def _action_cancel(self):
+        res = super()._action_cancel()
+        self._discount_write_doc({"discount_approval_state": False})
+        self._close_discount_approval_activities()
+        return res
+
+    def _discount_sync_stage(self, approval_state):
+        """'To Approve' is a stage of the order: it blocks confirming, the
+        approvers never enter it, and it goes back to quotation (draft) when
+        the discount is approved, rejected, removed or lowered under the limit."""
+        for order in self:
+            if approval_state == "to_approve" and order.state in ("draft", "sent"):
+                order._discount_write_doc({"state": "to_approve"})
+            elif approval_state != "to_approve" and order.state == "to_approve":
+                order._discount_write_doc({"state": "draft"})
+
     def _create_invoices(self, grouped=False, final=False, date=None):
+        # The invoice lines carry the order's discount: the scheme guard of
+        # account.move.line must not treat that as a manual change.
+        with discount_apply(self.env):
+            return self._create_invoices_in_batches(grouped, final, date)
+
+    def _create_invoices_in_batches(self, grouped=False, final=False, date=None):
         """
         This function creates the invoice associated to the order,
         but with this inheritance it creates multiple invoices if
@@ -477,9 +560,36 @@ class SaleOrder(models.Model):
 
         return invoices
 
+    def _discount_scheme(self):
+        """Scheme of the order's discount; an order saved before the schemes
+        existed carries its discount on the lines only, as percentage or amount."""
+        self.ensure_one()
+        mode = self.discount_mode
+        if not mode and any(
+            line.discount or line.discount_fixed for line in self._discount_lines()
+        ):
+            mode = "line_amount" if self._get_doc_discount_type() == "amount" else "line_percent"
+        return mode
+
     def _prepare_invoice(self):
         invoice_vals = super()._prepare_invoice()
         company = self.company_id or self.env.company
+        invoice_vals["manually_set_rate"] = (
+            self.manually_set_rate or company.use_invoice_rate_from_sale_order
+        )
+        invoice_vals["foreign_rate"] = self.foreign_rate
+        invoice_vals["foreign_inverse_rate"] = self.foreign_inverse_rate
+        # An order saved before the schemes existed carries its discount on the
+        # lines only: the invoice keeps that kind, whatever the company
+        # setting is, so both documents add up the same.
+        mode = self._discount_scheme()
+        invoice_vals.update(
+            discount_mode=mode,
+            global_discount_type=self.global_discount_type,
+            global_discount_percent=self.global_discount_percent,
+            global_discount_amount=self.global_discount_amount,
+        )
+
         if company.use_invoice_rate_from_sale_order:
             # La Rate Date queda bloqueada en la vista y en el onchange por
             # account.move._is_rate_date_locked (no se marca la factura).
@@ -503,6 +613,8 @@ class SaleOrder(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        for vals in vals_list:
+            self._check_discount_fields_protected(vals)
         res = super().create(vals_list)
         for sale in res:
             Rate = self.env["res.currency.rate"]
@@ -520,7 +632,37 @@ class SaleOrder(models.Model):
                 )
         return res
 
+    # ------------------------------------------------------------------
+    # An order waiting for a discount approval is locked
+    # ------------------------------------------------------------------
+    APPROVAL_LOCK = "state == 'to_approve'"
+    # fields the lock leaves alone (the chatter, the stage itself)
+    APPROVAL_LOCK_SKIP = DiscountDocumentMixin.APPROVAL_LOCK_SKIP | {"state"}
+
+    def _check_not_locked_by_approval(self, vals):
+        """While the order waits for its discount approval nothing can be
+        edited (only cancelling it, or the approver approving / rejecting, which
+        run with the internal marker)."""
+        if self.env.su or is_discount_applying(self.env):
+            return
+        locked = self.filtered(lambda order: order.state == "to_approve")
+        if not locked:
+            return
+        harmless = {"locked"} | {key for key in vals if key.startswith(("message_", "activity_"))}
+        changes = {key for key in vals if key not in harmless and key != "state"}
+        cancelling = vals.get("state", "cancel") == "cancel"
+        if changes or not cancelling:
+            raise UserError(
+                _(
+                    "This order is waiting for a discount approval and cannot be "
+                    "edited. A discount approver can approve or reject the "
+                    "discount, or the order can be cancelled."
+                )
+            )
+
     def write(self, vals):
+        self._check_discount_fields_protected(vals)
+        self._check_not_locked_by_approval(vals)
         if vals.get("foreign_rate", False):
             vals.update({"last_foreign_rate": self.foreign_rate})
         res = super().write(vals)
@@ -635,6 +777,17 @@ class SaleOrder(models.Model):
         return values
 
     def action_confirm(self):
+        # A discount over the maximum does not confirm the order: it goes to the
+        # approval stage (and an approver confirms it by approving the discount).
+        waiting = self.filtered(lambda order: order.discount_approval_state == "to_approve")
+        if waiting:
+            raise UserError(_("The discount of this document is waiting for approval."))
+        exceeding = self.filtered(lambda order: order.discount_approval_state == "exceeds")
+        if exceeding:
+            exceeding._send_to_approval()
+            self = self - exceeding
+            if not self:
+                return exceeding._discount_approval_notification()
         skip_not_allow_sell_products_validation = self.env.context.get(
             "skip_not_allow_sell_products_validation", False
         )

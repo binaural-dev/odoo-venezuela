@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="l10n_ve_discount_wizard_form" model="ir.ui.view">
+        <field name="name">l10n_ve.discount.wizard.form</field>
+        <field name="model">l10n_ve.discount.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Discount">
+                <field name="res_model" invisible="1"/>
+                <field name="res_id" invisible="1"/>
+                <field name="current_mode" invisible="1"/>
+                <group>
+                    <group>
+                        <field name="scheme" widget="radio"/>
+                        <field name="type_lines" widget="radio" options="{'horizontal': true}"
+                               invisible="scheme != 'lines'"/>
+                        <field name="type_global_subtotal" widget="radio" options="{'horizontal': true}"
+                               invisible="scheme != 'global_subtotal'"/>
+                        <field name="type_global_total" widget="radio" options="{'horizontal': true}"
+                               invisible="scheme != 'global_total'"/>
+                        <field name="value"/>
+                    </group>
+                </group>
+                <footer>
+                    <button name="action_apply" string="Apply" type="object" class="btn-primary" data-hotkey="q"/>
+                    <button name="action_remove" string="Remove discount" type="object" class="btn-secondary"
+                            invisible="not current_mode"/>
+                    <button string="Discard" special="cancel" data-hotkey="x"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>
