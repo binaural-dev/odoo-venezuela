@@ -26,14 +26,22 @@ class StockMove(models.Model):
         """A donation is a scrap that goes to the donation warehouse, not to the scrap location.
 
         In Odoo 20 a scrap is a stock move (``stock.scrap`` is gone) and its destination is the scrap
-        location of the company unless an inventory location was chosen.
+        location of the company unless an inventory location was chosen. The donation goes to the stock
+        location of the donation warehouse, never to its view location.
         """
         super()._compute_location_dest_id()
         for move in self.filtered(lambda move: move.is_scrap and move.is_donation):
-            if move.location_dest_id.is_donation_warehouse:
+            if move.location_dest_id.is_donation_warehouse and move.location_dest_id.usage != "view":
                 continue
-            location = self.env["stock.location"].search(
+            location = self.env["stock.warehouse"].search(
                 [("is_donation_warehouse", "=", True), ("company_id", "=", move.company_id.id)],
+                limit=1,
+            ).lot_stock_id or self.env["stock.location"].search(
+                [
+                    ("is_donation_warehouse", "=", True),
+                    ("usage", "!=", "view"),
+                    ("company_id", "=", move.company_id.id),
+                ],
                 limit=1,
             )
             if location:
