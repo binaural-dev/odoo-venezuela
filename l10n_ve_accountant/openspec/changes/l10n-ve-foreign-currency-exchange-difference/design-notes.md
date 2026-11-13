@@ -125,10 +125,13 @@ una vez por asiento). Reglas:
   ausente NO debe leerse como "nada que corregir" y caer al branch
   standalone — eso crearía un asiento que el core deliberadamente no quiso.
 - Fecha: reusa `exchange_values['move_values']['date']` si el core construyó
-  un asiento (la misma fecha `max(debit.date, credit.date)` que usa el
-  core), o ese mismo `max()` si no construyó ninguno — nunca
+  un asiento (el core ya la acomoda con `journal.accounting_date`). Si no
+  construyó ninguno, aplica esa MISMA regla sobre `max(debit.date,
+  credit.date)` (`journal.with_context(move_date=...).accounting_date`), para
+  que nativo y standalone se fechen igual (ticket 16196) — nunca
   `fields.Date.context_today()`, que usaría la tasa de HOY en vez de la
-  fecha real de liquidación de ese partial.
+  fecha real de liquidación de ese partial. Consecuencia: el standalone exige
+  tasa en la fecha ajustada, igual que el nativo.
 - `rate_source`: se prefiere el lado factura (mismo criterio que
   `account.partial.reconcile._compute_company_id`, "los asientos de
   diferencial deben crearse del lado factura si existe"). Si ninguno de los
