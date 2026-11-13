@@ -3,7 +3,7 @@ import logging
 from werkzeug.exceptions import Unauthorized
 
 from odoo import _, http
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import AccessError, UserError
 
 from odoo.addons.pos_self_order.controllers.orders import PosSelfOrderController
 
@@ -213,15 +213,15 @@ class L10nVePosMfSelfOrderController(PosSelfOrderController):
                 if used_by_box:
                     env["account.move"].sudo().report_z(serial, value)
                 session.set_report_z(value)
-        except (UserError, ValidationError) as error:
+        except Exception as error:  # noqa: BLE001 — devolver el motivo al panel
             _logger.exception(
                 "Kiosk report_z falló para la caja %s (serial %s)", pos_config.id, serial
             )
-            return {"success": False, "error": str(error)}
-        except Exception:  # noqa: BLE001 — ruta pública: sin detalles internos
-            _logger.exception(
-                "Kiosk report_z falló para la caja %s (serial %s)", pos_config.id, serial
-            )
+            # Ruta pública: solo los errores de negocio (UserError, que incluye
+            # ValidationError) llegan tal cual; un AccessError u otro error no
+            # expone detalles internos.
+            if isinstance(error, UserError) and not isinstance(error, AccessError):
+                return {"success": False, "error": str(error)}
             return {"success": False, "error": _("The Z report could not be saved in Odoo.")}
         return {"success": True, "report_z": session.report_z}
 
