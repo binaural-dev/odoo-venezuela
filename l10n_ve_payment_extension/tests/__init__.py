@@ -1,6 +1,7 @@
 from . import test_retention_bs
 from . import test_retention_line
 from . import test_retention_islr_tarifa_2
+from . import test_fees_retention_accumulated
 from . import test_retention_flow_restriction
 from . import test_product_payment_concept
 from . import test_tax_unit
@@ -51,3 +52,4 @@ from . import test_retention_resync
 from . import test_retention_amount_tolerance
 from . import test_retention_iva_txt_refunds
 from . import test_retention_payment_foreign_amount_rate_date
+from . import test_retention_cash_basis_foreign
