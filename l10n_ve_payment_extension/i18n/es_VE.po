@@ -3922,3 +3922,9 @@ msgstr ""
 #: code:addons/l10n_ve_payment_extension/models/fees_retention.py:0
 msgid "The last tier must have no upper limit (leave 'stop' empty)."
 msgstr "El último tramo no debe tener límite superior (deje 'stop' vacío)."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/res_partner.py:0
+msgid "A non resident partner cannot be a special taxpayer."
+msgstr "Un contacto no residente no puede ser contribuyente especial."
