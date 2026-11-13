@@ -2175,7 +2175,7 @@ class TestAccountMoveApiCalls(TransactionCase):
         partner = self.env['res.partner'].create({
             'name': 'Cliente Sin Prefijo',
             'vat': 'J12345679',
-            'prefix_vat': '',
+            'prefix_vat': False,
             'country_id': self.env.ref('base.ve').id,
             'phone': '04141234567',
             'email': 'test@test.com',
