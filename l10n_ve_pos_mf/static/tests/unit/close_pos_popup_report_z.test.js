@@ -17,7 +17,22 @@ const S1_OK = {
     data: { registeredMachineNumber: "Z7C0000001", dailyClosureCounter: 146 },
 };
 
-function fakePopup({ z = { success: true }, s1 = S1_OK, confirm = true } = {}) {
+function s1With(counter) {
+    return { success: true, data: { registeredMachineNumber: "Z7C0000001", dailyClosureCounter: counter } };
+}
+
+/**
+ * `s1` es la respuesta de cada lectura de S1 (un arreglo da una por lectura);
+ * `s1Throws` hace que la lectura lance; `ormError` hace fallar el ORM.
+ */
+function fakePopup({
+    z = { success: true },
+    s1 = S1_OK,
+    s1Throws = false,
+    confirm = true,
+    ormError = null,
+} = {}) {
+    const s1Queue = Array.isArray(s1) ? [...s1] : null;
     const calls = [];
     const dialogs = [];
     const popup = Object.create(ClosePosPopup.prototype);
@@ -27,7 +42,10 @@ function fakePopup({ z = { success: true }, s1 = S1_OK, confirm = true } = {}) {
         isConnected: true,
         async _readS1Data() {
             calls.push("S1");
-            return s1;
+            if (s1Throws) {
+                throw new Error("timeout del puerto");
+            }
+            return s1Queue ? s1Queue.shift() : s1;
         },
         async printReportZ() {
             calls.push("Z");
@@ -45,6 +63,9 @@ function fakePopup({ z = { success: true }, s1 = S1_OK, confirm = true } = {}) {
     popup.orm = {
         async call(model, method, args) {
             calls.push([model, method, args]);
+            if (ormError) {
+                throw new Error(ormError);
+            }
         },
     };
     const alerts = () => dialogs.filter((d) => d.component === AlertDialog);
@@ -100,6 +121,58 @@ describe("ClosePosPopup._printFiscalReportZ", () => {
         expect(ok).toBe(false);
         expect(calls).toEqual(["S1", "Z"]);
         expect(String(alerts()[0].props.title)).toBe("Error al imprimir Reporte Z");
+    });
+
+    test("si leer S1 lanza un error, no imprime la Z", async () => {
+        const { popup, calls, alerts } = fakePopup({ s1Throws: true });
+
+        expect(await popup._printFiscalReportZ()).toBe(false);
+        expect(calls).toEqual(["S1"]);
+        expect(String(alerts()[0].props.title)).toBe("Error al imprimir Reporte Z");
+    });
+
+    test("Z sin confirmar (sin papel) y S1 avanzó: sincroniza la Z impresa", async () => {
+        const { popup, calls, alerts } = fakePopup({
+            z: { success: false, noResponse: true, error: "No se recibió respuesta de la impresora" },
+            s1: [s1With(146), s1With(147)],
+        });
+
+        const ok = await popup._printFiscalReportZ();
+
+        expect(ok).toBe(true);
+        const value = {
+            valid: true,
+            data: { _registeredMachineNumber: "Z7C0000001", _dailyClosureCounter: 146 },
+        };
+        expect(calls).toEqual([
+            "S1",
+            "Z",
+            "S1",
+            ["account.move", "report_z", [[], "Z7C0000001", value]],
+            ["pos.session", "set_report_z", [[7], value]],
+        ]);
+        expect(alerts().length).toBe(0);
+    });
+
+    test("Z sin confirmar y S1 sin avanzar: avisa y no sincroniza", async () => {
+        const { popup, calls, alerts } = fakePopup({
+            z: { success: false, noResponse: true },
+            s1: [s1With(146), s1With(146)],
+        });
+
+        expect(await popup._printFiscalReportZ()).toBe(false);
+        expect(calls).toEqual(["S1", "Z", "S1"]);
+        expect(String(alerts()[0].props.title)).toBe("Reporte Z sin confirmar");
+    });
+
+    test("si Odoo falla tras imprimir la Z, avisa que no la repita", async () => {
+        const { popup, calls, alerts } = fakePopup({ ormError: "sin conexión" });
+
+        expect(await popup._printFiscalReportZ()).toBe(false);
+        expect(calls.slice(0, 2)).toEqual(["S1", "Z"]);
+        expect(String(alerts()[0].props.title)).toBe("Reporte Z impreso con advertencia");
+        expect(String(alerts()[0].props.body)).toInclude("no repitas la Z");
+        expect(String(alerts()[0].props.body)).toInclude("sin conexión");
     });
 
     test("si no confirma, no lee la máquina", async () => {

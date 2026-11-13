@@ -86,6 +86,7 @@ patch(ClosePosPopup.prototype, {
     }
 
     this.mfState.isPrintingReport = true;
+    let zPrinted = false;
     try {
       // S1 se lee ANTES de la Z, como el flujo IoT: su contador es el de la
       // última Z impresa y el servidor le suma 1 (`account.move.report_z`,
@@ -108,20 +109,39 @@ patch(ClosePosPopup.prototype, {
         return false;
       }
 
+      let lastZBefore = dailyClosureCounter;
       const zResult = await fiscalPrinter.printReportZ();
       if (!zResult.success) {
-        this._mfAlert(
-          _t("Error al imprimir Reporte Z"),
-          _t(zResult.error || "Error desconocido")
-        );
-        return false;
+        // Sin respuesta (p. ej. sin papel) la Z pudo salir: el driver no la
+        // reenvía y el contador de S1 dice si avanzó.
+        const printedZ = zResult.noResponse
+          ? await this._readPrintedReportZ(fiscalPrinter, dailyClosureCounter)
+          : null;
+        if (printedZ === null) {
+          if (zResult.noResponse) {
+            this._mfAlert(
+              _t("Reporte Z sin confirmar"),
+              _t(
+                "La maquina fiscal no confirmo el Reporte Z (puede estar sin papel). Revisala antes de reintentar: si la Z salio, no la repitas y cierra la sesion desde el backend."
+              )
+            );
+          } else {
+            this._mfAlert(
+              _t("Error al imprimir Reporte Z"),
+              _t(zResult.error || "Error desconocido")
+            );
+          }
+          return false;
+        }
+        lastZBefore = printedZ - 1;
       }
+      zPrinted = true;
 
       const value = {
         valid: true,
         data: {
           _registeredMachineNumber: s1Result.data.registeredMachineNumber,
-          _dailyClosureCounter: dailyClosureCounter,
+          _dailyClosureCounter: lastZBefore,
         },
       };
 
@@ -137,14 +157,43 @@ patch(ClosePosPopup.prototype, {
 
       return true;
     } catch (error) {
-      this._mfAlert(
-        _t("Error al imprimir Reporte Z"),
-        _t(error.message || "Error interno")
-      );
+      if (zPrinted) {
+        // La Z ya salió: repetirla cerraría otro día fiscal, vacío.
+        this._mfAlert(
+          _t("Reporte Z impreso con advertencia"),
+          _t(
+            "El Reporte Z se imprimio, pero Odoo no se pudo actualizar (%s). La sesion no se cerro: no repitas la Z, revisa el libro de ventas y cierra la sesion desde el backend.",
+            error.message || "error interno"
+          )
+        );
+      } else {
+        this._mfAlert(
+          _t("Error al imprimir Reporte Z"),
+          _t(error.message || "Error interno")
+        );
+      }
       return false;
     } finally {
       this.mfState.isPrintingReport = false;
     }
+  },
+
+  /**
+   * Número de la Z que imprimió la máquina cuando no confirmó el I0Z: el
+   * contador de Z de S1 si avanzó respecto al leído antes de imprimir.
+   * @returns {Promise<number|null>} null si no se puede saber que salió
+   */
+  async _readPrintedReportZ(fiscalPrinter, lastZBefore) {
+    try {
+      const s1Result = await fiscalPrinter._readS1Data();
+      const counter = s1Result?.data?.dailyClosureCounter;
+      if (s1Result?.success && Number.isInteger(counter) && counter > lastZBefore) {
+        return counter;
+      }
+    } catch (error) {
+      console.warn("l10n_ve_pos_mf:: S1 tras un Reporte Z sin confirmar", error);
+    }
+    return null;
   },
 
   /**
