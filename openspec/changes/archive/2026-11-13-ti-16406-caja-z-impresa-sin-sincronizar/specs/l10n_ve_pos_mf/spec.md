@@ -30,17 +30,6 @@ El Reporte Z desde el popup de cierre DEBE (MUST) exigir un driver conectado y l
 - **WHEN** el comando de la Z falla
 - **THEN** se avisa del error y no se sincroniza Odoo ni se cierra la sesión
 
-#### Scenario: La máquina no confirma la Z pero la imprimió
-
-- **GIVEN** la máquina sin papel, que no responde al `I0Z`
-- **WHEN** el S1 leído después muestra el contador de Z avanzado
-- **THEN** la caja sincroniza Odoo con la Z que salió y sigue con el cierre
-
-#### Scenario: La máquina no confirma la Z
-
-- **WHEN** la máquina no responde al `I0Z` y el S1 posterior no muestra el contador avanzado
-- **THEN** se avisa "Reporte Z sin confirmar": revisar la máquina y no repetir la Z si salió; no se sincroniza ni se cierra la sesión
-
 #### Scenario: Odoo falla después de imprimir la Z
 
 - **WHEN** la Z salió y falla la sincronización con Odoo
