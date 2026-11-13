@@ -268,7 +268,16 @@ class AccountMoveLine(models.Model):
         # cambia `move_currency_to_company_currency_rate` -- esa escritura
         # dispara `_inverse_foreign_balance`, que fija foreign_debit/credit.
         # Ya no hace falta re-derivar el valor aca con `_convert()`.
-        if self.display_type in ("payment_term", "tax"):
+        #
+        # Excepcion: el asiento de base efectivo (IMBEF) que genera el core al
+        # conciliar copia el display_type 'tax' de la factura, pero sus lineas
+        # nacen con foreign_balance = 0. Devolverlo dejaba el monto alterno del
+        # impuesto en 0 (ticket 10703 en v17). Esas lineas se valoran por la
+        # ruta de asiento no-factura (amount_currency / tasa).
+        if (
+            self.display_type in ("payment_term", "tax")
+            and not self.move_id.tax_cash_basis_origin_move_id
+        ):
             return self.foreign_balance
 
         # 2 — Section / Subsection / Note: zero. `line_subsection` is the
