@@ -2,7 +2,7 @@
     'name': 'Venezuela - Lista Negra de Correos Configurable',
     'summary': 'Blacklist email addresses after a configurable number of bounces/failures '
                'and block every outgoing email to blacklisted addresses',
-    'version': '19.0.1.0.1',
+    'version': '20.0.1.0.0',
     'category': 'Marketing/Email Marketing',
     'author': 'Binauraldev',
     'website': 'https://binauraldev.com/',
@@ -16,6 +16,7 @@
         'security/ir.access.csv',
     ],
     'images': ['static/description/icon.png'],
-    'installable': False,
+    'installable': True,
+    'binaural_migrated': True,
     "application": False,
 }

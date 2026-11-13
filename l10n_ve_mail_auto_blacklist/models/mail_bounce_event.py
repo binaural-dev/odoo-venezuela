@@ -82,18 +82,12 @@ class MailBounceEvent(models.Model):
     def _get_auto_blacklist_config(self):
         ICP = self.env['ir.config_parameter'].sudo()
 
-        def _int_param(key, default):
-            try:
-                return int(ICP.get_param(PARAM_PREFIX + key, default))
-            except (TypeError, ValueError):
-                return default
-
         return {
-            'enabled': tools.str2bool(ICP.get_param(PARAM_PREFIX + 'enabled', 'False')),
-            'threshold': max(_int_param('threshold', DEFAULT_THRESHOLD), 1),
-            'window_days': max(_int_param('window_days', DEFAULT_WINDOW_DAYS), 0),
-            'min_spread_days': max(_int_param('min_spread_days', DEFAULT_MIN_SPREAD_DAYS), 0),
-            'count_smtp_errors': tools.str2bool(ICP.get_param(PARAM_PREFIX + 'count_smtp_errors', 'False')),
+            'enabled': ICP.get_bool(PARAM_PREFIX + 'enabled'),
+            'threshold': max(ICP.get_int(PARAM_PREFIX + 'threshold', DEFAULT_THRESHOLD), 1),
+            'window_days': max(ICP.get_int(PARAM_PREFIX + 'window_days', DEFAULT_WINDOW_DAYS), 0),
+            'min_spread_days': max(ICP.get_int(PARAM_PREFIX + 'min_spread_days', DEFAULT_MIN_SPREAD_DAYS), 0),
+            'count_smtp_errors': ICP.get_bool(PARAM_PREFIX + 'count_smtp_errors'),
         }
 
     @api.model
