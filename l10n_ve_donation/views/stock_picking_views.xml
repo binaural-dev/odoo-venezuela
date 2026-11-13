@@ -30,6 +30,13 @@
                     groups="stock.group_stock_user"
                     invisible="not is_donation or sale_id or picking_type_code != 'outgoing' or state != 'done'"
                 />
+                <button
+                    name="print_donation_certificate"
+                    string="Print Donation Certificate"
+                    type="object"
+                    groups="stock.group_stock_user"
+                    invisible="not is_donation or sale_id or picking_type_code != 'incoming' or state != 'done'"
+                />
             </xpath>
         </field>
     </record>

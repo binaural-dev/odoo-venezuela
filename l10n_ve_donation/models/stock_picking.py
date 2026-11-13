@@ -57,6 +57,14 @@ class StockPicking(models.Model):
         res = super().default_get(fields_list)
         if self.env.context.get("donation_menu") and "is_donation" in fields_list:
             res["is_donation"] = True
+        elif "is_donation" in fields_list and not res.get("is_donation"):
+            # A new picking opened from the card of a donation operation type
+            # (the "New" button fixes `default_picking_type_id` with its type).
+            picking_type = self.env["stock.picking.type"].browse(
+                self.env.context.get("default_picking_type_id") or []
+            ).exists()
+            if picking_type.is_donation_picking_type:
+                res["is_donation"] = True
         return res
 
     @api.depends("is_donation", "is_dispatch_guide", "operation_code", "location_dest_id")
@@ -136,6 +144,18 @@ class StockPicking(models.Model):
                 errors = picking._get_donation_delivery_config_errors()
                 if errors:
                     raise UserError("\n".join(errors))
+            if (
+                picking.is_donation
+                and not picking.sale_id
+                and picking.picking_type_code == "incoming"
+            ):
+                if not picking.partner_id:
+                    raise UserError(_(
+                        "You must set the donor (Receive From) to validate a donation receipt."
+                    ))
+                errors = picking._get_donation_receipt_config_errors()
+                if errors:
+                    raise UserError("\n".join(errors))
         return super().button_validate()
 
     def _has_real_time_valuation_moves(self):
@@ -188,6 +208,70 @@ class StockPicking(models.Model):
                     "Stock Valuation Account. Set it in Inventory > Configuration > "
                     "Locations, in the Accounting Information section of the location.",
                     location=location.display_name,
+                ))
+            elif is_real_time and location.valuation_account_id in self.company_id.donation_income_account_ids:
+                errors.append(_(
+                    "The Stock Valuation Account %(account)s of the destination location "
+                    "%(location)s is a received donations account: a donation delivery cannot "
+                    "use it. Use as destination the location of the donations given (an "
+                    "Inventory Loss location whose Stock Valuation Account is the donation "
+                    "expense account).",
+                    account=location.valuation_account_id.display_name,
+                    location=location.display_name,
+                ))
+        return errors
+
+    def _get_donation_receipt_config_errors(self):
+        """Return the list of messages describing why the configuration of
+        this donation receipt is not coherent (empty if it is).
+
+        The valuation journal entry of the receipt is determined by the
+        configuration: when the origin location has a valuation account the
+        stock valuation credits it, so the origin must be an `inventory`
+        location whose account is one of the received donations accounts of
+        the company, which is what identifies the income of the donation.
+        Only required when a move has a product with automated (real_time)
+        valuation: otherwise the receipt generates no valuation entry.
+        Extension point: other modules append their own checks with
+        `super()`."""
+        self.ensure_one()
+        errors = []
+        if not self._has_real_time_valuation_moves():
+            return errors
+        income_accounts = self.company_id.donation_income_account_ids
+        if not income_accounts:
+            errors.append(_(
+                "The company %(company)s has no received donations accounts configured. Set "
+                "them in the settings of the company (Received Donations Accounts).",
+                company=self.company_id.display_name,
+            ))
+        moves = self.move_ids.filtered(lambda move: move.state != "cancel")
+        for location in self.location_id | moves.location_id:
+            if location.usage != "inventory":
+                # The account of a location that is not an inventory one is
+                # not evaluated: the origin itself must be changed.
+                errors.append(_(
+                    "The origin %(location)s of a donation receipt must be an Inventory Loss "
+                    "location, e.g. \"Donations received\". Change the origin of the receipt.",
+                    location=location.display_name,
+                ))
+            elif not location.valuation_account_id:
+                errors.append(_(
+                    "The origin %(location)s of a donation receipt has no Stock Valuation "
+                    "Account. Use as origin a received donations location (Inventory Loss) and "
+                    "set its Stock Valuation Account with one of the received donations "
+                    "accounts (%(accounts)s), in Inventory > Configuration > Locations.",
+                    location=location.display_name,
+                    accounts=", ".join(income_accounts.mapped("display_name")),
+                ))
+            elif income_accounts and location.valuation_account_id not in income_accounts:
+                errors.append(_(
+                    "The Stock Valuation Account %(account)s of the origin %(location)s is not a "
+                    "received donations account. Set one of them (%(accounts)s) in Inventory > "
+                    "Configuration > Locations.",
+                    account=location.valuation_account_id.display_name,
+                    location=location.display_name,
+                    accounts=", ".join(income_accounts.mapped("display_name")),
                 ))
         return errors
 
@@ -250,6 +334,26 @@ class StockPicking(models.Model):
         self.ensure_one()
         return self.partner_id
 
+    def _get_donation_document_date(self):
+        """Local date of the document: the date it was done."""
+        self.ensure_one()
+        return fields.Date.context_today(self, self.date_done or self.scheduled_date)
+
+    def print_donation_certificate(self):
+        """The certificate of a donation receipt (goods), delivered to the
+        donor."""
+        self.ensure_one()
+        if not (self.is_donation and not self.sale_id and self.picking_type_code == "incoming"):
+            raise UserError(_(
+                "This picking is not a donation receipt: only those have a Donation "
+                "Certificate. A donation delivery has a Donation Receipt."
+            ))
+        return self.env.ref("l10n_ve_donation.action_donation_certificate_stock_picking").report_action(self)
+
     def print_donation_receipt(self):
         self.ensure_one()
+        if self.picking_type_code == "incoming":
+            raise UserError(_(
+                "This picking is a donation receipt: its document is the Donation Certificate."
+            ))
         return self.env.ref("l10n_ve_donation.action_donation_receipt_stock_picking").report_action(self)

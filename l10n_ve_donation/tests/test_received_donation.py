@@ -245,3 +245,167 @@ class TestReceivedDonation(TestDonationCommon):
         self.assertIn("is_stock_valuation_entry or not is_incoming_donation", arch)
         self.assertIn("is_stock_valuation_entry or is_incoming_donation", arch)
 
+
+
+@tagged("l10n_ve_donation", "received_donation", "-at_install", "post_install")
+class TestReceivedDonationPicking(TestDonationCommon):
+    """Receipt of goods donated to the company: the origin is an `inventory`
+    location whose valuation account is a received donations account (the
+    stock valuation credits it)."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.company.donation_income_account_ids = cls.account_income
+        cls.donor = cls.env["res.partner"].create({"name": "Donor Test", "vat": "V12345678"})
+        cls.location_received = cls.env["stock.location"].create({
+            "name": "Donations received",
+            "usage": "inventory",
+            "location_id": cls.warehouse_donation.view_location_id.id,
+            "company_id": cls.company.id,
+            "valuation_account_id": cls.account_income.id,
+        })
+        cls.picking_type_receipt = cls.env["stock.picking.type"].create({
+            "name": "Donation Receipt",
+            "code": "incoming",
+            "warehouse_id": cls.warehouse_donation.id,
+            "sequence_code": "DWHRCV",
+            "default_location_src_id": cls.location_received.id,
+            "default_location_dest_id": cls.warehouse_donation.lot_stock_id.id,
+            "is_donation_picking_type": True,
+        })
+
+    def _receipt(self, partner=True, origin=None, product=None, quantity=2.0, is_donation=True):
+        product = product or self.product_storable
+        origin = origin or self.location_received
+        dest = self.warehouse_donation.lot_stock_id
+        return self.env["stock.picking"].create({
+            "picking_type_id": self.picking_type_receipt.id,
+            "location_id": origin.id,
+            "location_dest_id": dest.id,
+            "partner_id": self.donor.id if partner else False,
+            "is_donation": is_donation,
+            "move_ids": [Command.create({
+                "product_id": product.id,
+                "product_uom_qty": quantity,
+                "product_uom": product.uom_id.id,
+                "location_id": origin.id,
+                "location_dest_id": dest.id,
+            })],
+        })
+
+    def _validate(self, picking):
+        picking.action_confirm()
+        picking.action_assign()
+        picking.move_ids.write({"quantity": picking.move_ids.product_uom_qty, "picked": True})
+        picking.button_validate()
+
+    def test_01_a_donation_receipt_requires_the_donor(self):
+        picking = self._receipt(partner=False)
+        with self.assertRaisesRegex(UserError, "donor"):
+            self._validate(picking)
+        self.assertNotEqual(picking.state, "done")
+
+    def test_02_a_correct_receipt_credits_the_received_donations_account(self):
+        picking = self._receipt()
+        self._validate(picking)
+        self.assertEqual(picking.state, "done")
+        entry = picking.move_ids.account_move_id
+        self.assertEqual(len(entry), 1)
+        credit = entry.line_ids.filtered("credit")
+        debit = entry.line_ids.filtered("debit")
+        self.assertEqual(credit.account_id, self.account_income)
+        self.assertEqual(debit.account_id, self.account_stock)
+
+    def test_03_without_received_donations_accounts_it_is_refused(self):
+        self.company.donation_income_account_ids = False
+        picking = self._receipt()
+        with self.assertRaisesRegex(UserError, "no received donations accounts"):
+            self._validate(picking)
+
+    def test_04_the_origin_must_be_an_inventory_location(self):
+        picking = self._receipt(origin=self.warehouse_donation.lot_stock_id)
+        with self.assertRaisesRegex(UserError, "must be an Inventory Loss location"):
+            self._validate(picking)
+
+    def test_05_the_origin_needs_a_valuation_account(self):
+        location = self.location_received.copy({"name": "Without account", "valuation_account_id": False})
+        picking = self._receipt(origin=location)
+        with self.assertRaisesRegex(UserError, "has no Stock Valuation Account"):
+            self._validate(picking)
+
+    def test_06_the_account_of_the_origin_must_be_a_received_donations_one(self):
+        location = self.location_received.copy({
+            "name": "Wrong account", "valuation_account_id": self.account_expense.id,
+        })
+        picking = self._receipt(origin=location)
+        with self.assertRaisesRegex(UserError, "is not a received donations account"):
+            self._validate(picking)
+
+    def test_07_products_without_automated_valuation_are_not_checked(self):
+        product = self.env["product.product"].create({"name": "Consumable", "type": "consu"})
+        picking = self._receipt(origin=self.warehouse_donation.lot_stock_id, product=product)
+        self._validate(picking)
+        self.assertEqual(picking.state, "done")
+
+    def test_08_a_receipt_that_is_not_a_donation_is_not_checked(self):
+        picking = self._receipt(partner=False, origin=self.warehouse_donation.lot_stock_id, is_donation=False)
+        self._validate(picking)
+        self.assertEqual(picking.state, "done")
+
+    def test_09_a_donation_delivery_cannot_use_a_received_donations_account(self):
+        picking = self._create_donation_picking(partner=self.partner)
+        self.location_donation.valuation_account_id = self.account_income
+        errors = picking._get_donation_delivery_config_errors()
+        self.assertTrue(any("received donations account" in error for error in errors))
+        self.location_donation.valuation_account_id = self.account_expense
+        self.assertFalse(picking._get_donation_delivery_config_errors())
+
+    def test_10_card_of_a_donation_type_marks_the_new_picking(self):
+        Picking = self.env["stock.picking"]
+        context = {"default_picking_type_id": self.picking_type_receipt.id}
+        self.assertTrue(Picking.with_context(**context).default_get(["is_donation"])["is_donation"])
+        other = {"default_picking_type_id": self.warehouse_normal.in_type_id.id}
+        self.assertFalse(Picking.with_context(**other).default_get(["is_donation"]).get("is_donation"))
+
+    def test_11_certificate_of_a_donation_receipt(self):
+        self.donor.write({"street": "Av. Principal 1", "phone": "0414-1234567"})
+        picking = self._receipt()
+        self._validate(picking)
+        action = picking.print_donation_certificate()
+        report = self.env.ref("l10n_ve_donation.action_donation_certificate_stock_picking")
+        self.assertEqual(action, report.report_action(picking))
+        html, _ = report._render_qweb_html(report.report_name, picking.ids)
+        html = html.decode()
+        self.assertIn("Certificado de Donación", html)
+        self.assertIn(self.donor.name, html)
+        self.assertIn("Av. Principal 1", html)
+        self.assertIn("los siguientes bienes", html)
+        self.assertIn("Total at cost", html)
+        self.assertIn("Valor al costo", html)
+        self.assertIn(self.product_storable.name, html)
+        self.assertNotIn("la suma de", html)
+
+    def test_12_receipt_amounts_come_from_the_value_of_the_moves(self):
+        picking = self._receipt(quantity=2.0)
+        self._validate(picking)
+        amounts = picking._get_donation_receipt_amounts()
+        self.assertAlmostEqual(amounts["amount"], 2.0 * self.product_storable.standard_price)
+        self.assertAlmostEqual(amounts["amount"], picking._get_donation_grand_total())
+
+    def test_13_each_document_has_its_picking(self):
+        receipt = self._receipt()
+        self._validate(receipt)
+        delivery = self._create_donation_picking(partner=self.partner, validate=True)
+        with self.assertRaisesRegex(UserError, "Donation Certificate"):
+            receipt.print_donation_receipt()
+        with self.assertRaisesRegex(UserError, "not a donation receipt"):
+            delivery.print_donation_certificate()
+        self.assertIsInstance(delivery.print_donation_receipt(), dict)
+
+    def test_14_the_form_offers_the_certificate_only_for_receipts(self):
+        arch = self.env["stock.picking"].get_view(
+            self.env.ref("stock.view_picking_form").id, "form"
+        )["arch"]
+        self.assertIn('name="print_donation_certificate"', arch)
+        self.assertIn("picking_type_code != 'incoming'", arch)
