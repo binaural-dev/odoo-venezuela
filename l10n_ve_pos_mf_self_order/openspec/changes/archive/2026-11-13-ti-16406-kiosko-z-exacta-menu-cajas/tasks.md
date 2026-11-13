@@ -23,7 +23,11 @@
       simulada con S1 = 41): llamadas `connect → S1 → Z → disconnect`, sesión
       cerrada con Reporte Z 42 y serial, y el Kiosko pasó a
       `/odoo/action-point_of_sale.action_client_pos_menu`
-- [ ] 2.4 Con la HKA80: la sesión guarda el mismo número que imprime la Z
+- [x] 2.4 Con la HKA80 (2026-11-13, prueba del usuario, base
+      `monfarmacia_t16406_real`): sesión 89 con Reporte Z 151, el mismo que
+      imprimió la máquina. La sesión 88 guardó 148 pero salió la 0149: la
+      máquina se quedó sin papel y el driver reenvió el I0Z; se corrige en
+      `ti-16406-z-sin-papel`
 
 ## 3. Cierre
 

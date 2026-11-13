@@ -9,9 +9,12 @@ panel de Debug del Kiosko, pedidos por el usuario el 2026-11-13:
   imprimir la Z (el contador ya la cuenta) y el servidor le suma 1. Con la HKA80
   de pruebas la máquina imprimió la Z 0147 y la sesión guardó 148. El flujo IoT
   lee S1 antes de la Z; ahí el +1 es correcto.
-- **Al cerrar, el Kiosko se quedaba en la pantalla de pedidos** sin sesión. La
-  caja, al cerrar, va al menú de selección de cajas del PdV
+- **Al cerrar, el Kiosko se quedaba en la pantalla de pedidos** sin sesión. El
+  usuario pidió llevarlo al menú de selección de cajas del PdV
   (`PosStore.redirectToBackend` → `/odoo/action-point_of_sale.action_client_pos_menu`).
+  No es lo que hace la caja al cerrar: en 19.0 vuelve a `/pos/ui/<caja>`
+  (`pos.router.close()`), que en el equipo del Kiosko abriría una sesión de
+  caja.
 
 ## What Changes
 

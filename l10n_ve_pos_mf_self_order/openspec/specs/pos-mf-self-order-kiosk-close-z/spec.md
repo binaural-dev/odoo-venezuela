@@ -60,6 +60,14 @@ cualquier paso SHALL detener los siguientes y avisar al operador.
   y cerrar desde el backend; la sesión no se cierra y el Kiosko sigue en
   pantalla
 
+#### Scenario: La máquina no confirma la Z
+
+- **GIVEN** la máquina sin papel, que no responde al `I0Z`
+- **WHEN** el S1 leído después no muestra el contador de Z avanzado
+- **THEN** se avisa "Reporte Z sin confirmar" (revisar la máquina y no repetir
+  la Z si salió), no se sincroniza ni se cierra la sesión; si el contador sí
+  avanzó, se sincroniza con la Z que salió y se cierra
+
 ### Requirement: Una sola Z por sesión y nunca en medio de una factura
 
 El cierre con Z SHALL NOT empezar si hay una factura fiscal imprimiéndose en

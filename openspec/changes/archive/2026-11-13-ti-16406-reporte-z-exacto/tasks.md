@@ -21,7 +21,11 @@
       toca la máquina (5/5)
 - [x] 2.2 Python de `l10n_ve_pos_mf` y `l10n_ve_pos_mf_self_order` en base nueva
       sin demo, como el CI: 26/26
-- [ ] 2.3 Con la HKA80: la sesión guarda el mismo número que imprime la Z
+- [x] 2.3 Con la HKA80 (2026-11-13, prueba del usuario, base
+      `monfarmacia_t16406_real`): sesión 89 con Reporte Z 151, el mismo que
+      imprimió la máquina. La sesión 88 guardó 148 pero salió la 0149: la
+      máquina se quedó sin papel y el driver reenvió el I0Z; se corrige en
+      `ti-16406-z-sin-papel`
 
 ## 3. Cierre
 
