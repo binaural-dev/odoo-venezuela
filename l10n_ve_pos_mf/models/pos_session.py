@@ -4,11 +4,38 @@ from odoo import models, fields, api, _
 class PosSession(models.Model):
     _inherit = "pos.session"
 
-    serial_machine = fields.Char(related="config_id.serial_machine")
+    # Datos del Reporte Z que cerró el día fiscal de la sesión. Los escribe
+    # `set_report_z` (caja: ClosePosPopup; Kiosko: l10n_ve_pos_mf_self_order).
+    # `serial_machine` es propio de la sesión (antes era relacionado con la
+    # caja): guarda la máquina que imprimió la Z aunque después se cambie.
+    serial_machine = fields.Char(string="Serial de Máquina Fiscal", readonly=True, copy=False)
     report_z = fields.Char()
+    report_z_date = fields.Datetime(string="Report Z Date", readonly=True, copy=False)
 
     def set_report_z(self, values):
-        self.write({"report_z": int(values["data"]["_dailyClosureCounter"]) + 1})
+        """Registra en la sesión el Reporte Z leído del S1 de la máquina.
+
+        ``values["data"]`` trae ``_dailyClosureCounter`` y
+        ``_registeredMachineNumber`` (serial). Además del número de Z, guarda
+        el serial y la fecha y hora, y llena el serial de la caja si estaba
+        vacío (el campo de la caja se "detecta al conectar", pero nada lo
+        escribía).
+        """
+        data = values["data"]
+        serial = data.get("_registeredMachineNumber") or False
+        self.write(
+            {
+                "report_z": int(data["_dailyClosureCounter"]) + 1,
+                "serial_machine": serial,
+                "report_z_date": fields.Datetime.now(),
+            }
+        )
+        if serial:
+            # sudo: el cajero (o el usuario del Kiosko) no puede escribir en
+            # pos.config; solo se completa un serial que falta.
+            self.config_id.filtered(lambda config: not config.serial_machine).sudo().write(
+                {"serial_machine": serial}
+            )
 
     @api.model
     def _load_pos_data_fields(self, config):
