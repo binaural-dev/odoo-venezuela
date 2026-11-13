@@ -127,6 +127,10 @@ class TestKioskCloseSessionZ(TransactionCase):
         )
 
         cls.sale_journal = sale_journal
+        # Sin datos demo (CI): el cliente de las facturas se crea aquí.
+        cls.partner = cls.env["res.partner"].create(
+            {"name": "Kiosk Close Z Customer", "company_id": cls.company.id}
+        )
         bank_account = cls.env["account.account"].create(
             {
                 "name": "Kiosk Close Z Bank Account",
@@ -258,7 +262,7 @@ class TestKioskCloseSessionZ(TransactionCase):
                 "move_type": "out_invoice",
                 "company_id": self.company.id,
                 "journal_id": self.sale_journal.id,
-                "partner_id": self.env.ref("base.res_partner_1").id,
+                "partner_id": self.partner.id,
                 "mf_serial": serial,
             }
         )
