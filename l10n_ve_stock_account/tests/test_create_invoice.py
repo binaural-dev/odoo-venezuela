@@ -352,3 +352,30 @@ class TestCreateInvoiceFromPicking(StockAccountTestCommon):
         self.assertEqual(action["res_id"], invoice.id)
         self.assertEqual(action["context"].get("default_move_type"), "out_invoice")
         self.assertEqual(action["context"].get("default_partner_id"), picking.partner_id.id)
+
+    # =========================================================================
+    # Reversal of invoices created from pickings
+    # =========================================================================
+
+    def test_reverse_invoice_from_picking_unlocks_refund_lines(self):
+        """Regression (ticket 16194): reversing an invoice created from a
+        picking must not carry from_picking_line to the credit note, otherwise
+        its lines stay read-only and a partial credit note is impossible.
+        The original invoice keeps its lines locked."""
+        picking = self._create_sale_order(pricelist=self.pricelist_ves, qty=3)
+        invoice = picking.create_invoice()
+        product_lines = invoice.invoice_line_ids.filtered(lambda l: l.display_type == "product")
+        self.assertTrue(product_lines)
+        self.assertTrue(all(product_lines.mapped("from_picking_line")))
+
+        refund = invoice._reverse_moves()
+
+        self.assertEqual(refund.move_type, "out_refund")
+        self.assertEqual(refund.reversed_entry_id, invoice)
+        refund_lines = refund.invoice_line_ids.filtered(lambda l: l.display_type == "product")
+        self.assertEqual(len(refund_lines), len(product_lines))
+        self.assertFalse(any(refund_lines.mapped("from_picking_line")))
+        self.assertTrue(all(product_lines.mapped("from_picking_line")))
+
+        refund_lines[0].quantity = 1
+        self.assertEqual(refund_lines[0].quantity, 1)

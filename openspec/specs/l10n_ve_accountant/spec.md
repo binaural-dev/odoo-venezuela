@@ -986,3 +986,46 @@ Todo cálculo de tasa o conversión de `account.move` y `account.payment` que us
 
 - **WHEN** se crea un asiento (`entry`) con `date` pasada o futura, hay tasa para esa fecha y no la hay para el día de hoy
 - **THEN** el asiento toma la tasa de su `date`; la consulta de tasa del `create` usa `date` en los asientos y `invoice_date` (o el «hoy» del usuario) en los demás documentos
+
+### Requirement: Segundo bloque de totales con la moneda alterna cuando el documento está en la moneda de la compañía
+
+El widget `account-tax-ves-totals-field` (segundo bloque de totales de la pestaña principal, debajo del nativo) DEBE (MUST) mostrar los montos de `tax_totals` según la moneda del documento: si `currency_id` es distinta de la moneda de la compañía muestra los montos en VES (`*_currency_ves`); si `currency_id` es la moneda de la compañía muestra los montos en la moneda alterna (`foreign_currency_id`: claves `*_foreign_currency` de subtotal, Total G de cada grupo de impuestos, impuesto y total), formateados con esa moneda. Si el documento está en la moneda de la compañía y la compañía no tiene `foreign_currency_id`, el bloque NO DEBE (MUST NOT) mostrarse. En la vista de factura el grupo contenedor (`o_ve_invoice_totals`) solo se oculta con `currency_id == company_currency_id and not foreign_currency_id`. El widget solo presenta los montos que `_get_tax_totals_summary` ya calcula; no los recalcula (ti-85450). El bloque alterno NO DEBE (MUST NOT) mostrar ningún monto adeudado: el formulario no incluye `amount_residual_company` ("residual amount" / "Importe adeudado" en la moneda de la compañía), con el documento en cualquier moneda. El único monto adeudado visible es el nativo (`amount_residual`). Motivo: `amount_residual_company` está en la moneda de la compañía (VEF) y no corresponde a los montos alternos que calcula `tax_totals` (moneda de referencia), ni necesariamente a la moneda del documento; por ejemplo, con un documento en EUR el bloque alterno está en USD, `amount_residual_company` en VEF y `amount_residual` en EUR, tres monedas distintas, por lo que no se usa en este bloque.
+
+#### Scenario: Factura en la moneda de la compañía con moneda alterna configurada
+
+- **GIVEN** una compañía con moneda VEF y `foreign_currency_id` USD, y una factura en VEF
+- **WHEN** se abre la pestaña principal de la factura
+- **THEN** debajo de los totales en VEF aparece el bloque con subtotal, Total G, impuesto y total en USD (`total_amount_foreign_currency`), no los montos en VEF (`test_alternate_totals_block`)
+
+#### Scenario: Factura en moneda extranjera
+
+- **GIVEN** una factura en USD en una compañía con moneda VEF
+- **WHEN** se abre la pestaña principal de la factura
+- **THEN** el bloque inferior muestra los totales en VEF, sin cambios respecto al comportamiento previo (`test_alternate_totals_block`)
+
+#### Scenario: Monto adeudado
+
+- **GIVEN** una factura en cualquier moneda
+- **WHEN** se abre la pestaña principal
+- **THEN** el bloque alterno solo muestra `tax_totals`; el único monto adeudado es el nativo y `amount_residual_company` no está en el formulario (`test_alternate_totals_block`)
+
+#### Scenario: Compañía sin moneda alterna
+
+- **GIVEN** una factura en la moneda de la compañía y una compañía sin `foreign_currency_id`
+- **WHEN** se abre la pestaña principal
+- **THEN** el bloque inferior no se muestra
+
+### Requirement: El asiento de base efectivo trae el monto alterno en todas sus líneas
+
+Con la base efectivo activa, el asiento que genera el core al conciliar el pago de una factura (`tax_cash_basis_origin_move_id`) DEBE (MUST) traer el monto alterno (`foreign_debit`, `foreign_credit` y `foreign_balance`) en todas sus líneas, incluidas las de impuesto. Sus líneas `tax` copian el `display_type` de la factura pero nacen con `foreign_balance = 0`, por lo que NO DEBEN (MUST NOT) valorarse con ese saldo: se valoran por `amount_currency` o por la tasa, como el resto de los asientos que no son factura. Las facturas conservan su cálculo.
+
+#### Scenario: Cobro de una factura con impuesto exigible al pagar
+
+- **WHEN** se cobra una factura de 100 USD + 16% de IVA con impuesto exigible al pagar, a tasa 889,5754
+- **THEN** el asiento de base efectivo tiene 4 líneas con monto alterno: base 100 USD (débito y crédito) e IVA 16 USD (débito en la cuenta transitoria y crédito en la definitiva)
+- **AND** el asiento cuadra en bolívares y en moneda alterna
+
+#### Scenario: Cobro parcial
+
+- **WHEN** se cobra el 50% de la factura
+- **THEN** el asiento de base efectivo mueve 8 USD de IVA, también en moneda alterna

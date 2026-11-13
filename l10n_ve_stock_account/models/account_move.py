@@ -9,7 +9,11 @@ class AccountMove(models.Model):
     _inherit = "account.move"
 
     guide_number = fields.Char(compute='_compute_guide_number', string="Guide Number", store=True)
-    transfer_ids = fields.Many2many("stock.picking", string="Transfers")
+    transfer_ids = fields.Many2many(
+        "stock.picking",
+        string="Transfers",
+        groups="stock.group_stock_user",
+    )
     picking_ids = fields.Many2many("stock.picking", column1='account_move_id', column2= 'stock_picking_id', relation='pickings_invoice_rel')
     from_picking = fields.Boolean(string="From Picking", default=False)
 
