@@ -4,7 +4,7 @@
         <field name="model">product.template</field>
         <field name="inherit_id" ref="product.product_template_only_form_view"/>
         <field name="arch" type="xml">
-            <xpath expr="//div[@name='list_price_uom']" position="attributes">
+            <xpath expr="//div[@name='list_price_per_uom_id']" position="attributes">
                 <attribute name="invisible">hide_list_price</attribute>
             </xpath>
             <xpath expr="//field[@name='list_price']" position="attributes">
