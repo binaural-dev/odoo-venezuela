@@ -408,24 +408,35 @@ El botón nativo de cierre de caja DEBE (MUST) reemplazarse por "Cerrar sesion e
 - **WHEN** todos los pedidos de la sesión tienen número fiscal
 - **THEN** el flujo continúa con la impresión del Reporte Z
 
-### Requirement: Reporte Z obligatorio y sincronización con Odoo
+### Requirement: Reporte Z obligatorio con el S1 leído antes de la Z
 
-El Reporte Z desde el popup de cierre DEBE (MUST) exigir un driver conectado y una confirmación explícita del cajero (advirtiendo que la acción es irreversible), enviar `printReportZ()` y luego leer el S1: solo si la lectura es exitosa y trae `registeredMachineNumber` y un `dailyClosureCounter` entero DEBE (MUST) sincronizar Odoo llamando a `account.move.report_z` (con el serial de la caja) y a `pos.session.set_report_z`. Si el Z se imprimió pero el S1 no se pudo leer, DEBE (MUST) mostrarse una advertencia y NO continuar con el cierre de la sesión. Solo cuando el Z se imprimió y sincronizó se invoca el flujo nativo de cierre (`confirm()`), preservando la validación de diferencias de caja.
+El Reporte Z desde el popup de cierre DEBE (MUST) exigir un driver conectado y la confirmación del cajero, y leer el S1 ANTES de `printReportZ()`, como el flujo IoT. Sin `registeredMachineNumber` o sin un `dailyClosureCounter` entero NO DEBE (MUST NOT) imprimir la Z. Con la Z impresa DEBE (MUST) sincronizar `account.move.report_z` y `pos.session.set_report_z` con ese contador (el de la última Z; ellos le suman 1) y solo entonces invocar el cierre nativo (`confirm()`).
 
 #### Scenario: Cierre completo
 
-- **WHEN** el cajero confirma el Reporte Z, la impresión y la lectura del S1 son exitosas
-- **THEN** se sincronizan `account.move.report_z` y `pos.session.set_report_z` y luego se ejecuta el cierre nativo de la sesión
+- **WHEN** el cajero confirma el Reporte Z, la lectura del S1 y la impresión son exitosas
+- **THEN** se sincronizan `account.move.report_z` y `pos.session.set_report_z` con el contador leído antes de la Z y luego se ejecuta el cierre nativo de la sesión
+
+#### Scenario: La sesión guarda la Z impresa
+
+- **GIVEN** una máquina cuya última Z es la 0146 (el S1 devuelve 146)
+- **WHEN** el cajero cierra con Z y la máquina imprime la 0147
+- **THEN** la sesión queda con `report_z = 147`
 
 #### Scenario: Confirmación rechazada
 
 - **WHEN** el cajero cancela la confirmación del Reporte Z
 - **THEN** no se envía ningún comando y la sesión no se cierra
 
-#### Scenario: S1 ilegible tras el Z
+#### Scenario: S1 ilegible antes de la Z
 
-- **WHEN** el Reporte Z se imprime pero el S1 no devuelve serial o contador válidos
-- **THEN** se advierte que Odoo no quedó sincronizado y la sesión no se cierra
+- **WHEN** el S1 no devuelve serial o contador válidos
+- **THEN** se avisa que no se imprimió el Reporte Z, la máquina no recibe la Z y la sesión no se cierra
+
+#### Scenario: La Z no se imprime
+
+- **WHEN** el comando de la Z falla
+- **THEN** se avisa del error y no se sincroniza Odoo ni se cierra la sesión
 
 ### Requirement: Reporte X desde el popup de cierre
 
@@ -466,7 +477,7 @@ El override de `account.move.report_z(serial, response)` DEBE (MUST) encadenar l
 
 ### Requirement: Reporte Z de la sesión del PdV
 
-`pos.session` DEBE (MUST) guardar los datos de su Reporte Z: `report_z`, `serial_machine` (campo propio, ya no relacionado con la caja) y `report_z_date`. `set_report_z(values)` DEBE (MUST) escribir `report_z = _dailyClosureCounter + 1`, `serial_machine = _registeredMachineNumber` y la fecha y hora actuales, sin tocar `pos.config.serial_machine`. `report_z` y `serial_machine` siguen cargados en el PdV.
+`pos.session` DEBE (MUST) guardar los datos de su Reporte Z: `report_z`, `serial_machine` (campo propio, ya no relacionado con la caja) y `report_z_date`. `set_report_z(values)` DEBE (MUST) escribir `report_z = _dailyClosureCounter + 1`, `serial_machine = _registeredMachineNumber` y la fecha y hora actuales, sin tocar `pos.config.serial_machine`. Con el S1 leído antes de la Z, `report_z` es la Z impresa, sin ceros a la izquierda. `report_z` y `serial_machine` siguen cargados en el PdV.
 
 #### Scenario: Sincronización del Z en la sesión
 
