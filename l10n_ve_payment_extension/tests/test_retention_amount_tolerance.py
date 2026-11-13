@@ -140,6 +140,44 @@ class TestRetentionAmountTolerance(RetentionTestCommon):
         self.assertFalse(document._retention_closes_document_currency_debt(one_cent_more))
         self.assertIsNone(document._retention_difference_within_currency_precision(one_cent_more))
 
+    def test_regla_2_respeta_el_tope_aunque_la_deuda_comercial_cierre(self):
+        """Rule 2 is capped: even if the retention closes the commercial debt, a
+        difference above `_retention_max_accepted_difference()` is a real amount."""
+        document = self._invoice(self.currency_usd, self.journal_multi)
+        due = abs(document.amount_residual_signed)
+        top = document._retention_max_accepted_difference()
+        step = self.company.currency_id.rounding
+        with patch.object(
+            type(document), "_retention_closes_document_currency_debt", return_value=True,
+        ):
+            self.assertIsNone(
+                document._retention_difference_within_currency_precision(due + top + step))
+            self.assertIsNone(
+                document._retention_difference_within_currency_precision(due - top - step))
+            self.assertAlmostEqual(
+                document._retention_difference_within_currency_precision(due + top),
+                top, places=2,
+            )
+
+    def test_limites_toleran_ruido_de_float(self):
+        """A difference sitting exactly on a bound is accepted even if the float
+        subtraction against the residual adds noise."""
+        document = self._invoice(self.currency_usd, self.journal_multi)
+        due = abs(document.amount_residual_signed)
+        tolerance = document._retention_amount_tolerance()
+        noisy = (due + tolerance) + 1e-9
+        self.assertIsNotNone(document._retention_difference_within_currency_precision(noisy))
+
+    def test_sin_redondeo_si_la_moneda_de_compania_no_es_bolivar(self):
+        """Rounding between currencies only applies to companies whose currency is VEF."""
+        document = self._invoice(self.currency_usd, self.journal_multi)
+        due = abs(document.amount_residual_signed)
+        self.assertIsNotNone(document._retention_difference_within_currency_precision(due + 0.01))
+        with patch.object(
+            type(self.company.currency_id), "is_venezuelan_bolivar", return_value=False,
+        ):
+            self.assertIsNone(document._retention_difference_within_currency_precision(due + 0.01))
+
 
 @tagged("post_install", "-at_install", "retention_iva_amount_single_calculation")
 class TestRetentionIvaAmountSingleCalculation(RetentionTestCommon):

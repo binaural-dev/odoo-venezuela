@@ -5,7 +5,7 @@ La fórmula del monto de la retención de IVA estaba escrita dos veces en la loc
 ## What Changes
 
 - `account.retention.compute_iva_retention_amount(monto_impuesto, porcentaje)`: único cálculo del monto de la retención de IVA; lo usan la carga de líneas y la línea de retención, y los portales con su propio porcentaje.
-- `account.move._retention_amount_tolerance()`: único lugar de la regla de tolerancia (el mayor paso de la moneda de compañía que, reconvertido a la moneda del documento, redondea a cero). `_retention_difference_within_currency_precision` la usa.
+- `account.move._retention_amount_tolerance()` (regla 1) y `_retention_max_accepted_difference()` (regla 2, con tope): únicos límites de la regla de redondeo entre monedas; `_retention_difference_within_currency_precision` decide con ellos, convirtiendo con `_convert()` a la fecha del documento.
 - No se tocan los valores alternos `foreign_*` de las líneas de retención (heredados, no se usan).
 
 ## Impact
@@ -13,3 +13,4 @@ La fórmula del monto de la retención de IVA estaba escrita dos veces en la loc
 - Specs afectadas: `l10n_ve_payment_extension` (nuevo requisito de cálculo único y tolerancia).
 - Código: `models/account_retention.py`, `models/account_retention_line.py`, `models/account_move.py`.
 - `binaural_mobile` (integra-addons) consume ambos métodos en un PR aparte.
+- El redondeo entre monedas solo aplica con compañía en bolívar (`is_venezuelan_bolivar()`); las cuentas de diferencial salen de `move.company_id`.

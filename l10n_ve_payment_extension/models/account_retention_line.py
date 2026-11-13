@@ -879,10 +879,7 @@ class AccountRetentionLine(models.Model):
                 and abs(record.retention_amount) > abs(record.move_id.amount_residual_signed)
             ):
                 continue
-            # Mismo criterio que `AccountRetention.action_post`: un exceso
-            # que desaparece al reconvertirlo a la moneda de la factura con
-            # su propia tasa es redondeo entre monedas, no un exceso real -
-            # ver `account.move._retention_excess_within_currency_precision`.
+            # Same criterion as `AccountRetention.action_post`: rounding is no excess.
             if record.move_id._retention_excess_within_currency_precision(
                 abs(record.retention_amount)
             ) is not None:

@@ -16,9 +16,9 @@ class TestRetentionCurrencyPrecisionWriteoff(RetentionTestCommon):
     retencion correcta puede caer dentro de ese hueco sin ser un exceso.
 
     `account.move._retention_excess_within_currency_precision` decide eso
-    reconvirtiendo el excedente a la moneda de la factura con la tasa DEL
-    DOCUMENTO (`invoice_currency_rate`): si desaparece (redondea a cero en
-    esa moneda), es redondeo, no exceso. `_prepare_retention_payment_vals`
+    llevando el excedente a la moneda de la factura con `_convert()` a la
+    fecha del documento: si es menor al tope de la regla 1, o la retencion
+    cierra la deuda comercial dentro del tope de la regla 2, es redondeo. `_prepare_retention_payment_vals`
     declara ese sobrante como `write_off_line_vals` en el momento de crear
     el pago, para que la conciliacion cierre la factura sin sobrante.
     """

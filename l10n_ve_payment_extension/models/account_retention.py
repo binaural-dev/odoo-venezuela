@@ -545,10 +545,7 @@ class AccountRetention(models.Model):
 
             for move, retention_amount in retention_amounts_by_move.items():
                 invoice_total = abs(move.amount_residual_signed)
-                # Un excedente que desaparece al reconvertirlo a la moneda de
-                # la factura (con la tasa de la propia factura) es redondeo
-                # entre monedas, no un exceso real - ver
-                # `account.move._retention_excess_within_currency_precision`.
+                # An excess that is only currency rounding is not a real excess.
                 if (
                     invoice_total < retention_amount
                     and move._retention_excess_within_currency_precision(retention_amount) is None
@@ -1211,13 +1208,10 @@ class AccountRetention(models.Model):
 
     @api.model
     def compute_iva_retention_amount(self, tax_amount, withholding_percentage):
-        """Monto de la retencion de IVA, en moneda de compania, para un monto de
-        impuesto y un porcentaje de retencion.
+        """Single computation of the IVA retention amount (company currency).
 
-        Es el UNICO lugar donde se calcula: lo usan `compute_retention_lines_data`,
-        la linea de retencion (`_apply_iva_tax_group_values`) y los portales, que
-        pasan su propio porcentaje. Si la regla de calculo cambia (redondeo, base,
-        retenciones indexadas o no indexadas) todos la siguen."""
+        Used by line loading, retention lines and portals (own percentage).
+        """
         return abs(tax_amount * (withholding_percentage / 100))
 
     @api.model
@@ -1599,41 +1593,21 @@ class AccountRetention(models.Model):
         if not is_refund and has_subsidiary and self.env.company.subsidiary:
             res["account_analytic_id"] = move.account_analytic_id.id
 
-        # Si lo retenido en esta factura excede el residual SOLO por
-        # redondeo entre monedas (ver
-        # `account.move._retention_excess_within_currency_precision`), el
-        # sobrante se declara aqui mismo, en los valores de creacion del
-        # pago -no despues de conciliarlo-: `write_off_line_vals` es el
-        # mecanismo nativo que usa el propio wizard "Registrar Pago" de
-        # Odoo (`account.payment.register`) para separar, dentro del MISMO
-        # asiento del pago, la porcion que va a la cuenta por
-        # cobrar/pagar de la que va a una cuenta de resultado. Con esto,
-        # cuando `_reconcile_all_payments` concilie mas adelante, el monto
-        # que realmente llega a la factura ya es el residual exacto -sin
-        # sobrante que absorber en un segundo paso ni asiento aparte.
+        # Declare a currency-rounding difference as a write-off in the payment
+        # itself (native `write_off_line_vals`), so reconciliation closes the invoice.
         retained_company_currency = sum(abs(a) for a in lines.mapped("retention_amount"))
         diff = move._retention_difference_within_currency_precision(retained_company_currency)
         if diff is not None:
             company_currency = self.company_currency_id
-            # `diff` = retenido - adeudado. Segun
-            # `account.payment._prepare_move_lines_per_type`:
-            #   contrapartida = -liquidez - writeoff
-            # Inbound (retencion de cliente), `liquidez = +retenido`: para
-            # que la contrapartida cierre en -adeudado hace falta
-            # `writeoff = diff` con el signo de la diferencia invertido:
-            # exceso (diff>0) -> CREDITO; faltante (diff<0) -> DEBITO.
-            # Outbound (proveedor) es el espejo: exceso -> DEBITO,
-            # faltante -> CREDITO.
+            # diff = retained - due; counterpart = -liquidity - writeoff, so the
+            # sign flips for inbound and mirrors for outbound.
             signed_writeoff = -diff if p_type == "inbound" else diff
-            # La cuenta acompaña el signo: un CREDITO es ganancia (aumenta
-            # el ingreso) y un DEBITO es perdida (aumenta el gasto); un
-            # debito a la de ganancia la reduciria, al reves de lo que se
-            # registra.
+            # Credit is a gain, debit is a loss.
             if signed_writeoff < 0:
-                exchange_account = self.env.company.income_currency_exchange_account_id
+                exchange_account = move.company_id.income_currency_exchange_account_id
                 account_label = _("Exchange Gain Account")
             else:
-                exchange_account = self.env.company.expense_currency_exchange_account_id
+                exchange_account = move.company_id.expense_currency_exchange_account_id
                 account_label = _("Exchange Loss Account")
             if exchange_account:
                 res["write_off_line_vals"] = [{
@@ -1645,13 +1619,8 @@ class AccountRetention(models.Model):
                     "balance": signed_writeoff,
                 }]
             else:
-                # Sin la cuenta no hay donde declarar el writeoff: seguir
-                # dejaria la diferencia abierta en la cuenta por
-                # cobrar/pagar sin que nadie se entere.
-                # El texto habla de la DIFERENCIA (no de "sobrante" o
-                # "faltante"): la cuenta que falta depende del signo del
-                # writeoff, que a su vez depende de la direccion del pago,
-                # asi que cliente/proveedor y exceso/faltante se cruzan.
+                # No account to record the write-off: fail instead of leaving a
+                # silent residual (which account is needed depends on the sign).
                 raise UserError(
                     _(
                         "The company must have an '%(account)s' configured to "
