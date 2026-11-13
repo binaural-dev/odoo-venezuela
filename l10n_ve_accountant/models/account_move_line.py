@@ -741,8 +741,8 @@ class AccountMoveLine(models.Model):
             
             line.amount_residual = residual
             line.amount_residual_currency = residual_currency
-            # Los montos no se redondean (l10n_ve_rate), así que pueden quedar residuales
-            # microscópicos: se usa la misma tolerancia del core en vez de un cero absoluto.
+            # Amounts aren't rounded (l10n_ve_rate), so microscopic residuals can remain:
+            # use the same tolerance as core instead of an absolute zero.
             line.reconciled = (
                 comp_curr.is_zero(line.amount_residual)
                 and foreign_curr.is_zero(line.amount_residual_currency)
