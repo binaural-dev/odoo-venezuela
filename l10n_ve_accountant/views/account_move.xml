@@ -75,7 +75,7 @@
                     </div>
                 </div>
             </xpath>
-            <xpath expr="//page[@id='invoice_tab'][1]/field[1]/list[1]/field[@name='account_id']" position="attributes">
+            <xpath expr="//page[@id='invoice_tab']/field[@name='invoice_line_ids']/list/field[@name='account_id']" position="attributes">
                 <attribute name='optional'>Hide</attribute>
             </xpath>
             <xpath expr="//span[@class='o_form_label'][1]/field[1]" position="attributes">

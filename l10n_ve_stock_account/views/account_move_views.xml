@@ -25,50 +25,50 @@
                 <attribute name="readonly">from_picking_line == True</attribute>
             </xpath>
 
-            <xpath expr="//page[@id='invoice_tab'][1]/field[1]/list[1]/field[1]" position="before">
+            <xpath expr="//page[@id='invoice_tab']/field[@name='invoice_line_ids']/list/field[1]" position="before">
                 <field name="from_picking_line" readonly="1" invisible="1" optional="hide"/>
             </xpath>
 
-            <xpath expr="//page[@id='invoice_tab'][1]/field[1]/list[1]/field[@name='quantity']"
+            <xpath expr="//page[@id='invoice_tab']/field[@name='invoice_line_ids']/list/field[@name='quantity']"
                 position="attributes">
                 <attribute name="readonly">from_picking_line == True</attribute>
             </xpath>
 
-            <xpath expr="//page[@id='invoice_tab'][1]/field[1]/list[1]/field[@name='price_unit']"
+            <xpath expr="//page[@id='invoice_tab']/field[@name='invoice_line_ids']/list/field[@name='price_unit']"
                 position="attributes">
                 <attribute name="readonly">from_picking_line == True</attribute>
             </xpath>
 
-            <!-- <xpath expr="//page[@id='invoice_tab'][1]/field[1]/list[1]/field[@name='foreign_price']" position="attributes">
+            <!-- <xpath expr="//page[@id='invoice_tab']/field[@name='invoice_line_ids']/list/field[@name='foreign_price']" position="attributes">
                 <attribute name="readonly">from_picking_line == True</attribute>
             </xpath> -->
 
-            <xpath expr="//page[@id='invoice_tab'][1]/field[1]/list[1]/field[@name='account_id']"
+            <xpath expr="//page[@id='invoice_tab']/field[@name='invoice_line_ids']/list/field[@name='account_id']"
                 position="attributes">
                 <attribute name="readonly">from_picking_line == True</attribute>
             </xpath>
 
-            <xpath expr="//page[@id='invoice_tab'][1]/field[1]/list[1]/field[@name='name']"
+            <xpath expr="//page[@id='invoice_tab']/field[@name='invoice_line_ids']/list/field[@name='name']"
                 position="attributes">
                 <attribute name="readonly">from_picking_line == True</attribute>
             </xpath>
-            <xpath expr="//page[@id='invoice_tab'][1]/field[1]/list[1]/field[@name='product_id']"
+            <xpath expr="//page[@id='invoice_tab']/field[@name='invoice_line_ids']/list/field[@name='product_id']"
                 position="attributes">
                 <attribute name="readonly">from_picking_line == True</attribute>
             </xpath>
 
-            <xpath expr="//page[@id='invoice_tab'][1]/field[1]/list[1]/field[@name='discount']"
+            <xpath expr="//page[@id='invoice_tab']/field[@name='invoice_line_ids']/list/field[@name='discount']"
                 position="attributes">
                 <attribute name="readonly">from_picking_line == True</attribute>
             </xpath>
 
             <xpath
-                expr="//page[@id='invoice_tab'][1]/field[1]/list[1]/field[@name='not_deductible_tax']"
+                expr="//page[@id='invoice_tab']/field[@name='invoice_line_ids']/list/field[@name='not_deductible_tax']"
                 position="attributes">
                 <attribute name="readonly">{'readonly': [('from_picking_line', '=',True)]}</attribute>
             </xpath>
 
-            <!-- <xpath expr="//page[@id='invoice_tab'][1]/field[1]/list[1]/field[@name='tax_ids']" position="attributes">
+            <!-- <xpath expr="//page[@id='invoice_tab']/field[@name='invoice_line_ids']/list/field[@name='tax_ids']" position="attributes">
                 <attribute name="readonly">from_picking_line == True</attribute>
             </xpath> -->
 
