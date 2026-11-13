@@ -14,7 +14,10 @@ import { _t } from "@web/core/l10n/translation";
  * sincroniza con el backend:
  *
  * 1. Descuento global (Estrategia A) — se normaliza antes de validar
- * 2. Impresión fiscal (offline, no requiere internet) — bloquea si falla
+ * 2. Impresión fiscal (offline, no requiere internet). Si falla, la venta
+ *    sigue: la orden se sincroniza sin número fiscal y queda en "Pendientes
+ *    por facturar", o "por verificar" si no se supo si la máquina la
+ *    emitió (ver PosStore.pushToMF). #85447
  * 3. super.finalizeValidation() — el core sincroniza (con soporte offline
  *    nativo de Odoo 19: las órdenes pendientes se guardan y re-sincronizan)
  */
@@ -56,22 +59,21 @@ patch(OrderPaymentValidation.prototype, {
         const response = await pos.pushToMF(order);
         
         if (!response || response.valid !== true) {
-          console.error("MF:: Impresión fiscal falló", response);
-          // pushToMF ya mostró el diálogo de error correspondiente
-          return false;
+          // pushToMF ya mostró el error. No se detiene el PdV: la orden se
+          // sincroniza sin número fiscal y queda pendiente por facturar.
+          console.error("MF:: Impresión fiscal falló, la orden queda pendiente", response);
+        } else {
+          console.info("MF:: Impresión fiscal exitosa", {
+            mf_invoice_number: order.mf_invoice_number,
+            fiscal_machine: order.fiscal_machine,
+          });
         }
-        
-        console.info("MF:: Impresión fiscal exitosa", {
-          mf_invoice_number: order.mf_invoice_number,
-          fiscal_machine: order.fiscal_machine,
-        });
       } catch (error) {
-        console.error("MF:: Error durante impresión fiscal", error);
+        console.error("MF:: Error durante impresión fiscal, la orden queda pendiente", error);
         pos.dialog.add(AlertDialog, {
           title: _t("Error de Máquina Fiscal"),
           body: error.message || _t("Error inesperado durante la impresión fiscal"),
         });
-        return false;
       }
     } else {
       console.info("MF:: Impresión fiscal omitida", {

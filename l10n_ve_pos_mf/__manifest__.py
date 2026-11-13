@@ -1,6 +1,6 @@
 {
     "name": "Venezuela - Integración de Punto de Venta con Maquina Fiscal",
-    "version": "19.0.3.1.3",
+    "version": "19.0.3.2.0",
     "category": "Accounting",
     "summary": "Venezuela - Integración de Punto de Venta con Maquina Fiscal (Web Serial API)",
     "sequence": "1",
@@ -22,6 +22,7 @@
         "views/account_tax.xml",
         "views/pos_payment_method.xml",
         "wizard/wizard_sales_book.xml",
+        "wizard/pos_order_mf_verification_wizard.xml",
         "views/res_config_settings.xml",
     ],
     "assets": {
@@ -39,6 +40,9 @@
             "l10n_ve_pos_mf/static/src/xml/*.xml",
             "l10n_ve_pos_mf/static/src/components/**/*.xml",
             "l10n_ve_pos_mf/static/src/css/*.css",
+        ],
+        "web.assets_unit_tests": [
+            "l10n_ve_pos_mf/static/tests/unit/**/*",
         ],
     },
     "images": ["static/description/icon.png"],

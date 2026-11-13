@@ -17,6 +17,12 @@ class PosOrderInherit(models.Model):
     mf_invoice_number = fields.Char(
         string="Sequencia en maquina fiscal", default=False, copy=False, readonly=True
     )
+    # Datos para verificar con la máquina una impresión que no confirmó si
+    # emitió el documento (TfhkaDriver: `printed: null`). Con valor, el pedido
+    # está "por verificar" y no se debe volver a imprimir hasta resolverlo.
+    mf_print_verification = fields.Json(
+        string="Fiscal print to verify", copy=False, readonly=True
+    )
 
     def get_order_by_uid(self, uid):
         orders = self.env["pos.order"].search([("pos_reference", "ilike", uid)])
@@ -53,7 +59,7 @@ class PosOrderInherit(models.Model):
         # no hace falta agregar nada.
         if not fields_list:
             return fields_list
-        extra_fields = ["fiscal_machine", "mf_invoice_number", "mf_reportz"]
+        extra_fields = ["fiscal_machine", "mf_invoice_number", "mf_reportz", "mf_print_verification"]
         for field_name in extra_fields:
             if field_name not in fields_list:
                 fields_list.append(field_name)
@@ -130,6 +136,72 @@ class PosOrderInherit(models.Model):
         return {
             "success": True,
             "account_move_updated": account_move_updated,
+        }
+
+    @api.model
+    def mf_set_print_verification(self, uuid, verification):
+        """Marca como "por verificar" un pedido ya sincronizado cuya
+        impresión (desde "Imprimir pedido pendiente") no confirmó si la
+        máquina emitió el documento. Escribe con los permisos del usuario
+        del PdV, que puede modificar sus pedidos.
+
+        :param verification: el `verification` del driver
+            ({"docType", "before": {...}, "paymentSent", "closeAcked"})
+        :return: True si se marcó el pedido
+        """
+        if not isinstance(verification, dict) or not isinstance(verification.get("before"), dict):
+            raise UserError(_("Invalid fiscal print verification data."))
+        order = self.search([("uuid", "=", uuid)], limit=1)
+        if not order or order.mf_invoice_number:
+            return False
+        order.mf_print_verification = verification
+        return True
+
+    @api.model
+    def mf_resolve_print_verification(self, uuid, resolved):
+        """Aplica lo que la máquina respondió al verificar un pedido "por
+        verificar" (TfhkaDriver.verifyDocument). El PdV lo llama antes de
+        imprimir el siguiente documento. Solo cambia pedidos marcados: no
+        sirve para poner un número fiscal en cualquier pedido.
+
+        :param resolved: {"printed": bool, "invoiceNumber", "serial", "reportZ"}
+        :return: True si ya no queda nada por aplicar (también si el pedido
+            no estaba marcado, por ejemplo porque se resolvió desde el
+            backend); False si el pedido todavía no está en el servidor (el
+            PdV lo reintenta después de sincronizar)
+        """
+        if not isinstance(resolved, dict) or not isinstance(resolved.get("printed"), bool):
+            raise UserError(_("Invalid fiscal print verification result."))
+        # El número viene del driver (texto o entero): solo se aceptan dígitos.
+        number = resolved.get("invoiceNumber")
+        valid_type = isinstance(number, (str, int)) and not isinstance(number, bool)
+        number = str(number).strip() if valid_type else ""
+        if resolved["printed"] and not (number.isascii() and number.isdigit()):
+            raise UserError(_("A printed fiscal document needs its fiscal number."))
+        order = self.search([("uuid", "=", uuid)], limit=1)
+        if not order:
+            return False
+        if not order.mf_print_verification:
+            return True
+        if resolved["printed"] and not order.mf_invoice_number:
+            order.write_mf_invoice_data(
+                number,
+                resolved.get("serial") or False,
+                resolved.get("reportZ") or False,
+            )
+        order.mf_print_verification = False
+        return True
+
+    def action_mf_resolve_print_verification(self):
+        """Abre el asistente para resolver a mano un pedido por verificar."""
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Resolve fiscal print"),
+            "res_model": "pos.order.mf.verification.wizard",
+            "view_mode": "form",
+            "target": "new",
+            "context": {"default_order_id": self.id},
         }
 
     @api.model

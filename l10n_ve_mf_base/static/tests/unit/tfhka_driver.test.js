@@ -13,10 +13,11 @@ function buildS1Payload({
     dailyClosureCounter = 0,
     serialMachine = "Z1F0000000",
     rif = "J123456789",
+    salesSubtotal = 0,
 }) {
     const fields = [
         "01",
-        "000000000000",
+        String(salesSubtotal).padStart(12, "0"),
         String(lastInvoiceNumber).padStart(8, "0"),
         "00000001",
         "00000000",
@@ -643,7 +644,7 @@ describe("TFHKA - TfhkaDriver (con MockSerialConnection)", () => {
         const fiscalCommands = driver.connection
             .getSentCommands()
             .map((cmd) => cmd.ascii)
-            .filter((cmd) => cmd.includes("<STX>"));
+            .filter((cmd) => cmd.includes("<STX>") && !cmd.includes("<STX>S1<ETX>"));
 
         expect(Boolean(fiscalCommands.some((cmd) => cmd.includes("PH01")))).toBe(false); // No se envía PH01 en NC
         expect(Boolean(fiscalCommands[0].includes("<STX>iR*V17527041<ETX>"))).toBe(true); // NC inicia con iR*
@@ -1148,6 +1149,312 @@ describe("TFHKA - TfhkaDriver (con MockSerialConnection)", () => {
 
         expect(aborted).toBe(true);
         expect(sentCommands(driver)).toEqual(["7"]);
+    });
+});
+
+/**
+ * Respuestas S1 en orden: la primera es la foto previa al documento, las
+ * siguientes las lecturas posteriores. `null` simula que S1 no responde.
+ */
+function s1Reads(payloads, extra = () => undefined) {
+    let reads = 0;
+    return (command) => {
+        if (command === "S1") {
+            const payload = payloads[Math.min(reads++, payloads.length - 1)];
+            return payload === null ? null : FiscalProtocol.buildFrame(buildS1Payload(payload));
+        }
+        return extra(command);
+    };
+}
+
+const NAK = () => new Uint8Array([FiscalProtocol.NAK]);
+const SERIAL = "Z7C7047972";
+
+function twoPaymentOrder() {
+    return lostAckOrder([
+        { payment_method_code: "01", amount: 10000 },
+        { payment_method_code: "02", amount: 7316 },
+    ]);
+}
+
+// Tarea 85447: medido en una HKA80, desde el primer pago el documento queda
+// comprometido (ni "7" ni un reinicio lo anulan) y el "Subtotal de Ventas" de
+// S1 solo sube con una factura válida.
+describe("TFHKA - resultado verificado del documento", () => {
+    test("Una factura exitosa devuelve lo de siempre, con la foto S1 antes de abrir", async () => {
+        const driver = await connectedDriver();
+
+        const result = await driver.printInvoice(lostAckOrder());
+
+        expect(result.success).toBe(true);
+        expect(result.invoiceNumber).toBe("455");
+        expect("printed" in result).toBe(false);
+        const commands = sentCommands(driver);
+        expect(commands[0]).toBe("S1");
+        expect(commands[1]).toBe("iR*V14739206");
+        expect(commands.filter((cmd) => cmd === "S1").length).toBe(2);
+    });
+
+    test("Un pago registrado que se reporta como fallido devuelve la factura emitida", async () => {
+        const driver = await connectedDriver();
+        driver.connection.setResponseHandler(
+            s1Reads(
+                [
+                    { lastInvoiceNumber: 455, salesSubtotal: 100000, serialMachine: SERIAL },
+                    { lastInvoiceNumber: 456, salesSubtotal: 1592758, serialMachine: SERIAL },
+                ],
+                (command) => (command.startsWith("202") ? NAK() : undefined)
+            )
+        );
+
+        const result = await driver.printInvoice(twoPaymentOrder());
+
+        expect(result.success).toBe(true);
+        expect(result.printed).toBe(true);
+        expect(result.recovered).toBe(true);
+        expect(result.invoiceNumber).toBe("456");
+        expect(result.recovered_error).toInclude("202");
+        expect(result.global_clamped).toBe(false);
+    });
+
+    test("Un ítem que falla antes de pagar deja la factura anulada: se puede reimprimir", async () => {
+        const driver = await connectedDriver();
+        driver.connection.setResponseHandler(
+            s1Reads(
+                [
+                    { lastInvoiceNumber: 455, salesSubtotal: 100000, serialMachine: SERIAL },
+                    { lastInvoiceNumber: 456, salesSubtotal: 100000, serialMachine: SERIAL },
+                ],
+                (command) => (command.includes("|ECA96|") ? NAK() : undefined)
+            )
+        );
+
+        const result = await driver.printInvoice(lostAckOrder());
+
+        expect(result.success).toBe(false);
+        expect(result.printed).toBe(false);
+        expect(result.error).toInclude("ECA96");
+        // Sin pagos no hace falta consultar la máquina: solo la foto previa.
+        expect(sentCommands(driver).filter((cmd) => cmd === "S1").length).toBe(1);
+    });
+
+    test("Si no se consumió número la factura no se emitió", async () => {
+        const driver = await connectedDriver();
+        driver.connection.setResponseHandler((command) => (command.includes("|ECA96|") ? NAK() : undefined));
+
+        const result = await driver.printInvoice(lostAckOrder());
+
+        expect(result.success).toBe(false);
+        expect(result.printed).toBe(false);
+    });
+
+    test("Sin respuesta de S1 al final queda por verificar y se resuelve después", async () => {
+        const driver = await connectedDriver();
+        driver.connection.setResponseHandler(
+            s1Reads(
+                [{ lastInvoiceNumber: 455, salesSubtotal: 100000, serialMachine: SERIAL }, null],
+                (command) => (command.startsWith("202") ? NAK() : undefined)
+            )
+        );
+
+        const result = await driver.printInvoice(twoPaymentOrder());
+
+        expect(result.success).toBe(false);
+        expect(result.printed).toBe(null);
+        expect(result.reason).toBe("no_response");
+        expect(result.original_error).toInclude("202");
+        expect(result.verification).toEqual({
+            docType: "invoice",
+            before: { number: 455, salesSubtotal: "100000", dailyClosureCounter: 0, serial: SERIAL },
+            paymentSent: true,
+            closeAcked: false,
+        });
+
+        driver.connection.setResponseHandler(
+            s1Reads([{ lastInvoiceNumber: 456, salesSubtotal: 1592758, serialMachine: SERIAL }])
+        );
+        const verified = await driver.verifyDocument(result.verification);
+
+        expect(verified.success).toBe(true);
+        expect(verified.printed).toBe(true);
+        expect(verified.invoiceNumber).toBe("456");
+    });
+
+    test("La verificación no atribuye un documento si el contador avanzó más de uno", async () => {
+        const driver = await connectedDriver();
+        driver.connection.setResponseHandler(
+            s1Reads([{ lastInvoiceNumber: 457, salesSubtotal: 2000000, serialMachine: SERIAL }])
+        );
+        const verification = {
+            docType: "invoice",
+            before: { number: 455, salesSubtotal: "100000", dailyClosureCounter: 0, serial: SERIAL },
+            paymentSent: true,
+            closeAcked: false,
+        };
+
+        const verified = await driver.verifyDocument(verification);
+
+        expect(verified.success).toBe(false);
+        expect(verified.printed).toBe(null);
+        expect(verified.reason).toBe("unattributable");
+    });
+
+    test("La verificación con otra máquina no concluye nada", async () => {
+        const driver = await connectedDriver();
+        driver.connection.setResponseHandler(
+            s1Reads([{ lastInvoiceNumber: 456, salesSubtotal: 1592758, serialMachine: "Z7C0000001" }])
+        );
+        const verification = {
+            docType: "invoice",
+            before: { number: 455, salesSubtotal: "100000", dailyClosureCounter: 0, serial: SERIAL },
+            paymentSent: true,
+            closeAcked: true,
+        };
+
+        const verified = await driver.verifyDocument(verification);
+
+        expect(verified.printed).toBe(null);
+        expect(verified.reason).toBe("other_printer");
+    });
+
+    test("S1 sin el contador del documento va a revisión manual, sin esperar a la máquina", async () => {
+        const driver = await connectedDriver();
+        const verification = {
+            docType: "invoice",
+            before: { number: 455, salesSubtotal: "100000", dailyClosureCounter: 0, serial: SERIAL },
+            paymentSent: true,
+            closeAcked: true,
+        };
+        driver._readS1Data = async () => ({
+            success: true,
+            data: { registeredMachineNumber: SERIAL, salesSubtotal: "1592758", dailyClosureCounter: 0 },
+        });
+
+        const verified = await driver.verifyDocument(verification);
+
+        expect(verified.printed).toBe(null);
+        expect(verified.reason).toBe("unattributable");
+    });
+
+    test("El serial de otra máquina se mira antes que el contador", async () => {
+        const driver = await connectedDriver();
+        const verification = {
+            docType: "invoice",
+            before: { number: 455, salesSubtotal: "100000", dailyClosureCounter: 0, serial: SERIAL },
+            paymentSent: true,
+            closeAcked: true,
+        };
+        driver._readS1Data = async () => ({
+            success: true,
+            data: { registeredMachineNumber: "Z7C0000001", dailyClosureCounter: 0 },
+        });
+
+        const verified = await driver.verifyDocument(verification);
+
+        expect(verified.printed).toBe(null);
+        expect(verified.reason).toBe("other_printer");
+    });
+
+    test("Con el 199 aceptado, un número o un subtotal sin cambio no se toman como no impresa", async () => {
+        const driver = await connectedDriver();
+        const verification = {
+            docType: "invoice",
+            before: { number: 455, salesSubtotal: "100000", dailyClosureCounter: 0, serial: SERIAL },
+            paymentSent: true,
+            closeAcked: true,
+        };
+
+        driver.connection.setResponseHandler(
+            s1Reads([{ lastInvoiceNumber: 455, salesSubtotal: 100000, serialMachine: SERIAL }])
+        );
+        const sameNumber = await driver.verifyDocument(verification);
+        expect(sameNumber.printed).toBe(null);
+        expect(sameNumber.reason).toBe("unattributable");
+
+        driver.connection.setResponseHandler(
+            s1Reads([{ lastInvoiceNumber: 456, salesSubtotal: 100000, serialMachine: SERIAL }])
+        );
+        const sameSubtotal = await driver.verifyDocument(verification);
+        expect(sameSubtotal.printed).toBe(null);
+        expect(sameSubtotal.reason).toBe("unattributable");
+    });
+
+    test("Sin pagos enviados la verificación da no impresa aunque otro documento suba el contador", async () => {
+        const driver = await connectedDriver();
+        driver.connection.setResponseHandler(
+            s1Reads([{ lastInvoiceNumber: 456, salesSubtotal: 1592758, serialMachine: SERIAL }])
+        );
+
+        const verified = await driver.verifyDocument({
+            docType: "invoice",
+            before: { number: 455, salesSubtotal: "100000", dailyClosureCounter: 0, serial: SERIAL },
+            paymentSent: false,
+            closeAcked: false,
+        });
+
+        expect(verified.success).toBe(false);
+        expect(verified.printed).toBe(false);
+    });
+
+    test("Una verificación después de un cierre Z toma el Z de la foto", async () => {
+        const driver = await connectedDriver();
+        driver.connection.setResponseHandler(
+            s1Reads([{ lastInvoiceNumber: 456, salesSubtotal: 0, dailyClosureCounter: 138, serialMachine: SERIAL }])
+        );
+
+        const verified = await driver.verifyDocument({
+            docType: "invoice",
+            before: { number: 455, salesSubtotal: "100000", dailyClosureCounter: 137, serial: SERIAL },
+            paymentSent: true,
+            closeAcked: true,
+        });
+
+        expect(verified.printed).toBe(true);
+        expect(verified.invoiceNumber).toBe("456");
+        expect(verified.reportZ).toBe(138);
+    });
+
+    test("Una nota de crédito que falla antes de pagar sale anulada", async () => {
+        const driver = await connectedDriver();
+        driver.connection.setResponseHandler(
+            s1Reads(
+                [
+                    { lastNCNumber: 1234, serialMachine: SERIAL },
+                    { lastNCNumber: 1235, serialMachine: SERIAL },
+                ],
+                (command) => (command.startsWith("d1") ? NAK() : undefined)
+            )
+        );
+
+        const result = await driver.printCreditNote({
+            ...lostAckOrder(),
+            invoice_affected: { number: "863", serial_machine: SERIAL, date: "20/06/2026" },
+        });
+
+        expect(result.success).toBe(false);
+        expect(result.printed).toBe(false);
+    });
+
+    test("Sin la máquina en reposo al empezar no hay foto y el resultado es el de siempre", async () => {
+        const driver = await connectedDriver();
+        driver.connection.setStatus({ fiscalTransactionInProgress: true });
+        driver.connection.setResponseHandler((command) => (command.includes("|ECA96|") ? NAK() : undefined));
+
+        const result = await driver.printInvoice(lostAckOrder());
+
+        expect(result.success).toBe(false);
+        expect("printed" in result).toBe(false);
+        expect(sentCommands(driver)[0]).not.toBe("S1");
+    });
+
+    test("S1 lee el subtotal de ventas sin perder precisión", () => {
+        const driver = new TfhkaDriver();
+        const parsed = driver._parseS1Data(
+            buildS1Payload({ lastInvoiceNumber: 10, salesSubtotal: "99999999999999999" })
+        );
+
+        expect(parsed.salesSubtotal).toBe("99999999999999999");
+        expect(() => JSON.stringify(parsed)).not.toThrow();
     });
 });
 

@@ -31,6 +31,12 @@ msgid "03-ANU"
 msgstr ""
 
 #. module: l10n_ve_pos_mf
+#. odoo-python
+#: code:addons/l10n_ve_pos_mf/models/pos_order.py:0
+msgid "A printed fiscal document needs its fiscal number."
+msgstr "Un documento fiscal emitido necesita su número fiscal."
+
+#. module: l10n_ve_pos_mf
 #: model:ir.model.fields,field_description:l10n_ve_pos_mf.field_pos_config__access_button_mf
 #: model:ir.model.fields,field_description:l10n_ve_pos_mf.field_res_config_settings__pos_access_button_mf
 msgid "Access Button Mf"
@@ -57,6 +63,7 @@ msgstr ""
 #. module: l10n_ve_pos_mf
 #. odoo-javascript
 #: code:addons/l10n_ve_pos_mf/static/src/js/FiscalMachinePopup.js:0
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos_mf.pos_order_mf_verification_wizard_form
 #, python-format
 msgid "Cancel"
 msgstr "Cancelar"
@@ -91,6 +98,7 @@ msgstr "Ajustes de configuración"
 #. module: l10n_ve_pos_mf
 #. odoo-javascript
 #: code:addons/l10n_ve_pos_mf/static/src/xml/FiscalMachine.xml:0
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos_mf.pos_order_mf_verification_wizard_form
 #, python-format
 msgid "Confirm"
 msgstr "Confirmar"
@@ -213,6 +221,18 @@ msgid "Internal MF error"
 msgstr "Error interno de MF"
 
 #. module: l10n_ve_pos_mf
+#. odoo-python
+#: code:addons/l10n_ve_pos_mf/models/pos_order.py:0
+msgid "Invalid fiscal print verification data."
+msgstr "Datos de verificación de la impresión fiscal no válidos."
+
+#. module: l10n_ve_pos_mf
+#. odoo-python
+#: code:addons/l10n_ve_pos_mf/models/pos_order.py:0
+msgid "Invalid fiscal print verification result."
+msgstr "Resultado de la verificación de la impresión fiscal no válido."
+
+#. module: l10n_ve_pos_mf
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos_mf.view_res_config_settings_pos_mf
 msgid "IoT - Fiscal Machine"
 msgstr "IoT - Máquina Fiscal"
@@ -227,6 +247,16 @@ msgstr "Caja IoT"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos_mf.view_res_config_settings_pos_mf
 msgid "IoT Devices"
 msgstr "Dispositivos IoT"
+
+#. module: l10n_ve_pos_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf/static/src/overrides/PosStore.js:0
+msgid ""
+"It is not known whether the fiscal printer printed this order, so it is not "
+"printed again: it stays pending until it is verified."
+msgstr ""
+"No se sabe si la máquina fiscal emitió este pedido, así que no se vuelve a "
+"imprimir: queda pendiente hasta verificarlo."
 
 #. module: l10n_ve_pos_mf
 #: model:ir.model,name:l10n_ve_pos_mf.model_account_move
@@ -415,6 +445,26 @@ msgid "Serial of fiscal machine"
 msgstr "Serial de la maquina fiscal"
 
 #. module: l10n_ve_pos_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf/static/src/overrides/PosStore.js:0
+msgid ""
+"The fiscal printer did not respond while verifying a previous order. This "
+"order was not printed and stays pending."
+msgstr ""
+"La máquina fiscal no respondió al verificar un pedido anterior. Este pedido "
+"no se imprimió y queda pendiente."
+
+#. module: l10n_ve_pos_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf/static/src/components/PrintPendingOrderButton/PrintPendingOrderButton.js:0
+msgid ""
+"The fiscal printer did not respond while verifying a previous order. Try "
+"again when it responds."
+msgstr ""
+"La máquina fiscal no respondió al verificar un pedido anterior. Vuelva a "
+"intentarlo cuando responda."
+
+#. module: l10n_ve_pos_mf
 #: model:ir.model.fields,field_description:l10n_ve_pos_mf.field_pos_config__traditional_line
 msgid "Traditional Line"
 msgstr "Lineas Tradicionales"
@@ -449,3 +499,183 @@ msgstr "Error con la máquina fiscal"
 #: model:res.groups,name:l10n_ve_pos_mf.group_pos_close_native
 msgid "Close POS session natively (skip mandatory Z report)"
 msgstr "Cerrar sesión de PDV de forma nativa (sin Reporte Z obligatorio)"
+
+#. module: l10n_ve_pos_mf
+#: model:ir.model.fields,help:l10n_ve_pos_mf.field_pos_payment_method__code_fiscal_printer
+msgid ""
+"Payment method code for the TFHKA fiscal printer (01-24).\n"
+"\n"
+"  • 01-19 = Local currency payment methods, without IGTF (01 = Cash, 02 = "
+"Check, 03 = Credit card, 04 = Debit card, 05 = Food voucher, 06 = Bank "
+"transfer, 07 = Bank deposit, 08 = Mobile payment).\n"
+"  • 20-24 = Foreign currency payment methods. They require \"Apply IGTF\" on "
+"the payment method: without it, a fiscal printer with IGTF disabled rejects "
+"them and voids the invoice, and one with IGTF enabled charges an IGTF the "
+"PoS did not charge.\n"
+"\n"
+"IMPORTANT: The code must be registered in the fiscal printer."
+msgstr ""
+"Código del método de pago para la máquina fiscal TFHKA (01-24).\n"
+"\n"
+"  • 01-19 = Métodos de pago en moneda nacional, sin IGTF (01 = Efectivo, 02 "
+"= Cheque, 03 = Tarjeta de crédito, 04 = Tarjeta de débito, 05 = Vale de "
+"alimentación, 06 = Transferencia bancaria, 07 = Depósito bancario, 08 = Pago "
+"móvil).\n"
+"  • 20-24 = Métodos de pago en divisas. Requieren «Aplica IGTF» en el método "
+"de pago: sin él, una máquina fiscal con el IGTF desactivado los rechaza y "
+"anula la factura, y una con el IGTF activado cobra un IGTF que el PdV no "
+"cobró.\n"
+"\n"
+"IMPORTANTE: el código debe estar registrado en la máquina fiscal."
+
+#. module: l10n_ve_pos_mf
+#. odoo-python
+#: code:addons/l10n_ve_pos_mf/models/pos_payment_method.py:0
+msgid ""
+"The payment method “%(method)s” has the fiscal code %(code)s, which the "
+"fiscal printer reserves for foreign currency payments with IGTF. Enable "
+"“Apply IGTF” on the payment method or use a local currency code (01-19)."
+msgstr ""
+"El método de pago «%(method)s» tiene el código fiscal %(code)s, que la "
+"máquina fiscal reserva para pagos en divisas con IGTF. Active «Aplica IGTF» "
+"en el método de pago o use un código de moneda nacional (01-19)."
+
+#. module: l10n_ve_pos_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf/static/src/overrides/PosStore.js:0
+msgid ""
+"The payment method “%(method)s” has a foreign currency fiscal code "
+"(%(code)s) without IGTF, so the fiscal printer would void the invoice. The "
+"order stays pending. Ask the administrator to fix the payment method (local "
+"currency code 01-19 or “Apply IGTF”): it can only be changed with the "
+"register sessions closed."
+msgstr ""
+"El método de pago «%(method)s» tiene un código fiscal de divisa (%(code)s) "
+"sin IGTF, por lo que la máquina fiscal anularía la factura. El pedido queda "
+"pendiente. Pida al administrador que corrija el método de pago (código de "
+"moneda nacional 01-19 o «Aplica IGTF»): solo se puede cambiar con las "
+"sesiones de la caja cerradas."
+
+#. module: l10n_ve_pos_mf
+#. odoo-python
+#: code:addons/l10n_ve_pos_mf/wizard/pos_order_mf_verification_wizard.py:0
+msgid "Enter the fiscal number and the fiscal printer serial."
+msgstr "Ingrese el número fiscal y el serial de la máquina fiscal."
+
+#. module: l10n_ve_pos_mf
+#: model:ir.model.fields,field_description:l10n_ve_pos_mf.field_pos_order_mf_verification_wizard__expected_reportz
+msgid "Expected Z report"
+msgstr "Reporte Z esperado"
+
+#. module: l10n_ve_pos_mf
+#: model:ir.model.fields,field_description:l10n_ve_pos_mf.field_pos_order_mf_verification_wizard__expected_number
+msgid "Expected fiscal number"
+msgstr "Número fiscal esperado"
+
+#. module: l10n_ve_pos_mf
+#: model:ir.model.fields,field_description:l10n_ve_pos_mf.field_pos_order_mf_verification_wizard__expected_serial
+msgid "Expected fiscal printer serial"
+msgstr "Serial esperado de la máquina fiscal"
+
+#. module: l10n_ve_pos_mf
+#: model:ir.model.fields,field_description:l10n_ve_pos_mf.field_pos_order_mf_verification_wizard__mf_invoice_number
+msgid "Fiscal number"
+msgstr "Número fiscal"
+
+#. module: l10n_ve_pos_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf/static/src/components/PrintPendingOrderButton/PrintPendingOrderButton.js:0
+#: code:addons/l10n_ve_pos_mf/static/src/overrides/PosStore.js:0
+#: model:ir.model.fields,field_description:l10n_ve_pos_mf.field_pos_order__mf_print_verification
+msgid "Fiscal print to verify"
+msgstr "Impresión fiscal por verificar"
+
+#. module: l10n_ve_pos_mf
+#: model:ir.model.fields,field_description:l10n_ve_pos_mf.field_pos_order_mf_verification_wizard__fiscal_machine
+msgid "Fiscal printer serial"
+msgstr "Serial de la máquina fiscal"
+
+#. module: l10n_ve_pos_mf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos_mf.pos_order_mf_verification_wizard_form
+msgid ""
+"It is not known whether the fiscal printer printed this order.\n"
+"                    Check on the fiscal printer whether the expected document was printed\n"
+"                    for this order before resolving it."
+msgstr ""
+"No se sabe si la máquina fiscal imprimió este pedido. Revise en la máquina "
+"fiscal si se emitió el documento esperado para este pedido antes de "
+"resolverlo."
+
+#. module: l10n_ve_pos_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf/static/src/components/PrintPendingOrderButton/PrintPendingOrderButton.js:0
+msgid ""
+"It is not known whether the fiscal printer printed this order. Check it on "
+"the fiscal printer and resolve it from the order in the backend before "
+"printing it again."
+msgstr ""
+"No se sabe si la máquina fiscal imprimió este pedido. Revíselo en la máquina"
+" fiscal y resuélvalo desde el pedido en el backend antes de volver a "
+"imprimirlo."
+
+#. module: l10n_ve_pos_mf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos_mf.view_pos_pos_form
+msgid ""
+"It is not known whether the fiscal printer printed this order: check it\n"
+"                    on the fiscal printer and resolve it before printing it again."
+msgstr ""
+"No se sabe si la máquina fiscal imprimió este pedido: revíselo en la máquina"
+" fiscal y resuélvalo antes de volver a imprimirlo."
+
+#. module: l10n_ve_pos_mf
+#: model:ir.model.fields,field_description:l10n_ve_pos_mf.field_pos_order_mf_verification_wizard__order_id
+msgid "Order"
+msgstr "Pedido"
+
+#. module: l10n_ve_pos_mf
+#: model:ir.model,name:l10n_ve_pos_mf.model_pos_order_mf_verification_wizard
+msgid "Resolve a fiscal print to verify"
+msgstr "Resolver una impresión fiscal por verificar"
+
+#. module: l10n_ve_pos_mf
+#. odoo-python
+#: code:addons/l10n_ve_pos_mf/models/pos_order.py:0
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos_mf.view_pos_pos_form
+msgid "Resolve fiscal print"
+msgstr "Resolver impresión fiscal"
+
+#. module: l10n_ve_pos_mf
+#: model:ir.model.fields,field_description:l10n_ve_pos_mf.field_pos_order_mf_verification_wizard__result
+msgid "Result"
+msgstr "Resultado"
+
+#. module: l10n_ve_pos_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf/static/src/overrides/PosStore.js:0
+msgid ""
+"The fiscal printer could not confirm whether order %(order)s was printed. "
+"Check it on the fiscal printer and resolve it from the order in the backend."
+msgstr ""
+"La máquina fiscal no pudo confirmar si el pedido %(order)s se imprimió. "
+"Revíselo en la máquina fiscal y resuélvalo desde el pedido en el backend."
+
+#. module: l10n_ve_pos_mf
+#: model:ir.model.fields.selection,name:l10n_ve_pos_mf.selection__pos_order_mf_verification_wizard__result__not_printed
+msgid "The fiscal printer did not print the document"
+msgstr "La máquina fiscal no emitió el documento"
+
+#. module: l10n_ve_pos_mf
+#: model:ir.model.fields.selection,name:l10n_ve_pos_mf.selection__pos_order_mf_verification_wizard__result__printed
+msgid "The fiscal printer printed the document"
+msgstr "La máquina fiscal emitió el documento"
+
+#. module: l10n_ve_pos_mf
+#. odoo-python
+#: code:addons/l10n_ve_pos_mf/wizard/pos_order_mf_verification_wizard.py:0
+msgid "The order %s is not waiting for a fiscal print verification."
+msgstr "El pedido %s no tiene una impresión fiscal por verificar."
+
+#. module: l10n_ve_pos_mf
+#: model:ir.model.fields,field_description:l10n_ve_pos_mf.field_pos_order_mf_verification_wizard__mf_reportz
+msgid "Z report"
+msgstr "Reporte Z"
