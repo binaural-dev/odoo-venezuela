@@ -1,6 +1,7 @@
 /** @odoo-module */
 
 import { patch } from "@web/core/utils/patch";
+import { redirect } from "@web/core/utils/urls";
 import { _t } from "@web/core/l10n/translation";
 import {
     AlertDialog,
@@ -10,6 +11,10 @@ import { KioskDebugDialog } from "@l10n_ve_pos_self_order/app/debug/kiosk_debug_
 
 // Órdenes pendientes que se listan en el aviso de bloqueo (igual que la caja).
 const MAX_PENDING_SHOWN = 10;
+
+// Menú de selección de cajas del PdV: adonde vuelve la caja al cerrar
+// (`PosStore.redirectToBackend` de point_of_sale).
+export const POS_MENU_URL = "/odoo/action-point_of_sale.action_client_pos_menu";
 
 /**
  * Extensión fiscal del panel de Debug del Kiosko (`KioskDebugDialog`, base).
@@ -92,7 +97,8 @@ patch(KioskDebugDialog.prototype, {
      *  2. pide confirmación (la Z es irreversible);
      *  3. lee S1 e imprime la Z;
      *  4. sincroniza la Z con Odoo;
-     *  5. cierra la sesión con el cierre nativo del Kiosko.
+     *  5. cierra la sesión con el cierre nativo del Kiosko;
+     *  6. lleva al menú de selección de cajas, como la caja al cerrar.
      * Cualquier fallo corta el flujo en ese paso. Antes de empezar, tampoco
      * sigue si hay una factura fiscal imprimiéndose (la Z se metería en medio)
      * o si la sesión ya tiene su Z (otra Z cerraría un día vacío).
@@ -153,6 +159,7 @@ patch(KioskDebugDialog.prototype, {
                 this._mfAlert(_t("Session not closed"), body);
                 return { valid: false, message: body };
             }
+            redirect(POS_MENU_URL);
             return { valid: true, message: _t("Z report printed and session closed.") };
         });
     },
