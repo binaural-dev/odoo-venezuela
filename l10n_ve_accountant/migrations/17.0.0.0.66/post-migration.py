@@ -36,7 +36,8 @@ def migrate(cr, version):
 
     env = api.Environment(cr, SUPERUSER_ID, {})
     companies = env['res.company'].search([])
-    lock = _lock_expr('m')
+    debit_lock = _lock_expr('dm')
+    credit_lock = _lock_expr('cm')
     affected_line_ids = set()
 
     for company in companies:
@@ -56,7 +57,7 @@ def migrate(cr, version):
               AND dm.company_id = %(company_id)s
               AND p.debit_currency_id = %(currency_id)s
               AND p.debit_amount_currency IS DISTINCT FROM p.amount
-              AND """ + lock + """
+              AND """ + debit_lock + """
             RETURNING p.debit_move_id, p.credit_move_id
         """, params)
         for debit_id, credit_id in cr.fetchall():
@@ -72,7 +73,7 @@ def migrate(cr, version):
               AND cm.company_id = %(company_id)s
               AND p.credit_currency_id = %(currency_id)s
               AND p.credit_amount_currency IS DISTINCT FROM p.amount
-              AND """ + lock + """
+              AND """ + credit_lock + """
             RETURNING p.debit_move_id, p.credit_move_id
         """, params)
         for debit_id, credit_id in cr.fetchall():
