@@ -107,7 +107,49 @@ class AccountMove(models.Model):
                 "receipt. Print the Donation Receipt from the donation picking: %(pickings)s.",
                 pickings=", ".join(pickings.mapped("name")) or "-",
             ))
+        if self.is_incoming_donation:
+            raise UserError(_(
+                "This entry is a donation received: its document is the Donation Certificate."
+            ))
         return self.env.ref("l10n_ve_donation.action_donation_receipt_account_move").report_action(self)
+
+    def print_donation_certificate(self):
+        """The certificate of the journal entry is the one of a money
+        donation received, delivered to the donor."""
+        self.ensure_one()
+        if not self.is_incoming_donation:
+            raise UserError(_(
+                "This entry is not a donation received: only those have a Donation "
+                "Certificate. A donation given has a Donation Receipt."
+            ))
+        return self.env.ref("l10n_ve_donation.action_donation_certificate_account_move").report_action(self)
+
+    def _get_donation_counterparty(self):
+        """Contact of the donor of a donation received: the contact of the
+        header or, when there is none (or it is the company, as in an entry
+        where the donor lives only in the lines), the contact of the lines."""
+        self.ensure_one()
+        company_partner = self.company_id.partner_id
+        partner = self.partner_id
+        if not partner or partner == company_partner:
+            partner = (self.line_ids.partner_id - company_partner)[:1]
+        return partner
+
+    def _check_incoming_donation_before_post(self):
+        """The lines of a donation received carry the donor, the same one in
+        all of them, so that it is known from whom the income comes. Checked
+        before posting, while the entry is a draft: nothing is written to a
+        posted entry. Extension point: other modules add their own checks
+        with `super()`."""
+        self.ensure_one()
+        company_partner = self.company_id.partner_id
+        donors = set()
+        for line in self.line_ids:
+            if not line.partner_id or line.partner_id == company_partner:
+                raise UserError(_("All the journal items must have the donor as contact."))
+            donors.add(line.partner_id.id)
+        if len(donors) > 1:
+            raise UserError(_("All the journal items must have the same donor as contact."))
 
     def _get_donation_beneficiary(self):
         """Contact of the beneficiary of a donation entry: the contact of the
@@ -196,6 +238,8 @@ class AccountMove(models.Model):
         draft_invoices = self.filtered(
             lambda m: m.state == "draft" and m.is_donation and m.move_type == "out_invoice"
         )
+        for move in self.filtered(lambda m: m.state == "draft" and m._is_incoming_donation()):
+            move._check_incoming_donation_before_post()
         # Last chance to fill the partner of the lines, still in draft.
         self._fill_donation_entry_line_partner()
         res = super().action_post()
