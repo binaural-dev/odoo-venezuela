@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from odoo import models, fields, api, _, Command
-from odoo.tools import float_is_zero, float_compare
+from odoo.tools import float_is_zero, float_compare, format_date, formatLang
 from odoo.osv.expression import AND, OR
 from odoo.exceptions import UserError, ValidationError
 import logging
@@ -17,6 +17,162 @@ class PosSession(models.Model):
         related="config_id.foreign_currency_id",
         string="Foreign Currency",
     )
+
+    # Día de la tasa de la sesión: el de su apertura, fijo hasta el cierre.
+    # ``pos.config._compute_rate`` busca la tasa de ese día mientras la sesión
+    # está activa: después de medianoche, o en una recarga del PdV, la caja no
+    # pasa a la tasa de otro día. Una corrección de la tasa de ESE día sí entra
+    # al recargar los datos.
+    foreign_rate_date = fields.Date(
+        string="Rate Date",
+        readonly=True,
+        copy=False,
+        help="Day of the rate the session works with: the day it was opened. "
+        "Every order of the session uses the rate of that day, even after midnight.",
+    )
+
+    @api.model
+    def _load_pos_data_fields(self, config):
+        res = super()._load_pos_data_fields(config)
+        return res + ["foreign_rate_date"]
+
+    def _get_rate_date(self):
+        """Día de la tasa con la que trabaja la sesión: el de su apertura o,
+        si todavía no abrió, el día del usuario. Toda conversión de la sesión
+        (caja, monedas, precios, entradas y salidas de efectivo) usa este día."""
+        self.ensure_one()
+        return self.foreign_rate_date or fields.Date.context_today(self)
+
+    def _set_opening_control_data(self, cashbox_value: int, notes: str):
+        """Fija el día de la tasa de la sesión al abrirla (caja y kiosko pasan
+        por aquí).
+
+        Sin tasa del día la sesión no abre: con tasa 0 el PdV no puede
+        convertir ni sincronizar las órdenes.
+        """
+        self._set_opening_rate()
+        return super()._set_opening_control_data(cashbox_value, notes)
+
+    def _set_opening_rate(self):
+        for session in self:
+            foreign_currency = session.config_id.foreign_currency_id
+            if not foreign_currency:
+                continue
+            rate_date = fields.Date.context_today(session)
+            rate_values = (
+                self.env["res.currency.rate"]
+                .with_company(session.config_id.company_id)
+                .compute_rate(foreign_currency.id, rate_date, raise_if_not_found=False)
+            )
+            if not rate_values.get("foreign_inverse_rate"):
+                raise UserError(
+                    _(
+                        "The register cannot be opened: there is no %(currency)s rate for "
+                        "%(date)s. Load the rate of the day and try again.",
+                        currency=foreign_currency.name,
+                        date=format_date(self.env, rate_date),
+                    )
+                )
+            session.foreign_rate_date = rate_date
+            session.config_id.invalidate_recordset(
+                ["foreign_rate", "foreign_inverse_rate", "tender_currency_rates"]
+            )
+
+    def check_opening_rate(self, loaded_rates):
+        """Compara la tasa que tiene cargada el navegador con la de la sesión.
+
+        El PdV la llama antes de confirmar la apertura: el popup no recarga
+        los datos, así que una caja cargada la noche anterior abriría con la
+        tasa de ayer. También cubre otra pestaña o equipo que quedó con datos
+        viejos de la misma sesión.
+
+        :param dict loaded_rates: ``{"foreign_inverse_rate": float,
+            "currencies": {"<currency id>": rate},
+            "tender_currency_rates": {...}}`` tal como los tiene el PdV.
+        :return: ``{"status": "ok"}``, ``{"status": "missing", ...}`` si no hay
+            tasa del día, o ``{"status": "outdated", ...}`` si la del navegador
+            no es la de la sesión.
+        """
+        self.ensure_one()
+        config = self.config_id
+        foreign_currency = config.foreign_currency_id
+        if not foreign_currency:
+            return {"status": "ok"}
+        if not config.foreign_inverse_rate:
+            return {
+                "status": "missing",
+                "currency": foreign_currency.name,
+                "date": format_date(self.env, fields.Date.context_today(self)),
+            }
+        if not isinstance(loaded_rates, dict):
+            loaded_rates = {}
+        loaded_currencies = {}
+        currencies = loaded_rates.get("currencies")
+        for currency_id, rate in (currencies.items() if isinstance(currencies, dict) else []):
+            if str(currency_id).isdigit() and isinstance(rate, (int, float)):
+                loaded_currencies[int(currency_id)] = rate
+        loaded_inverse_rate = self._as_rate(loaded_rates.get("foreign_inverse_rate"))
+        loaded_tender = loaded_rates.get("tender_currency_rates")
+        if not isinstance(loaded_tender, dict):
+            loaded_tender = {}
+        expected_currencies = self._get_pos_currency_rates(
+            self.env["res.currency"].browse(list(loaded_currencies)).exists()
+        )
+        outdated = not self._same_rate(
+            loaded_inverse_rate, config.foreign_inverse_rate
+        ) or any(
+            not self._same_rate(loaded_currencies.get(currency_id), rate)
+            for currency_id, rate in expected_currencies.items()
+        ) or any(
+            # tasas de las monedas de cobro (tender_currency_rates)
+            not self._same_rate(
+                self._as_rate((loaded_tender.get(key) or {}).get("foreign_inverse_rate")
+                              if isinstance(loaded_tender.get(key), dict) else None),
+                (values or {}).get("foreign_inverse_rate"),
+            )
+            for key, values in (config.tender_currency_rates or {}).items()
+        )
+        if not outdated:
+            return {"status": "ok"}
+        return {
+            "status": "outdated",
+            "currency": foreign_currency.name,
+            "rate": formatLang(self.env, config.foreign_rate, dp="Tasa"),
+            "date": format_date(self.env, self._get_rate_date()),
+        }
+
+    @api.model
+    def _as_rate(self, value):
+        return value if isinstance(value, (int, float)) and not isinstance(value, bool) else 0.0
+
+    @api.model
+    def _same_rate(self, loaded, expected):
+        if not loaded or not expected:
+            return not loaded and not expected
+        return float_compare(loaded / expected, 1.0, precision_digits=9) == 0
+
+    def _get_pos_currency_rates(self, currencies):
+        """Tasa (``res.currency.rate``) de cada moneda tal como la usa el PdV de
+        esta sesión: la del día de la sesión. La moneda extranjera de la
+        compañía con la tasa exacta de ese día, la misma de la caja."""
+        self.ensure_one()
+        config = self.config_id
+        rate_date = self._get_rate_date()
+        rates = {}
+        for currency in currencies.with_context(date=rate_date).with_company(
+            config.company_id
+        ):
+            rates[currency.id] = currency.rate
+        foreign_currency = config.foreign_currency_id
+        if (
+            foreign_currency in currencies
+            and foreign_currency != config.company_id.currency_id
+            and config.foreign_inverse_rate
+        ):
+            # foreign_inverse_rate es company_rate (moneda extranjera por unidad
+            # de la moneda de la compañía), el mismo sentido que res.currency.rate
+            rates[foreign_currency.id] = config.foreign_inverse_rate
+        return rates
 
     def load_data(self, models_to_load):
         """Odoo 19 replacement for ``load_pos_data``.

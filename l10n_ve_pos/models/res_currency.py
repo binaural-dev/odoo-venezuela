@@ -36,11 +36,31 @@ class ResCurrency(models.Model):
         return res
 
     @api.model
+    def _apply_pos_session_rates(self, read_records, records, config):
+        """``rate`` (e ``inverse_rate``) del día de la sesión de la caja, no el
+        del momento de la carga: el core pasa la lista de precios en divisa a la
+        moneda de la caja con este ``rate``, y debe ser la misma tasa que cobra
+        la caja (``pos.config.foreign_rate``), también después de medianoche.
+        La usan la carga del PdV y la del kiosko (``l10n_ve_pos_self_order``)."""
+        session = config.current_session_id
+        if not session or not read_records:
+            return read_records
+        rates = session._get_pos_currency_rates(records)
+        for entry in read_records:
+            rate = rates.get(entry.get("id"))
+            if rate:
+                entry["rate"] = rate
+                if "inverse_rate" in entry:
+                    entry["inverse_rate"] = 1.0 / rate
+        return read_records
+
+    @api.model
     def _load_pos_data_read(self, records, config):
         """Odoo 19 loader contract: reorder the resulting currencies so the
         company currency comes first and the foreign currency comes second.
         """
         res = super()._load_pos_data_read(records, config) or []
+        self._apply_pos_session_rates(res, records, config)
         company_currency_id = config.company_id.currency_id.id
         if res and res[0].get('id') != company_currency_id:
             company_entry = next(

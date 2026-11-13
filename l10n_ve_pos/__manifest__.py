@@ -8,7 +8,7 @@
     "support": "contacto@binaural.dev",
     "category": "Point of Sale",
     "website": "https://binauraldev.com/",
-    "version": "19.0.1.30.0",
+    "version": "19.0.1.31.0",
     # any module necessary for this one to work correctly
     "depends": [
         "base",
@@ -27,6 +27,7 @@
         "views/pos_order.xml",
         "views/res_config_settings.xml",
         "views/pos_payment_views.xml",
+        "views/pos_session_views.xml",
         "views/res_partner_views.xml",
         "views/report_saledetails.xml",
         "security/res_group.xml",
