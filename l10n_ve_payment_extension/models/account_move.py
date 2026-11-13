@@ -32,6 +32,9 @@ class AccountMoveRetention(models.Model):
         """Convert a company-currency amount to the document currency.
 
         Single conversion of these rules: `_convert()` at the document date.
+        The rate date is the source of truth of the whole engine; if that
+        date's rate changes after posting, the process is to reset the
+        document to draft and set the date again so it recomputes.
         """
         self.ensure_one()
         return self.company_id.currency_id._convert(
