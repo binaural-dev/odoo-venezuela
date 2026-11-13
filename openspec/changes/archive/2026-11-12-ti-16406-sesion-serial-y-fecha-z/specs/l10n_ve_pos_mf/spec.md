@@ -2,7 +2,7 @@
 
 ### Requirement: Reporte Z de la sesión del PdV
 
-`pos.session` DEBE (MUST) guardar los datos del Reporte Z que cerró su día fiscal: `report_z`, `serial_machine` (campo propio de la sesión, ya no relacionado con la caja) y `report_z_date`. `set_report_z(values)` DEBE (MUST) escribir `report_z = _dailyClosureCounter + 1`, `serial_machine = _registeredMachineNumber` y la fecha y hora actuales, y DEBE (MUST) llenar `pos.config.serial_machine` cuando la caja no lo tiene, sin pisar uno existente. `report_z` y `serial_machine` siguen cargados en el PdV.
+`pos.session` DEBE (MUST) guardar los datos de su Reporte Z: `report_z`, `serial_machine` (campo propio, ya no relacionado con la caja) y `report_z_date`. `set_report_z(values)` DEBE (MUST) escribir `report_z = _dailyClosureCounter + 1`, `serial_machine = _registeredMachineNumber` y la fecha y hora actuales, y llenar `pos.config.serial_machine` si la caja no lo tiene, sin pisar uno existente. `report_z` y `serial_machine` siguen cargados en el PdV.
 
 #### Scenario: Sincronización del Z en la sesión
 
