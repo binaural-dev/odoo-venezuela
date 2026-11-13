@@ -10,14 +10,19 @@ de Kiosko sin permisos contables, que es como corre en Monfarmacia:
   las facturas de una máquina con la que imprimió la caja.
 * ``close_session``: no cierra con órdenes pendientes; si el cierre nativo
   falla, la sesión queda abierta.
+* Las tres rutas rechazan las cajas en modo ``mobile`` (QR de mesa) y, por
+  HTTP real (``TestKioskCloseSessionZHttp``), un token inválido.
 """
 
+import json
 from contextlib import ExitStack, contextmanager
 from unittest.mock import patch
 
+from werkzeug.exceptions import Unauthorized
+
 from odoo import Command
 from odoo.exceptions import UserError
-from odoo.tests import TransactionCase, tagged
+from odoo.tests import HttpCase, TransactionCase, tagged
 
 from odoo.addons.pos_self_order.controllers.orders import PosSelfOrderController
 from odoo.addons.l10n_ve_pos_mf_self_order.controllers.main import (
@@ -121,7 +126,36 @@ class TestKioskCloseSessionZ(TransactionCase):
             }
         )
 
-        def _make_config(name):
+        cls.sale_journal = sale_journal
+        bank_account = cls.env["account.account"].create(
+            {
+                "name": "Kiosk Close Z Bank Account",
+                "code": "101000KCZ",
+                "account_type": "asset_cash",
+                "company_ids": [(6, 0, [cls.company.id])],
+            }
+        )
+        # l10n_ve_accountant exige la cuenta por defecto en los diarios de banco.
+        bank_journal = cls.env["account.journal"].create(
+            {
+                "name": "Kiosk Close Z Bank",
+                "type": "bank",
+                "code": "KCZBK",
+                "company_id": cls.company.id,
+                "default_account_id": bank_account.id,
+            }
+        )
+        # Método no efectivo (el modo kiosko no admite efectivo), para las
+        # órdenes con pago.
+        cls.card_method = cls.env["pos.payment.method"].create(
+            {
+                "name": "Kiosk Close Z Card",
+                "journal_id": bank_journal.id,
+                "company_id": cls.company.id,
+            }
+        )
+
+        def _make_config(name, mode="kiosk"):
             config = cls.env["pos.config"].create(
                 {
                     "name": name,
@@ -129,10 +163,9 @@ class TestKioskCloseSessionZ(TransactionCase):
                     "currency_id": vef.id,
                     "journal_id": sale_journal.id,
                     "invoice_journal_id": sale_journal.id,
-                    "self_ordering_mode": "kiosk",
+                    "self_ordering_mode": mode,
                     "self_ordering_default_user_id": cls.kiosk_user.id,
-                    # El modo kiosko no admite efectivo; estas rutas no cobran.
-                    "payment_method_ids": [(6, 0, [])],
+                    "payment_method_ids": [(6, 0, [cls.card_method.id])],
                 }
             )
             # Sesión abierta como la abre el backend al iniciar el Kiosko
@@ -145,6 +178,8 @@ class TestKioskCloseSessionZ(TransactionCase):
 
         cls.config = _make_config("Kiosk Close Z A")
         cls.other_config = _make_config("Kiosk Close Z B")
+        # Autopedido por QR: su token va impreso en las mesas.
+        cls.mobile_config = _make_config("Kiosk Close Z QR", mode="mobile")
 
     # -- helpers -------------------------------------------------------------
 
@@ -216,6 +251,24 @@ class TestKioskCloseSessionZ(TransactionCase):
             }
         )
 
+    def _make_invoice(self, serial):
+        """Factura de la máquina ``serial`` todavía sin Z."""
+        return self.env["account.move"].create(
+            {
+                "move_type": "out_invoice",
+                "company_id": self.company.id,
+                "journal_id": self.sale_journal.id,
+                "partner_id": self.env.ref("base.res_partner_1").id,
+                "mf_serial": serial,
+            }
+        )
+
+    def _add_payment(self, order):
+        self.env["pos.payment"].create(
+            {"pos_order_id": order.id, "payment_method_id": self.card_method.id, "amount": 100.0}
+        )
+        return order
+
     def _z_value(self, serial=SERIAL, counter=12, valid=True):
         return {
             "valid": valid,
@@ -242,6 +295,55 @@ class TestKioskCloseSessionZ(TransactionCase):
         result = self._call("l10n_ve_kiosk_close_session_check")
         self.assertEqual(result["pending_orders"], [])
 
+    def test_check_counts_draft_with_payment(self):
+        """Un borrador con pago es una orden cobrada a medias, no un carrito:
+        bloquea. El borrador sin pago no."""
+        charged = self._add_payment(self._make_order(self.config, state="draft"))
+        self._make_order(self.config, state="draft")
+
+        result = self._call("l10n_ve_kiosk_close_session_check")
+
+        self.assertEqual([o["id"] for o in result["pending_orders"]], [charged.id])
+        self.assertEqual(result["pending_orders"][0]["state"], "draft")
+
+    def test_check_returns_pending_orders_for_the_panel(self):
+        """Las pendientes que se resuelven en el panel de Órdenes vienen con sus
+        datos para cargarlas en el cliente; el borrador con pago no (el panel no
+        lista borradores)."""
+        paid = self._make_order(self.config)
+        self._add_payment(self._make_order(self.config, state="draft"))
+
+        result = self._call("l10n_ve_kiosk_close_session_check")
+
+        self.assertEqual([o["id"] for o in result["data"]["pos.order"]], [paid.id])
+        self.assertEqual(
+            [line["order_id"] for line in result["data"]["pos.order.line"]], [paid.id]
+        )
+
+    def test_check_returns_existing_report_z(self):
+        self.assertFalse(self._call("l10n_ve_kiosk_close_session_check")["report_z"])
+
+        self.config.current_session_id.report_z = "13"
+
+        self.assertEqual(self._call("l10n_ve_kiosk_close_session_check")["report_z"], "13")
+
+    # -- modo mobile (QR de mesa) -------------------------------------------
+
+    def test_routes_reject_mobile_box(self):
+        """Con el token de una caja de autopedido por QR ninguna ruta responde:
+        ni revisa, ni registra una Z, ni cierra."""
+        session = self.mobile_config.current_session_id
+        calls = (
+            ("l10n_ve_kiosk_close_session_check", {}),
+            ("l10n_ve_kiosk_report_z", {"value": self._z_value()}),
+            ("l10n_ve_kiosk_close_session", {}),
+        )
+        for method_name, kwargs in calls:
+            with self.assertRaises(Unauthorized, msg=method_name):
+                self._call(method_name, config=self.mobile_config, **kwargs)
+        self.assertEqual(session.state, "opened")
+        self.assertFalse(session.report_z)
+
     # -- close_session -------------------------------------------------------
 
     def test_close_refused_with_pending_orders(self):
@@ -253,6 +355,16 @@ class TestKioskCloseSessionZ(TransactionCase):
         self.assertFalse(result["success"])
         self.assertEqual([o["id"] for o in result["pending_orders"]], [pending.id])
         self.assertEqual(session.state, "opened")
+
+    def test_close_refused_with_draft_with_payment(self):
+        charged = self._add_payment(self._make_order(self.config, state="draft"))
+        session = self.config.current_session_id
+
+        result = self._call("l10n_ve_kiosk_close_session")
+
+        self.assertFalse(result["success"])
+        self.assertEqual(session.state, "opened")
+        self.assertTrue(charged.exists())
 
     def test_close_session_closes_and_drops_carts(self):
         """Sin órdenes pendientes cierra con el cierre nativo del Kiosko, que
@@ -328,13 +440,17 @@ class TestKioskCloseSessionZ(TransactionCase):
         order = self._make_order(
             self.config, mf_invoice_number="00000001", fiscal_machine=SERIAL
         )
+        self.invoice = self._make_invoice(SERIAL)
         session = self.config.current_session_id
 
         result = self._call("l10n_ve_kiosk_report_z", value=self._z_value(counter=12))
 
         self.assertTrue(result["success"], result.get("error"))
         self.assertEqual(session.report_z, "13")
+        self.assertEqual(session.serial_machine, SERIAL)
+        self.assertTrue(session.report_z_date)
         self.assertEqual(order.mf_reportz, "13")
+        self.assertEqual(self.invoice.mf_reportz, "13", "la factura de la máquina queda con su Z")
         self.assertFalse(self.other_config.current_session_id.report_z)
 
     def test_report_z_does_not_touch_other_machines(self):
@@ -343,6 +459,7 @@ class TestKioskCloseSessionZ(TransactionCase):
         foreign = self._make_order(
             self.other_config, mf_invoice_number="00000009", fiscal_machine="Z7COTHER01"
         )
+        foreign_invoice = self._make_invoice("Z7COTHER01")
         session = self.config.current_session_id
 
         result = self._call(
@@ -351,4 +468,88 @@ class TestKioskCloseSessionZ(TransactionCase):
 
         self.assertTrue(result["success"], result.get("error"))
         self.assertFalse(foreign.mf_reportz)
+        self.assertFalse(foreign_invoice.mf_reportz)
         self.assertEqual(session.report_z, "41")
+
+
+@tagged("post_install", "-at_install", "l10n_ve_pos_mf_self_order")
+class TestKioskCloseSessionZHttp(HttpCase):
+    """Validación real del token por JSON-RPC (sin parchear
+    ``_verify_pos_config``): token inválido y caja de autopedido por QR."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        company = cls.env.company
+        pos_user = cls.env["res.users"].create(
+            {
+                "name": "Kiosk Close Z Http User",
+                "login": "kiosk_close_z_http_user",
+                "group_ids": [Command.set([cls.env.ref("point_of_sale.group_pos_user").id])],
+            }
+        )
+        journal = cls.env["account.journal"].create(
+            {"name": "Kiosk Close Z Http", "type": "sale", "code": "KCZHT", "company_id": company.id}
+        )
+
+        def _make_config(name, mode):
+            config = cls.env["pos.config"].create(
+                {
+                    "name": name,
+                    "journal_id": journal.id,
+                    "invoice_journal_id": journal.id,
+                    "self_ordering_mode": mode,
+                    "self_ordering_default_user_id": pos_user.id,
+                    "payment_method_ids": [(6, 0, [])],
+                }
+            )
+            session = cls.env["pos.session"].create(
+                {"config_id": config.id, "user_id": cls.env.ref("base.user_admin").id}
+            )
+            session.set_opening_control(0, "")
+            return config
+
+        cls.kiosk_config = _make_config("Kiosk Close Z Http Kiosk", "kiosk")
+        cls.mobile_config = _make_config("Kiosk Close Z Http QR", "mobile")
+
+    def _jsonrpc(self, route, **params):
+        response = self.url_open(
+            route,
+            data=json.dumps({"jsonrpc": "2.0", "method": "call", "params": params, "id": 1}),
+            headers={"Content-Type": "application/json"},
+        )
+        return response.json() if response.content else {}
+
+    def test_kiosk_token_reaches_the_route(self):
+        """Control: con el token del Kiosko la ruta responde."""
+        body = self._jsonrpc(
+            "/l10n_ve_pos_mf_self_order/kiosk/close_session/check",
+            access_token=self.kiosk_config.access_token,
+        )
+        self.assertNotIn("error", body)
+        self.assertEqual(body["result"]["pending_orders"], [])
+
+    def test_invalid_token_rejected(self):
+        for route in ("close_session/check", "report_z", "close_session"):
+            body = self._jsonrpc(
+                f"/l10n_ve_pos_mf_self_order/kiosk/{route}",
+                access_token="not-a-token",
+                value={"valid": True, "data": {}},
+            )
+            self.assertIn("error", body, route)
+            self.assertNotIn("result", body, route)
+
+    def test_mobile_token_rejected(self):
+        session = self.mobile_config.current_session_id
+        for route in ("close_session/check", "report_z", "close_session"):
+            body = self._jsonrpc(
+                f"/l10n_ve_pos_mf_self_order/kiosk/{route}",
+                access_token=self.mobile_config.access_token,
+                value={
+                    "valid": True,
+                    "data": {"_registeredMachineNumber": SERIAL, "_dailyClosureCounter": 5},
+                },
+            )
+            self.assertIn("error", body, route)
+        self.assertEqual(session.state, "opened")
+        self.assertFalse(session.report_z)

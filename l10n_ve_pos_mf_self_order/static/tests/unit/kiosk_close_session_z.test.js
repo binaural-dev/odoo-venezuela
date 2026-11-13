@@ -2,6 +2,7 @@ import { describe, expect, test } from "@odoo/hoot";
 import { AlertDialog, ConfirmationDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { SelfOrder } from "@pos_self_order/app/services/self_order_service";
 import { KioskDebugDialog } from "@l10n_ve_pos_self_order/app/debug/kiosk_debug_dialog";
+import { KioskOrdersDialog } from "@l10n_ve_pos_self_order/app/debug/kiosk_orders_dialog";
 import "@l10n_ve_pos_mf_self_order/overrides/self_order_fiscal";
 import "@l10n_ve_pos_mf_self_order/app/debug/kiosk_debug_dialog_fiscal";
 import { allowTranslations } from "@web/../tests/web_test_helpers";
@@ -109,6 +110,8 @@ describe("printKioskReportZ", () => {
 
 function fakePanel({
     pending = [],
+    reportZ = false,
+    printing = false,
     confirm = true,
     z = { success: true, printed: true, value: { valid: true, data: {} } },
     sync = { success: true },
@@ -133,9 +136,10 @@ function fakePanel({
         },
     };
     panel.selfOrder = {
-        async getKioskCloseSessionPendingOrders() {
+        isPrintingKioskFiscalInvoice: printing,
+        async checkKioskCloseSession() {
             calls.push("check");
-            return pending;
+            return { pending_orders: pending, report_z: reportZ };
         },
         async printKioskReportZ() {
             calls.push("Z");
@@ -151,8 +155,22 @@ function fakePanel({
         },
     };
     const alerts = () => dialogs.filter((d) => d.component === AlertDialog);
-    return { panel, calls, alerts };
+    return { panel, calls, alerts, dialogs };
 }
+
+describe("isPrintingKioskFiscalInvoice", () => {
+    test("refleja el overlay y las órdenes en impresión", () => {
+        const service = Object.create(SelfOrder.prototype);
+        service.printingFiscalInvoice = false;
+        service._fiscalPrintingOrders = new Set();
+        expect(service.isPrintingKioskFiscalInvoice).toBe(false);
+        service._fiscalPrintingOrders.add("token");
+        expect(service.isPrintingKioskFiscalInvoice).toBe(true);
+        service._fiscalPrintingOrders.clear();
+        service.printingFiscalInvoice = true;
+        expect(service.isPrintingKioskFiscalInvoice).toBe(true);
+    });
+});
 
 describe("onCloseSessionAndPrintZ", () => {
     test("flujo completo: pendientes, confirmación, Z, sincroniza y cierra", async () => {
@@ -170,10 +188,10 @@ describe("onCloseSessionAndPrintZ", () => {
     });
 
     test("con órdenes sin número fiscal no imprime la Z ni cierra", async () => {
-        const { panel, calls, alerts } = fakePanel({
+        const { panel, calls, alerts, dialogs } = fakePanel({
             pending: [
-                { id: 1, name: "Orden 1", pos_reference: "Autopago CCCT 1 - 000010" },
-                { id: 2, name: "Orden 2", pos_reference: "" },
+                { id: 1, name: "Orden 1", pos_reference: "Autopago CCCT 1 - 000010", state: "paid" },
+                { id: 2, name: "Orden 2", pos_reference: "", state: "done" },
             ],
         });
 
@@ -181,9 +199,48 @@ describe("onCloseSessionAndPrintZ", () => {
 
         expect(calls).toEqual(["check"]);
         expect(alerts().length).toBe(1);
-        const body = String(alerts()[0].props.body);
+        const alert = alerts()[0];
+        const body = String(alert.props.body);
         expect(body).toInclude("Autopago CCCT 1 - 000010");
         expect(body).toInclude("Orden 2");
+        // El aviso abre el panel de Órdenes para resolverlas.
+        expect(String(alert.props.confirmLabel)).toBe("Open Orders");
+        alert.props.confirm();
+        expect(dialogs.at(-1).component).toBe(KioskOrdersDialog);
+    });
+
+    test("borrador con pago: remite al backend y no ofrece el panel", async () => {
+        const { panel, calls, alerts } = fakePanel({
+            pending: [{ id: 3, name: "Orden 3", pos_reference: "Autopago - 000011", state: "draft" }],
+        });
+
+        await panel.onCloseSessionAndPrintZ();
+
+        expect(calls).toEqual(["check"]);
+        const alert = alerts()[0];
+        expect(String(alert.props.body)).toInclude(
+            "Autopago - 000011 (unfinished order with a payment: resolve it from the backend)"
+        );
+        expect(alert.props.confirm).toBe(undefined);
+    });
+
+    test("si la sesión ya tiene su Z, no imprime otra", async () => {
+        const { panel, calls, alerts } = fakePanel({ reportZ: "42" });
+
+        await panel.onCloseSessionAndPrintZ();
+
+        expect(calls).toEqual(["check"]);
+        expect(String(alerts()[0].props.body)).toInclude("no. 42");
+    });
+
+    test("con una factura fiscal imprimiéndose no empieza", async () => {
+        const { panel, calls, alerts } = fakePanel({ printing: true });
+
+        await panel.onCloseSessionAndPrintZ();
+
+        expect(calls).toEqual([]);
+        expect(alerts().length).toBe(0);
+        expect(String(panel.state.message)).toInclude("being printed");
     });
 
     test("si no confirma, no imprime la Z", async () => {
