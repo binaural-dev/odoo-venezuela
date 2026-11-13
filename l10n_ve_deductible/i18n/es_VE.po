@@ -335,3 +335,9 @@ msgstr "Facturas de proveedor"
 #: model:ir.model.fields.selection,name:l10n_ve_deductible.selection__res_company__deductible_scope__both
 msgid "Vendor Bills and Customer Invoices"
 msgstr "Facturas de proveedor y de cliente"
+
+#. module: l10n_ve_deductible
+#. odoo-python
+#: code:addons/l10n_ve_deductible/models/account_move.py:0
+msgid "The document has a global discount."
+msgstr "El documento tiene un descuento global."

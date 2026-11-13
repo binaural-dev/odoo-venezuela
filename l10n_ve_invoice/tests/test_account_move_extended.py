@@ -3,12 +3,14 @@ from datetime import date, timedelta
 from odoo import fields
 from odoo.exceptions import UserError, ValidationError
 from odoo.tests import TransactionCase, tagged
+from .common import enable_historical_rate_fixtures
 
 
 @tagged("post_install", "-at_install", "l10n_ve_invoice")
 class TestAccountMoveExtended(TransactionCase):
     def setUp(self):
         super().setUp()
+        enable_historical_rate_fixtures(self)
         self.company = self.env.ref("base.main_company")
         self.currency_vef = self.env.ref("base.VEF")
         self.currency_usd = self.env.ref("base.USD")

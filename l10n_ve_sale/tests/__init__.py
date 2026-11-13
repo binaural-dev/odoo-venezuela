@@ -15,3 +15,6 @@ from . import test_consolidated_invoices
 from . import test_server_date_vs_user_tz
 from . import test_sale_order_rate_tz
 from . import test_alternate_totals_block
+from . import test_discount_schemes
+from . import test_discount_limits
+from . import test_discount_deductible

@@ -140,12 +140,15 @@
                  amounts directly (see account_move_line.py); discount (%)
                  is never read nor written while this mode is active. -->
             <xpath expr="//field[@name='invoice_line_ids']//field[@name='discount']" position="attributes">
-                <attribute name="column_invisible">parent.discount_type == 'amount'</attribute>
+                <attribute name="column_invisible">not parent.show_discount_on_moves or parent.discount_type == 'amount'</attribute>
                 <attribute name="invisible">parent.discount_type == 'amount'</attribute>
+            </xpath>
+            <xpath expr="//field[@name='invoice_line_ids']" position="before">
+                <field name="show_discount_on_moves" invisible="1"/>
             </xpath>
             <xpath expr="//field[@name='invoice_line_ids']//field[@name='discount']" position="after">
                 <field name="discount_fixed"
-                    column_invisible="parent.discount_type != 'amount'"
+                    column_invisible="not parent.show_discount_on_moves or parent.discount_type != 'amount'"
                     invisible="parent.discount_type != 'amount'"/>
             </xpath>
 

@@ -48,3 +48,46 @@ class ResCompany(models.Model):
         ),
         default=False,
     )
+
+    global_discount_account_id = fields.Many2one(
+        "account.account",
+        string="Global Discount Account (Customer Invoices)",
+        domain="[('account_type', 'in', ('income', 'income_other'))]",
+        check_company=True,
+        help="Account where the global discounts of customer invoices are "
+        "recorded. It can differ from the line discount account.",
+    )
+
+    discount_method_limit_enabled = fields.Boolean(
+        string="Limit Discount Method",
+        help="Only the discount methods ticked here can be applied, by any user. "
+        "Independent of the maximum discount.",
+    )
+    discount_allow_line_percent = fields.Boolean(
+        string="Allow Percentage on Lines", default=True
+    )
+    discount_allow_line_amount = fields.Boolean(
+        string="Allow Fixed Amount on Lines", default=True
+    )
+    discount_allow_global_subtotal = fields.Boolean(
+        string="Allow Global Discount over the Subtotal", default=True
+    )
+    discount_allow_global_total = fields.Boolean(
+        string="Allow Global Discount over the Total", default=True
+    )
+    discount_max_limit_enabled = fields.Boolean(
+        string="Limit the Maximum Discount",
+        help="Set the maximum discount percentage allowed for each scheme.",
+    )
+    discount_max_line = fields.Float(string="Maximum on Lines (%)", digits="Discount")
+    discount_max_global_subtotal = fields.Float(
+        string="Maximum Global over Subtotal (%)", digits="Discount"
+    )
+    discount_max_global_total = fields.Float(
+        string="Maximum Global over Total (%)", digits="Discount"
+    )
+    discount_approval_enabled = fields.Boolean(
+        string="Approve Excess Discounts",
+        help="A discount above the maximum can be applied, but the document "
+        "moves to 'To Approve' until a discount approver validates it.",
+    )

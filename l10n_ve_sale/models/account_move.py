@@ -1,14 +1,285 @@
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
-from odoo.tools import float_round
+from odoo.tools import float_compare, float_round
+
+from .l10n_ve_discount_document import (
+    DiscountDocumentMixin,
+    discount_apply,
+    is_discount_applying,
+)
 
 
 class AccountMove(models.Model):
-    _inherit = "account.move"
+    _inherit = ["account.move", "l10n_ve.discount.document.mixin"]
+    _name = "account.move"
 
     convert_currency_from_sale_order = fields.Boolean(
         related="company_id.convert_currency_from_sale_order",
     )
+
+    def _discount_lines(self):
+        self.ensure_one()
+        return self.invoice_line_ids.filtered(lambda line: line.display_type == "product")
+
+    def _discount_line_gross(self, line):
+        return line.price_unit * line.quantity
+
+    discount_stage = fields.Selection(
+        [
+            ("draft", "Draft"),
+            ("to_approve", "Discount to Approve"),
+            ("posted", "Posted"),
+            ("cancel", "Cancelled"),
+        ],
+        string="Stage",
+        compute="_compute_discount_stage",
+        help="The state of the invoice with the discount approval as one more stage, "
+        "like the sale order: a single status bar.",
+    )
+
+    @api.depends("state", "discount_approval_state")
+    def _compute_discount_stage(self):
+        for move in self:
+            move.discount_stage = (
+                "to_approve"
+                if move.state == "draft" and move.discount_approval_state == "to_approve"
+                else move.state
+            )
+
+    def _discount_is_editable(self):
+        self.ensure_one()
+        return self.state == "draft" and self.move_type == "out_invoice"
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            self._check_discount_fields_protected(vals)
+        return super().create(vals_list)
+
+    def write(self, vals):
+        self._check_discount_fields_protected(vals)
+        self._check_not_locked_by_approval(vals)
+        return super().write(vals)
+
+    def unlink(self):
+        self._check_not_locked_by_approval({"unlink": True})
+        return super().unlink()
+
+    # ------------------------------------------------------------------
+    # An invoice waiting for a discount approval is locked, like the order
+    # ------------------------------------------------------------------
+    APPROVAL_LOCK_BUTTONS = DiscountDocumentMixin.APPROVAL_LOCK_BUTTONS + ("action_post",)
+
+    def _discount_is_waiting(self):
+        return self.filtered(
+            lambda move: move.discount_approval_state == "to_approve"
+            and move.state == "draft"
+        )
+
+    def _check_not_locked_by_approval(self, vals):
+        """While the invoice waits for its discount approval nothing can be
+        edited (only cancelling it, or the approver approving / rejecting, which
+        run with the internal marker)."""
+        if self.env.su or is_discount_applying(self.env):
+            return
+        if not self._discount_is_waiting():
+            return
+        harmless = {key for key in vals if key.startswith(("message_", "activity_"))}
+        changes = set(vals) - harmless - {"state"}
+        if changes or vals.get("state", "cancel") != "cancel":
+            raise UserError(self._discount_locked_message())
+
+    @api.model
+    def _discount_locked_message(self):
+        return _(
+            "This invoice is waiting for a discount approval and cannot be "
+            "edited. A discount approver can approve or reject the "
+            "discount, or the invoice can be cancelled."
+        )
+
+    def button_cancel(self):
+        waiting = self.filtered(
+            lambda move: move.discount_approval_state in ("exceeds", "to_approve")
+        )
+        waiting._discount_write_doc({"discount_approval_state": False})
+        waiting._close_discount_approval_activities()
+        return super().button_cancel()
+
+    def button_draft(self):
+        res = super().button_draft()
+        self.filtered(
+            lambda move: move.state == "draft" and move.move_type == "out_invoice"
+        )._reset_discount_approval()
+        return res
+
+    def _discount_covered_by_origin(self, percent):
+        """An invoice that comes from confirmed sale orders does not ask for the
+        approval again when its discount is the one those orders were confirmed
+        with (same scheme, not higher). If the discount was removed and applied
+        again with something else, the approval is asked again."""
+        self.ensure_one()
+        orders = self.invoice_line_ids.sale_line_ids.order_id
+        if not orders or self.discount_mode is False:
+            return False
+        precision = self.env["decimal.precision"].precision_get("Discount")
+        for order in orders:
+            if order.state not in ("sale", "done"):
+                return False
+            if order._discount_scheme() != self.discount_mode:
+                return False
+            order_percent, _limit = order._discount_effective_percent()
+            if float_compare(percent, order_percent, precision_digits=precision) > 0:
+                return False
+        return True
+
+    def action_post(self):
+        # Same as the order: a discount over the maximum sends the invoice to
+        # approval instead of posting it; approving the discount posts it.
+        exceeding = self.filtered(lambda move: move.discount_approval_state == "exceeds")
+        if exceeding:
+            exceeding._send_to_approval()
+            rest = self - exceeding
+            if rest:
+                super(AccountMove, rest).action_post()
+            return exceeding._discount_approval_notification()
+        return super().action_post()
+
+    def _discount_owners(self):
+        self.ensure_one()
+        return self.invoice_user_id | self.create_uid
+
+    def _discount_after_approval(self):
+        # The natural next step: post the invoice. Its answer (the posting
+        # alert of the localization, when it applies) goes back to the screen.
+        return self.action_post()
+
+    def _post(self, soft=True):
+        self._check_discount_approved()
+        return super()._post(soft)
+
+    def _is_global_total_move(self):
+        self.ensure_one()
+        return self.discount_mode == "global_total" and self.move_type in (
+            "out_invoice",
+            "out_refund",
+        )
+
+    # Computed together with the totals (same method): the discount is taken
+    # from the total the native computation just produced, so no second tax
+    # summary is built and there is no re-entrant recompute of the amounts.
+    global_total_discount = fields.Monetary(
+        string="Global Discount Over Total",
+        compute="_compute_amount",
+        currency_field="currency_id",
+        help="Global discount over the total, in the document currency.",
+    )
+    global_total_discount_company = fields.Monetary(
+        string="Global Discount Over Total (Company Currency)",
+        compute="_compute_amount",
+        currency_field="company_currency_id",
+    )
+
+    def _get_global_total_discount_amounts(self):
+        """(discount in the invoice currency, in the company currency) of a
+        global discount over the total."""
+        self.ensure_one()
+        return self.global_total_discount, self.global_total_discount_company
+
+    @api.depends(
+        "discount_mode",
+        "global_discount_type",
+        "global_discount_percent",
+        "global_discount_amount",
+    )
+    def _compute_amount(self):
+        super()._compute_amount()
+        for move in self:
+            discount = discount_company = 0.0
+            if move.is_invoice(True) and move._is_global_total_move():
+                total = move.amount_total
+                discount = move._get_global_total_discount(total, move.currency_id)
+                if move.currency_id.is_zero(discount):
+                    discount = 0.0
+                else:
+                    discount_company = move.company_currency_id.round(
+                        abs(move.amount_total_signed) * discount / total
+                    )
+                    # The residual of a draft normally comes net of the discount
+                    # (from tax_totals). When it equals the gross total it was
+                    # taken from the lines (see l10n_ve_accountant): net it here.
+                    if move.state == "draft" and move.currency_id.is_zero(
+                        move.amount_residual - total
+                    ):
+                        move.amount_residual -= discount
+                        move.amount_residual_signed -= discount_company
+                    move.amount_total -= discount
+                    move.amount_total_signed -= discount_company
+                    move.amount_total_in_currency_signed -= discount
+            move.global_total_discount = discount
+            move.global_total_discount_company = discount_company
+
+    @api.depends(
+        "discount_mode",
+        "global_discount_type",
+        "global_discount_percent",
+        "global_discount_amount",
+        "global_total_discount",
+        "global_total_discount_company",
+    )
+    def _compute_needed_terms(self):
+        super()._compute_needed_terms()
+        # With a payment term the receivable is split from base + taxes,
+        # which do not know about the discount over the total.
+        for move in self.filtered(
+            lambda m: m.is_invoice(True) and m.invoice_payment_term_id and m._is_global_total_move()
+        ):
+            discount, discount_company = move._get_global_total_discount_amounts()
+            terms = move.needed_terms
+            total_currency = sum(v["amount_currency"] for v in terms.values())
+            if move.currency_id.is_zero(discount) or move.currency_id.is_zero(total_currency):
+                continue
+            sign = 1 if total_currency > 0 else -1
+            remaining, remaining_company = discount, discount_company
+            keys = list(terms)
+            for index, key in enumerate(keys):
+                values = terms[key]
+                if index == len(keys) - 1:
+                    share, share_company = remaining, remaining_company
+                else:
+                    ratio = values["amount_currency"] / total_currency
+                    share = move.currency_id.round(discount * ratio)
+                    share_company = move.company_currency_id.round(discount_company * ratio)
+                    remaining -= share
+                    remaining_company -= share_company
+                values["amount_currency"] -= sign * share
+                values["balance"] -= sign * share_company
+
+    def _get_move_discount_type(self):
+        self.ensure_one()
+        if self.discount_mode:
+            return self._get_doc_discount_type()
+        return super()._get_move_discount_type()
+
+    @api.depends("company_id.discount_type", "discount_mode", "global_discount_type")
+    def _compute_discount_type(self):
+        super()._compute_discount_type()
+
+    def _get_discount_allocation_account(self):
+        self.ensure_one()
+        if (
+            self.discount_mode == "global_subtotal"
+            and self.is_sale_document(include_receipts=True)
+            and self.company_id.global_discount_account_id
+        ):
+            return self.company_id.global_discount_account_id
+        return super()._get_discount_allocation_account()
+
+    def _reverse_moves(self, default_values_list=None, cancel=False):
+        # Credit notes keep the scheme of the invoice they reverse.
+        with discount_apply(self.env):
+            return super()._reverse_moves(
+                default_values_list=default_values_list, cancel=cancel
+            )
 
     def _get_sale_conversion_pricelist_rule(self, line):
         """Regla de tarifa que pisaria la conversion de esta linea, si la hay.
