@@ -28,7 +28,7 @@
                     <div class="o_setting_right_pane">
                         <span class="o_form_label">Journals</span>
                         <span 
-                            class="fa fa-lg fa-building-o"
+                            class="oi oi-lg" data-icon="business"
                             title="Values set here are company-specific."
                             aria-label="Values set here are company-specific."
                             role="img"

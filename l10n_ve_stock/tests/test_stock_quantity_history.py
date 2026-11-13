@@ -9,7 +9,7 @@ from odoo.tests import TransactionCase, tagged
 @tagged("post_install", "-at_install", "l10n_ve_stock")
 class TestStockQuantityHistory(TransactionCase):
     def test_get_fields_products(self):
-        wizard = self.env["stock.quantity.history"].create({})
+        wizard = self.env["stock.inventory.valuation.wizard"].create({})
         fields = wizard.get_fields_products()
         self.assertIsInstance(fields, list)
         self.assertIn("id", fields)
@@ -22,37 +22,29 @@ class TestStockQuantityHistory(TransactionCase):
 
     def test_open_at_date(self):
         warehouse = self.env["stock.warehouse"].search([], limit=1)
-        wizard = self.env["stock.quantity.history"].create({
+        wizard = self.env["stock.inventory.valuation.wizard"].create({
             "warehouse_search_id": warehouse.lot_stock_id.id,
         })
         result = wizard.open_at_date()
         self.assertIsInstance(result, dict)
 
     def test_open_at_date_without_location(self):
-        wizard = self.env["stock.quantity.history"].create({})
+        wizard = self.env["stock.inventory.valuation.wizard"].create({})
         result = wizard.open_at_date()
         self.assertIsInstance(result, dict)
 
     def test_except_products_at_zero_field(self):
-        wizard = self.env["stock.quantity.history"].create({
+        wizard = self.env["stock.inventory.valuation.wizard"].create({
             "except_products_at_zero": True,
         })
         self.assertTrue(wizard.except_products_at_zero)
 
     def test_warehouse_search_id_field(self):
         warehouse = self.env["stock.warehouse"].search([], limit=1)
-        wizard = self.env["stock.quantity.history"].create({
+        wizard = self.env["stock.inventory.valuation.wizard"].create({
             "warehouse_search_id": warehouse.lot_stock_id.id,
         })
         self.assertEqual(wizard.warehouse_search_id, warehouse.lot_stock_id)
-
-    def test_open_at_date_test(self):
-        wizard = self.env["stock.quantity.history"].create({})
-        try:
-            wizard.open_at_date_test()
-        except Exception:
-            pass
-        self.assertTrue(True)
 
     @unittest.skip("_compute_quantities_dict_for_report depends on location_final_id removed in Odoo 19")
     def test_generate_report_basic(self):
@@ -67,7 +59,7 @@ class TestStockQuantityHistory(TransactionCase):
             "location_id": warehouse.lot_stock_id.id,
             "quantity": 10,
         })
-        wizard = self.env["stock.quantity.history"].create({
+        wizard = self.env["stock.inventory.valuation.wizard"].create({
             "warehouse_search_id": warehouse.lot_stock_id.id,
             "inventory_datetime": "2026-01-01 00:00:00",
             "except_products_at_zero": False,
@@ -89,7 +81,7 @@ class TestStockQuantityHistory(TransactionCase):
             "location_id": warehouse.lot_stock_id.id,
             "quantity": 5,
         })
-        wizard = self.env["stock.quantity.history"].create({
+        wizard = self.env["stock.inventory.valuation.wizard"].create({
             "warehouse_search_id": warehouse.lot_stock_id.id,
             "inventory_datetime": "2026-01-01 00:00:00",
             "except_products_at_zero": True,
@@ -103,7 +95,7 @@ class TestStockQuantityHistory(TransactionCase):
             "type": "consu",
             "is_storable": True,
         })
-        wizard = self.env["stock.quantity.history"].create({
+        wizard = self.env["stock.inventory.valuation.wizard"].create({
             "inventory_datetime": "2026-01-01 00:00:00",
             "except_products_at_zero": False,
         })
@@ -129,7 +121,7 @@ class TestStockQuantityHistory(TransactionCase):
             "name": "Test Company 2",
             "currency_id": self.env.company.currency_id.id,
         })
-        wizard = self.env["stock.quantity.history"].create({
+        wizard = self.env["stock.inventory.valuation.wizard"].create({
             "warehouse_search_id": warehouse.lot_stock_id.id,
             "inventory_datetime": "2026-01-01 00:00:00",
             "except_products_at_zero": False,
@@ -156,7 +148,7 @@ class TestStockQuantityHistoryExceptZero(TransactionCase):
             "is_storable": True,
         })
         self.env["stock.quant"]._update_available_quantity(product, warehouse.lot_stock_id, 5.0)
-        wizard = self.env["stock.quantity.history"].create({
+        wizard = self.env["stock.inventory.valuation.wizard"].create({
             "warehouse_search_id": warehouse.lot_stock_id.id,
             "inventory_datetime": fields.Datetime.now() + timedelta(days=1),
             "except_products_at_zero": True,

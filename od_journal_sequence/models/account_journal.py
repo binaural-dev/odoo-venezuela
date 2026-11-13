@@ -10,7 +10,7 @@ class AccountJournal(models.Model):
     sequence_id = fields.Many2one('ir.sequence', string='Entry Sequence',
                                   help="This field contains the information related to the numbering of the"
                                        " journal entries of this journal.",
-                                  required=True, copy=False)
+                                  copy=False)
     sequence_number_next = fields.Integer(string='Next Number',
                                           help='The next sequence number will be used for the next invoice.',
                                           compute='_compute_seq_number_next',
@@ -58,6 +58,10 @@ class AccountJournal(models.Model):
     @api.constrains("refund_sequence_id", "sequence_id")
     def _check_journal_sequence(self):
         for journal in self:
+            if not journal.sequence_id:
+                raise ValidationError(
+                    _("Journal '%s' needs an entry sequence.") % journal.display_name
+                )
             if (
                     journal.refund_sequence_id
                     and journal.sequence_id

@@ -8,7 +8,7 @@
     "author": "binaural-dev",
     "website": "https://www.binauraldev.com",
     "category": "Stock",
-    "version": "19.0.1.0.12",
+    "version": "20.0.1.0.0",
     "depends": [
         "stock",
         "product",
@@ -17,8 +17,6 @@
     ],
     "data": [
         "security/l10n_ve_stock_groups.xml",
-        "security/ir.model.access.csv",
-        "security/security_l10n_ve_stock.xml",
         "data/inventory_valuation_paperformat.xml",
         "data/ir_actions_server.xml",
         "report/packaging_picking_template.xml",
@@ -33,10 +31,12 @@
         "views/stock_warehouse_views.xml",
         "views/stock_picking_alter_location_line_views.xml",
         "views/stock_picking_alter_location_views.xml",
-        "wizard/stock_quantity_history.xml",
+        "wizard/stock_inventory_valuation_wizard_views.xml",
         "wizard/move_alter_location_qtities.xml",
+        'security/ir.access.csv',
     ],
     "application": True,
     "pre_init_hook": "pre_init_hook",
-    "installable": False,
+    "installable": True,
+    "binaural_migrated": True,
 }

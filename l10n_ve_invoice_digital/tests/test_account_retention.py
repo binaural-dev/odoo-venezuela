@@ -197,7 +197,6 @@ class TestAccumulatedRate(TransactionCase):
             "barcode": "123456789",
             "purchase_ok": True,
             "supplier_taxes_id": [(6, 0, [self.tax_iva16.id])],
-            "taxes_id": [(6, 0, [self.tax_iva16.id])],
         })
 
         self.payment_concept = self.env["payment.concept"].create({

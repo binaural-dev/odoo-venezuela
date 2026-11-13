@@ -1,0 +1,2 @@
+id,name,model_id,group_id/id,operation,domain
+access_pos_payment_report,access_pos_payment_report,pos.payment.report,base.group_everyone,crud,

@@ -113,7 +113,7 @@ class TestPricelistExportControllerHttp(HttpCase):
             data={
                 "report_data": report_data,
                 "export_format": export_format,
-                "csrf_token": http.Request.csrf_token(self),
+                "csrf_token": self.csrf_token(),
             },
         )
 

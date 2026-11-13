@@ -10,8 +10,8 @@ _logger = logging.getLogger(__name__)
 
 # 1x1 transparent PNG, used as a stand-in for a configured signature image.
 TEST_PNG_B64 = (
-    b"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAA"
-    b"AAYAAjCB0C8AAAAASUVORK5CYII="
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAA"
+    "AAYAAjCB0C8AAAAASUVORK5CYII="
 )
 
 

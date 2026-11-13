@@ -4,14 +4,14 @@ from odoo import api, models, fields, _
 class EconomicActivity(models.Model):
     _name = "economic.activity"
     _description = "Economic Activity"
-    _sql_constraints = [
-        (
-            "code_uniq",
-            "unique (name,municipality_id)",
-            "There cannot be two records with the same code for the selected municipality.",
-        ),
-        ("aliquot_mayor_cero", "check (aliquot > 0)", "The aliquot must be greater than zero"),
-    ]
+    _code_uniq = models.Constraint(
+        'unique (name,municipality_id)',
+        "There cannot be two records with the same code for the selected municipality.",
+    )
+    _aliquot_mayor_cero = models.Constraint(
+        'check (aliquot > 0)',
+        "The aliquot must be greater than zero",
+    )
 
     name = fields.Char("Code", required=True, store=True)
     municipality_id = fields.Many2one(

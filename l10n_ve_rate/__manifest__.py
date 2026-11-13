@@ -7,10 +7,11 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Technical",
-    "version": "19.0.1.3.0",
+    "version": "20.0.1.0.0",
     "depends": ["base", "l10n_ve_base"],
     "data": [
         "views/res_config_settings.xml",
     ],
-    "installable": False,
+    "installable": True,
+    "binaural_migrated": True,
 }

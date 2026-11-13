@@ -27,7 +27,8 @@ class AccountChartTemplate(models.AbstractModel):
                 company.with_context(l10n_ve_skip_exchange_diff_check=True).l10n_ve_use_foreign_exchange_diff = False
         return res
 
-    # TODO(20.0): revisar si el core ya repara xmlids de la raíz al cargar una sucursal; de ser así, eliminar este override.
+    # En Odoo 20 el core ya no falla al cargar una sucursal cuando la raíz perdió xmlids de cuentas
+    # (la sucursal hereda de la raíz), pero tampoco los repara: este override sigue restaurándolos.
     def _pre_load_data(self, template_code, company, template_data, data):
         """Re-vincula los xmlids de cuentas de la compañía raíz antes de cargar una sucursal.
 
@@ -51,22 +52,14 @@ class AccountChartTemplate(models.AbstractModel):
             return
         Account = self.env['account.account']
         xmlids = set()
-        # property_* del template que apuntan a cuentas (ver _post_load_data)
-        for field, model in self._get_property_accounts(template_data.get('additional_properties', {})).items():
-            value = template_data.get(field)
-            model_field = self.env[model]._fields.get(field)
-            if (
-                value and isinstance(value, str) and '.' not in value
-                and model_field and model_field.comodel_name == 'account.account'
-            ):
-                xmlids.add(value)
-        # valores de res.company que apuntan a cuentas
+        # valores de res.company que apuntan a cuentas; en 20 incluyen las
+        # cuentas por cobrar y por pagar por defecto, que antes eran property_*
         company_fields = self.env['res.company']._fields
         for field, value in data.get('res.company', {}).get(company.id, {}).items():
             model_field = company_fields.get(field)
             if (
                 isinstance(value, str) and value and '.' not in value
-                and model_field and model_field.comodel_name == 'account.account'
+                and getattr(model_field, 'comodel_name', None) == 'account.account'
             ):
                 xmlids.add(value)
         if not xmlids:

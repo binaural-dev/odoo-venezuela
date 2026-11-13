@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { Component, xml, useState } from "@odoo/owl";
+import { Component, proxy, signal, t, useProps, xml } from "@odoo/owl";
 import { Dialog } from "@web/core/dialog/dialog";
 import { ConfirmationDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { useService } from "@web/core/utils/hooks";
@@ -20,55 +20,53 @@ import { getBackendFiscalPrinter, ensureConnected } from "./mf_webserial_service
  */
 export class MfFiscalizadorDialog extends Component {
     static components = { Dialog };
-    static props = {
-        close: Function,
-    };
+    props = useProps({ close: t.function() });
     static template = xml`
-        <Dialog title="title" size="'lg'">
+        <Dialog title="this.title" size="'lg'">
             <div class="d-flex gap-2 mb-3 flex-wrap">
-                <button class="btn btn-primary" t-att-disabled="state.busy" t-on-click="connect">
-                    <i class="fa fa-plug me-1"/>Conectar
+                <button class="btn btn-primary" t-att-disabled="this.state.busy" t-on-click="this.connect">
+                    <i class="oi me-1" data-icon="power"/>Conectar
                 </button>
-                <button class="btn btn-secondary" t-att-disabled="state.busy" t-on-click="readStatus">
-                    <i class="fa fa-heartbeat me-1"/>Estado (ENQ)
+                <button class="btn btn-secondary" t-att-disabled="this.state.busy" t-on-click="this.readStatus">
+                    <i class="oi me-1" data-icon="cardiology"/>Estado (ENQ)
                 </button>
-                <button class="btn btn-secondary" t-att-disabled="state.busy" t-on-click="readS1">
-                    <i class="fa fa-info-circle me-1"/>Datos S1
+                <button class="btn btn-secondary" t-att-disabled="this.state.busy" t-on-click="this.readS1">
+                    <i class="oi oi-filled me-1" data-icon="info"/>Datos S1
                 </button>
-                <button class="btn btn-secondary" t-att-disabled="state.busy" t-on-click="readS4">
-                    <i class="fa fa-credit-card me-1"/>Medios de Pago (S4)
+                <button class="btn btn-secondary" t-att-disabled="this.state.busy" t-on-click="this.readS4">
+                    <i class="oi me-1" data-icon="credit_card"/>Medios de Pago (S4)
                 </button>
-                <button class="btn btn-info" t-att-disabled="state.busy" t-on-click="readIgtfInfo">
-                    <i class="fa fa-globe me-1"/>Info IGTF (S3+S25)
+                <button class="btn btn-info" t-att-disabled="this.state.busy" t-on-click="this.readIgtfInfo">
+                    <i class="oi me-1" data-icon="public"/>Info IGTF (S3+S25)
                 </button>
-                <button class="btn btn-warning" t-att-disabled="state.busy" t-on-click="reportX">
-                    <i class="fa fa-file-text-o me-1"/>Reporte X
+                <button class="btn btn-warning" t-att-disabled="this.state.busy" t-on-click="this.reportX">
+                    <i class="oi me-1" data-icon="article"/>Reporte X
                 </button>
-                <button class="btn btn-danger" t-att-disabled="state.busy" t-on-click="reportZ">
-                    <i class="fa fa-lock me-1"/>Reporte Z
+                <button class="btn btn-danger" t-att-disabled="this.state.busy" t-on-click="this.reportZ">
+                    <i class="oi me-1" data-icon="lock"/>Reporte Z
                 </button>
                 <span class="ms-auto align-self-center">
-                    <span t-if="state.connected" class="badge text-bg-success">Conectada</span>
+                    <span t-if="this.state.connected" class="badge text-bg-success">Conectada</span>
                     <span t-else="" class="badge text-bg-secondary">Desconectada</span>
                 </span>
             </div>
             <div class="input-group mb-3">
-                <input type="text" class="form-control" t-model="state.command"
+                <input type="text" class="form-control" t-model="this.command"
                        placeholder="Comando raw TFHKA (ej. S1, S3, D)"/>
-                <button class="btn btn-outline-secondary" t-att-disabled="state.busy" t-on-click="sendRaw">
+                <button class="btn btn-outline-secondary" t-att-disabled="this.state.busy" t-on-click="this.sendRaw">
                     Enviar
                 </button>
             </div>
             <div class="border rounded p-2 bg-100"
                  style="max-height: 320px; overflow: auto; font-family: monospace; font-size: 12px;">
-                <div t-if="!state.log.length" class="text-muted">Sin actividad todavía…</div>
-                <div t-foreach="state.log" t-as="entry" t-key="entry_index"
+                <div t-if="!this.state.log.length" class="text-muted">Sin actividad todavía…</div>
+                <div t-foreach="this.state.log" t-as="entry" t-key="entry_index"
                      t-att-class="'text-' + entry.type">
-                    <span t-esc="entry.time"/> — <span t-esc="entry.msg"/>
+                    <span t-out="entry.time"/> — <span t-out="entry.msg"/>
                 </div>
             </div>
             <t t-set-slot="footer">
-                <button class="btn btn-secondary" t-on-click="() => this.props.close()">Cerrar</button>
+                <button class="btn btn-secondary" t-on-click="this.props.close">Cerrar</button>
             </t>
         </Dialog>`;
 
@@ -77,10 +75,10 @@ export class MfFiscalizadorDialog extends Component {
         this.orm = useService("orm");
         this.dialog = useService("dialog");
         this.notification = useService("notification");
-        this.state = useState({
+        this.command = signal("");
+        this.state = proxy({
             busy: false,
             connected: getBackendFiscalPrinter().isConnected,
-            command: "",
             log: [],
         });
     }
@@ -342,7 +340,7 @@ export class MfFiscalizadorDialog extends Component {
     }
 
     async sendRaw() {
-        const command = (this.state.command || "").trim();
+        const command = (this.command() || "").trim();
         if (!command) {
             return;
         }

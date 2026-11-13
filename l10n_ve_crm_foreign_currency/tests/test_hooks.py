@@ -92,6 +92,7 @@ class TestPostInitHook(TransactionCase):
             "name": "Equipo histórico",
             "company_id": self.company.id,
         })
+        self.env.cr.execute("ALTER TABLE crm_team ADD COLUMN IF NOT EXISTS invoiced_target double precision")
         self.env.cr.execute(
             "UPDATE crm_team SET invoiced_target = %s WHERE id = %s",
             (250000.0, team.id),
@@ -126,6 +127,7 @@ class TestPostInitHook(TransactionCase):
             "name": "Equipo sin moneda alterna",
             "company_id": company_without_foreign_currency.id,
         })
+        self.env.cr.execute("ALTER TABLE crm_team ADD COLUMN IF NOT EXISTS invoiced_target double precision")
         self.env.cr.execute(
             "UPDATE crm_team SET invoiced_target = %s WHERE id = %s",
             (100000.0, team.id),

@@ -7,8 +7,8 @@ from odoo.tests import TransactionCase, tagged
 
 @tagged("post_install", "-at_install", "l10n_ve_donation")
 class TestDonationAccountAsset(TransactionCase):
-    """Coverage for `account.asset`'s `set_to_close`/`_get_disposal_moves`
-    overrides, which propagate a disposal message to the `ref`/line names
+    """Coverage for the `set_to_close` (asset) and `_get_disposal_moves`
+    (asset variant, Odoo 20) overrides, which propagate a disposal message to the `ref`/line names
     of the generated disposal moves.
 
     The enterprise disposal flow (depreciation, analytic distribution,
@@ -50,17 +50,20 @@ class TestDonationAccountAsset(TransactionCase):
             "company_id": cls.company.id,
         })
 
+        depreciation_model = cls.env["account.depreciation.model"].create({
+            "method": "linear",
+            "method_number": 5,
+            "method_period": "12",
+            "journal_id": cls.journal.id,
+            "company_id": cls.company.id,
+        })
         cls.asset = cls.env["account.asset"].create({
             "name": "Donation Test Asset",
             "account_asset_id": cls.asset_account.id,
-            "account_depreciation_id": cls.asset_account.id,
-            "account_depreciation_expense_id": cls.expense_account.id,
-            "journal_id": cls.journal.id,
+            "model_id": depreciation_model.id,
             "original_value": 1000.0,
-            "method_number": 5,
-            "method_period": "12",
-            "method": "linear",
         })
+        cls.variant = cls.asset.current_selected_variant_id
 
     def _create_move(self, ref):
         return self.env["account.move"].create({
@@ -76,10 +79,10 @@ class TestDonationAccountAsset(TransactionCase):
     def test_get_disposal_moves_applies_message_when_present(self):
         move = self._create_move("Original ref")
         with patch(
-            "odoo.addons.account_asset.models.account_asset.AccountAsset._get_disposal_moves",
+            "odoo.addons.account_asset.models.account_asset_variant.AccountAssetVariant._get_disposal_moves",
             return_value=move.ids,
         ):
-            result = self.asset.with_context(
+            result = self.variant.with_context(
                 disposal_message="Donated to charity"
             )._get_disposal_moves(self.env["account.move.line"], fields.Date.today())
 
@@ -92,10 +95,10 @@ class TestDonationAccountAsset(TransactionCase):
     def test_get_disposal_moves_leaves_moves_unchanged_without_message(self):
         move = self._create_move("Original ref")
         with patch(
-            "odoo.addons.account_asset.models.account_asset.AccountAsset._get_disposal_moves",
+            "odoo.addons.account_asset.models.account_asset_variant.AccountAssetVariant._get_disposal_moves",
             return_value=move.ids,
         ):
-            result = self.asset._get_disposal_moves(
+            result = self.variant._get_disposal_moves(
                 self.env["account.move.line"], fields.Date.today()
             )
 
@@ -104,10 +107,10 @@ class TestDonationAccountAsset(TransactionCase):
 
     def test_get_disposal_moves_no_op_when_no_moves_returned(self):
         with patch(
-            "odoo.addons.account_asset.models.account_asset.AccountAsset._get_disposal_moves",
+            "odoo.addons.account_asset.models.account_asset_variant.AccountAssetVariant._get_disposal_moves",
             return_value=[],
         ):
-            result = self.asset.with_context(
+            result = self.variant.with_context(
                 disposal_message="Donated to charity"
             )._get_disposal_moves(self.env["account.move.line"], fields.Date.today())
 
@@ -121,7 +124,7 @@ class TestDonationAccountAsset(TransactionCase):
             return []
 
         with patch.object(
-            type(self.asset),
+            type(self.variant),
             "_get_disposal_moves",
             autospec=True,
             side_effect=fake_get_disposal_moves,
@@ -138,7 +141,7 @@ class TestDonationAccountAsset(TransactionCase):
             return []
 
         with patch.object(
-            type(self.asset),
+            type(self.variant),
             "_get_disposal_moves",
             autospec=True,
             side_effect=fake_get_disposal_moves,

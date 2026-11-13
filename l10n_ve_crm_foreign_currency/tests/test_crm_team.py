@@ -56,8 +56,9 @@ class TestCrmTeamForeignCurrency(TransactionCase):
             """
             INSERT INTO account_move
                 (journal_id, currency_id, state, move_type, auto_post, date,
-                 team_id, payment_state, foreign_untaxed_total, company_id)
-            VALUES (%s, %s, 'posted', %s, 'no', %s, %s, %s, %s, %s)
+                 team_id, payment_state, foreign_untaxed_total, company_id, review_state,
+                 document_tax_mode)
+            VALUES (%s, %s, 'posted', %s, 'no', %s, %s, %s, %s, %s, 'no_review', 'tax_excluded')
             """,
             (
                 journal.id,

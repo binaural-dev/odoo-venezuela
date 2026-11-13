@@ -5,7 +5,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "19.0.1.4.8",
+    "version": "20.0.1.0.0",
     "depends": [
         "account",
         "l10n_ve_igtf",
@@ -24,8 +24,6 @@
         "data/res_currency_data.xml",
         "data/ir_cron.xml",
         "data/mail_template_data.xml",
-        "security/ir.model.access.csv",
-        "security/ir_rule.xml",
         "views/res_config_settings.xml",
         "views/account_move_view.xml",
         "views/account_retention_iva.xml",
@@ -37,6 +35,8 @@
         "views/currency_views.xml",
         "views/tfhka_api_log_views.xml",
         "views/tfhka_digitalization_alert.xml",
+        'security/ir.access.csv',
     ],
-    "installable": False,
+    "installable": True,
+    "binaural_migrated": True,
 }

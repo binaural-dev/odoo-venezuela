@@ -37,13 +37,13 @@
                     <attribute name="readonly">not can_edit_wizard or can_group_payments</attribute>
                 </xpath>
                 
-                <xpath expr="//div[@name='amount_div']/field[@name='amount']" position="attributes">
+                <xpath expr="//div[@name='amount_div']//field[@name='amount']" position="attributes">
                     <attribute name="readonly">not can_edit_wizard or can_group_payments</attribute>
                     <attribute name="force_save">1</attribute>
                 </xpath>
 
 
-                <xpath expr="//div[@name='amount_div']/field[@name='currency_id']" position="attributes">
+                <xpath expr="//div[@name='amount_div']//field[@name='currency_id']" position="attributes">
                     <attribute name="invisible">0</attribute>
                     <attribute name="force_save">1</attribute>
                 </xpath>

@@ -470,7 +470,7 @@ class SaleOrder(models.Model):
             )
 
     def _get_invoiceable_lines(self, final=False):
-        if self._context.get("ignore_limit", False):
+        if self.env.context.get("ignore_limit", False):
             return super()._get_invoiceable_lines(final)
 
         res = super()._get_invoiceable_lines(final)
@@ -480,7 +480,7 @@ class SaleOrder(models.Model):
             return res
         return res[:limit]
 
-    def _create_invoices(self, grouped=False, final=False, date=None):
+    def _create_invoices(self, final=False, grouped=False):
         """
         This function creates the invoice associated to the order,
         but with this inheritance it creates multiple invoices if
@@ -505,7 +505,7 @@ class SaleOrder(models.Model):
             # Un solo llamado al core por lote, solo con las órdenes que aún
             # tienen líneas pendientes: así la facturación consolidada genera
             # una factura por lote y ninguna orden se factura dos veces.
-            invoices |= super(SaleOrder, orders)._create_invoices(grouped, final, date)
+            invoices |= super(SaleOrder, orders)._create_invoices(final=final, grouped=grouped)
             next_orders = self.browse()
             for order in orders:
                 remaining = _pending_lines(order)

@@ -10,9 +10,9 @@
     "version": "1.5",
     "data": [
         "security/res_groups.xml",
-        "security/ir.model.access.csv",
         "views/auditlog_lines_views.xml",
         "views/auditlogs_views.xml",
+        'security/ir.access.csv',
     ],
     "depends": [
         "account",

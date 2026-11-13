@@ -34,7 +34,8 @@
             </thead>
         </xpath>
 
-        <xpath expr="//table/tbody/t" position="replace">
+        <xpath expr="//table/tbody" position="replace">
+            <tbody>
             <t t-foreach="products" t-as="product">
                 <tr>
                     <td t-att-class="is_product_tmpl and 'fw-bold' or None">
@@ -48,7 +49,7 @@
                     <td groups="uom.group_uom" t-out="product['uom']"/>
                     <t t-foreach="pricelists" t-as="pl">
                         <td class="text-end">
-                            <span t-esc="product['prices'][pl.id]"
+                            <span t-out="product['prices'][pl.id]"
                                 t-options="{'widget': 'monetary', 'display_currency': pl.currency_id}" />
                         </td>
                     </t>
@@ -67,13 +68,14 @@
                         <td groups="uom.group_uom" t-out="variant['uom']" />
                         <t t-foreach="pricelists" t-as="pl">
                             <td class="text-end">
-                                <span t-esc="variant['prices'][pl.id]"
+                                <span t-out="variant['prices'][pl.id]"
                                     t-options="{'widget': 'monetary', 'display_currency': pl.currency_id}" />
                             </td>
                         </t>
                     </tr>
                 </t>
             </t>
+            </tbody>
         </xpath>
     </template>
 </odoo>
