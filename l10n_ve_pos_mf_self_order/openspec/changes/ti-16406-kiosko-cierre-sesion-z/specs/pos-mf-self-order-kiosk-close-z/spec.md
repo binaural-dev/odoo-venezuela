@@ -4,8 +4,9 @@
 
 ### Requirement: El panel de Debug del Kiosko fiscal cierra la sesión con Reporte Z
 
-Con `l10n_ve_pos_mf_self_order` instalado, el panel de Debug del Kiosko
-(`?debug=1`) SHALL ofrecer **Cerrar sesión e imprimir Z**, con el mismo orden
+Con `l10n_ve_pos_mf_self_order` instalado y la máquina fiscal activa en la
+caja (`access_button_mf`), el panel de Debug del Kiosko (`?debug=1`) SHALL
+ofrecer **Cerrar sesión e imprimir Z**, con el mismo orden
 que el botón de la caja (`ClosePosPopup.closeSessionAndPrintZ` de
 `l10n_ve_pos_mf`): órdenes pendientes, confirmación, Reporte Z, lectura de S1,
 sincronización con Odoo y cierre nativo de la sesión. Un fallo en cualquier
@@ -19,6 +20,12 @@ paso SHALL detener los siguientes y avisar al operador.
 - **THEN** la máquina imprime la Z, el puerto se libera, la sesión guarda el
   número de Z, las órdenes de esa máquina sin Z quedan marcadas, la sesión
   queda cerrada y el Kiosko deja de recibir pedidos
+
+#### Scenario: Caja sin máquina fiscal
+
+- **GIVEN** un Kiosko cuya caja no tiene `access_button_mf`
+- **WHEN** el operador abre el panel de Debug
+- **THEN** no ve el botón "Cerrar sesión e imprimir Z"
 
 #### Scenario: El operador no confirma
 
@@ -39,21 +46,50 @@ paso SHALL detener los siguientes y avisar al operador.
 - **THEN** se avisa que la Z ya salió y que hay que revisar el libro de ventas
   y cerrar desde el backend; la sesión no se cierra
 
+### Requirement: Una sola Z por sesión y nunca en medio de una factura
+
+El cierre con Z SHALL NOT empezar si hay una factura fiscal imprimiéndose en
+el Kiosko, ni si la sesión ya registró su Z: en ese caso SHALL avisar que se
+cierre desde el backend.
+
+#### Scenario: La sesión ya tiene su Z
+
+- **GIVEN** una sesión con Reporte Z registrado cuyo cierre falló
+- **WHEN** el operador vuelve a pulsar "Cerrar sesión e imprimir Z"
+- **THEN** ve el número de esa Z y la indicación de cerrar desde el backend, y
+  la máquina no imprime otra Z
+
+#### Scenario: Factura fiscal en curso
+
+- **GIVEN** el Kiosko imprimiendo una factura fiscal
+- **WHEN** el operador pulsa "Cerrar sesión e imprimir Z"
+- **THEN** no se consulta la sesión ni se toca la máquina
+
 ### Requirement: Sin Z ni cierre con órdenes sin número fiscal
 
 El cierre con Z SHALL bloquearse si la sesión abierta tiene órdenes sin
-`mf_invoice_number` que no estén canceladas ni en borrador (los borradores
-son carritos sin pagar que el cierre nativo del Kiosko borra). El aviso SHALL
-listar hasta 10 órdenes y remitir al panel de órdenes para facturarlas o
-imprimirlas. La ruta de cierre SHALL repetir la revisión en el servidor.
+`mf_invoice_number` que no estén canceladas, salvo los borradores sin pago
+(carritos que el cierre nativo del Kiosko borra). Un borrador con pago SHALL
+bloquear. El aviso SHALL listar hasta 10 órdenes y abrir el panel de Órdenes
+con las pendientes cargadas; los borradores con pago SHALL indicarse para
+resolver desde el backend. La ruta de cierre SHALL repetir la revisión.
 
 #### Scenario: Orden pagada sin factura fiscal
 
 - **GIVEN** una orden pagada de la sesión sin número fiscal (con o sin factura
   contable)
 - **WHEN** el operador pulsa "Cerrar sesión e imprimir Z"
-- **THEN** ve la lista de órdenes pendientes y no se imprime la Z ni se cierra
-  la sesión
+- **THEN** ve la lista de órdenes pendientes, puede abrir el panel de Órdenes
+  donde aparecen aunque no estén entre las últimas, y no se imprime la Z ni se
+  cierra la sesión
+
+#### Scenario: Borrador con pago
+
+- **GIVEN** una orden de la sesión en borrador con un pago (cobro cuya
+  finalización quedó a medias)
+- **WHEN** el operador pulsa "Cerrar sesión e imprimir Z"
+- **THEN** el aviso la lista para resolverla desde el backend y la sesión no
+  se cierra (el cierre nativo la borraría)
 
 #### Scenario: Llamada directa a la ruta de cierre
 
@@ -65,9 +101,27 @@ imprimirlas. La ruta de cierre SHALL repetir la revisión en el servidor.
 
 #### Scenario: Carritos sin pagar
 
-- **GIVEN** solo órdenes en borrador y órdenes con número fiscal
+- **GIVEN** solo borradores sin pago y órdenes con número fiscal
 - **WHEN** el operador cierra con Z
 - **THEN** no hay bloqueo y el cierre borra los borradores
+
+### Requirement: Las rutas del cierre con Z son solo para el Kiosko
+
+Las rutas `close_session/check`, `report_z` y `close_session` SHALL validar el
+`access_token` con `_verify_pos_config` y SHALL rechazar las cajas que no estén
+en modo kiosko: el token del autopedido por QR va impreso en las mesas.
+
+#### Scenario: Token del QR de una mesa
+
+- **GIVEN** una caja de autopedido por QR (`self_ordering_mode = mobile`) con
+  sesión abierta
+- **WHEN** alguien llama cualquiera de las tres rutas con su token
+- **THEN** la ruta responde con error, la sesión sigue abierta y sin Z
+
+#### Scenario: Token inválido
+
+- **WHEN** alguien llama las rutas con un token que no es de ninguna caja
+- **THEN** responden con error
 
 ### Requirement: La sincronización de la Z solo toca las máquinas de su caja
 
