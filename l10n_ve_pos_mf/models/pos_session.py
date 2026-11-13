@@ -16,8 +16,10 @@ class PosSession(models.Model):
         """Registra en la sesión el Reporte Z leído del S1 de la máquina.
 
         ``values["data"]`` trae ``_dailyClosureCounter`` y
-        ``_registeredMachineNumber`` (serial). Además del número de Z, guarda
-        el serial y la fecha y hora. El serial de la caja
+        ``_registeredMachineNumber`` (serial). El contador se lee de S1 ANTES
+        de imprimir la Z (como el flujo IoT y ``account.move.report_z``), así
+        que es el de la última Z y la impresa es ese número + 1. Además del
+        número de Z, guarda el serial y la fecha y hora. El serial de la caja
         (``pos.config.serial_machine``) no se toca.
         """
         data = values["data"]

@@ -87,15 +87,11 @@ patch(ClosePosPopup.prototype, {
 
     this.mfState.isPrintingReport = true;
     try {
-      const zResult = await fiscalPrinter.printReportZ();
-      if (!zResult.success) {
-        this._mfAlert(
-          _t("Error al imprimir Reporte Z"),
-          _t(zResult.error || "Error desconocido")
-        );
-        return false;
-      }
-
+      // S1 se lee ANTES de la Z, como el flujo IoT: su contador es el de la
+      // última Z impresa y el servidor le suma 1 (`account.move.report_z`,
+      // `pos.session.set_report_z`). Leído después, la Z ya cuenta y quedaría
+      // una de más. Si S1 no responde, no se imprime: así no queda una Z sin
+      // sincronizar que un segundo intento repetiría.
       const s1Result = await fiscalPrinter._readS1Data();
       const dailyClosureCounter = s1Result.data?.dailyClosureCounter;
       if (
@@ -104,10 +100,19 @@ patch(ClosePosPopup.prototype, {
         !Number.isInteger(dailyClosureCounter)
       ) {
         this._mfAlert(
-          _t("Reporte Z impreso con advertencia"),
+          _t("No se imprimio el Reporte Z"),
           _t(
-            "El Reporte Z se imprimio, pero no se pudo leer el estado S1 para sincronizar Odoo. Verifica el libro de ventas manualmente."
+            "No se pudo leer el estado S1 de la maquina fiscal. Revisa la conexion e intentalo de nuevo."
           )
+        );
+        return false;
+      }
+
+      const zResult = await fiscalPrinter.printReportZ();
+      if (!zResult.success) {
+        this._mfAlert(
+          _t("Error al imprimir Reporte Z"),
+          _t(zResult.error || "Error desconocido")
         );
         return false;
       }
