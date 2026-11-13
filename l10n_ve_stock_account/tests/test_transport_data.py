@@ -48,7 +48,7 @@ class TestTransportData(TransactionCase):
             "move_ids": [Command.create({
                 "product_id": self.product.id,
                 "product_uom_qty": 1,
-                "product_uom": self.product.uom_id.id,
+                "uom_id": self.product.uom_id.id,
                 "location_id": location.id,
                 "location_dest_id": location_dest.id,
             })],

@@ -7,7 +7,7 @@
     "author": "binaural-dev",
     "website": "https://www.binauraldev.com",
     "category": "Stock Account",
-    "version": "19.0.2.1.5",
+    "version": "20.0.1.0.0",
     "depends": [
         "l10n_ve_stock",
         "l10n_ve_invoice",
@@ -17,7 +17,6 @@
         "web",
     ],
     "data": [
-        "security/ir.model.access.csv",
         "security/res_groups.xml",
         "data/dispatch_guide_paperformat.xml",
         "data/dispatch_note_paperformat.xml",
@@ -41,9 +40,11 @@
         "report/dispatch_guide_template.xml",
         "report/report_invoice_free_form.xml",
         "wizard/stock_picking_self_consumption_alert_views.xml",
+        'security/ir.access.csv',
     ],
     "application": True,
     "auto_install": False,
     "pre_init_hook": "pre_init_hook",
-    "installable": False,
+    "installable": True,
+    "binaural_migrated": True,
 }

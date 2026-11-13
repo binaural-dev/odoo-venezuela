@@ -17,7 +17,7 @@ class TestRetentionISLRTarifa2(TransactionCase):
         seed_foreign_rate(cls.env)
         
         # Activar el uso de retenciones de ISLR
-        cls.env['ir.config_parameter'].sudo().set_param('l10n_ve_payment_extension.use_islr_retention', True)
+        cls.env['ir.config_parameter'].sudo().set_bool('l10n_ve_payment_extension.use_islr_retention', True)
 
         def find_or_create_account(name, code, account_type, reconcile=False):
             account = cls.env['account.account'].search([
@@ -52,6 +52,7 @@ class TestRetentionISLRTarifa2(TransactionCase):
             'name': 'UT Test',
             'value': 43.0,
             'status': True,
+            'available_date': '2024-01-01',
         })
 
         # Crear tarifa acumulada para el concepto

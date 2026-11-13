@@ -24,8 +24,6 @@
         "data/res_currency_data.xml",
         "data/ir_cron.xml",
         "data/mail_template_data.xml",
-        "security/ir.model.access.csv",
-        "security/ir_rule.xml",
         "views/res_config_settings.xml",
         "views/account_move_view.xml",
         "views/account_retention_iva.xml",
@@ -37,6 +35,7 @@
         "views/currency_views.xml",
         "views/tfhka_api_log_views.xml",
         "views/tfhka_digitalization_alert.xml",
+        'security/ir.access.csv',
     ],
     "installable": False,
 }

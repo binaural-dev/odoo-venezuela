@@ -1,4 +1,5 @@
 from odoo import api, fields, models, _
+from odoo.tools import SQL
 
 
 class RetentionLineReport(models.Model):
@@ -38,8 +39,8 @@ class RetentionLineReport(models.Model):
     type_show = fields.Char(string="Type")
 
     @property
-    def _table_query(self):
-        return self._query()
+    def _table_sql(self) -> SQL:
+        return SQL("(%s)", SQL(self._query()))
 
     def _query(self):
         return f"""

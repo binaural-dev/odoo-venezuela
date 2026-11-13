@@ -50,8 +50,8 @@ class TestRetentionConsolidatedDuplicates(RetentionTestCommon):
         })
 
     def _create_activity(self, name, aliquot):
-        country = self.env["res.country"].search([("code", "=", "TC14548")], limit=1) or \
-            self.env["res.country"].create({"name": "Test Country 14548", "code": "TC14548"})
+        country = self.env["res.country"].search([("code", "=", "QT")], limit=1) or \
+            self.env["res.country"].create({"name": "Test Country 14548", "code": "QT"})
         state = self.env["res.country.state"].search([("code", "=", "TS14548")], limit=1) or \
             self.env["res.country.state"].create(
                 {"name": "Test State 14548", "code": "TS14548", "country_id": country.id}

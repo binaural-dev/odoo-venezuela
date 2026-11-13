@@ -154,7 +154,7 @@ class AccountPaymentRegisterIgtfNoteDebit(models.TransientModel):
                 and wizard.payment_date
             ):
                 continue
-            total_amount_values = wizard._get_total_amounts_to_pay(wizard.batches)
+            total_amount_values = wizard._get_total_amounts_to_pay(wizard._get_batches())
             efective_amount = abs(wizard.amount)
             if wizard.installments_mode == "full":
                 wizard.payment_difference = total_amount_values["full_amount_for_difference"] - efective_amount

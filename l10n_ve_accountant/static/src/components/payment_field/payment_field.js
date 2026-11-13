@@ -3,7 +3,7 @@
 import { AccountPaymentField } from "@account/components/account_payment_field/account_payment_field";
 import { patch } from "@web/core/utils/patch";
 import { formatMonetary } from "@web/views/fields/formatters";
-import { onWillStart, onWillUpdateProps, useState } from "@odoo/owl";
+import { onWillStart, onWillUpdateProps, proxy } from "@odoo/owl";
 
 /**
  * Core hardcodes `currency_id` to company currency for any `is_exchange`
@@ -22,7 +22,7 @@ patch(AccountPaymentField.prototype, {
         // (triggered by writing to this reactive state) picks them up.
         // First paint uses the default (company-currency) value; the fix
         // lands one render later, with no visible flicker in practice.
-        this.l10nVeForeignDiffCache = useState({});
+        this.l10nVeForeignDiffCache = proxy({});
         onWillStart(() => this._loadForeignDiffAmounts(this.props.record.data[this.props.name]));
         onWillUpdateProps((nextProps) =>
             this._loadForeignDiffAmounts(nextProps.record.data[nextProps.name])

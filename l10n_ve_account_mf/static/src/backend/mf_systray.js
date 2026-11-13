@@ -63,7 +63,7 @@ export class MfConnectionSystray extends Component {
             error: "text-danger",
         };
         const spin = this.state.status === "connecting" ? " fa-spin" : "";
-        const icon = this.state.status === "connecting" ? "fa-circle-o-notch" : "fa-print";
+        const icon = this.state.status === "connecting" ? "autorenew" : "print";
         return `fa ${icon}${spin} ${colors[this.state.status] || "text-muted"}`;
     }
 

@@ -4,7 +4,6 @@ from dateutil.relativedelta import relativedelta
 import xlsxwriter
 from odoo.exceptions import MissingError, ValidationError
 from io import BytesIO
-import base64
 import pandas
 from collections import OrderedDict
 from ..utils.utils_retention import get_current_date_format
@@ -65,7 +64,7 @@ class MunicipalRetentionXlsxReport(models.TransientModel):
         company = self.env.company
         tax_authorities_record = self._get_tax_authorities_record(company)
         if tax_authorities_record.tax_authorities_logo:
-            tax_authorities_logo = BytesIO(base64.b64decode(tax_authorities_record.tax_authorities_logo))
+            tax_authorities_logo = BytesIO(tax_authorities_record.tax_authorities_logo.content)
             worksheet2.insert_image("A1", "image.png", {"image_data": tax_authorities_logo})
         worksheet2.write("C2", "RENDICIÓN INFORMATIVA MENSUAL DEL AGENTE DE RETENCIÓN", bold)
         if tax_authorities_record.tax_authorities_name:

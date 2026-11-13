@@ -1,9 +1,9 @@
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 from odoo import api, fields, models, _
 from odoo.tools.misc import formatLang, format_date
 from odoo.exceptions import ValidationError
-import pytz
 
 import logging
 
@@ -55,8 +55,7 @@ class AccountInvoiceDetailsReport(models.AbstractModel):
         if not user.tz:
             raise ValidationError(_('The time zone is not registered, log in to your profile and configure it.'))
 
-        user_tz = pytz.timezone(user.tz)
-        current_datetime = pytz.utc.localize(fields.Datetime.now()).astimezone(user_tz)
+        current_datetime = fields.Datetime.now().replace(tzinfo=timezone.utc).astimezone(ZoneInfo(user.tz))
         data = {
             "date_from": wizard.date_from,
             "date_to": wizard.date_to,

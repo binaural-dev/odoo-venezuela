@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from odoo.tests import TransactionCase, tagged
 from odoo.exceptions import ValidationError, UserError
-from odoo import Command
+from odoo import Command, fields
 import unittest
 
 
@@ -230,7 +230,7 @@ class TestProductProductComputeQuantitiesForReport(TransactionCase):
             "move_ids": [(0, 0, {
                 "product_id": self.product.id,
                 "product_uom_qty": 5,
-                "product_uom": self.product.uom_id.id,
+                "uom_id": self.product.uom_id.id,
                 "location_id": self.location.id,
                 "location_dest_id": other_internal_location.id,
             })],
@@ -250,6 +250,30 @@ class TestProductProductComputeQuantitiesForReport(TransactionCase):
             res[self.product.id]["outgoing_qty"], 0.0,
             "An internal transfer between two selected locations must not count as outgoing.",
         )
+
+    def test_compute_quantities_dict_for_report_counts_received_stock_once(self):
+        """A received quantity is in the stock once (Odoo 19 added the done receipt to the stock)."""
+        supplier = self.env.ref("stock.stock_location_suppliers")
+        picking = self.env["stock.picking"].create({
+            "picking_type_id": self.warehouse.in_type_id.id,
+            "location_id": supplier.id,
+            "location_dest_id": self.location.id,
+            "move_ids": [(0, 0, {
+                "product_id": self.product.id,
+                "product_uom_qty": 19,
+                "uom_id": self.product.uom_id.id,
+                "location_id": supplier.id,
+                "location_dest_id": self.location.id,
+            })],
+        })
+        picking.action_confirm()
+        picking.move_ids.quantity = 19
+        picking.move_ids.picked = True
+        picking.button_validate()
+        res = self.product.with_context(location=self.location.id)._compute_quantities_dict_for_report(
+            lot_id=False, owner_id=False, package_id=False, to_date=fields.Datetime.now() + timedelta(days=1),
+        )
+        self.assertEqual(res[self.product.id]["qty_available"], 19.0)
 
     @unittest.skip("_compute_quantities_dict_for_report depends on location_final_id removed in Odoo 19")
     def test_compute_quantities_dict_for_report_with_lot(self):
@@ -296,7 +320,7 @@ class TestProductProductWriteGuards(TransactionCase):
         move = self.env["stock.move"].create({
             "product_id": self.product.id,
             "product_uom_qty": 1.0,
-            "product_uom": self.product.uom_id.id,
+            "uom_id": self.product.uom_id.id,
             "location_id": warehouse.lot_stock_id.id,
             "location_dest_id": self.env.ref("stock.stock_location_customers").id,
         })

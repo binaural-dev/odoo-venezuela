@@ -7,6 +7,8 @@ from ...tools import binaural_cne_query
 
 _logger = logging.getLogger(__name__)
 
+COMPANY_VAT_PREFIXES = ("J", "G", "C")
+
 
 class ResPartner(models.Model):
     _inherit = "res.partner"
@@ -42,6 +44,23 @@ class ResPartner(models.Model):
     def _default_company_id(self):
         company_id = self.env.company.id
         return company_id
+
+    @api.depends("has_vat", "commercial_partner_id", "prefix_vat", "country_id")
+    def _compute_is_company(self):
+        """A Venezuelan partner is a company when its RIF belongs to a legal entity: J, G or C.
+
+        Odoo 20 computes ``is_company`` from the VAT, so every partner with one counts as a
+        company, and the individual/company choice of Odoo 19 is gone. Natural persons also have
+        a RIF (V, E or P), so the prefix decides. Partners of other countries keep the core rule.
+        """
+        venezuelan = self.filtered(lambda partner: not partner.country_id or partner.country_id.code == "VE")
+        for partner in venezuelan:
+            partner.is_company = bool(
+                partner.commercial_partner_id == partner
+                and partner.has_vat
+                and partner.prefix_vat in COMPANY_VAT_PREFIXES
+            )
+        super(ResPartner, self - venezuelan)._compute_is_company()
 
     prefix_vat = fields.Selection(
         [
@@ -238,12 +257,29 @@ class ResPartner(models.Model):
                 node.set("widget", "l10n_ve_vat")
         return arch, view
 
-    def _check_vat(self):
+    def _inverse_vat(self):
+        """Keep the VAT unvalidated on write, as in Odoo 19.
+
+        Odoo 20 validates the VAT from the field inverse, so every import or API write would be
+        checked. The Venezuelan rule only runs from the VAT onchange and explicit calls.
+        """
+        self._deduce_additional_identifiers_from_vat()
+
+    def _check_vat(self, validation="error"):
+        """Validate the Venezuelan VAT as digits only, with the prefix kept in ``prefix_vat``.
+
+        Odoo 20 moved VAT validation into ``base`` and calls this method from the VAT onchange
+        and inverse. The standard check expects the prefix inside the VAT and would reject every
+        Venezuelan partner, so it is replaced, keeping its ``validation`` contract: ``"error"``
+        raises, ``"setnull"`` clears the VAT and a falsy value only reports nothing.
+        """
         pattern = "^[0-9]*$"
         for record in self:
-            if record.vat:
-                if not re.match(pattern, record.vat):
+            if record.vat and not re.match(pattern, record.vat):
+                if validation == "error":
                     raise MissingError(_("The vat field only accepts numbers"))
+                if validation == "setnull":
+                    record.vat = False
 
     @api.onchange("vat", "prefix_vat")
     def _onchange_(self):

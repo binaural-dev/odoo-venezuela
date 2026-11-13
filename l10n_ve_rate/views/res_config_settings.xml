@@ -18,7 +18,7 @@
                                     <div class="text-muted">
                                         Select the alternate currency that the system will use to make an accounting copy in the selected currency
                                     </div>
-                                    <button type="action" name="%(base.action_currency_form)d" string="Currencies" class="btn-link" icon="oi-arrow-right"/>
+                                    <button type="action" name="%(base.action_currency_form)d" string="Currencies" class="btn-link" icon="east"/>
                                 </div>
                             </div>
                         </setting>

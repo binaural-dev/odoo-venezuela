@@ -1271,7 +1271,7 @@ class AccountRetention(models.Model):
             limit=1,
         )
         if config and config.signature:
-            return config.signature.decode()
+            return config.signature.to_base64()
         else:
             return False
 

@@ -235,7 +235,7 @@ class TestPhysicalRelocation(TransactionCase):
 
     def test_transfer_ignores_returned_model_without_process(self):
         self._add_stock(self.location_a, 5.0)
-        with self._validate_returning({"res_model": "stock.quantity.history"}):
+        with self._validate_returning({"res_model": "stock.inventory.valuation.wizard"}):
             picking = self.template.sudo()._transfer_between_locations(
                 self.location_a, self.location_b
             )

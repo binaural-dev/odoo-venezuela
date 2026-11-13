@@ -22,7 +22,7 @@
                                             callback.bind="(value) =>  this.setManualCashInput(value)"
                                             isValid.bind="env.utils.isValidFloat"/>
                                         <div class="button icon ClosePosPopup btn btn-secondary" t-on-click="openDetailsPopup">
-                                            <i class="fa fa-money fa-2x" role="img" title="Open the money details popup"/>
+                                            <i class="oi oi-2x" data-icon="payments" role="img" title="Open the money details popup"/>
                                         </div>
                                     </td>
                                     <td t-esc="env.utils.formatCurrency(getDifference(props.default_cash_details.id))"

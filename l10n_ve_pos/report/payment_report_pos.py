@@ -15,7 +15,7 @@ class ReportPaymentPos(models.AbstractModel):
 
     def get_datetime_tz(self, datetime):
         # get tz or by default
-        timezone = self._context.get("tz") or self.env.user.partner_id.tz or "UTC"
+        timezone = self.env.context.get("tz") or self.env.user.partner_id.tz or "UTC"
 
         # convert date and time into user timezone
         self_tz = self.with_context(tz=timezone)

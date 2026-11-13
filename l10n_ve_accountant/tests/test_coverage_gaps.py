@@ -417,7 +417,7 @@ class TestCoverageGaps(TransactionCase):
         invoice.with_context(move_action_post_alert=True).action_post()
         # needed_terms debe tener foreign_balance
         if invoice.needed_terms:
-            for key, data in invoice.needed_terms.items():
+            for key, data in invoice.needed_terms:
                 self.assertIn('foreign_balance', data)
 
     # ═══════════════════════════════════════════════════════════════
@@ -773,7 +773,7 @@ class TestCoverageGaps(TransactionCase):
             "date": fields.Date.today(),
         })
         details = move.detailed_amounts
-        self.assertEqual(details, dict())
+        self.assertFalse(details)
 
     # ═══════════════════════════════════════════════════════════════
     # account_move.py - _distribute_invoice_real_portion sin PT (else)
