@@ -12,8 +12,9 @@ import { KioskDebugDialog } from "@l10n_ve_pos_self_order/app/debug/kiosk_debug_
 // Órdenes pendientes que se listan en el aviso de bloqueo (igual que la caja).
 const MAX_PENDING_SHOWN = 10;
 
-// Menú de selección de cajas del PdV: adonde vuelve la caja al cerrar
-// (`PosStore.redirectToBackend` de point_of_sale).
+// Menú de selección de cajas del PdV (`PosStore.redirectToBackend` de
+// point_of_sale). No es adonde va la caja al cerrar: en 19.0 vuelve a
+// `/pos/ui/<caja>`, que en el equipo del Kiosko abriría una sesión de caja.
 export const POS_MENU_URL = "/odoo/action-point_of_sale.action_client_pos_menu";
 
 /**
@@ -98,7 +99,7 @@ patch(KioskDebugDialog.prototype, {
      *  3. lee S1 e imprime la Z;
      *  4. sincroniza la Z con Odoo;
      *  5. cierra la sesión con el cierre nativo del Kiosko;
-     *  6. lleva al menú de selección de cajas, como la caja al cerrar.
+     *  6. lleva al menú de selección de cajas del PdV (`POS_MENU_URL`).
      * Cualquier fallo corta el flujo en ese paso. Antes de empezar, tampoco
      * sigue si hay una factura fiscal imprimiéndose (la Z se metería en medio)
      * o si la sesión ya tiene su Z (otra Z cerraría un día vacío).
@@ -136,7 +137,12 @@ patch(KioskDebugDialog.prototype, {
 
             const zResult = await this.selfOrder.printKioskReportZ();
             if (!zResult.success) {
-                this._mfAlert(_t("Error printing the Z report"), zResult.error);
+                this._mfAlert(
+                    zResult.unconfirmed
+                        ? _t("Z report not confirmed")
+                        : _t("Error printing the Z report"),
+                    zResult.error
+                );
                 return { valid: false, message: zResult.error };
             }
 
