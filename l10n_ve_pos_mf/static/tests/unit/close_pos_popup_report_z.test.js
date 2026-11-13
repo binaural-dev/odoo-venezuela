@@ -17,14 +17,7 @@ const S1_OK = {
     data: { registeredMachineNumber: "Z7C0000001", dailyClosureCounter: 146 },
 };
 
-function s1With(counter) {
-    return { success: true, data: { registeredMachineNumber: "Z7C0000001", dailyClosureCounter: counter } };
-}
-
-/**
- * `s1` es la respuesta de cada lectura de S1 (un arreglo da una por lectura);
- * `s1Throws` hace que la lectura lance; `ormError` hace fallar el ORM.
- */
+/** `s1Throws` hace que la lectura de S1 lance; `ormError` hace fallar el ORM. */
 function fakePopup({
     z = { success: true },
     s1 = S1_OK,
@@ -32,7 +25,6 @@ function fakePopup({
     confirm = true,
     ormError = null,
 } = {}) {
-    const s1Queue = Array.isArray(s1) ? [...s1] : null;
     const calls = [];
     const dialogs = [];
     const popup = Object.create(ClosePosPopup.prototype);
@@ -45,7 +37,7 @@ function fakePopup({
             if (s1Throws) {
                 throw new Error("timeout del puerto");
             }
-            return s1Queue ? s1Queue.shift() : s1;
+            return s1;
         },
         async printReportZ() {
             calls.push("Z");
@@ -129,40 +121,6 @@ describe("ClosePosPopup._printFiscalReportZ", () => {
         expect(await popup._printFiscalReportZ()).toBe(false);
         expect(calls).toEqual(["S1"]);
         expect(String(alerts()[0].props.title)).toBe("Error al imprimir Reporte Z");
-    });
-
-    test("Z sin confirmar (sin papel) y S1 avanzó: sincroniza la Z impresa", async () => {
-        const { popup, calls, alerts } = fakePopup({
-            z: { success: false, noResponse: true, error: "No se recibió respuesta de la impresora" },
-            s1: [s1With(146), s1With(147)],
-        });
-
-        const ok = await popup._printFiscalReportZ();
-
-        expect(ok).toBe(true);
-        const value = {
-            valid: true,
-            data: { _registeredMachineNumber: "Z7C0000001", _dailyClosureCounter: 146 },
-        };
-        expect(calls).toEqual([
-            "S1",
-            "Z",
-            "S1",
-            ["account.move", "report_z", [[], "Z7C0000001", value]],
-            ["pos.session", "set_report_z", [[7], value]],
-        ]);
-        expect(alerts().length).toBe(0);
-    });
-
-    test("Z sin confirmar y S1 sin avanzar: avisa y no sincroniza", async () => {
-        const { popup, calls, alerts } = fakePopup({
-            z: { success: false, noResponse: true },
-            s1: [s1With(146), s1With(146)],
-        });
-
-        expect(await popup._printFiscalReportZ()).toBe(false);
-        expect(calls).toEqual(["S1", "Z", "S1"]);
-        expect(String(alerts()[0].props.title)).toBe("Reporte Z sin confirmar");
     });
 
     test("si Odoo falla tras imprimir la Z, avisa que no la repita", async () => {

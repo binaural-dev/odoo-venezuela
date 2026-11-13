@@ -21,11 +21,6 @@ const S1_OK = {
     data: { registeredMachineNumber: "Z7C0000001", dailyClosureCounter: 18 },
 };
 
-function s1With(counter) {
-    return { success: true, data: { registeredMachineNumber: "Z7C0000001", dailyClosureCounter: counter } };
-}
-
-// `s1` es la respuesta de cada lectura de S1 (un arreglo da una por lectura).
 function fakePrinter({
     z = { success: true },
     s1 = S1_OK,
@@ -33,7 +28,6 @@ function fakePrinter({
     throwOnS1 = false,
 } = {}) {
     const calls = [];
-    const s1Queue = Array.isArray(s1) ? [...s1] : null;
     return {
         calls,
         isConnected: true,
@@ -49,7 +43,7 @@ function fakePrinter({
             if (throwOnS1) {
                 throw new Error("timeout del puerto");
             }
-            return s1Queue ? s1Queue.shift() : s1;
+            return s1;
         },
     };
 }
@@ -133,36 +127,6 @@ describe("printKioskReportZ", () => {
         expect(result.error).toBe("timeout del puerto");
         expect(printer.calls).toEqual(["S1"]);
         expect(released.length).toBe(1);
-    });
-
-    test("Z sin confirmar (sin papel) y S1 avanzó: devuelve la Z impresa", async () => {
-        const printer = fakePrinter({
-            z: { success: false, noResponse: true },
-            s1: [s1With(18), s1With(19)],
-        });
-        const { service, released } = fakeKioskService(printer);
-
-        const result = await service.printKioskReportZ();
-
-        expect(result.success).toBe(true);
-        expect(result.value.data._dailyClosureCounter).toBe(18);
-        expect(printer.calls).toEqual(["S1", "Z", "S1"]);
-        expect(released.length).toBe(1);
-    });
-
-    test("Z sin confirmar y S1 sin avanzar: la marca sin confirmar", async () => {
-        const printer = fakePrinter({
-            z: { success: false, noResponse: true },
-            s1: [s1With(18), s1With(18)],
-        });
-        const { service } = fakeKioskService(printer);
-
-        const result = await service.printKioskReportZ();
-
-        expect(result.success).toBe(false);
-        expect(result.unconfirmed).toBe(true);
-        expect(String(result.error)).toInclude("out of paper");
-        expect(printer.calls).toEqual(["S1", "Z", "S1"]);
     });
 
     test("un error del driver no deja el puerto tomado", async () => {
@@ -339,17 +303,6 @@ describe("onCloseSessionAndPrintZ", () => {
         expect(calls).toEqual(["check", "confirm", "Z"]);
         expect(String(alerts()[0].props.title)).toBe("Error printing the Z report");
         expect(String(alerts()[0].props.body)).toBe("NAK");
-    });
-
-    test("Z sin confirmar: avisa con su título y no sincroniza ni cierra", async () => {
-        const { panel, calls, alerts } = fakePanel({
-            z: { success: false, unconfirmed: true, error: "sin papel" },
-        });
-
-        await panel.onCloseSessionAndPrintZ();
-
-        expect(calls).toEqual(["check", "confirm", "Z"]);
-        expect(String(alerts()[0].props.title)).toBe("Z report not confirmed");
     });
 
     test("si Odoo no sincroniza la Z, no cierra la sesión", async () => {

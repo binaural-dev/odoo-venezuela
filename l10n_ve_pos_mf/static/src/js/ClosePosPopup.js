@@ -109,31 +109,13 @@ patch(ClosePosPopup.prototype, {
         return false;
       }
 
-      let lastZBefore = dailyClosureCounter;
       const zResult = await fiscalPrinter.printReportZ();
       if (!zResult.success) {
-        // Sin respuesta (p. ej. sin papel) la Z pudo salir: el driver no la
-        // reenvía y el contador de S1 dice si avanzó.
-        const printedZ = zResult.noResponse
-          ? await this._readPrintedReportZ(fiscalPrinter, dailyClosureCounter)
-          : null;
-        if (printedZ === null) {
-          if (zResult.noResponse) {
-            this._mfAlert(
-              _t("Reporte Z sin confirmar"),
-              _t(
-                "La maquina fiscal no confirmo el Reporte Z (puede estar sin papel). Revisala antes de reintentar: si la Z salio, no la repitas y cierra la sesion desde el backend."
-              )
-            );
-          } else {
-            this._mfAlert(
-              _t("Error al imprimir Reporte Z"),
-              _t(zResult.error || "Error desconocido")
-            );
-          }
-          return false;
-        }
-        lastZBefore = printedZ - 1;
+        this._mfAlert(
+          _t("Error al imprimir Reporte Z"),
+          _t(zResult.error || "Error desconocido")
+        );
+        return false;
       }
       zPrinted = true;
 
@@ -141,7 +123,7 @@ patch(ClosePosPopup.prototype, {
         valid: true,
         data: {
           _registeredMachineNumber: s1Result.data.registeredMachineNumber,
-          _dailyClosureCounter: lastZBefore,
+          _dailyClosureCounter: dailyClosureCounter,
         },
       };
 
@@ -176,24 +158,6 @@ patch(ClosePosPopup.prototype, {
     } finally {
       this.mfState.isPrintingReport = false;
     }
-  },
-
-  /**
-   * Número de la Z que imprimió la máquina cuando no confirmó el I0Z: el
-   * contador de Z de S1 si avanzó respecto al leído antes de imprimir.
-   * @returns {Promise<number|null>} null si no se puede saber que salió
-   */
-  async _readPrintedReportZ(fiscalPrinter, lastZBefore) {
-    try {
-      const s1Result = await fiscalPrinter._readS1Data();
-      const counter = s1Result?.data?.dailyClosureCounter;
-      if (s1Result?.success && Number.isInteger(counter) && counter > lastZBefore) {
-        return counter;
-      }
-    } catch (error) {
-      console.warn("l10n_ve_pos_mf:: S1 tras un Reporte Z sin confirmar", error);
-    }
-    return null;
   },
 
   /**

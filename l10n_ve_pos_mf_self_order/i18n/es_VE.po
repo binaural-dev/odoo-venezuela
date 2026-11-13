@@ -331,24 +331,6 @@ msgstr "Error al imprimir el Reporte Z"
 #. module: l10n_ve_pos_mf_self_order
 #. odoo-javascript
 #: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_debug_dialog_fiscal.js:0
-msgid "Z report not confirmed"
-msgstr "Reporte Z sin confirmar"
-
-#. module: l10n_ve_pos_mf_self_order
-#. odoo-javascript
-#: code:addons/l10n_ve_pos_mf_self_order/static/src/overrides/self_order_fiscal.js:0
-msgid ""
-"The fiscal machine did not confirm the Z report (it may be out of paper). "
-"Check it before trying again: if the Z report came out, do not print it "
-"again and close the session from the backend."
-msgstr ""
-"La máquina fiscal no confirmó el Reporte Z (puede estar sin papel). Revísala "
-"antes de reintentar: si la Z salió, no la repitas y cierra la sesión desde el "
-"backend."
-
-#. module: l10n_ve_pos_mf_self_order
-#. odoo-javascript
-#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_debug_dialog_fiscal.js:0
 msgid ""
 "The Z report was printed, but Odoo could not be updated (reason: %s). The "
 "session was not closed. Check the sales book and close the session from the "

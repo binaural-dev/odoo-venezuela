@@ -623,11 +623,9 @@ patch(SelfOrder.prototype, {
      *
      * S1 se lee ANTES de la Z, como el flujo IoT: su contador es el de la
      * última Z impresa y el servidor le suma 1. Si S1 no responde, la Z no se
-     * imprime. Si la máquina no confirma la Z (p. ej. sin papel), el driver no
-     * la reenvía y S1 dice si salió; si no se puede saber, `unconfirmed: true`.
-     * Con `success: false` y sin `unconfirmed`, la Z no salió.
+     * imprime. Con `success: false` la Z nunca salió.
      *
-     * @returns {Promise<{success:boolean, unconfirmed?:boolean, value?:Object, error?:string}>}
+     * @returns {Promise<{success:boolean, value?:Object, error?:string}>}
      */
     async printKioskReportZ() {
         const printer = await this.ensureFiscalPrinterConnected();
@@ -649,26 +647,12 @@ patch(SelfOrder.prototype, {
                     ),
                 };
             }
-            let lastZBefore = dailyClosureCounter;
             const zResult = await printer.printReportZ();
             if (!zResult || !zResult.success) {
-                if (!zResult?.noResponse) {
-                    return {
-                        success: false,
-                        error: (zResult && zResult.error) || _t("Unknown error"),
-                    };
-                }
-                const printedZ = await this._readPrintedKioskReportZ(printer, dailyClosureCounter);
-                if (printedZ === null) {
-                    return {
-                        success: false,
-                        unconfirmed: true,
-                        error: _t(
-                            "The fiscal machine did not confirm the Z report (it may be out of paper). Check it before trying again: if the Z report came out, do not print it again and close the session from the backend."
-                        ),
-                    };
-                }
-                lastZBefore = printedZ - 1;
+                return {
+                    success: false,
+                    error: (zResult && zResult.error) || _t("Unknown error"),
+                };
             }
             return {
                 success: true,
@@ -676,7 +660,7 @@ patch(SelfOrder.prototype, {
                     valid: true,
                     data: {
                         _registeredMachineNumber: s1Result.data.registeredMachineNumber,
-                        _dailyClosureCounter: lastZBefore,
+                        _dailyClosureCounter: dailyClosureCounter,
                     },
                 },
             };
@@ -689,25 +673,6 @@ patch(SelfOrder.prototype, {
         } finally {
             await this._releaseFiscalPrinterConnection(printer);
         }
-    },
-
-    /**
-     * Número de la Z que imprimió la máquina cuando no confirmó el I0Z: el
-     * contador de Z de S1 si avanzó respecto al leído antes de imprimir
-     * (`_readPrintedReportZ` de la caja).
-     * @returns {Promise<number|null>} null si no se puede saber que salió
-     */
-    async _readPrintedKioskReportZ(printer, lastZBefore) {
-        try {
-            const s1Result = await printer._readS1Data();
-            const counter = s1Result?.data?.dailyClosureCounter;
-            if (s1Result?.success && Number.isInteger(counter) && counter > lastZBefore) {
-                return counter;
-            }
-        } catch (error) {
-            console.warn("[MF Kiosk] S1 tras un Reporte Z sin confirmar", error);
-        }
-        return null;
     },
 
     /**

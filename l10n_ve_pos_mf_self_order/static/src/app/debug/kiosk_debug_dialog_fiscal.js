@@ -137,12 +137,7 @@ patch(KioskDebugDialog.prototype, {
 
             const zResult = await this.selfOrder.printKioskReportZ();
             if (!zResult.success) {
-                this._mfAlert(
-                    zResult.unconfirmed
-                        ? _t("Z report not confirmed")
-                        : _t("Error printing the Z report"),
-                    zResult.error
-                );
+                this._mfAlert(_t("Error printing the Z report"), zResult.error);
                 return { valid: false, message: zResult.error };
             }
 
