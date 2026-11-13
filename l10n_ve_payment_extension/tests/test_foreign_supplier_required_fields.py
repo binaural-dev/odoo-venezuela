@@ -295,3 +295,25 @@ class TestForeignSupplierRequiredFields(TransactionCase):
         )
         with self.assertRaises(ValidationError):
             partner.taxpayer_type = "special"
+
+    def test_pn_residente_cannot_choose_special_taxpayer(self):
+        ext = "l10n_ve_payment_extension."
+        for xmlid, expected in (
+            ("type_person_l10n_ve_payment_extension", ["ordinary", "formal"]),
+            ("type_person_three_l10n_ve_payment_extension",
+             ["ordinary", "formal", "special"]),
+        ):
+            partner = self.env["res.partner"].new(
+                {"name": "T", "type_person_id": self.env.ref(ext + xmlid).id}
+            )
+            self.assertEqual(partner.allowed_taxpayer_types, expected, xmlid)
+
+    def test_choosing_pn_residente_resets_special_taxpayer(self):
+        form = self._fill_form(
+            supplier=False, taxpayer_type="special", company=True
+        )
+        self.assertEqual(form.taxpayer_type, "special")
+        form.company_type = "person"
+        form.type_person_id = self.type_person
+        self.assertEqual(form.taxpayer_type, "ordinary")
+        self.assertEqual(form.withholding_type_id, self.withholding_100)

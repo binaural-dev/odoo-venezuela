@@ -13,12 +13,15 @@
                     <field name="is_non_resident_person" invisible="1"/>
                     <field name="is_natural_resident_person" invisible="1"/>
                     <field name="allowed_type_person_ids" invisible="1"/>
+                    <field name="allowed_taxpayer_types" invisible="1"/>
                     <field name="withholding_type_id" invisible="is_non_resident_person or (is_natural_resident_person and taxpayer_type == 'special') or (not is_natural_resident_person and taxpayer_type != 'special')" required="is_resident_person and not is_current_company_partner" readonly="is_current_company_partner"/>
                     <field name="type_person_id" domain="[('state','=',True),('id','in',allowed_type_person_ids)]" required="supplier_rank &gt; 0 or customer_rank &gt; 0" />
                     <field name="economic_activity_id"/>
                 </xpath>
                 <xpath expr="//field[@name='taxpayer_type']" position="attributes">
                     <attribute name="invisible">is_non_resident_person</attribute>
+                    <attribute name="widget">filterable_selection</attribute>
+                    <attribute name="options">{'whitelist_fname': 'allowed_taxpayer_types'}</attribute>
                 </xpath>
             </field>
         </record>
