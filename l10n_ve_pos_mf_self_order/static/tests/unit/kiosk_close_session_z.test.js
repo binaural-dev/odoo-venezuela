@@ -1,11 +1,12 @@
 import { describe, expect, test } from "@odoo/hoot";
 import { AlertDialog, ConfirmationDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
+import { browser } from "@web/core/browser/browser";
 import { SelfOrder } from "@pos_self_order/app/services/self_order_service";
 import { KioskDebugDialog } from "@l10n_ve_pos_self_order/app/debug/kiosk_debug_dialog";
 import { KioskOrdersDialog } from "@l10n_ve_pos_self_order/app/debug/kiosk_orders_dialog";
 import "@l10n_ve_pos_mf_self_order/overrides/self_order_fiscal";
-import "@l10n_ve_pos_mf_self_order/app/debug/kiosk_debug_dialog_fiscal";
-import { allowTranslations } from "@web/../tests/web_test_helpers";
+import { POS_MENU_URL } from "@l10n_ve_pos_mf_self_order/app/debug/kiosk_debug_dialog_fiscal";
+import { allowTranslations, patchWithCleanup } from "@web/../tests/web_test_helpers";
 
 // Ticket 16406: "Cerrar sesión e imprimir Z" en el panel de Debug del Kiosko.
 // Se prueban los métodos parcheados sobre el prototipo con un `this` falso
@@ -48,19 +49,20 @@ function fakeKioskService(printer) {
 }
 
 describe("printKioskReportZ", () => {
-    test("imprime la Z, lee S1 y arma el valor que sincroniza la caja", async () => {
+    test("lee S1 antes de la Z y arma el valor que sincroniza la caja", async () => {
         const printer = fakePrinter();
         const { service, released } = fakeKioskService(printer);
 
         const result = await service.printKioskReportZ();
 
         expect(result.success).toBe(true);
-        expect(result.printed).toBe(true);
+        // El contador es el de la última Z (leído antes de imprimir): el
+        // servidor le suma 1, como en el flujo IoT.
         expect(result.value).toEqual({
             valid: true,
             data: { _registeredMachineNumber: "Z7C0000001", _dailyClosureCounter: 18 },
         });
-        expect(printer.calls).toEqual(["Z", "S1"]);
+        expect(printer.calls).toEqual(["S1", "Z"]);
         expect(released.length).toBe(1);
     });
 
@@ -70,28 +72,40 @@ describe("printKioskReportZ", () => {
         const result = await service.printKioskReportZ();
 
         expect(result.success).toBe(false);
-        expect(result.printed).toBe(false);
     });
 
-    test("si la Z falla no lee S1 y libera el puerto", async () => {
-        const printer = fakePrinter({ z: { success: false, error: "NAK" } });
-        const { service, released } = fakeKioskService(printer);
-
-        const result = await service.printKioskReportZ();
-
-        expect(result).toEqual({ success: false, printed: false, error: "NAK" });
-        expect(printer.calls).toEqual(["Z"]);
-        expect(released.length).toBe(1);
-    });
-
-    test("Z impresa sin S1 legible: avisa que ya salió", async () => {
+    test("sin S1 legible no imprime la Z y libera el puerto", async () => {
         const printer = fakePrinter({ s1: { success: false, data: null } });
         const { service, released } = fakeKioskService(printer);
 
         const result = await service.printKioskReportZ();
 
         expect(result.success).toBe(false);
-        expect(result.printed).toBe(true);
+        expect(String(result.error)).toInclude("was not printed");
+        expect(printer.calls).toEqual(["S1"]);
+        expect(released.length).toBe(1);
+    });
+
+    test("S1 sin contador de Z: tampoco imprime", async () => {
+        const printer = fakePrinter({
+            s1: { success: true, data: { registeredMachineNumber: "Z7C0000001" } },
+        });
+        const { service } = fakeKioskService(printer);
+
+        const result = await service.printKioskReportZ();
+
+        expect(result.success).toBe(false);
+        expect(printer.calls).toEqual(["S1"]);
+    });
+
+    test("si la Z falla, devuelve el error y libera el puerto", async () => {
+        const printer = fakePrinter({ z: { success: false, error: "NAK" } });
+        const { service, released } = fakeKioskService(printer);
+
+        const result = await service.printKioskReportZ();
+
+        expect(result).toEqual({ success: false, error: "NAK" });
+        expect(printer.calls).toEqual(["S1", "Z"]);
         expect(released.length).toBe(1);
     });
 
@@ -102,7 +116,6 @@ describe("printKioskReportZ", () => {
         const result = await service.printKioskReportZ();
 
         expect(result.success).toBe(false);
-        expect(result.printed).toBe(false);
         expect(result.error).toBe("puerto caído");
         expect(released.length).toBe(1);
     });
@@ -113,7 +126,7 @@ function fakePanel({
     reportZ = false,
     printing = false,
     confirm = true,
-    z = { success: true, printed: true, value: { valid: true, data: {} } },
+    z = { success: true, value: { valid: true, data: {} } },
     sync = { success: true },
     close = { success: true },
 } = {}) {
@@ -154,6 +167,13 @@ function fakePanel({
             return close;
         },
     };
+    // `redirect` termina en `browser.location.assign`: se registra en vez de
+    // navegar.
+    patchWithCleanup(browser.location, {
+        assign(url) {
+            calls.push(["redirect", url]);
+        },
+    });
     const alerts = () => dialogs.filter((d) => d.component === AlertDialog);
     return { panel, calls, alerts, dialogs };
 }
@@ -173,15 +193,16 @@ describe("isPrintingKioskFiscalInvoice", () => {
 });
 
 describe("onCloseSessionAndPrintZ", () => {
-    test("flujo completo: pendientes, confirmación, Z, sincroniza y cierra", async () => {
+    test("flujo completo: pendientes, confirmación, Z, sincroniza, cierra y va al menú de cajas", async () => {
         const value = { valid: true, data: { _dailyClosureCounter: 18 } };
-        const { panel, calls, alerts } = fakePanel({
-            z: { success: true, printed: true, value },
-        });
+        const { panel, calls, alerts } = fakePanel({ z: { success: true, value } });
 
         await panel.onCloseSessionAndPrintZ();
 
-        expect(calls).toEqual(["check", "confirm", "Z", ["sync", value], "close"]);
+        expect(calls.slice(0, -1)).toEqual(["check", "confirm", "Z", ["sync", value], "close"]);
+        const [step, url] = calls.at(-1);
+        expect(step).toBe("redirect");
+        expect(new URL(url).pathname).toBe(POS_MENU_URL);
         expect(alerts().length).toBe(0);
         expect(String(panel.state.message)).toBe("Z report printed and session closed.");
         expect(panel.state.busy).toBe(false);
@@ -252,26 +273,16 @@ describe("onCloseSessionAndPrintZ", () => {
         expect(String(panel.state.message)).toBe("Cancelled.");
     });
 
-    test("si la Z falla, no sincroniza ni cierra", async () => {
+    test("si la Z no sale (sin S1 o la máquina falla), no sincroniza ni cierra", async () => {
         const { panel, calls, alerts } = fakePanel({
-            z: { success: false, printed: false, error: "NAK" },
+            z: { success: false, error: "NAK" },
         });
 
         await panel.onCloseSessionAndPrintZ();
 
         expect(calls).toEqual(["check", "confirm", "Z"]);
         expect(String(alerts()[0].props.title)).toBe("Error printing the Z report");
-    });
-
-    test("Z impresa sin S1: avisa y no sincroniza ni cierra", async () => {
-        const { panel, calls, alerts } = fakePanel({
-            z: { success: false, printed: true, error: "sin S1" },
-        });
-
-        await panel.onCloseSessionAndPrintZ();
-
-        expect(calls).toEqual(["check", "confirm", "Z"]);
-        expect(String(alerts()[0].props.title)).toBe("Z report printed with a warning");
+        expect(String(alerts()[0].props.body)).toBe("NAK");
     });
 
     test("si Odoo no sincroniza la Z, no cierra la sesión", async () => {
@@ -283,6 +294,7 @@ describe("onCloseSessionAndPrintZ", () => {
 
         expect(calls.at(-1)[0]).toBe("sync");
         expect(calls).not.toInclude("close");
+        expect(String(alerts()[0].props.title)).toBe("Z report printed with a warning");
         expect(String(alerts()[0].props.body)).toInclude("sin permisos");
     });
 
@@ -293,6 +305,7 @@ describe("onCloseSessionAndPrintZ", () => {
 
         await panel.onCloseSessionAndPrintZ();
 
+        // Sin cierre no se sale del Kiosko.
         expect(calls.at(-1)).toBe("close");
         expect(String(alerts()[0].props.title)).toBe("Session not closed");
         expect(String(alerts()[0].props.body)).toInclude("diferencia de caja");
