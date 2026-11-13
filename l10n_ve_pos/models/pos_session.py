@@ -651,6 +651,15 @@ class PosSession(models.Model):
 
     def _create_cross_move_payment(self, move, amounts):
         account_payment = move.move_id.payment_id
+        payment_method = account_payment.pos_payment_method_id
+
+        # Mismo criterio que el cruce agregado (_validate_cross_move): sin los
+        # dos diarios configurados no hay cruce. Las líneas salen de
+        # cross_journal, pero el asiento va en cross_account_journal; con solo
+        # el primero se armaba un account.move sin journal_id y el cierre de
+        # la sesión fallaba con NotNullViolation.
+        if not (payment_method.cross_account_journal and payment_method.cross_journal):
+            return move
 
         partner_id = (
             account_payment.partner_id.id if account_payment.partner_id else False
