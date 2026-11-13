@@ -149,4 +149,23 @@
             </t>
         </t>
     </template>
+
+    <!-- Donation certificate (goods) - stock.picking -->
+    <template id="donation_certificate_template_stock_picking" name="Donation Certificate Stock Picking">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.basic_layout">
+                    <div class="page">
+                        <t t-set="donor" t-value="o.partner_id" />
+                        <t t-set="certificate_date" t-value="o._get_donation_document_date()" />
+                        <t t-set="amounts" t-value="o._get_donation_receipt_amounts()" />
+                        <t t-set="donation_line_data" t-value="o._get_donation_product_lines()" />
+                        <t t-set="donation_grand_total" t-value="o._get_donation_grand_total()" />
+                        <t t-set="donation_cost_currency" t-value="o.company_id.currency_id" />
+                        <t t-call="l10n_ve_donation.donation_certificate_body" />
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
 </odoo>
