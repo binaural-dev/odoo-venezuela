@@ -45,11 +45,15 @@
                 <attribute name="readonly">from_picking_line == True</attribute>
             </xpath>
 
-            <xpath expr="//page[@id='invoice_tab'][1]/field[1]/list[1]/field[@name='name']"
+            <xpath expr="//page[@id='invoice_tab'][1]/field[1]/list[1]/column[@name='product_and_description']/field[@name='name']"
                 position="attributes">
                 <attribute name="readonly">from_picking_line == True</attribute>
             </xpath>
-            <xpath expr="//page[@id='invoice_tab'][1]/field[1]/list[1]/field[@name='product_id']"
+            <xpath expr="//page[@id='invoice_tab'][1]/field[1]/list[1]/column[@name='product_and_description']/field[@name='label']"
+                position="attributes">
+                <attribute name="readonly">from_picking_line == True</attribute>
+            </xpath>
+            <xpath expr="//page[@id='invoice_tab'][1]/field[1]/list[1]/column[@name='product_and_description']/field[@name='product_id']"
                 position="attributes">
                 <attribute name="readonly">from_picking_line == True</attribute>
             </xpath>

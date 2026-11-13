@@ -86,7 +86,7 @@
                                     <!--fila 2-->
                                     <tr class="hide_border">
                                         <td colspan="5" name="td_vat">
-                                            <strong>RIF:</strong> <span t-field="picking.company_id.company_registry"/>
+                                            <strong>RIF:</strong> <span t-out="picking.company_id.vat"/>
                                         </td>
                                         <td colspan="5" class="text-end">
                                             <strong>Fecha de Emisión: </strong> 
@@ -159,7 +159,7 @@
                                                     <span t-out="line.product_id.name[0:35]"/>
                                                 </td>
                                                 <td class="text-center">
-                                                    <span t-field="line.product_uom"/>
+                                                    <span t-field="line.uom_id"/>
                                                 </td>
                                                 <td class="text-center">
                                                     <span t-out="line.product_uom_qty" t-options='{"widget": "float", "precision": 2}' t-if="picking.state != 'done'"/>

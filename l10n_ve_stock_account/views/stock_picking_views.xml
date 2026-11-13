@@ -37,11 +37,11 @@
                 <attribute name="required">partner_required or is_dispatch_guide</attribute> 
                 <attribute name="readonly">state == 'done' or order_is_consignment or partner_required</attribute>
             </xpath>
-            <xpath expr="//button[@name='%(stock.act_stock_return_picking)d']" position="before">
+            <xpath expr="//button[@name='action_return']" position="before">
                 <field name="is_return" invisible="1"/>
             </xpath>
-            <xpath expr="//button[@name='%(stock.act_stock_return_picking)d']" position="attributes">
-                <attribute name="invisible">state != 'done' or is_return</attribute>
+            <xpath expr="//button[@name='action_return']" position="attributes">
+                <attribute name="invisible">not show_return or state != 'done' or is_return</attribute>
             </xpath>
             <xpath expr="//form//header" position="inside">
                 <field name="dispatch_guide_controls" invisible="1" />
