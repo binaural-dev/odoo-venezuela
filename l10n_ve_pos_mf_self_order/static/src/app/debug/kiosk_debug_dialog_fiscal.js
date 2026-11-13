@@ -63,8 +63,8 @@ patch(KioskDebugDialog.prototype, {
         });
     },
 
-    _mfAlert(title, body) {
-        this.dialog.add(AlertDialog, { title, body });
+    _mfAlert(title, body, props = {}) {
+        this.dialog.add(AlertDialog, { title, body, ...props });
     },
 
     /** Confirmación de la Z (irreversible), con el texto de la caja. */
@@ -93,11 +93,29 @@ patch(KioskDebugDialog.prototype, {
      *  3. imprime la Z y lee S1;
      *  4. sincroniza la Z con Odoo;
      *  5. cierra la sesión con el cierre nativo del Kiosko.
-     * Cualquier fallo corta el flujo en ese paso.
+     * Cualquier fallo corta el flujo en ese paso. Antes de empezar, tampoco
+     * sigue si hay una factura fiscal imprimiéndose (la Z se metería en medio)
+     * o si la sesión ya tiene su Z (otra Z cerraría un día vacío).
      */
     onCloseSessionAndPrintZ() {
         return this._run(_t("Close session and print Z"), async () => {
-            const pending = await this.selfOrder.getKioskCloseSessionPendingOrders();
+            if (this.selfOrder.isPrintingKioskFiscalInvoice) {
+                return {
+                    valid: false,
+                    message: _t("A fiscal invoice is being printed. Try again when it finishes."),
+                };
+            }
+
+            const check = await this.selfOrder.checkKioskCloseSession();
+            if (check.report_z) {
+                const body = _t(
+                    "This session already has its Z report (no. %s). Close it from the backend.",
+                    check.report_z
+                );
+                this._mfAlert(_t("The session cannot be closed"), body);
+                return { valid: false, message: body };
+            }
+            const pending = check.pending_orders;
             if (pending.length) {
                 this._alertPendingOrders(pending);
                 return {
@@ -144,10 +162,21 @@ patch(KioskDebugDialog.prototype, {
         });
     },
 
+    /**
+     * Aviso de bloqueo con las órdenes pendientes. Las pagadas se resuelven en
+     * el panel de Órdenes (el aviso lo abre: `checkKioskCloseSession` ya las
+     * cargó aunque no estén entre las últimas); las que quedaron en borrador con
+     * un pago no aparecen en el panel y se resuelven desde el backend.
+     */
     _alertPendingOrders(pending) {
         const shown = pending
             .slice(0, MAX_PENDING_SHOWN)
-            .map((order) => order.pos_reference || order.name)
+            .map((order) => {
+                const ref = order.pos_reference || order.name;
+                return order.state === "draft"
+                    ? _t("%s (unfinished order with a payment: resolve it from the backend)", ref)
+                    : ref;
+            })
             .join("\n");
         const more = pending.length - MAX_PENDING_SHOWN;
         // Sin concatenar: `_t` es perezoso y se resuelve al mostrarse.
@@ -157,6 +186,11 @@ patch(KioskDebugDialog.prototype, {
             "There are %(count)s order(s) without a fiscal invoice in this session. Create their invoice or print them from Orders before closing:\n\n%(orders)s",
             { count: pending.length, orders }
         );
-        this._mfAlert(_t("The session cannot be closed"), body);
+        const fromPanel = pending.some((order) => order.state !== "draft");
+        this._mfAlert(
+            _t("The session cannot be closed"),
+            body,
+            fromPanel ? { confirmLabel: _t("Open Orders"), confirm: () => this.onOpenOrders() } : {}
+        );
     },
 });

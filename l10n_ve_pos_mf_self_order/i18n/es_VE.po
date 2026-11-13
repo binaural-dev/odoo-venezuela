@@ -416,3 +416,36 @@ msgid ""
 msgstr ""
 "No se pudo cerrar la sesión desde el Kiosko (hay que revisar el asiento de "
 "cierre). Ciérrala desde el backend."
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_debug_dialog_fiscal.js:0
+msgid "A fiscal invoice is being printed. Try again when it finishes."
+msgstr "Se está imprimiendo una factura fiscal. Inténtalo de nuevo cuando termine."
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_debug_dialog_fiscal.js:0
+msgid ""
+"This session already has its Z report (no. %s). Close it from the backend."
+msgstr ""
+"Esta sesión ya tiene su Reporte Z (n.º %s). Ciérrala desde el backend."
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_debug_dialog_fiscal.js:0
+msgid "%s (unfinished order with a payment: resolve it from the backend)"
+msgstr "%s (orden sin terminar con un pago: resuélvela desde el backend)"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_debug_dialog_fiscal.js:0
+msgid "Open Orders"
+msgstr "Abrir Órdenes"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-python
+#: code:addons/l10n_ve_pos_mf_self_order/controllers/main.py:0
+#, python-format
+msgid "The Z report could not be saved in Odoo."
+msgstr "No se pudo guardar el Reporte Z en Odoo."

@@ -591,15 +591,29 @@ patch(SelfOrder.prototype, {
     // orquesta los pasos; aquí viven la impresión y las llamadas al servidor.
 
     /**
-     * Órdenes de la sesión abierta sin número fiscal (las que bloquean la Z y
-     * el cierre, igual que `_getUnfiscalizedOrders` en la caja).
-     * @returns {Promise<Array<{id:number, name:string, pos_reference:string, is_invoiced:boolean}>>}
+     * Lo que impide sacar la Z y cerrar: órdenes de la sesión abierta sin
+     * número fiscal (igual que `_getUnfiscalizedOrders` en la caja) y el Z que
+     * la sesión ya tenga. Las pendientes que se resuelven desde el panel de
+     * Órdenes se cargan en el cliente, porque el panel solo trae las últimas.
+     * @returns {Promise<{pending_orders: Array<{id:number, name:string, pos_reference:string, state:string, is_invoiced:boolean}>, report_z: string|false}>}
      */
-    async getKioskCloseSessionPendingOrders() {
-        const res = await rpc("/l10n_ve_pos_mf_self_order/kiosk/close_session/check", {
-            access_token: this.access_token,
-        });
-        return (res && res.pending_orders) || [];
+    async checkKioskCloseSession() {
+        const res =
+            (await rpc("/l10n_ve_pos_mf_self_order/kiosk/close_session/check", {
+                access_token: this.access_token,
+            })) || {};
+        if (res.data && Object.keys(res.data).length) {
+            this.models.connectNewData(res.data);
+        }
+        return {
+            pending_orders: res.pending_orders || [],
+            report_z: res.report_z || false,
+        };
+    },
+
+    /** Hay una factura fiscal imprimiéndose (ver `confirmationPage`). */
+    get isPrintingKioskFiscalInvoice() {
+        return Boolean(this.printingFiscalInvoice || this._fiscalPrintingOrders?.size);
     },
 
     /**
