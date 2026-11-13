@@ -40,6 +40,10 @@
             "l10n_ve_pos_mf/static/src/components/**/*.xml",
             "l10n_ve_pos_mf/static/src/css/*.css",
         ],
+        # Unit tests (hoot)
+        "web.assets_unit_tests": [
+            "l10n_ve_pos_mf/static/tests/unit/**/*",
+        ],
     },
     "images": ["static/description/icon.png"],
     "installable": True,
