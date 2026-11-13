@@ -1477,6 +1477,8 @@ msgid ""
 msgstr ""
 "Este documento usa la tasa de su orden de venta: la fecha de tasa está bloqueada y la tasa "
 "no se recalculará al cambiar la fecha de la factura."
+
+#. module: l10n_ve_sale
 #: model_terms:ir.ui.view,arch_db:l10n_ve_sale.res_config_settings_l10n_ve_sale_discount_limits
 msgid "Line Discount Type"
 msgstr "Tipo de descuento en líneas"
