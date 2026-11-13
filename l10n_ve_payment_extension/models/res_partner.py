@@ -115,6 +115,21 @@ class ResPartner(models.Model):
         string="Is Natural Resident Person",
     )
 
+    allowed_taxpayer_types = fields.Json(
+        compute="_compute_allowed_taxpayer_types",
+        string="Allowed Taxpayer Types",
+    )
+
+    @api.depends("type_person_id")
+    def _compute_allowed_taxpayer_types(self):
+        """Ticket 86944: a PN Residente is never a special taxpayer."""
+        for partner in self:
+            partner.allowed_taxpayer_types = (
+                ["ordinary", "formal"]
+                if partner.is_natural_resident_person
+                else ["ordinary", "formal", "special"]
+            )
+
     def _get_allowed_type_persons(self):
         """Ticket 86944: a person can only be PN Residente or PN No Residente;
         every other type is a legal entity (PJ) and belongs to a company."""
@@ -204,7 +219,10 @@ class ResPartner(models.Model):
         for partner in self:
             if partner._is_company_partner():
                 continue
-            if partner.is_non_resident_person:
+            if partner.is_non_resident_person or (
+                partner.is_natural_resident_person
+                and partner.taxpayer_type == "special"
+            ):
                 partner.taxpayer_type = "ordinary"
         self._apply_default_withholding_type()
 
