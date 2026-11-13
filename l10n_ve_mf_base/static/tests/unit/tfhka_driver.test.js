@@ -335,6 +335,19 @@ describe("TFHKA - TfhkaDriver (con MockSerialConnection)", () => {
         expect(Boolean(driver.connection.wasCommandSent("I0Z"))).toBe(true); // Comando 'I0Z' enviado
     });
 
+    test("Reporte Z sin respuesta: no reenvía I0Z (ticket 16406)", async () => {
+        // Sin papel la máquina acepta el I0Z y no confirma a tiempo: reenviarlo
+        // imprimía otra Z (HKA80: salieron la 0148 y la 0149).
+        const driver = await connectedDriver();
+        driver.connection.setResponseHandler((command) => (command === "I0Z" ? null : undefined));
+
+        const result = await driver.printReportZ();
+
+        expect(result.success).toBe(false);
+        expect(result.noResponse).toBe(true);
+        expect(sentCommands(driver).filter((cmd) => cmd === "I0Z")).toEqual(["I0Z"]);
+    });
+
     test("Impresión de factura con impuestos y métodos de pago", async () => {
         const driver = new TfhkaDriver();
         driver.connection = new MockSerialConnection();

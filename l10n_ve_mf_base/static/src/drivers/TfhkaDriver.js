@@ -512,11 +512,16 @@ export class TfhkaDriver {
     }
 
     /**
-     * Imprime Reporte Z (cierre diario)
-     * @returns {Promise<Object>}
+     * Imprime Reporte Z (cierre diario).
+     *
+     * Sin reenvío cuando la máquina no responde: sin papel, por ejemplo,
+     * acepta el I0Z y no confirma hasta que se repone el papel; reenviarlo
+     * imprime otra Z. Con `noResponse: true` la Z pudo salir o no: quien llama
+     * lo comprueba con el contador de Z de S1.
+     * @returns {Promise<Object>} - { success, data, error, noResponse? }
      */
     async printReportZ() {
-        return await this.sendCommand("I0Z");
+        return await this.sendCommand("I0Z", null, true, false, { resendOnNoResponse: false });
     }
 
     /**
