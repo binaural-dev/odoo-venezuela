@@ -229,6 +229,27 @@ class StockPicking(models.Model):
         self.ensure_one()
         return sum(row["total_value"] for row in self._get_donation_product_lines())
 
-    def print_donation_certificate(self):
+    def _get_donation_receipt_amounts(self):
+        """Amounts of the receipt of a delivery: the cost of the goods (see
+        `_get_donation_grand_total`) and, when its valuation entries have an
+        alternate amount, its equivalent at the rate of the entry, so that a
+        reprint always gives the same numbers."""
         self.ensure_one()
-        return self.env.ref("l10n_ve_donation.action_donation_delivery_certificate").report_action(self)
+        entries = self.move_ids.account_move_id.filtered(lambda entry: entry.state == "posted")
+        entry = entries[:1]
+        return self.env["account.move"]._compute_donation_amounts(
+            self.company_id.currency_id,
+            entry.foreign_currency_id,
+            self._get_donation_grand_total(),
+            sum(entries.mapped("foreign_debit")),
+            entry.foreign_rate,
+            entry.foreign_inverse_rate,
+        )
+
+    def _get_donation_beneficiary(self):
+        self.ensure_one()
+        return self.partner_id
+
+    def print_donation_receipt(self):
+        self.ensure_one()
+        return self.env.ref("l10n_ve_donation.action_donation_receipt_stock_picking").report_action(self)

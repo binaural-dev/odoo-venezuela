@@ -205,15 +205,28 @@ class TestDonationStockPicking(TestDonationCommon):
         picking = self._create_donation_picking(partner=self.partner)
         self.assertEqual(picking._get_donation_grand_total(), 0.0)
 
-    def test_print_certificate_returns_the_delivery_report(self):
-        picking = self._create_donation_picking(partner=self.partner, validate=True)
-        report = self.env.ref("l10n_ve_donation.action_donation_delivery_certificate")
-        action = picking.print_donation_certificate()
+    def test_print_receipt_returns_the_delivery_receipt(self):
+        picking = self._create_donation_picking(
+            partner=self.partner, reason="Medication for the clinic", validate=True
+        )
+        report = self.env.ref("l10n_ve_donation.action_donation_receipt_stock_picking")
+        action = picking.print_donation_receipt()
         self.assertEqual(action, report.report_action(picking))
         html, _ = self.env["ir.actions.report"]._render_qweb_html(
-            "l10n_ve_donation.donation_delivery_certificate_template", picking.ids
+            "l10n_ve_donation.donation_receipt_template_stock_picking", picking.ids
         )
         self.assertIn(self.partner.name.encode(), html)
+        self.assertIn(b"Recibo de Donaci", html)
+        self.assertIn(b"Medication for the clinic", html)
+        # The detail of the goods is the shared product table, with its total.
+        self.assertIn(b"Total at cost", html)
+
+    def test_delivery_receipt_amounts_come_from_the_cost_of_the_goods(self):
+        picking = self._create_donation_picking(quantity=2.0, partner=self.partner, validate=True)
+        amounts = picking._get_donation_receipt_amounts()
+        self.assertAlmostEqual(amounts["amount"], picking._get_donation_grand_total())
+        self.assertTrue(amounts["amount"])
+        self.assertEqual(amounts["currency"], self.company.currency_id)
 
     # ── returns ──
 

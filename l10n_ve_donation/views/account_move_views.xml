@@ -16,8 +16,8 @@
             </button>
             <xpath expr="//form//header" position="inside">
                 <button
-                    name="print_donation_certificate"
-                    string="Generar Certificado de Donación"
+                    name="print_donation_receipt"
+                    string="Generar Recibo de Donación"
                     type="object"
                     class="btn-primary"
                     invisible="not is_donation or (state != 'posted' or move_type != 'entry') or is_stock_valuation_entry"/>
