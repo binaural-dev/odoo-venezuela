@@ -569,7 +569,7 @@ class TestSaleAccountMove(TestDonationCommon):
         move.with_context(move_action_post_alert=True).action_post()
         self.assertEqual(move.state, "posted")
 
-    def test_16_print_donation_certificate(self):
+    def test_16_print_donation_receipt(self):
         """Print action returns an action dict."""
         move = self.env["account.move"].create({
             "move_type": "out_invoice",
@@ -586,7 +586,7 @@ class TestSaleAccountMove(TestDonationCommon):
                 }),
             ],
         })
-        action = move.print_donation_certificate()
+        action = move.print_donation_receipt()
         self.assertTrue(isinstance(action, dict))
         self.assertIn("type", action)
 
@@ -634,8 +634,8 @@ class TestSaleAccountMove(TestDonationCommon):
         self.assertEqual(order_b.warehouse_id, warehouse_b)
         self.assertNotEqual(order_b.warehouse_id, self.warehouse_donation)
 
-    def test_19_certificate_shows_real_beneficiary(self):
-        """The donation certificate (account.move) shows the real
+    def test_19_receipt_shows_real_beneficiary(self):
+        """The donation receipt (account.move) shows the real
         beneficiary's name/RIF in both mentions, not the company
         -- even though the print button is only shown for
         move_type == 'entry', the report itself is not restricted."""
@@ -662,7 +662,7 @@ class TestSaleAccountMove(TestDonationCommon):
         # `l10n_ve_invoice` only prints posted documents.
         move.with_context(move_action_post_alert=True).action_post()
         self.assertEqual(move.state, "posted")
-        report = self.env.ref("l10n_ve_donation.action_donation_certificate_account_move")
+        report = self.env.ref("l10n_ve_donation.action_donation_receipt_account_move")
         html, _report_type = report._render_qweb_html(report.report_name, move.ids)
         self.assertIn(beneficiary.name.encode(), html)
         self.assertIn(beneficiary.vat.encode(), html)
@@ -711,51 +711,52 @@ class TestSaleAccountMove(TestDonationCommon):
         with self.assertRaises(AssertionError):
             invoice_form.is_donation = True
 
-    def _render_certificate(self, move):
-        report = self.env.ref("l10n_ve_donation.action_donation_certificate_account_move")
+    def _render_receipt(self, move):
+        report = self.env.ref("l10n_ve_donation.action_donation_receipt_account_move")
         html, _report_type = report._render_qweb_html(report.report_name, move.ids)
         return html.decode()
 
-    def test_22_certificate_of_a_money_entry_states_the_sum(self):
-        """The certificate of a manual entry is the one of a money
-        donation: it states the numeric sum, its equivalent in
-        the alternate currency at the rate of the entry, and the concept;
-        it does not talk about goods."""
+    def test_22_receipt_of_a_money_entry_states_the_amount(self):
+        """The receipt of a manual entry is the one of a money donation
+        given: it states the numeric amount, its equivalent in the other
+        currency at the rate of the entry, the concept and the reference
+        as observation; it does not talk about goods."""
         move = self.env["account.move"].create(self._entry_vals(ref="Aporte para el comedor"))
         move.with_context(move_action_post_alert=True).action_post()
         self.assertEqual(move.state, "posted")
 
-        amounts = move._get_donation_certificate_amounts()
+        amounts = move._get_donation_amounts()
         self.assertEqual(amounts["currency"], self.company.currency_id)
         self.assertEqual(amounts["amount"], 100.0)
         self.assertEqual(amounts["equivalent_currency"], self.company.foreign_currency_id)
         self.assertEqual(amounts["equivalent_amount"], move.foreign_debit)
         self.assertEqual(amounts["rate"], move.foreign_rate)
 
-        html = self._render_certificate(move)
-        self.assertIn("la suma de", html)
-        # The sum is numeric (no amount in words) and the rate shows 4 decimals.
+        html = self._render_receipt(move)
+        self.assertIn("Monto de la donación", html)
+        # The amount is numeric (no amount in words) and the rate shows 4 decimals.
         self.assertNotIn(amounts["currency"].amount_to_text(amounts["amount"]), html)
         rate_html = self.env["ir.qweb.field.float"].value_to_html(amounts["rate"], {"precision": 4})
         self.assertIn(rate_html, html)
         self.assertNotIn(self.env["ir.qweb.field.float"].value_to_html(amounts["rate"], {"precision": 6}), html)
-        self.assertIn("equivalente a", html)
-        self.assertIn("tasa BCV", html)
+        self.assertIn("Equivalente en", html)
+        self.assertIn("Tasa (BCV)", html)
         self.assertIn("Aporte para el comedor", html)
+        self.assertIn("Entry 1", html)
         self.assertNotIn("bienes", html)
 
-    def test_23_certificate_without_alternate_amount_omits_the_equivalent(self):
+    def test_23_receipt_without_alternate_amount_omits_the_equivalent(self):
         move = self.env["account.move"].create(self._entry_vals())
         move.foreign_currency_id = self.company.currency_id
         move.with_context(move_action_post_alert=True).action_post()
-        amounts = move._get_donation_certificate_amounts()
+        amounts = move._get_donation_amounts()
         self.assertFalse(amounts["equivalent_currency"])
         self.assertEqual(amounts["equivalent_amount"], 0.0)
 
-        html = self._render_certificate(move)
-        self.assertIn("la suma de", html)
-        self.assertNotIn("equivalente a", html)
-        self.assertNotIn("tasa BCV", html)
+        html = self._render_receipt(move)
+        self.assertIn("Monto de la donación", html)
+        self.assertNotIn("Equivalente en", html)
+        self.assertNotIn("Tasa (BCV)", html)
 
     def test_23b_amounts_with_the_bolivar_as_company_currency(self):
         """Company in bolivars, alternate currency USD: the bolivar amount
@@ -806,5 +807,5 @@ class TestSaleAccountMove(TestDonationCommon):
         move = self.env["account.move"].create(self._entry_vals())
         move.with_context(move_action_post_alert=True).action_post()
         self.assertFalse(move.is_stock_valuation_entry)
-        action = move.print_donation_certificate()
+        action = move.print_donation_receipt()
         self.assertIsInstance(action, dict)

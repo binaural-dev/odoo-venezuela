@@ -24,8 +24,8 @@
             </xpath>
             <xpath expr="//button[@name='do_print_picking']" position="after">
                 <button
-                    name="print_donation_certificate"
-                    string="Print Donation Certificate"
+                    name="print_donation_receipt"
+                    string="Print Donation Receipt"
                     type="object"
                     groups="stock.group_stock_user"
                     invisible="not is_donation or sale_id or picking_type_code != 'outgoing' or state != 'done'"
