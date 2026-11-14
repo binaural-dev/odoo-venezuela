@@ -91,18 +91,7 @@ class PosPaymentMethod(models.Model):
         data = self.env.context.get("l10n_ve_pos_payments_data")
         if not data or not lines or self.type == "pay_later":
             return lines
-        rounding = session.currency_id.rounding
-        entry = next(
-            (
-                entry
-                for entry in data["entries"]
-                if entry["metadata"]["payment_method_id"] == self
-                and (entry["metadata"]["foreign_currency_id"].id or False)
-                == (foreign_currency or False)
-                and float_compare(entry["metadata"]["amount"], amount, precision_rounding=rounding) == 0
-            ),
-            None,
-        )
+        entry = self._get_payments_entry(session, amount, foreign_currency)
         if not entry:
             return lines
         payments = entry["metadata"]["payments"]
@@ -118,6 +107,28 @@ class PosPaymentMethod(models.Model):
                     }
                 )
         return lines
+
+    def _get_payments_entry(self, session, amount, foreign_currency):
+        """The entry of ``l10n_ve_pos_payments_data`` that groups the payments
+        a payment line of ``amount`` settles: same method, currency and amount.
+        Modules that add accounting to the payments of an entry (IGTF) find it
+        with this."""
+        self.ensure_one()
+        data = self.env.context.get("l10n_ve_pos_payments_data")
+        if not data:
+            return None
+        rounding = session.currency_id.rounding
+        return next(
+            (
+                entry
+                for entry in data["entries"]
+                if entry["metadata"]["payment_method_id"] == self
+                and (entry["metadata"]["foreign_currency_id"].id or False)
+                == (foreign_currency or False)
+                and float_compare(entry["metadata"]["amount"], amount, precision_rounding=rounding) == 0
+            ),
+            None,
+        )
 
     def _set_payment_move_rate(self, payment_move, payments, session_closing):
         """Rate of a payment entry: the one of the config when the session
