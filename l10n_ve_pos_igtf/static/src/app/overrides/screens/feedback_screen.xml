@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="l10n_ve_pos_igtf.FeedbackScreen" t-inherit="point_of_sale.FeedbackScreen" t-inherit-mode="extension">
+        <xpath expr="//FeedbackPaymentSummary" position="attributes">
+            <attribute name="formattedAmount">this.paymentAmountWithIgtf</attribute>
+        </xpath>
+        <xpath expr="//div[hasclass('foreign-amount')]" position="attributes">
+            <attribute name="t-out">this.foreignAmountWithIgtf</attribute>
+        </xpath>
+        <xpath expr="//div[hasclass('foreign-amount')]" position="after">
+            <div t-if="this.igtfAmount" class="fs-6 fw-normal opacity-75 mb-3">
+                IGTF: <t t-out="this.igtfAmountLabel"/> / <t t-out="this.foreignIgtfAmountLabel"/>
+            </div>
+        </xpath>
+    </t>
+</templates>

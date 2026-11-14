@@ -1,78 +1,60 @@
-/** @odoo-module */
-
 import { PosPayment } from "@point_of_sale/app/models/pos_payment";
 import { patch } from "@web/core/utils/patch";
 
 patch(PosPayment.prototype, {
-  setup(_defaultObj, options) {
+  setup(vals) {
     super.setup(...arguments);
-    this.igtf_amount = this.igtf_amount || 0
-    this.foreign_igtf_amount = this.foreign_igtf_amount || 0
+    this.igtf_amount = vals.igtf_amount || 0;
+    this.foreign_igtf_amount = vals.foreign_igtf_amount || 0;
   },
   set_include_igtf(value) {
-    this.include_igtf = value
+    this.include_igtf = value;
   },
   set_igtf_amount(amount) {
-    this.igtf_amount = amount
+    this.igtf_amount = amount;
   },
   set_foreign_igtf_amount(amount) {
-    this.foreign_igtf_amount = amount
+    this.foreign_igtf_amount = amount;
+  },
+  get appliesIgtf() {
+    return Boolean(this.currencySettings?.apply_igtf);
   },
   set_foreign_amount(amount) {
-    // El clamp "cubre lo que se debe" de l10n_ve_pos no conoce el recargo
-    // IGTF: calcula el due desde totalDue (sin deuda IGTF) y convertir el
-    // excedente foráneo de vuelta a local reintroduce ruido de redondeo
-    // (p.ej. 351 vs 348 Bs al pagar la deuda IGTF). Cuando la orden tiene
-    // contexto IGTF (método apply_igtf o deuda IGTF acumulada, con cualquier
-    // método), el due correcto es el RESTANTE actual: base de factura
-    // pendiente + deuda IGTF, SIN el IGTF que esta línea generará (ese nace
-    // después, en update_igtf — diseño 2026-07-09). Si el monto tecleado lo
-    // cubre, fijamos el local EXACTO sin ida y vuelta de conversión.
+    // The "covers what is due" clamp of l10n_ve_pos does not know the IGTF
+    // surcharge: it takes the due from totalDue (without the IGTF debt) and
+    // converting the foreign excess back to local brings rounding noise (351
+    // vs 348 Bs when paying the IGTF debt). With IGTF context (the payment
+    // applies IGTF, or the order carries IGTF debt with any method) the due is
+    // the CURRENT remaining: invoice base still to cover plus the IGTF debt,
+    // without the IGTF this line will generate (it is born later, in
+    // update_igtf). When the typed amount covers it, the local amount is set
+    // to exactly that, with no conversion round trip.
     const order = this.pos_order_id;
-    const method = this.payment_method_id;
     const hasIgtfContext =
-      Boolean(method?.apply_igtf) ||
+      this.appliesIgtf ||
       (typeof order?._igtfRoundLocal === "function" &&
         order._igtfRoundLocal(order.igtf_amount || 0) !== 0);
     if (
       order?.to_invoice &&
       hasIgtfContext &&
-      typeof order._igtfBaseState === "function" &&
-      typeof order.localToForeign === "function"
+      typeof order._igtfBaseState === "function"
     ) {
       const requested = Number(amount) || 0;
       const { sign, remainingBase, unpaidIgtf } = order._igtfBaseState(this);
       const dueLocal = order._igtfRoundLocal(sign * (remainingBase + unpaidIgtf));
-      const dueForeign = order.localToForeign(dueLocal);
-      // Espacio normalizado por signo (montos de pago positivos), sin
-      // Math.abs; comparación con tolerancia de la moneda foránea vía
-      // roundForeignMoney (equivalente JS de float_compare).
+      const typed = this.currency.round(requested);
+      const dueForeign = this._localToPaymentCurrency(dueLocal);
       const requestedN = sign * requested;
       const dueN = sign * dueForeign;
-      const overpayForeign = order.roundForeignMoney(requestedN - dueN);
+      const overpayForeign = this.currency.round(requestedN - dueN);
       if (dueN > 0 && requestedN > 0 && overpayForeign >= 0) {
-        this.foreign_amount = order.roundForeignMoney(requested);
         const overpayLocal =
-          overpayForeign > 0 && typeof order.foreignToLocal === "function"
-            ? order.foreignToLocal(overpayForeign)
-            : 0;
+          overpayForeign > 0 ? this._paymentCurrencyToLocal(overpayForeign) : 0;
         this.amount = order._igtfRoundLocal(dueLocal + sign * overpayLocal);
+        this._stampForeignAmount(typed);
         return;
       }
     }
     return super.set_foreign_amount(...arguments);
-  },
-  init_from_JSON(json) {
-    super.init_from_JSON(...arguments);
-    this.include_igtf = json.include_igtf || false;
-    this.igtf_amount = json.igtf_amount || 0;
-    this.foreign_igtf_amount = json.foreign_igtf_amount || 0;
-  },
-  export_as_JSON() {
-    let res = super.export_as_JSON();
-    res["include_igtf"] = this.include_igtf;
-    res["igtf_amount"] = this.igtf_amount;
-    res["foreign_igtf_amount"] = this.foreign_igtf_amount;
-    return res
   },
 });
