@@ -2,7 +2,7 @@
 
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
-import { Component, xml, useState, onMounted, onWillUnmount } from "@odoo/owl";
+import { Component, onMounted, onWillUnmount, proxy, xml } from "@odoo/owl";
 import { _t } from "@web/core/l10n/translation";
 import { getBackendFiscalPrinter } from "./mf_webserial_service";
 
@@ -16,18 +16,17 @@ import { getBackendFiscalPrinter } from "./mf_webserial_service";
  * (l10n_ve_pos_mf/static/src/overrides/pos_app.js).
  */
 export class MfConnectionSystray extends Component {
-    static props = {};
     static template = xml`
         <div class="o_mf_systray d-flex align-items-center px-2"
              role="button"
-             t-att-title="statusTitle"
-             t-on-click="onClick">
-            <i t-att-class="iconClass"/>
+             t-att-title="this.statusTitle"
+             t-on-click="this.onClick">
+            <i t-att-class="this.iconClass" t-att-data-icon="this.iconName"/>
         </div>`;
 
     setup() {
         this.notification = useService("notification");
-        this.state = useState({
+        this.state = proxy({
             status: "disconnected", // disconnected | connecting | connected | error
         });
         this._pollId = null;
@@ -62,9 +61,12 @@ export class MfConnectionSystray extends Component {
             connected: "text-success",
             error: "text-danger",
         };
-        const spin = this.state.status === "connecting" ? " fa-spin" : "";
-        const icon = this.state.status === "connecting" ? "fa-circle-o-notch" : "fa-print";
-        return `fa ${icon}${spin} ${colors[this.state.status] || "text-muted"}`;
+        const spin = this.state.status === "connecting" ? " oi-spin" : "";
+        return `oi${spin} ${colors[this.state.status] || "text-muted"}`;
+    }
+
+    get iconName() {
+        return this.state.status === "connecting" ? "autorenew" : "print";
     }
 
     _refreshFromDriver() {

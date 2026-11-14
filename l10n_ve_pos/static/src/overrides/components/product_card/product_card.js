@@ -2,13 +2,16 @@
 
 import { ProductCard } from "@point_of_sale/app/components/product_card/product_card";
 import { patch } from "@web/core/utils/patch";
-import { useState, useEffect } from "@odoo/owl";
+import { proxy, useEffect } from "@odoo/owl";
+import { usePos } from "@point_of_sale/app/hooks/pos_hook";
 import { useTrackedAsync } from "@point_of_sale/app/hooks/hooks";
 import { debounce } from "@web/core/utils/timing";
 
 patch(ProductCard.prototype, {
   setup() {
-    this.state = useState({
+    super.setup?.(...arguments);
+    this.pos = usePos();
+    this.state = proxy({
       available_quantity: 0,
     });
 

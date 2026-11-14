@@ -23,11 +23,17 @@ class TestChartTemplateRelink(TransactionCase):
             "country_id": cls.env.ref("base.ve").id,
         })
         cls.ChartTemplate.try_loading(cls.template, cls.root)
-        template_data = cls.ChartTemplate._get_chart_template_data(cls.template)["template_data"]
-        cls.recv_xmlid = template_data["property_account_receivable_id"]
+        cls.recv_xmlid = cls._template_company_values()["receivable_account_id"]
         cls.recv = cls.ChartTemplate.with_company(cls.root).ref(cls.recv_xmlid)
 
     # -- helpers
+    @classmethod
+    def _template_company_values(cls):
+        """Valores de `res.company` de la plantilla. En Odoo 20 las cuentas por
+        cobrar y por pagar por defecto viajan ahí (`receivable_account_id`); hasta
+        19 eran los `property_*` de `template_data`."""
+        return next(iter(cls.ChartTemplate._get_chart_template_data(cls.template)["res.company"].values()))
+
     def _imd(self, root=None):
         root = root or self.root
         return self.env["ir.model.data"].search([
@@ -85,7 +91,7 @@ class TestChartTemplateRelink(TransactionCase):
         self.env.cr.execute("UPDATE ir_model_data SET res_id = 999999999 WHERE id = %s", [imd.id])
         imd.invalidate_recordset()
         self.env["ir.model.data"].invalidate_model()
-        self.env.registry.clear_cache()  # el ormcache de _xmlid_lookup ocultaría el huérfano
+        self.env.transaction.invalidate_ormcache()  # el ormcache de _xmlid_lookup ocultaría el huérfano
         accounts = self._account_count()
         self._create_branch()
         self.assertEqual(self._account_count(), accounts)
@@ -100,12 +106,19 @@ class TestChartTemplateRelink(TransactionCase):
         self._assert_relinked()
 
     def test_06_different_code_not_relinked(self):
+        """Sin cuenta con ese código: se avisa y no se re-vincula.
+
+        Hasta 19 el core fallaba después al resolver el xmlid. En Odoo 20 ya no
+        falla: la sucursal se crea y hereda las cuentas por defecto de la raíz.
+        """
         self.recv.sudo().with_company(self.root).code = "9999999"
         self._imd().unlink()
-        with self.assertLogs(LOGGER, level="WARNING") as logs, self.assertRaises(ValueError):
+        accounts = self._account_count()
+        with self.assertLogs(LOGGER, level="WARNING") as logs:
             self._create_branch()
         self.assertTrue(any(self.recv_xmlid in line for line in logs.output))
         self.assertFalse(self._imd())
+        self.assertEqual(self._account_count(), accounts)
 
     def test_07_idempotent(self):
         self._imd().unlink()
@@ -131,7 +144,7 @@ class TestChartTemplateRelink(TransactionCase):
         `_load` lo cubren de punta a punta test_02 y test_08.
         """
         self.assertEqual(self.ChartTemplate.company_xmlid("x", self.root), f"account.{self.root.id}_x")
-        self.assertIn("property_account_receivable_id", self.ChartTemplate._get_property_accounts({}))
+        self.assertEqual(self._template_company_values()["receivable_account_id"], self.recv_xmlid)
         branch = self._create_branch()
         self.assertEqual(self.ChartTemplate.with_company(branch).ref(self.recv_xmlid), self.recv)
         # Firma del método ORIGINAL del core (no la de nuestro override)
@@ -139,16 +152,21 @@ class TestChartTemplateRelink(TransactionCase):
         self.assertEqual(params, ["self", "template_code", "company", "template_data", "data"])
 
     def test_10_orphan_without_account_with_code(self):
-        """xmlid huérfano y ninguna cuenta con ese código: warning y falla normal del core."""
+        """xmlid huérfano y ninguna cuenta con ese código: se avisa y no se crean cuentas.
+
+        En Odoo 20 el core ya no falla al crear la sucursal (ver test_06).
+        """
         self.recv.sudo().with_company(self.root).code = "9999999"
         imd = self._imd()
         self.env.cr.execute("UPDATE ir_model_data SET res_id = 999999999 WHERE id = %s", [imd.id])
         imd.invalidate_recordset()
         self.env["ir.model.data"].invalidate_model()
-        self.env.registry.clear_cache()
-        with self.assertLogs(LOGGER, level="WARNING") as logs, self.assertRaises(ValueError):
+        self.env.transaction.invalidate_ormcache()
+        accounts = self._account_count()
+        with self.assertLogs(LOGGER, level="WARNING") as logs:
             self._create_branch()
         self.assertTrue(any(self.recv_xmlid in line for line in logs.output))
+        self.assertEqual(self._account_count(), accounts)
 
     def test_11_several_non_exact_matches_not_guessed(self):
         """Varias coincidencias `{code}0*` sin la exacta: se avisa y no se adivina."""
@@ -156,10 +174,12 @@ class TestChartTemplateRelink(TransactionCase):
         self.recv.sudo().with_company(self.root).code = "11220010"
         Account.create({"name": "Relink extra", "code": "112200100", "account_type": "asset_receivable"})
         self._imd().unlink()
-        with self.assertLogs(LOGGER, level="WARNING") as logs, self.assertRaises(ValueError):
+        accounts = self._account_count()
+        with self.assertLogs(LOGGER, level="WARNING") as logs:
             self._create_branch()
         self.assertTrue(any(self.recv_xmlid in line for line in logs.output))
         self.assertFalse(self._imd())
+        self.assertEqual(self._account_count(), accounts)
 
     def test_12_res_company_account_xmlid(self):
         """Rama res.company: `account_default_pos_receivable_account_id` también se re-vincula.

@@ -222,7 +222,7 @@ class TestStockPickingApiCalls(TransactionCase):
                     # O19: stock.move.name ya no existe (description_picking).
                     "product_id": product.id,
                     "product_uom_qty": qty,
-                    "product_uom": product.uom_id.id,
+                    "uom_id": product.uom_id.id,
                     "location_id": location,
                     "location_dest_id": location_dest,
                 }

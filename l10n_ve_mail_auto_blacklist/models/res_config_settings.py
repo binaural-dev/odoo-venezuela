@@ -51,5 +51,5 @@ class ResConfigSettings(models.TransientModel):
         # their non-zero default ("no time limit"/"no constraint") right after
         # saving 0. Force them back explicitly so 0 is actually persisted.
         ICP = self.env['ir.config_parameter'].sudo()
-        ICP.set_param(PARAM_PREFIX + 'window_days', str(self.l10n_ve_auto_blacklist_window_days))
-        ICP.set_param(PARAM_PREFIX + 'min_spread_days', str(self.l10n_ve_auto_blacklist_min_spread_days))
+        ICP.set_int(PARAM_PREFIX + 'window_days', self.l10n_ve_auto_blacklist_window_days)
+        ICP.set_int(PARAM_PREFIX + 'min_spread_days', self.l10n_ve_auto_blacklist_min_spread_days)

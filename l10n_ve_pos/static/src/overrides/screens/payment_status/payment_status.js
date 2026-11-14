@@ -60,37 +60,18 @@ patch(PaymentScreenStatus.prototype, {
   },
 
   get foreignTotalDueText() {
-    return this.env.utils.formatForeignCurrency(this._getForeignTotalDueAmount());
+    return this.pos.formatForeignCurrency(this._getForeignTotalDueAmount());
   },
 
   get foreignRemainingText() {
-    return this.env.utils.formatForeignCurrency(this._getForeignRemainingAmount());
+    return this.pos.formatForeignCurrency(this._getForeignRemainingAmount());
   },
 
   get foreignChangeText() {
-    return this.env.utils.formatForeignCurrency(this._getForeignChangeAmount());
+    return this.pos.formatForeignCurrency(this._getForeignChangeAmount());
   },
 
   get currentOrder() {
     return this.props.order;
-  },
-
-  // Odoo 19 native bug: isRemaining usa `remainingDue > 0` para reembolsos,
-  // que es falso cuando el reembolso quedó cubierto (remainingDue=0).
-  // Para un reembolso con pago completo, debe mostrar "Cambio" no
-  // "Restantes" con valor 0.
-  get isRemaining() {
-    const order = this.props?.order;
-    if (!order) return super.isRemaining;
-    const isNegative = order.totalDue < 0;
-    const remainingDue = order.remainingDue;
-    const amountPaid = order.amountPaid;
-    if (isNegative) {
-      // Refund: si paid <= total (en valor absoluto), hay restante.
-      // Si paid > total, es cambio (aunque remainingDue sea 0 por redondeo).
-      return amountPaid > order.totalDue; // paid es negativo, total es negativo
-    }
-    // Venta: comportamiento nativo.
-    return super.isRemaining;
   },
 });

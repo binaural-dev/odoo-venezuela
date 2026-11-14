@@ -64,7 +64,7 @@ class TestPosDataLoading(TransactionCase):
         cls.payment_method = cls.env["pos.payment.method"].create(
             {
                 "name": "Cash USD",
-                "is_cash_count": True,
+                "type": "cash",
                 "company_id": cls.company.id,
                 "journal_id": cls.env["account.journal"]
                 .create(
@@ -79,7 +79,7 @@ class TestPosDataLoading(TransactionCase):
                 .id,
             }
         )
-        cls.payment_method.write({"is_foreign_currency": True})
+        cls.payment_method.write({"currency_ids": [(6, 0, cls.foreign_currency.ids)]})
         cls.partner = cls.env["res.partner"].create(
             {
                 "name": "Test Partner VE",
@@ -104,7 +104,7 @@ class TestPosDataLoading(TransactionCase):
                 # configuration). Reusing the sale tax for both is enough:
                 # this product is never actually purchased in these tests.
                 "taxes_id": [(6, 0, cls.tax.ids)],
-                "supplier_taxes_id": [(6, 0, cls.tax.ids)],
+                "supplier_taxes_id": [(6, 0, cls.purchase_tax.ids)],
             }
         )
         cls.categ = cls.env["product.category"].create({"name": "Test Cat VE"})
@@ -113,8 +113,9 @@ class TestPosDataLoading(TransactionCase):
             {
                 "name": "Test POS VE",
                 "company_id": cls.company.id,
+                "default_partner_id": cls.company.partner_id.id,
                 "currency_id": cls.foreign_currency.id,
-                "journal_id": cls.env["account.journal"]
+                "closing_journal_id": cls.env["account.journal"]
                 .create(
                     {
                         "name": "POS Sale USD",
@@ -125,7 +126,7 @@ class TestPosDataLoading(TransactionCase):
                     }
                 )
                 .id,
-                "invoice_journal_id": cls.env["account.journal"]
+                "journal_id": cls.env["account.journal"]
                 .create(
                     {
                         "name": "POS Invoice USD",
@@ -148,7 +149,7 @@ class TestPosDataLoading(TransactionCase):
 
     def _load(self):
         """Helper: call the Odoo 19 entry point the same way the JS does."""
-        return self.session.load_data([])
+        return self.session.load_data({"only_records": True})
 
     def test_pos_config_rate_does_not_raise_without_rate(self):
         """Sin tasa del día, ``pos.config`` calcula su tasa sin lanzar error."""
@@ -173,12 +174,23 @@ class TestPosDataLoading(TransactionCase):
         self.assertIn("pos.payment", data)
         self.assertIn("pos.payment.method", data)
 
-    def test_pos_payment_method_records_expose_is_foreign_currency(self):
-        """A.2 / Spec: ``pos.payment.method`` must include ``is_foreign_currency``."""
+    def test_pos_payment_method_records_expose_currency_settings(self):
+        """``pos.payment.method`` carries the settings by currency and the
+        identify-customer flag, and the settings model is loaded with it."""
+        setting = self.env["pos.payment.method.currency"].create(
+            {
+                "payment_method_id": self.payment_method.id,
+                "currency_id": self.foreign_currency.id,
+            }
+        )
         data = self._load()
         methods = {m["id"]: m for m in data["pos.payment.method"]}
         self.assertIn(self.payment_method.id, methods)
-        self.assertTrue(methods[self.payment_method.id]["is_foreign_currency"])
+        self.assertEqual(methods[self.payment_method.id]["currency_setting_ids"], [setting.id])
+        self.assertIn("split_transactions", methods[self.payment_method.id])
+        self.assertEqual(
+            [s["id"] for s in data["pos.payment.method.currency"]], [setting.id]
+        )
 
     def test_account_tax_records_expose_type_tax_use(self):
         """A.2 / Spec: ``account.tax`` must include ``type_tax_use``."""
@@ -273,7 +285,6 @@ class TestPosDataLoading(TransactionCase):
                 "amount_return": 0.0,
                 "foreign_amount_total": 0.0,
                 "foreign_currency_rate": 0.0,
-                "last_order_preparation_change": "{}",
             }
         )
         with self.assertRaises(UserError):
@@ -308,7 +319,7 @@ class TestPosDataLoading(TransactionCase):
 
         # Con la compañía de la sesión, como el PdV: el core convierte con
         # ``self.env.company`` y la tasa de 36,5 es de esta compañía.
-        data = self.session.with_company(self.company).load_data([])
+        data = self.session.with_company(self.company).load_data({"only_records": True})
         products = {p["id"]: p for p in data["product.product"]}
         self.assertIn(self.product.id, products)
         self.assertAlmostEqual(products[self.product.id]["lst_price"], expected)

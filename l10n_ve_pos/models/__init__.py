@@ -3,6 +3,8 @@ from . import pos_config
 from . import res_partner
 from . import res_users
 from . import pos_payment_method
+from . import pos_payment_method_currency
+from . import pos_make_payment
 from . import pos_order
 from . import pos_order_line
 from . import res_config_settings

@@ -1,0 +1,15 @@
+id,name,model_id,group_id/id,operation,domain
+access_account_invoices_details,access_account_invoices_details,account.invoices.details,base.group_everyone,crud,
+access_payment_report,access_payment_report,payment.report,base.group_everyone,crud,
+access_ut_fiscal_user,access_ut_fiscal_user,tax.unit,l10n_ve_accountant.group_fiscal_config_user,cr,
+access_ut_fiscal_user_support,access_ut_fiscal_user_support,tax.unit,l10n_ve_accountant.group_fiscal_config_support,cru,
+tax_support_no_archive_rule,Impuestos: No archivar para Soporte Fiscal,account.tax,l10n_ve_accountant.group_fiscal_config_support,cru,"[('active', '=', True)]"
+access_sequence_fiscal_user_support,access_sequence_fiscal_user_support,ir.sequence,l10n_ve_accountant.group_fiscal_config_support,cru,
+access_move_action_post_alert_wizard,access_move_action_post_alert_wizard,move.action.post.alert.wizard,base.group_user,crud,
+account.account_move_see_all,All Journal Entries,account.move,account.group_account_invoice,cru,
+account_move_unlink_draft_only,delete invoice if draft,account.move,account.group_account_invoice,d,"[('state', '=', 'draft')]"
+account.access_account_payment,account.payment,account.payment,account.group_account_invoice,cru,
+account.access_account_journal_manager,account.journal,account.journal,account.group_account_manager,cru,
+account.access_account_journal_group_manager,account.journal.group manager,account.journal.group,account.group_account_manager,cru,
+account.access_account_tax_manager,account.tax,account.tax,account.group_account_manager,cru,
+base.access_ir_sequence_group_system,ir_sequence group_system,ir.sequence,base.group_system,cru,

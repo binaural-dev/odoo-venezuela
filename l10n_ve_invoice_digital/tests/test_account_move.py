@@ -15,7 +15,7 @@ class TestAccountMoveApiCalls(TransactionCase):
 
     def setUp(self):
         super().setUp()
-        self.env.registry.clear_cache()
+        self.env.transaction.invalidate_ormcache()
         _ = self.env["account.move"]
         Account = self.env["account.account"]
         Journal = self.env["account.journal"]
@@ -2175,7 +2175,7 @@ class TestAccountMoveApiCalls(TransactionCase):
         partner = self.env['res.partner'].create({
             'name': 'Cliente Sin Prefijo',
             'vat': 'J12345679',
-            'prefix_vat': '',
+            'prefix_vat': False,
             'country_id': self.env.ref('base.ve').id,
             'phone': '04141234567',
             'email': 'test@test.com',

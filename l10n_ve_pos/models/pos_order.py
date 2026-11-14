@@ -96,6 +96,14 @@ class PosOrder(models.Model):
         the source so every downstream consumer reads a correct value.
         """
         res = super()._process_payment_lines(pos_order, order, pos_session, draft)
+        # Core hands the change back in the currency of the first payment of
+        # the order (a $20 bill pays a $12 sale and the change is in $). Odoo 19
+        # always gave it in the currency of the register, from the cash method
+        # in Bs, and the cross move of the foreign cash only carried what the
+        # customer handed over: keep that.
+        order.payment_ids.filtered(
+            lambda payment: payment.is_change and payment.foreign_currency_id
+        ).write({"foreign_currency_id": False, "amount_currency": 0.0})
         change_payments = order.payment_ids.filtered(
             lambda payment: payment.is_change
             and payment.amount
@@ -156,6 +164,8 @@ class PosOrder(models.Model):
             for payment in order.payment_ids:
                 if payment.amount * payment.foreign_amount < 0:
                     payment.foreign_amount = -payment.foreign_amount
+                if payment.amount * payment.amount_currency < 0:
+                    payment.amount_currency = -payment.amount_currency
 
     @api.model
     def get_payments_order_refund(self, order_ids):
@@ -174,7 +184,7 @@ class PosOrder(models.Model):
         original order's foreign tender.
 
         Returns ``sum(|amount|) / sum(|foreign_amount|)`` across the original
-        order(s) payments made with a foreign-currency method. A refund uses
+        order(s) payments made in the company's foreign currency. A refund uses
         this to value a foreign payment line at the EXACT rate the original
         payment was recorded with (mirror the customer's tender), instead of
         re-deriving a rate from the order's rounded aggregate totals — which
@@ -189,7 +199,9 @@ class PosOrder(models.Model):
         if not orders:
             return 0.0
         payments = orders.mapped("payment_ids").filtered(
-            lambda p: p.payment_method_id.is_foreign_currency and p.foreign_amount
+            lambda p: p.is_foreign_currency
+            and p.foreign_currency_id == p.pos_order_id.foreign_currency_id
+            and p.foreign_amount
         )
         total_local = sum(abs(p.amount) for p in payments)
         total_foreign = sum(abs(p.foreign_amount) for p in payments)
@@ -198,19 +210,89 @@ class PosOrder(models.Model):
     def _prepare_refund_values(self, current_session):
         return super()._prepare_refund_values(current_session)
 
-    def _get_invoice_lines_values(self, line_values, pos_order_line, move_type):
-        # Odoo 19 added the ``move_type`` argument
-        # (`point_of_sale/models/pos_order.py:220`). Forward it verbatim
-        # and only inject the Venezuelan ``foreign_price``.
-        res = super()._get_invoice_lines_values(line_values, pos_order_line, move_type)
-        foreign_price = pos_order_line.foreign_price
-        # Red de seguridad para las notas de crédito: si la línea de reembolso
-        # llegó sin precio foráneo (líneas sincronizadas antes del backfill de
-        # ``pos.order.line.create``, o por cualquier otra vía), lo tomamos de la
-        # línea original para que la NC revierta 1:1 el USD de la factura de
-        # origen y no recalcule con la tasa del día del reembolso (ticket #15106).
-        original_line = pos_order_line.refunded_orderline_id
-        if original_line and not foreign_price:
-            foreign_price = original_line.foreign_price
-        res["foreign_price"] = foreign_price
-        return res
+    def _prepare_account_move_line_data_from_base_line(self, base_lines):
+        """Inject the Venezuelan ``foreign_price`` into the product lines of
+        the invoice.
+
+        Safety net for credit notes: if the refund line arrived without a
+        foreign price (lines synced before the backfill of
+        ``pos.order.line.create``, or any other path), take it from the
+        original line so the credit note reverses the USD of the original
+        invoice 1:1 instead of recomputing with the rate of the refund day
+        (ticket #15106).
+        """
+        to_create = super()._prepare_account_move_line_data_from_base_line(base_lines)
+        for entry in to_create:
+            line = entry["metadata"].get("line")
+            values = entry["account.move.line"]
+            if not line or values.get("display_type") != "product":
+                continue
+            foreign_price = line.foreign_price
+            original_line = line.refunded_orderline_id
+            if original_line and not foreign_price:
+                foreign_price = original_line.foreign_price
+            values["foreign_price"] = foreign_price
+        return to_create
+
+    def _prepare_account_move_line_data_for_payments(self, partner=None):
+        """Add to the metadata of each payment line the payments it groups and
+        their alternate amount, so the closing and the invoice can stamp it on
+        the entries that settle them."""
+        result = super()._prepare_account_move_line_data_for_payments(partner)
+        for entry in result:
+            metadata = entry["metadata"]
+            payments = self.payment_ids.filtered(
+                lambda payment: self._get_payment_group_key(payment, partner)
+                == (
+                    metadata["payment_method_id"],
+                    metadata["foreign_currency_id"],
+                    metadata["partner"],
+                )
+            )
+            metadata["payments"] = payments
+            metadata["foreign_amount"] = sum(payments.mapped("foreign_amount"))
+        return result
+
+    def _order_receipt_generate_taxe_data(self):
+        """Add the total in the company's foreign currency to the prices of
+        the receipt, as the PoS does (``GeneratePrinterData.generateTaxData``)."""
+        prices = super()._order_receipt_generate_taxe_data()
+        if self.foreign_currency_id:
+            prices["foreign_total_amount"] = self._order_receipt_format_currency(
+                self.foreign_amount_total, self.foreign_currency_id
+            )
+        return prices
+
+    def _get_payment_group_key(self, payment, partner=None):
+        """Key core groups the payments of an order with in
+        ``_prepare_account_move_line_data_for_payments``."""
+        payment_method = payment.payment_method_id
+        foreign_currency = payment.foreign_currency_id
+        if foreign_currency == payment.currency_id:
+            foreign_currency = self.env["res.currency"]
+        line_partner = (
+            payment.pos_order_id.partner_id
+            if payment_method.type == "pay_later"
+            else partner
+        )
+        return (payment_method, foreign_currency, line_partner)
+
+    def _generate_pos_order_invoice(self):
+        """Hand ``pos.payment.method._create_payment_line`` the payments that
+        settle the invoice, so it stamps their rate and alternate amount on the
+        entries it creates before core reconciles them."""
+        orders_in_invoice = self.filtered(lambda order: not order.is_globally_invoiced)
+        payments_data = []
+        for order in orders_in_invoice:
+            payments_data += order._prepare_account_move_line_data_for_payments(
+                order.partner_id
+            )
+        return super(
+            PosOrder,
+            self.with_context(
+                l10n_ve_pos_payments_data={
+                    "session_closing": False,
+                    "entries": payments_data,
+                }
+            ),
+        )._generate_pos_order_invoice()

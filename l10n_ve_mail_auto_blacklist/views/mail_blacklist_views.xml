@@ -23,7 +23,7 @@
             <xpath expr="//div[hasclass('badge')]" position="before">
                 <div class="oe_button_box" name="button_box">
                     <button name="action_l10n_ve_view_bounce_events" type="object"
-                            class="oe_stat_button" icon="fa-exclamation-triangle"
+                            class="oe_stat_button" icon="warning"
                             invisible="not l10n_ve_bounce_event_count">
                         <field name="l10n_ve_bounce_event_count" widget="statinfo" string="Delivery Failures"/>
                     </button>

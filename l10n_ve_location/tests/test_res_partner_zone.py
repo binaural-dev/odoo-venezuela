@@ -1,6 +1,7 @@
 from psycopg2 import IntegrityError
 
 from odoo.tests.common import TransactionCase, tagged
+from odoo.tools import mute_logger
 
 
 @tagged("post_install", "-at_install", "l10n_ve_location")
@@ -16,7 +17,7 @@ class TestResPartnerZone(TransactionCase):
         # violación surge como un error de integridad de PostgreSQL
         # (NOT NULL constraint) al hacer flush del create, no como una
         # ValidationError de aplicación.
-        with self.assertRaises(IntegrityError):
+        with self.assertRaises(IntegrityError), mute_logger("odoo.sql_db"):
             self.env["res.partner.zone"].create({})
             self.env.flush_all()
 

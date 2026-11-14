@@ -5,10 +5,10 @@
 			<field name="model">res.partner</field>
 			<field name="inherit_id" ref="base.view_partner_form" />
 			<field name="arch" type="xml">
-				<xpath expr="//form/sheet/group[1]/group[1]/div[@class='o_address_format']" position="attributes">
+				<xpath expr="//form/sheet/group[1]/group[1]/div[hasclass('o_address_format')]" position="attributes">
 					<attribute name="invisible">1</attribute>
 				</xpath>
-				<xpath expr="//form/sheet/group[1]/group[1]/div[@class='o_address_format']" position="after">
+				<xpath expr="//form/sheet/group[1]/group[1]/div[hasclass('o_address_format')]" position="after">
 					<div class='' name='l10n_ve_address_format'>
 						<field name="street" placeholder='Calle'/>
 						<field name="street2" placeholder='Calle 2'/>
@@ -48,7 +48,7 @@
 				</xpath>
 
 				<xpath expr="//sheet/notebook/page[@name='contact_addresses']/field[@name='child_ids']/form//field[@name='city']" position="replace">
-					<field name="city_id" placeholder="Ciudad" domain="[('state_id', '=', state_id)]" />
+					<field name="city_id" placeholder="Ciudad" domain="[('state_id', '=', state_id)]" required="type not in ['contact']" />
 					<field name="city" invisible="1" />
 				</xpath>
 				<xpath expr="//sheet/notebook/page[@name='contact_addresses']/field[@name='child_ids']/form//field[@name='street2']" position="after">
@@ -76,9 +76,6 @@
 						<attribute name="required">type not in ['contact']</attribute>
 				</xpath>
 				<xpath expr="//sheet/notebook/page[@name='contact_addresses']/field[@name='child_ids']/form//field[@name='state_id']" position="attributes">
-						<attribute name="required">type not in ['contact']</attribute>
-				</xpath>
-				<xpath expr="//sheet/notebook/page[@name='contact_addresses']/field[@name='child_ids']/form//field[@name='city_id']" position="attributes">
 						<attribute name="required">type not in ['contact']</attribute>
 				</xpath>
 			</field>

@@ -30,7 +30,7 @@ class TestAutoBlacklist(TransactionCase):
     def _set_config(cls, **values):
         ICP = cls.env['ir.config_parameter'].sudo()
         for key, value in values.items():
-            ICP.set_param(PARAM_PREFIX + key, value)
+            ICP.set_str(PARAM_PREFIX + key, value)
 
     def _is_blacklisted(self, email):
         return bool(self.Blacklist.search([('email', '=', email)]))

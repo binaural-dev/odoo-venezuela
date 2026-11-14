@@ -5,7 +5,7 @@
             <t t-foreach="steps" t-as="s" t-key="s.number">
                 <div t-attf-class="o_kiosk_stepper_step d-flex align-items-center gap-2 {{ stepState(s.number) }}">
                     <span class="o_kiosk_stepper_circle d-flex align-items-center justify-content-center rounded-circle flex-shrink-0">
-                        <i t-if="stepState(s.number) === 'done'" class="fa fa-check"/>
+                        <i t-if="stepState(s.number) === 'done'" class="oi" data-icon="check"/>
                         <t t-else="" t-esc="s.number"/>
                     </span>
                     <span class="o_kiosk_stepper_label" t-esc="s.label"/>

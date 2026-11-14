@@ -3,11 +3,11 @@
     <t t-name="l10n_ve_pos_mf.PrintPendingOrderButton">
         <div class="control-button btn btn-light rounded-0 fw-bolder" t-on-click="_onClick" >
             <t t-if="state.isPrinting">
-                <i class="fa fa-spinner fa-spin"></i>
+                <i class="oi oi-spin" data-icon="progress_activity"></i>
                 <span>Imprimiendo...</span>
             </t>
             <t t-else="">
-                <i class="fa fa-print"></i>
+                <i class="oi" data-icon="print"></i>
                 <span>Imprimir pedido pendiente</span>
             </t>
         </div>

@@ -8,7 +8,7 @@
     "support": "contacto@binaural.dev",
     "category": "Point of Sale",
     "website": "https://binauraldev.com/",
-    "version": "19.0.1.28.2",
+    "version": "20.0.1.0.0",
     # any module necessary for this one to work correctly
     "depends": [
         "base",
@@ -21,7 +21,6 @@
     ],
     # always loaded
     "data": [
-        "security/ir.model.access.csv",
         "data/res_group.xml",
         "views/pos_payment_method.xml",
         "views/pos_order.xml",
@@ -32,6 +31,8 @@
         "security/res_group.xml",
         "wizard/payment_report.xml",
         "report/payment_report.xml",
+        "report/pos_order_receipt.xml",
+        'security/ir.access.csv',
     ],
     "images": ["static/description/icon.png"],
     "application": True,
@@ -46,5 +47,6 @@
             "l10n_ve_pos/static/tests/unit/**/*",
         ],
     },
-    "installable": False,
+    "installable": True,
+    "binaural_migrated": True,
 }

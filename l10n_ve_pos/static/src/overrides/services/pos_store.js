@@ -5,12 +5,20 @@ import { PosStore } from "@point_of_sale/app/services/pos_store";
 import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { ConnectionLostError } from "@web/core/network/rpc";
 import { _t } from "@web/core/l10n/translation";
+import { PosAccessRightPlugin } from "@point_of_sale/app/plugins/access_right_plugin";
 
 patch(PosStore.prototype, {
+  formatForeignCurrency(value, hasSymbol = true) {
+    return this.formatCurrency(value || 0, this.config.foreign_currency_id.id, {
+      noSymbol: !hasSymbol,
+    });
+  },
+
   /**
    * The VAT PartnerList leaves for the customer it creates (newPartnerVat) is
    * the default of that form and is consumed here, so it never reaches a
-   * later one.
+   * later one. The core keeps prefilling the name (or the phone, for what
+   * looks like a phone number) from the search.
    */
   editPartnerContext(partner) {
     const context = { ...super.editPartnerContext(...arguments) };
@@ -31,10 +39,6 @@ patch(PosStore.prototype, {
     return this.config.allow_product_creation_in_pos === true;
   },
 
-  // El core muestra "Crear producto" del menú según este getter.
-  get hasProductCreationAccess() {
-    return this.isProductCreationAllowed && super.hasProductCreationAccess;
-  },
 
   /**
    * editProduct() sin producto abre el formulario de producto nuevo: lo usan
@@ -93,7 +97,7 @@ patch(PosStore.prototype, {
     if (this.config.amount_to_zero) {
       const shortages = await this._getStockShortages(order);
       if (shortages.length) {
-        const formatQty = (qty) => this.env.utils.formatProductQty(qty, false);
+        const formatQty = (qty) => this.formatProductQty(qty, false);
         const productLines = shortages
           .map(
             (shortage) =>
@@ -163,5 +167,12 @@ patch(PosStore.prototype, {
           available: product.qty_available,
         }));
     }
+  },
+});
+
+patch(PosAccessRightPlugin.prototype, {
+  // El core muestra "Crear producto" del menú según este getter.
+  get hasProductCreationAccess() {
+    return this.config.allow_product_creation_in_pos === true && super.hasProductCreationAccess;
   },
 });

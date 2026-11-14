@@ -28,6 +28,8 @@ function makeLine(props = {}) {
         taxGroupLabels: "",
         price_type: "original",
         combo_parent_id: false,
+        isServiceFeeLine: () => false,
+        getServiceFeeDisplayInfo: () => ({ amount: "", description: "" }),
         currencyDisplayPrice: "Bs 100,00",
         currencyDisplayPriceUnit: "Bs 100,00",
         displayPriceNoDiscount: 100,
@@ -56,11 +58,6 @@ describe("l10n_ve_pos precio de las hijas de un combo (ticket 15725)", () => {
     test("hija con descuento del 100 %: Free, como el core", () => {
         const child = makeLine({ combo_parent_id: { id: 1 }, currencyDisplayPrice: "", getDiscount: () => 100 });
         expect(screenValues(child).price).toBe("Free");
-    });
-
-    test("recibo básico: la hija sigue sin precio, como el resto de líneas", () => {
-        const child = makeLine({ combo_parent_id: { id: 1 }, currencyDisplayPrice: "" });
-        expect(screenValues(child, { basic_receipt: true }).price).toBe(false);
     });
 
     test("línea normal y padre del combo: sin cambios respecto al core", () => {

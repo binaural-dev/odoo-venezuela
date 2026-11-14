@@ -1,9 +1,9 @@
 
 <templates id="template" xml:space="preserve">
-    <t t-name="PartnerLine" t-inherit="point_of_sale.PartnerLine" t-inherit-mode="extension" owl="1">
+    <t t-name="l10n_ve_pos.PartnerLine" t-inherit="point_of_sale.PartnerLine" t-inherit-mode="extension">
         <xpath expr="//tr/td[1]" position="after">
             <td>
-                <t t-out="props.partner.vat || ''"/>
+                <t t-out="this.props.partner.vat || ''"/>
             </td>
         </xpath>
     </t>

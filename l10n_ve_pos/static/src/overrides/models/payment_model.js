@@ -5,12 +5,14 @@ import { patch } from "@web/core/utils/patch";
 import { GT, LT } from "@point_of_sale/app/utils/numbers";
 import { roundPrecision } from "@web/core/utils/numbers";
 
-// Live patch for Odoo 19 PosPayment.
+// Live patch for Odoo 20 PosPayment.
 //
-// Keeps `foreign_amount` (the display amount in the *foreign* currency) in
-// sync with `amount` (the amount in the POS main currency), using the
-// conversion helpers exposed by pos.order (which respect the "which one is
-// the main currency" business rule).
+// `amount` is the amount in the POS main currency; `foreign_amount` is its
+// value in the company's foreign currency (the dual-currency accounting
+// column), kept in sync using the conversion helpers exposed by pos.order. A
+// payment made in a currency other than the order's (Odoo 20 native
+// `foreign_currency_id` + `amount_currency`, chosen by the cashier on the
+// payment method) keeps what the customer handed over in `amount_currency`.
 patch(PosPayment.prototype, {
     setup(vals) {
         super.setup(...arguments);
@@ -53,9 +55,61 @@ patch(PosPayment.prototype, {
         this.foreign_amount = order._convertOrderAmount(this.amount || 0);
     },
 
-    setAmount(value) {
-        super.setAmount(value);
+    get isForeignPayment() {
+        return Boolean(this.isDifferentCurrency);
+    },
+
+    get currencySettings() {
+        // Settings of the payment method for the currency of this payment
+        // (pos.payment.method.currency: cross journals, and what the modules
+        // that extend it add, like the IGTF flag). Undefined when none.
+        return this.payment_method_id?.currency_setting_ids?.find(
+            (setting) => setting.currency_id?.id === this.currency?.id
+        );
+    },
+
+    get usesAlternateEngine() {
+        // The payment currency is the company's foreign currency (USD): its
+        // conversions use the config rate and the frozen rate of a refund,
+        // the same engine as the totals. Any other currency (EUR) uses the
+        // rate of the currency itself.
+        const order = this.pos_order_id;
+        const foreignId = order?._currencyId?.(order._getForeignCurrencyRecord?.());
+        return Boolean(foreignId) && this.foreign_currency_id?.id === foreignId;
+    },
+
+    _localToPaymentCurrency(localAmount) {
+        const order = this.pos_order_id;
+        if (this.usesAlternateEngine) {
+            return order._convertOrderAmount(localAmount);
+        }
+        return order.convertAmountToCurrency(localAmount, this.currency);
+    },
+
+    _paymentCurrencyToLocal(amount) {
+        const order = this.pos_order_id;
+        if (this.usesAlternateEngine) {
+            return order._convertForeignOrderAmount(amount);
+        }
+        const inCompanyCurrency = this.currency.convertToDefaultCurrency(amount);
+        return order.currency.round(order.currency.convert(inCompanyCurrency));
+    },
+
+    setAmount(value, currency = this.pos_order_id.currency) {
+        // `currency` is the one `value` is typed in. A foreign payment typed
+        // in its own currency goes through set_foreign_amount (the hook l10n_ve_pos_igtf patches).
+        if (this.isForeignPayment && currency.id === this.foreign_currency_id.id) {
+            this.pos_order_id.assertEditable();
+            this.set_foreign_amount(value);
+            return;
+        }
+        super.setAmount(value, currency);
         this._recomputeForeignFromLocal();
+        if (this.isForeignPayment) {
+            this.amount_currency = this.usesAlternateEngine
+                ? this.foreign_amount
+                : this._localToPaymentCurrency(this.amount);
+        }
     },
 
     get_amount() {
@@ -69,7 +123,7 @@ patch(PosPayment.prototype, {
     },
 
     set_foreign_amount(amount) {
-        // Foreign method: the user typed the foreign amount directly. We
+        // Foreign payment: the user typed the amount in the payment currency. We
         // need to compute the equivalent LOCAL amount so the core's
         // remainingDue = totalDue - amountPaid works.
         //
@@ -90,7 +144,9 @@ patch(PosPayment.prototype, {
         // currency count correctly toward the foreign due.
         const order = this.pos_order_id;
         const requested = Number(amount) || 0;
+        const engine = this.usesAlternateEngine;
         this.foreign_amount = requested;
+        this.amount_currency = requested;
 
         if (!order || typeof order.foreignToLocal !== "function") {
             this.amount = 0;
@@ -121,12 +177,13 @@ patch(PosPayment.prototype, {
         // when the tender just covers it (within one foreign-rounding step),
         // to kill the sub-cent drift of the rounded foreign due on a full
         // refund. Refund lines are negative, so foreign_amount is negated too.
-        const exactRate = typeof order.getRefundForeignRate === "function"
+        const exactRate = engine && typeof order.getRefundForeignRate === "function"
             ? order.getRefundForeignRate() : 0;
         if (exactRate > 0) {
             const sign = localTotal < 0 ? -1 : 1;
             const mag = Math.abs(requested);
             this.foreign_amount = sign * mag;
+            this.amount_currency = this.foreign_amount;
             // foreign→local at the exact original rate, via the shared engine
             // primitive (exactRate is already local-per-foreign).
             const directLocal = order.foreignToLocalAtRate(mag, exactRate);
@@ -138,10 +195,8 @@ patch(PosPayment.prototype, {
             // rounds both operands first, so float noise right at the step
             // (0.40000000000009 Bs for 1 cent at 40) no longer turns the
             // boundary into a mirror (task 83148, H20).
-            const fc = order._resolveCurrencyRecord?.(order.get_foreign_currency?.())
-                ?? order.get_foreign_currency?.();
-            const fRounding = Number(fc?.rounding)
-                || Number(order._getForeignCurrencyRecord?.()?.rounding) || 0.01;
+            const fc = this.currency;
+            const fRounding = Number(fc?.rounding) || 0.01;
             const dueForeign = order.localToForeignAtRate(absDue, 1 / exactRate, false);
             const hasComp = typeof fc?.comp === "function";
             const dueShown = hasComp
@@ -163,7 +218,7 @@ patch(PosPayment.prototype, {
         // typed a positive amount (task 83148, H1). Sales keep what was typed.
         const sign = localTotal < 0 ? -1 : 1;
         const signedRequested = sign < 0 && requested > 0 ? -requested : requested;
-        this.foreign_amount = signedRequested;
+        this.amount_currency = signedRequested;
 
         // Convert local due to foreign ONCE (same rounding as
         // get_foreign_total_with_tax → foreign_currency.round).
@@ -172,12 +227,9 @@ patch(PosPayment.prototype, {
         // the frozen original-sale rate, not today's live rate: otherwise the
         // foreign due shown/typed here diverges from the foreign amount the
         // original payment actually had (visible via "ver pagos de origen").
-        const foreignDueBefore = order._convertOrderAmount(localDueBefore);
+        const foreignDueBefore = this._localToPaymentCurrency(localDueBefore);
 
-        // Resolve the real ResCurrency record (AbstractNumbers) when
-        // possible; get_foreign_currency may return a bare id.
-        const fc = order._resolveCurrencyRecord?.(order.get_foreign_currency?.())
-            ?? order.get_foreign_currency?.();
+        const fc = this.currency;
         const hasComp = Boolean(fc && typeof fc.comp === "function");
 
         // "Covers the due" means |requested| >= |due|. Works for both
@@ -205,15 +257,28 @@ patch(PosPayment.prototype, {
                 ? fc.isPositive(overpaymentForeign)
                 : overpaymentForeign > 0;
             const overpaymentLocal = hasOverpay
-                ? sign * order._convertForeignOrderAmount(overpaymentForeign)
+                ? sign * this._paymentCurrencyToLocal(overpaymentForeign)
                 : 0;
             this.amount = localDueBefore + overpaymentLocal;
+            this._stampForeignAmount(signedRequested);
             return;
         }
 
         // Partial payment: strict mathematical conversion. Refund-aware so a
         // partial refund's local (main-currency) amount is proportional to
         // the original sale's rate, not today's rate.
-        this.amount = order._convertForeignOrderAmount(signedRequested);
+        this.amount = this._paymentCurrencyToLocal(signedRequested);
+        this._stampForeignAmount(signedRequested);
+    },
+
+    _stampForeignAmount(typed) {
+        // Company foreign currency: what was typed is the alternate amount.
+        // Another currency: the alternate amount is the local one converted.
+        if (this.usesAlternateEngine) {
+            this.foreign_amount = typed;
+        } else {
+            this._recomputeForeignFromLocal();
+        }
+        this.amount_currency = typed;
     },
 });

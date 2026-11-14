@@ -54,7 +54,7 @@ class StockQuan(models.Model):
         owner_id=None,
         strict=False,
     ):
-        if not self.env.company.use_physical_location or self._context.get(
+        if not self.env.company.use_physical_location or self.env.context.get(
             "skip_physical_location", False
         ):
             return super()._update_reserved_quantity(
@@ -62,7 +62,7 @@ class StockQuan(models.Model):
             )
 
         self = self.sudo()
-        rounding = product_id.uom_id.rounding
+        uom = product_id.uom_id
 
         quants = self._gather(
             product_id,
@@ -74,11 +74,11 @@ class StockQuan(models.Model):
         )
         reserved_quants = []
 
-        if float_compare(quantity, 0, precision_rounding=rounding) > 0:
+        if uom.compare(quantity, 0) > 0:
             # if we want to reserve
             available_quantity = sum(
                 quants.filtered(
-                    lambda q: float_compare(q.quantity, 0, precision_rounding=rounding) > 0
+                    lambda q: uom.compare(q.quantity, 0) > 0
                 ).mapped("quantity")
             ) - sum(quants.mapped("reserved_quantity"))
 
@@ -86,7 +86,7 @@ class StockQuan(models.Model):
             # if float_compare(quantity, available_quantity, precision_rounding=rounding) > 0:
             #     raise UserError(_('It is not possible to reserve more products of %s than you have in stock.', product_id.display_name))
             # <<< BINAURAL
-        elif float_compare(quantity, 0, precision_rounding=rounding) < 0:
+        elif uom.compare(quantity, 0) < 0:
             # if we want to unreserve
             available_quantity = sum(quants.mapped("reserved_quantity"))
 
@@ -118,11 +118,11 @@ class StockQuan(models.Model):
         # <<< BINAURAL
 
         for quant in quants:
-            if float_compare(quantity, 0, precision_rounding=rounding) > 0:
+            if uom.compare(quantity, 0) > 0:
                 # >>> BINAURAL
                 max_quantity_on_quant = quantity
                 # <<< BINAURAL
-                if float_compare(max_quantity_on_quant, 0, precision_rounding=rounding) <= 0:
+                if uom.compare(max_quantity_on_quant, 0) <= 0:
                     continue
                 max_quantity_on_quant = min(max_quantity_on_quant, quantity)
                 quant.reserved_quantity += max_quantity_on_quant
@@ -136,9 +136,7 @@ class StockQuan(models.Model):
                 quantity += max_quantity_on_quant
                 available_quantity += max_quantity_on_quant
 
-            if float_is_zero(quantity, precision_rounding=rounding) or float_is_zero(
-                available_quantity, precision_rounding=rounding
-            ):
+            if uom.is_zero(quantity) or uom.is_zero(available_quantity):
                 break
         return reserved_quants
     

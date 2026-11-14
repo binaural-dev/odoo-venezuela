@@ -423,7 +423,7 @@ class TestIndexedPayments(TestForeignBalance):
         wizard.payment_difference_handling = "reconcile"
         wizard.writeoff_account_id = self.account_income
 
-        payment_vals = wizard._create_payment_vals_from_wizard(wizard.batches[0])
+        payment_vals = wizard._create_payment_vals_from_wizard(wizard._get_batches()[0])
         write_off_lines = payment_vals.get("write_off_line_vals", [])
         self.assertTrue(write_off_lines, "Overpayment must produce a write-off line.")
 

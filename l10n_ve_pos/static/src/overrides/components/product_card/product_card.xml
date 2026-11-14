@@ -1,21 +1,19 @@
 <templates id="template" xml:space="preserve">
   <t t-name="l10n_ve_pos.ProductCardExt"
      t-inherit="point_of_sale.ProductCard"
-     t-inherit-mode="extension"
-     owl="1">
+     t-inherit-mode="extension">
 
-    <!-- Debajo del bloque principal del card -->
     <xpath expr="//div[contains(@class, 'product-content')]" position="after">
-      <t t-if="show_free_qty and pos">
+      <t t-if="this.show_free_qty and this.pos">
         <div class="free-qty p-1" style="display:block; width:100%; margin-top:4px;"
-             t-attf-style="{{ free_qty &gt; 0 and 'color: green' or 'color: red' }}">
+             t-attf-style="{{ this.free_qty &gt; 0 and 'color: green' or 'color: red' }}">
           Disponible:
-          <t t-if="stockStatus === 'success' or stockStatus === 'idle'">
-            <t t-esc="free_qty"/>
+          <t t-if="this.stockStatus === 'success' or this.stockStatus === 'idle'">
+            <t t-out="this.free_qty"/>
           </t>
-          <t t-elif="stockStatus === 'error'">N/A</t>
+          <t t-elif="this.stockStatus === 'error'">N/A</t>
           <t t-else="">
-            <i class="fa fa-fw fa-spin fa-circle-o-notch" aria-hidden="true"/>
+            <i class="oi oi-fw oi-spin" data-icon="autorenew" aria-hidden="true"/>
           </t>
         </div>
       </t>

@@ -1,0 +1,4 @@
+id,name,model_id,group_id/id,operation,domain
+access_transfer_reason,access_transfer_reason,transfer.reason,base.group_user,r,
+access_stock_picking_self_consumption_wizard,access_stock_picking_self_consumption_wizard,stock.picking.self.consumption.wizard,base.group_user,crud,
+access_picking_invoice_wizard_user,access_picking_invoice_wizard_user,picking.invoice.wizard,base.group_user,crud,

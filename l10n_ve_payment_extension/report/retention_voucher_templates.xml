@@ -26,13 +26,13 @@
                 <div class="col-4">
                     <span>Nro Comprobante:</span>
                     <div>
-                        <span t-esc="retention.number"/>
+                        <span t-out="retention.number"/>
                     </div>
                 </div>
                 <div class="col-4">
                     <span>Fecha de emision:</span>
                     <div>
-                        <span t-esc="retention.date" t-options='{"widget": "date"}'/>
+                        <span t-out="retention.date" t-options='{"widget": "date"}'/>
                     </div>
                 </div>
             </div>
@@ -41,15 +41,15 @@
                     <div class="col-12">
                         <span>Nombre o Razón Social del Agente de Retención</span>
                         <div style="width:100%">
-                            <span t-esc="res_company.name"/>
+                            <span t-out="res_company.name"/>
                         </div>
                     </div>
                     <div class="col-12">
                         <span>Direccion Fiscal del Agente de Retención</span>
                         <div class="col-12">
-                            <span t-esc="res_company.street"/>
-                            <span t-esc="res_company.street2"/>
-                            <span t-esc="res_company.state_id.name"/>
+                            <span t-out="res_company.street"/>
+                            <span t-out="res_company.street2"/>
+                            <span t-out="res_company.state_id.name"/>
                         </div>
                     </div>
                 </div>
@@ -58,7 +58,7 @@
                         <span>Registro de Informacion Fiscal del Agente de Retención:</span>
                     </div>
                     <div>
-                        <span t-esc="(res_company.partner_id.prefix_vat or '') + (res_company.vat or '')"/>
+                        <span t-out="(res_company.partner_id.prefix_vat or '') + (res_company.vat or '')"/>
                     </div>
                 </div>
 
@@ -66,9 +66,9 @@
                     <div class="col-12">
                         <span>Periodo Fiscal:</span>
                         <div style="width:100%">Año :
-                            <span t-esc="retention.date_accounting.strftime('%Y')"/>
+                            <span t-out="retention.date_accounting.strftime('%Y')"/>
                             / Mes:
-                            <span t-esc="retention.date_accounting.strftime('%m')"/>
+                            <span t-out="retention.date_accounting.strftime('%m')"/>
                         </div>
                     </div>
                 </div>
@@ -90,14 +90,14 @@
                 <div class="col-6">
                     <span>Nombre o Razón Social del Sujeto Retenido</span>
                     <div>
-                        <span t-esc="retention.partner_id.name"/>
+                        <span t-out="retention.partner_id.name"/>
                     </div>
                 </div>
                 <div class="col-6">
                     <span>Registro de Información Fiscal del Sujeto Retenido (R.I.F)</span>
                     <div>
                         <span style="text-transform:uppercase"
-                              t-esc="retention.partner_id.prefix_vat+retention.partner_id.vat"/>
+                              t-out="retention.partner_id.prefix_vat+retention.partner_id.vat"/>
                     </div>
                 </div>
             </div>
@@ -106,10 +106,10 @@
                 <div class="col-6">
                     <span>Direccion Fiscal del Sujeto Retenido</span>
                     <div>
-                        <span t-esc="retention.partner_id.street"/>
+                        <span t-out="retention.partner_id.street"/>
                         <t t-if="retention.partner_id.street2">
                             ,
-                            <span t-esc="retention.partner_id.street2"/>
+                            <span t-out="retention.partner_id.street2"/>
                         </t>
                     </div>
                 </div>
@@ -184,28 +184,28 @@
                     <tr>
                         <!-- 1 Fecha Factura -->
                         <td class="ret-left">
-                            <t t-if="line.move_id.invoice_date_display"><span t-esc="line.move_id.invoice_date_display.strftime('%d/%m/%Y')"/></t><t t-else="">--</t>
+                            <t t-if="line.move_id.invoice_date_display"><span t-out="line.move_id.invoice_date_display.strftime('%d/%m/%Y')"/></t><t t-else="">--</t>
                         </td>
 
                         <!-- 2 Número de Factura -->
                         <td class="ret-num">
                             <t t-if="line.move_id.move_type in ['out_invoice','out_contingence','in_invoice'] and not line.move_id.journal_id.is_debit">
-                                <span t-esc="line.move_id.name"/>
+                                <span t-out="line.move_id.name"/>
                             </t>
                             <t t-else="">--</t>
                         </td>
 
                         <!-- 3 Nro de Control Factura -->
-                        <td class="ret-num"><span t-esc="line.move_id.correlative or '--'"/></td>
+                        <td class="ret-num"><span t-out="line.move_id.correlative or '--'"/></td>
 
                         <!-- 4 Nota de Débito -->
                         <td class="ret-num">
-                            <t t-if="line.move_id.journal_id.is_debit"><span t-esc="line.move_id.name"/></t><t t-else="">--</t>
+                            <t t-if="line.move_id.journal_id.is_debit"><span t-out="line.move_id.name"/></t><t t-else="">--</t>
                         </td>
 
                         <!-- 5 Nota de Crédito -->
                         <td class="ret-num">
-                            <t t-if="line.move_id.move_type in ('out_refund','in_refund')"><span t-esc="line.move_id.name"/></t><t t-else="">--</t>
+                            <t t-if="line.move_id.move_type in ('out_refund','in_refund')"><span t-out="line.move_id.name"/></t><t t-else="">--</t>
                         </td>
 
                         <!-- 6 Tipo de Transacción -->
@@ -221,19 +221,19 @@
 
                         <!-- 7 Factura afectada -->
                         <td class="ret-num">
-                            <t t-if="line.move_id.move_type in ('in_refund','out_refund') and line.move_id.reversed_entry_id"><span t-esc="line.move_id.reversed_entry_id.name"/></t>
-                            <t t-elif="line.move_id.journal_id.is_debit"><span t-esc="line.move_id.debit_origin_id.name"/></t>
+                            <t t-if="line.move_id.move_type in ('in_refund','out_refund') and line.move_id.reversed_entry_id"><span t-out="line.move_id.reversed_entry_id.name"/></t>
+                            <t t-elif="line.move_id.journal_id.is_debit"><span t-out="line.move_id.debit_origin_id.name"/></t>
                             <t t-else="">--</t>
                         </td>
 
                         <!-- 8 Total Compras Incluyendo el IVA -->
                         <td class="ret-num">
                             <t t-if="foreign_currency_is_vef">
-                                <span t-esc="line.foreign_invoice_total" t-options='{"widget":"float","precision":get_digits}'/>
+                                <span t-out="line.foreign_invoice_total" t-options='{"widget":"float","precision":get_digits}'/>
                                 <t t-set="total_amount_total" t-value="total_amount_total + line.foreign_invoice_total"/>
                             </t>
                             <t t-else="">
-                                <span t-esc="line.invoice_total" t-options='{"widget":"float","precision":get_digits}'/>
+                                <span t-out="line.invoice_total" t-options='{"widget":"float","precision":get_digits}'/>
                                 <t t-set="total_amount_total" t-value="total_amount_total + line.invoice_total"/>
                             </t>
                         </td>
@@ -246,7 +246,7 @@
                             <t t-else="">
                                 <t t-set="amount_except" t-value="sum(line.move_id.invoice_line_ids.filtered(lambda l: l.tax_ids.amount == 0).mapped('price_subtotal'))"/>
                             </t>
-                            <span t-esc="amount_except" t-options='{"widget":"float","precision":get_digits}'/>
+                            <span t-out="amount_except" t-options='{"widget":"float","precision":get_digits}'/>
                             <t t-set="total_amount_amount_except" t-value="total_amount_amount_except + amount_except"/>
                         </td>
 
@@ -254,51 +254,51 @@
                         <td class="ret-num">
                             <t t-if="foreign_currency_is_vef">
                                 <t t-if="line.move_id.move_type in ('in_refund','out_refund')">
-                                <span t-esc="-line.foreign_invoice_amount" t-options='{"widget":"float","precision":get_digits}'/>
+                                <span t-out="-line.foreign_invoice_amount" t-options='{"widget":"float","precision":get_digits}'/>
                                 <t t-set="invoice_amount" t-value="invoice_amount - line.foreign_invoice_amount"/>
                                 </t>
                                 <t t-else="">
-                                <span t-esc="line.foreign_invoice_amount" t-options='{"widget":"float","precision":get_digits}'/>
+                                <span t-out="line.foreign_invoice_amount" t-options='{"widget":"float","precision":get_digits}'/>
                                 <t t-set="invoice_amount" t-value="invoice_amount + line.foreign_invoice_amount"/>
                                 </t>
                             </t>
                             <t t-else="">
                                 <t t-if="line.move_id.move_type in ('in_refund','out_refund')">
-                                <span t-esc="-line.invoice_amount" t-options='{"widget":"float","precision":get_digits}'/>
+                                <span t-out="-line.invoice_amount" t-options='{"widget":"float","precision":get_digits}'/>
                                 <t t-set="invoice_amount" t-value="invoice_amount - line.invoice_amount"/>
                                 </t>
                                 <t t-else="">
-                                <span t-esc="line.invoice_amount" t-options='{"widget":"float","precision":get_digits}'/>
+                                <span t-out="line.invoice_amount" t-options='{"widget":"float","precision":get_digits}'/>
                                 <t t-set="invoice_amount" t-value="invoice_amount + line.invoice_amount"/>
                                 </t>
                             </t>
                         </td>
 
                         <!-- 11 % Alic -->
-                        <td class="ret-num no-wrap"><span t-esc="line.aliquot"/></td>
+                        <td class="ret-num no-wrap"><span t-out="line.aliquot"/></td>
 
                         <!-- 12 % Ret -->
-                        <td class="ret-num no-wrap"><span t-esc="line.related_percentage_tax_base"/></td>
+                        <td class="ret-num no-wrap"><span t-out="line.related_percentage_tax_base"/></td>
 
                         <!-- 13 Impuesto IVA -->
                         <td class="ret-num">
                             <t t-if="foreign_currency_is_vef">
                                 <t t-if="line.move_id.move_type in ('in_refund','out_refund')">
-                                <span t-esc="-line.foreign_iva_amount" t-options='{"widget":"float","precision":get_digits}'/>
+                                <span t-out="-line.foreign_iva_amount" t-options='{"widget":"float","precision":get_digits}'/>
                                 <t t-set="total_amount_tax" t-value="total_amount_tax - line.foreign_iva_amount"/>
                                 </t>
                                 <t t-else="">
-                                <span t-esc="line.foreign_iva_amount" t-options='{"widget":"float","precision":get_digits}'/>
+                                <span t-out="line.foreign_iva_amount" t-options='{"widget":"float","precision":get_digits}'/>
                                 <t t-set="total_amount_tax" t-value="total_amount_tax + line.foreign_iva_amount"/>
                                 </t>
                             </t>
                             <t t-else="">
                                 <t t-if="line.move_id.move_type in ('in_refund','out_refund')">
-                                <span t-esc="-line.iva_amount" t-options='{"widget":"float","precision":get_digits}'/>
+                                <span t-out="-line.iva_amount" t-options='{"widget":"float","precision":get_digits}'/>
                                 <t t-set="total_amount_tax" t-value="total_amount_tax - line.iva_amount"/>
                                 </t>
                                 <t t-else="">
-                                <span t-esc="line.iva_amount" t-options='{"widget":"float","precision":get_digits}'/>
+                                <span t-out="line.iva_amount" t-options='{"widget":"float","precision":get_digits}'/>
                                 <t t-set="total_amount_tax" t-value="total_amount_tax + line.iva_amount"/>
                                 </t>
                             </t>
@@ -308,21 +308,21 @@
                         <td class="ret-num no-wrap">
                             <t t-if="foreign_currency_is_vef">
                                 <t t-if="line.move_id.move_type in ('in_refund','out_refund')">
-                                <span t-esc="-line.foreign_retention_amount" t-options='{"widget":"float","precision":get_digits}'/>
+                                <span t-out="-line.foreign_retention_amount" t-options='{"widget":"float","precision":get_digits}'/>
                                 <t t-set="total_amount_to_pay" t-value="total_amount_to_pay - line.foreign_retention_amount"/>
                                 </t>
                                 <t t-else="">
-                                <span t-esc="line.foreign_retention_amount" t-options='{"widget":"float","precision":get_digits}'/>
+                                <span t-out="line.foreign_retention_amount" t-options='{"widget":"float","precision":get_digits}'/>
                                 <t t-set="total_amount_to_pay" t-value="total_amount_to_pay + line.foreign_retention_amount"/>
                                 </t>
                             </t>
                             <t t-else="">
                                 <t t-if="line.move_id.move_type in ('in_refund','out_refund')">
-                                <span t-esc="-line.retention_amount" t-options='{"widget":"float","precision":get_digits}'/>
+                                <span t-out="-line.retention_amount" t-options='{"widget":"float","precision":get_digits}'/>
                                 <t t-set="total_amount_to_pay" t-value="total_amount_to_pay - line.retention_amount"/>
                                 </t>
                                 <t t-else="">
-                                <span t-esc="line.retention_amount" t-options='{"widget":"float","precision":get_digits}'/>
+                                <span t-out="line.retention_amount" t-options='{"widget":"float","precision":get_digits}'/>
                                 <t t-set="total_amount_to_pay" t-value="total_amount_to_pay + line.retention_amount"/>
                                 </t>
                             </t>
@@ -348,7 +348,7 @@
 
                     <!-- 10 Base Imponible (suma) -->
                     <td style="padding:6px 4px; text-align:right; border-top:0;">
-                        <span t-esc="invoice_amount" t-options='{"widget":"float","precision":get_digits}'/>
+                        <span t-out="invoice_amount" t-options='{"widget":"float","precision":get_digits}'/>
                     </td>
 
                     <!-- 11 % Alic (vacío) -->
@@ -359,12 +359,12 @@
 
                     <!-- 13 Impuesto IVA (suma) -->
                     <td style="padding:6px 4px; text-align:right; border-top:0;">
-                        <span t-esc="total_amount_tax" t-options='{"widget":"float","precision":get_digits}'/>
+                        <span t-out="total_amount_tax" t-options='{"widget":"float","precision":get_digits}'/>
                     </td>
 
                     <!-- 14 IVA Retenido (suma) -->
                     <td style="padding:6px 4px; text-align:right; border-top:0;">
-                        <span t-esc="float(total_amount_to_pay)" t-options='{"widget":"float","precision":get_digits}'/>
+                        <span t-out="float(total_amount_to_pay)" t-options='{"widget":"float","precision":get_digits}'/>
                     </td>
                 </tr>
             </tfoot>
@@ -427,17 +427,17 @@
                     <div class="col-4">
                         <span>Nro Comprobante:</span>
                         <div>
-                            <span t-esc="retention.number"></span>
+                            <span t-out="retention.number"></span>
                         </div>
                     </div>
                     <div class="col-4">
                         <span>Fecha:</span>
-                        <span t-esc="retention.date" t-options='{"widget": "date"}'/>
+                        <span t-out="retention.date" t-options='{"widget": "date"}'/>
                     </div>
                     <div class="col-4">
                         <span>Periodo Fiscal:</span>
                         <div>
-                            <span t-esc="retention.date.strftime('%m/%Y')"/>
+                            <span t-out="retention.date.strftime('%m/%Y')"/>
                         </div>
                     </div>
                 </div>
@@ -456,13 +456,13 @@
                         <span>Agente de Retención:</span>
                     </div>
                     <div class="col-12" style="text-transform:uppercase">
-                        <span t-esc="res_company.name"/>
+                        <span t-out="res_company.name"/>
                     </div>
                     <div class="col-12">
                         <span>Dirección:</span>
                     </div>
                     <div class="col-12" style="text-transform:uppercase">
-                        <span t-esc="res_company.street"/>
+                        <span t-out="res_company.street"/>
                     </div>
                 </div>
                 <div class="col-4">
@@ -470,7 +470,7 @@
                         <span>No. R.I.F.:</span>
                     </div>
                     <div class="col-12" style="text-transform:uppercase">
-                        <span t-esc="(res_company.partner_id.prefix_vat or '') + (res_company.vat or '')"/>
+                        <span t-out="(res_company.partner_id.prefix_vat or '') + (res_company.vat or '')"/>
                     </div>
                 </div>
             </div>
@@ -491,7 +491,7 @@
                         <span>Contribuyente:</span>
                     </div>
                     <div class="col-12">
-                        <span style="text-transform:uppercase" t-esc="retention.partner_id.name"/>
+                        <span style="text-transform:uppercase" t-out="retention.partner_id.name"/>
                     </div>
                 </div>
                 <div class="col-4" style="">
@@ -501,7 +501,7 @@
 
                     <div class="col-12">
                         <span style="text-transform:uppercase"
-                              t-esc="retention.partner_id.prefix_vat+retention.partner_id.vat"/>
+                              t-out="retention.partner_id.prefix_vat+retention.partner_id.vat"/>
                     </div>
                 </div>
             </div>
@@ -512,10 +512,10 @@
                         <span>Dirección:</span>
                     </div>
                     <div class="col-12" style="text-transform:uppercase">
-                        <span t-esc="retention.partner_id.street"/>
+                        <span t-out="retention.partner_id.street"/>
                         <t t-if="retention.partner_id.street2">
                             ,
-                            <span t-esc="retention.partner_id.street2"/>
+                            <span t-out="retention.partner_id.street2"/>
                         </t>
                     </div>
                 </div>
@@ -599,72 +599,72 @@
 
                         <!-- Fact Nro -->
                         <td class="ret-left">
-                            <t t-if="line.move_id and line.move_id.name"><span t-esc="line.move_id.name"/></t><t t-else="">--</t>
+                            <t t-if="line.move_id and line.move_id.name"><span t-out="line.move_id.name"/></t><t t-else="">--</t>
                         </td>
 
                         <!-- Nro de Control -->
-                        <td class="ret-left"><span t-esc="line.move_id.correlative or '--'"/></td>
+                        <td class="ret-left"><span t-out="line.move_id.correlative or '--'"/></td>
 
                         <!-- Fecha -->
                         <td class="ret-left">
-                            <t t-if="line.move_id.invoice_date_display"><span t-esc="line.move_id.invoice_date_display.strftime('%d/%m/%Y')"/></t><t t-else="">--</t>
+                            <t t-if="line.move_id.invoice_date_display"><span t-out="line.move_id.invoice_date_display.strftime('%d/%m/%Y')"/></t><t t-else="">--</t>
                         </td>
 
                         <!-- Concepto -->
-                        <td class="ret-left"><span t-esc="line.payment_concept_id.name or '--'"/></td>
+                        <td class="ret-left"><span t-out="line.payment_concept_id.name or '--'"/></td>
 
                         <!-- Código de Retención -->
-                        <td class="ret-left"><span t-esc="line._get_code_of_retention() or '--'"/></td>
+                        <td class="ret-left"><span t-out="line._get_code_of_retention() or '--'"/></td>
 
                         <!-- Total Factura -->
                         <td class="ret-num">
                             <t t-if="foreign_currency_is_vef">
-                                <span t-esc="line.foreign_invoice_total" t-options='{"widget":"float","precision":get_digits}'/>
+                                <span t-out="line.foreign_invoice_total" t-options='{"widget":"float","precision":get_digits}'/>
                             </t>
                             <t t-else="">
-                                <span t-esc="line.invoice_total" t-options='{"widget":"float","precision":get_digits}'/>
+                                <span t-out="line.invoice_total" t-options='{"widget":"float","precision":get_digits}'/>
                             </t>
                         </td>
 
                         <!-- Base de Retención -->
                         <td class="ret-num">
                             <t t-if="foreign_currency_is_vef">
-                                <span t-esc="line.foreign_invoice_amount" t-options='{"widget":"float","precision":get_digits}'/>
+                                <span t-out="line.foreign_invoice_amount" t-options='{"widget":"float","precision":get_digits}'/>
                             </t>
                             <t t-else="">
-                                <span t-esc="line.invoice_amount" t-options='{"widget":"float","precision":get_digits}'/>
+                                <span t-out="line.invoice_amount" t-options='{"widget":"float","precision":get_digits}'/>
                             </t>
                         </td>
 
                         <!-- Tarifa Ret (no-wrap para evitar salto de línea del %) -->
                         <td class="ret-num no-wrap">
-                            <span t-esc="line.related_percentage_fees"/>%
+                            <span t-out="line.related_percentage_fees"/>%
                         </td>
 
                         <!-- Sustraendo -->
                         <td class="ret-num">
-                            <span t-esc="line.related_amount_subtract_fees" t-options='{"widget":"float","precision":2}'/>
+                            <span t-out="line.related_amount_subtract_fees" t-options='{"widget":"float","precision":2}'/>
                         </td>
 
                         <!-- Imp Retenido -->
                         <td class="ret-num no-wrap">
                             <t t-if="foreign_currency_is_vef">
                                 <t t-if="line.move_id.move_type in ('in_refund','out_refund')">
-                                <span t-esc="-line.foreign_retention_amount" t-options='{"widget":"float","precision":get_digits}'/>
+                                <span t-out="-line.foreign_retention_amount" t-options='{"widget":"float","precision":get_digits}'/>
                                 <t t-set="islr_total" t-value="islr_total - line.foreign_retention_amount"/>
                                 </t>
                                 <t t-else="">
-                                <span t-esc="line.foreign_retention_amount" t-options='{"widget":"float","precision":get_digits}'/>
+                                <span t-out="line.foreign_retention_amount" t-options='{"widget":"float","precision":get_digits}'/>
                                 <t t-set="islr_total" t-value="islr_total + line.foreign_retention_amount"/>
                                 </t>
                             </t>
                             <t t-else="">
                                 <t t-if="line.move_id.move_type in ('in_refund','out_refund')">
-                                <span t-esc="-line.retention_amount" t-options='{"widget":"float","precision":get_digits}'/>
+                                <span t-out="-line.retention_amount" t-options='{"widget":"float","precision":get_digits}'/>
                                 <t t-set="islr_total" t-value="islr_total - line.retention_amount"/>
                                 </t>
                                 <t t-else="">
-                                <span t-esc="line.retention_amount" t-options='{"widget":"float","precision":get_digits}'/>
+                                <span t-out="line.retention_amount" t-options='{"widget":"float","precision":get_digits}'/>
                                 <t t-set="islr_total" t-value="islr_total + line.retention_amount"/>
                                 </t>
                             </t>
@@ -686,7 +686,7 @@
                 <tr>
                     <td colspan="10"></td>
                     <td class="ret-num no-wrap">
-                        <span t-esc="islr_total" t-options='{"widget":"float","precision":get_digits}'/>
+                        <span t-out="islr_total" t-options='{"widget":"float","precision":get_digits}'/>
                     </td>
                 </tr>
             </tfoot>

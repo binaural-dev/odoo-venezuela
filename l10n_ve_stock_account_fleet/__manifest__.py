@@ -5,19 +5,20 @@
     "author": "binaural-dev",
     "website": "https://www.binauraldev.com",
     "category": "Inventory/Inventory",
-    "version": "19.0.1.0.2",
+    "version": "20.0.1.0.0",
     "depends": [
         "l10n_ve_stock_account",
         "fleet",
     ],
     "data": [
-        "security/ir.model.access.csv",
         "views/fleet_vehicle_views.xml",
         "views/res_partner_views.xml",
         "views/stock_picking_views.xml",
+        'security/ir.access.csv',
     ],
     "images": ["static/description/icon.png"],
     "auto_install": True,
     "application": False,
-    "installable": False,
+    "installable": True,
+    "binaural_migrated": True,
 }

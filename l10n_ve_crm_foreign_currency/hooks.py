@@ -1,4 +1,5 @@
 from odoo import fields
+from odoo.tools.sql import column_exists
 
 
 def post_init_hook(env):
@@ -37,6 +38,8 @@ def post_init_hook(env):
 
 
 def _backfill_crm_lead_foreign_amounts(env):
+    if not (column_exists(env.cr, "crm_lead", "expected_revenue") and column_exists(env.cr, "crm_lead", "recurring_revenue")):
+        return
     env.cr.execute("""
         SELECT id, expected_revenue, recurring_revenue, create_date, company_id
         FROM crm_lead
@@ -73,6 +76,10 @@ def _backfill_crm_lead_foreign_amounts(env):
 
 
 def _backfill_crm_team_foreign_amounts(env):
+    # Odoo 20 no longer has the invoicing target of the sales team: the column only exists in a
+    # database that comes from Odoo 19.
+    if not column_exists(env.cr, "crm_team", "invoiced_target"):
+        return
     env.cr.execute("""
         SELECT id, invoiced_target, create_date, company_id
         FROM crm_team

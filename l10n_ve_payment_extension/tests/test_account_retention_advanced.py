@@ -117,7 +117,7 @@ class TestAccountRetentionAdvanced(RetentionTestCommon):
         existing = self.env["signature.config"].search([
             ("company_id", "=", self.company.id),
         ])
-        sig_b64 = base64.b64encode(b"test_signature_data")
+        sig_b64 = base64.b64encode(b"test_signature_data").decode()
         if existing:
             existing.write({"active": True, "signature": sig_b64})
         else:
@@ -131,7 +131,7 @@ class TestAccountRetentionAdvanced(RetentionTestCommon):
             "date": fields.Date.today(), "date_accounting": fields.Date.today(),
         })
         sig = retention.get_signature()
-        self.assertTrue(sig)
+        self.assertEqual(sig, sig_b64, "The voucher embeds the signature as base64")
         _logger.info("========= test_08 passed =========")
 
     def test_09_compute_retention_lines_data_no_taxes(self):

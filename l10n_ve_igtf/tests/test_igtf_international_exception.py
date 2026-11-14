@@ -127,7 +127,8 @@ class TestIgtfInternationalException(TransactionCase):
         # ── Partner de prueba ────────────────────────────────────────────────
         cls.partner = cls.env["res.partner"].create({
             "name": "Proveedor Test IGTF",
-            "company_type": "company",
+            "prefix_vat": "J",
+            "vat": "301234567",
             "taxpayer_type": "special",
             "property_account_payable_id": cls.payable_account.id,
             "property_account_receivable_id": cls.receivable_account.id,

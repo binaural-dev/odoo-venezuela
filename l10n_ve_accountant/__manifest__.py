@@ -7,7 +7,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
-    "version": "19.0.1.0.42",
+    "version": "20.0.1.0.1",
     "depends": [
         "base",
         "web",
@@ -24,8 +24,6 @@
     ],
     "data": [
         "security/res_groups.xml",
-        "security/ir.model.access.csv",
-        "security/ir_rule.xml",
         "data/account_data.xml",
         "data/ir_actions_server.xml",
         "data/paperformats.xml",
@@ -53,6 +51,7 @@
         "wizard/invoices_details.xml",
         "wizard/payment_report.xml",
         "wizard/move_action_post_alert_views.xml",
+        'security/ir.access.csv',
     ],
     "images": ["static/description/icon.png"],
     "assets": {
@@ -62,5 +61,6 @@
     "application": True,
     "pre_init_hook": "pre_init_hook",
     "post_init_hook": "set_main_company_currency_to_vef",
-    "installable": False,
+    "installable": True,
+    "binaural_migrated": True,
 }

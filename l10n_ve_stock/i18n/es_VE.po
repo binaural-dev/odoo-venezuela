@@ -125,7 +125,7 @@ msgid "All"
 msgstr "Todos"
 
 #. module: l10n_ve_stock
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.view_stock_quantity_history_inherit_binaural_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.view_stock_inventory_valuation_wizard_form
 msgid "All Warehouse"
 msgstr "Todos los Almacenes"
 
@@ -267,6 +267,7 @@ msgstr "Puede editar la compañía del producto"
 
 #. module: l10n_ve_stock
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.move_alter_location_qtities_wizard_view_form
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.view_stock_inventory_valuation_wizard_form
 msgid "Cancel"
 msgstr "Cancelar"
 
@@ -309,6 +310,7 @@ msgstr "Ajustes de configuración"
 
 #. module: l10n_ve_stock
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.move_alter_location_qtities_wizard_view_form
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.view_stock_inventory_valuation_wizard_form
 msgid "Confirm"
 msgstr "Confirmar"
 
@@ -381,14 +383,14 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location_line__name
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_type__display_name
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_quant__display_name
-#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_quantity_history__display_name
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_inventory_valuation_wizard__display_name
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_scrap__display_name
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_warehouse__display_name
 msgid "Display Name"
 msgstr "Nombre en pantalla"
 
 #. module: l10n_ve_stock
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.view_stock_quantity_history_inherit_binaural_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.view_stock_inventory_valuation_wizard_form
 msgid "Download"
 msgstr "Descargar"
 
@@ -405,7 +407,7 @@ msgid ""
 msgstr ""
 
 #. module: l10n_ve_stock
-#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_quantity_history__except_products_at_zero
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_inventory_valuation_wizard__except_products_at_zero
 msgid "Except Products At Zero"
 msgstr "Exceptuar Productos en 0"
 
@@ -515,7 +517,7 @@ msgstr "Ocultar Botón Validar de las Transferencias de Inventario"
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location_line__id
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_type__id
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_quant__id
-#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_quantity_history__id
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_inventory_valuation_wizard__id
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_scrap__id
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_warehouse__id
 msgid "ID"
@@ -1127,9 +1129,9 @@ msgid "Stock Move"
 msgstr "Movimiento de stock"
 
 #. module: l10n_ve_stock
-#: model:ir.model,name:l10n_ve_stock.model_stock_quantity_history
-msgid "Stock Quantity History"
-msgstr "Historial de cantidad de existencias"
+#: model:ir.model,name:l10n_ve_stock.model_stock_inventory_valuation_wizard
+msgid "Inventory valuation report"
+msgstr "Reporte de valoración de inventario"
 
 #. module: l10n_ve_stock
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.res_config_settings_view_form_l10n_ve_stock
@@ -1284,7 +1286,7 @@ msgid "Warehouse"
 msgstr "Almacén"
 
 #. module: l10n_ve_stock
-#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_quantity_history__warehouse_search_id
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_inventory_valuation_wizard__warehouse_search_id
 msgid "Warehouse Search"
 msgstr "Buscar en Almacen"
 
@@ -1412,3 +1414,20 @@ msgstr ""
 #: model:ir.actions.report,name:l10n_ve_stock.inventory_valuation_report
 msgid "inventory Valuation"
 msgstr "Valoración de inventario"
+
+#. module: l10n_ve_stock
+#: model:ir.actions.act_window,name:l10n_ve_stock.action_stock_inventory_valuation_wizard
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.product_product_stock_tree_inventory_valuation
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.view_stock_inventory_valuation_wizard_form
+msgid "Inventory Valuation"
+msgstr "Valoración de inventario"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_inventory_valuation_wizard__inventory_datetime
+msgid "Inventory at Date"
+msgstr "Inventario a la fecha"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,help:l10n_ve_stock.field_stock_inventory_valuation_wizard__inventory_datetime
+msgid "Choose a date to get the inventory at that date"
+msgstr "Elija una fecha para obtener el inventario a esa fecha"

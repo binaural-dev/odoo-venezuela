@@ -2,18 +2,18 @@
 
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
-import { Component, xml, useState } from "@odoo/owl";
+import { Component, proxy, useProps, xml } from "@odoo/owl";
 import { _t } from "@web/core/l10n/translation";
 import { ConfirmationDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { getBackendFiscalPrinter, ensureConnected } from "./mf_webserial_service";
 
 export class MfReportsWebSerialButtonComponent extends Component {
-    static props = ["*"];
     static template = xml`
-        <button class="btn btn-primary mb-2" t-att-disabled="state.busy" t-on-click="onClick">
-            <i t-if="state.busy" class="fa fa-spinner fa-spin me-1"/>
-            <span t-esc="state.label"/>
+        <button class="btn btn-primary mb-2" t-att-disabled="this.state.busy" t-on-click="this.onClick">
+            <i t-if="this.state.busy" class="oi oi-spin me-1" data-icon="progress_activity"/>
+            <span t-out="this.state.label"/>
         </button>`;
+    props = useProps();
 
     setup() {
         this.orm = useService("orm");
@@ -27,7 +27,7 @@ export class MfReportsWebSerialButtonComponent extends Component {
             reprint_range: _t("Reimprimir documentos"),
         };
 
-        this.state = useState({
+        this.state = proxy({
             busy: false,
             label: this.buttonLabels[this.props.action] || this.props.action || "MF",
         });

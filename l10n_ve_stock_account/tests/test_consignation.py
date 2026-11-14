@@ -236,7 +236,7 @@ class TestConsignationSaleOrder(TransactionCase):
         self.assertFalse(so.is_consignation)
 
     def test_is_consignation_forces_document_to_invoice(self):
-        from odoo.tests.common import Form
+        from odoo.tests import Form
         so_form = Form(self.env["sale.order"])
         so_form.partner_id = self.partner
         so_form.warehouse_id = self.consignation_wh
@@ -337,7 +337,7 @@ class TestConsignationSaleOrder(TransactionCase):
     # ── sale.order: _onchange_is_consignation (via Form) ──
 
     def test_onchange_is_consignation_true_switches_to_consignation_wh(self):
-        from odoo.tests.common import Form
+        from odoo.tests import Form
         so_form = Form(self.env["sale.order"])
         so_form.partner_id = self.partner
         so_form.warehouse_id = self.normal_wh
@@ -349,7 +349,7 @@ class TestConsignationSaleOrder(TransactionCase):
         self.assertTrue(so.is_consignation)
 
     def test_onchange_is_consignation_false_switches_to_normal_wh(self):
-        from odoo.tests.common import Form
+        from odoo.tests import Form
         so_form = Form(self.env["sale.order"])
         so_form.partner_id = self.partner
         so_form.warehouse_id = self.consignation_wh

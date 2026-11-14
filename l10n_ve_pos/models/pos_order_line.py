@@ -154,12 +154,13 @@ class PosOrderLine(models.Model):
                 )
             )
 
-    def _prepare_refund_data(self, refund_order, PosPackOperationLot):
-        """Odoo 19 keeps this hook; we just inject ``foreign_price``
-        so the refund line preserves the Venezuelan contract (refund
-        flow is the only path that recreates order lines from a
-        source order and would otherwise drop the value).
+    def _prepare_refund_data(self, refund_order):
+        """Odoo 20 keeps this hook (without the ``PosPackOperationLot``
+        argument of 19); we just inject ``foreign_price`` so the refund line
+        preserves the Venezuelan contract (refund flow is the only path that
+        recreates order lines from a source order and would otherwise drop the
+        value).
         """
-        res = super()._prepare_refund_data(refund_order, PosPackOperationLot)
+        res = super()._prepare_refund_data(refund_order)
         res["foreign_price"] = self.foreign_price
         return res

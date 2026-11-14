@@ -1,0 +1,7 @@
+<templates id="template" xml:space="preserve">
+    <t t-name="l10n_ve_pos.FeedbackScreen" t-inherit="point_of_sale.FeedbackScreen" t-inherit-mode="extension">
+        <xpath expr="//FeedbackPaymentSummary" position="after">
+            <div t-if="this.currentOrder.orderCurrency?.id !== this.pos.config.foreign_currency_id?.id" class="foreign-amount fs-1 fw-bold text-muted mb-3" t-out="this.pos.formatForeignCurrency(this.currentOrder.get_foreign_total_with_tax())"/>
+        </xpath>
+    </t>
+</templates>

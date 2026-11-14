@@ -3,12 +3,9 @@ from unittest.mock import patch
 from odoo.addons.point_of_sale.models.pos_session import PosSession
 from odoo.tests import TransactionCase, tagged
 
-# What the PoS sends when it opens with a browser cache: only the records
-# modified after the cache date (here, none).
-INCREMENTAL_CONTEXT = {
-    "pos_last_server_date": "2999-01-01 00:00:00",
-    "pos_limited_loading": True,
-}
+# What the PoS sends when it opens with a browser cache: the write date of each
+# record it holds (here, a date far in the future: nothing was modified after).
+CACHED_WRITE_DATE = 32503680000
 
 
 @tagged("post_install", "-at_install", "l10n_ve_pos")
@@ -49,6 +46,15 @@ class TestPosProductAvailableQty(TransactionCase):
                 "company_id": cls.company.id,
             }
         )
+        purchase_tax = cls.env["account.tax"].create(
+            {
+                "name": "Test Purchase Tax",
+                "amount": 16.0,
+                "type_tax_use": "purchase",
+                "tax_group_id": tax_group.id,
+                "company_id": cls.company.id,
+            }
+        )
         # A new company does not always get a warehouse here: create it so the
         # PoS operation type exists.
         cls.warehouse = cls.env["stock.warehouse"].search(
@@ -68,7 +74,7 @@ class TestPosProductAvailableQty(TransactionCase):
                 "is_storable": True,
                 "company_id": cls.company.id,
                 "taxes_id": [(6, 0, tax.ids)],
-                "supplier_taxes_id": [(6, 0, tax.ids)],
+                "supplier_taxes_id": [(6, 0, purchase_tax.ids)],
             }
         )
 
@@ -90,11 +96,14 @@ class TestPosProductAvailableQty(TransactionCase):
         return data
 
     def _load_variants_incrementally(self, **context):
-        products = self.env["product.product"].with_context(**INCREMENTAL_CONTEXT, **context)
-        return products._load_pos_data_search_read(
-            {"product.template": [{"id": self.product.product_tmpl_id.id}]},
-            self._new_config(),
-        )
+        products = self.env["product.product"].with_context(**context)
+        local_data = {
+            "models": ["product.product"],
+            "records": {"product.product": {str(self.product.id): CACHED_WRITE_DATE}},
+        }
+        return products._read_pos_data_from_metadata(
+            {"records": self.product}, local_data, self._new_config()
+        )["records"]
 
     def _set_on_hand(self, qty, location=None):
         self.env["stock.quant"]._update_available_quantity(
@@ -142,18 +151,17 @@ class TestPosProductAvailableQty(TransactionCase):
         self.assertEqual(data["qty_available"], 3)
 
     def test_setting_only_reloads_the_product_models(self):
-        context = {**INCREMENTAL_CONTEXT, "pos_reload_stock_dependent_data": True}
+        context = {"pos_reload_stock_dependent_data": True}
         for model in ("product.template", "product.product"):
-            self.assertFalse(self.env[model].with_context(**context)._last_server_date_to_load())
-        self.assertEqual(
-            self.env["product.category"].with_context(**context)._last_server_date_to_load(),
-            INCREMENTAL_CONTEXT["pos_last_server_date"],
+            self.assertTrue(self.env[model].with_context(**context).load_pos_data_force_loading())
+        self.assertFalse(
+            self.env["product.category"].with_context(**context).load_pos_data_force_loading()
         )
 
     def test_load_data_flags_the_context_by_the_setting(self):
         contexts = []
 
-        def core_load_data(session, models_to_load):
+        def core_load_data(session, local_data={}):
             contexts.append(session.env.context.get("pos_reload_stock_dependent_data"))
             return {}
 
@@ -162,5 +170,5 @@ class TestPosProductAvailableQty(TransactionCase):
                 # The virtual config caches the related setting: set it first.
                 self.company.pos_show_just_products_with_available_qty = show_only_available
                 session = self.env["pos.session"].new({"config_id": self._new_config()})
-                session.load_data([])
+                session.load_data({})
         self.assertEqual(contexts, [None, True])

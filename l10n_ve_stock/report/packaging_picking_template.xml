@@ -4,7 +4,7 @@
             <div class="row border border-dark rounded position-relative" name="header">
                 <div class="col-7" name="picking_info">
                     <div> Date: <span
-                            t-esc="context_timestamp(datetime.datetime.now()).strftime('%d-%m-%Y %H:%M')" />
+                            t-out="context_timestamp(datetime.datetime.now()).strftime('%d-%m-%Y %H:%M')" />
                     </div>
                     <div> Ciudad: <span t-field="picking.partner_id.city" />
                     </div>
@@ -33,7 +33,7 @@
             </div>
             <div class="row font-weight-bold" style="font-size:1.3rem">
                 <div class="col-12 text-center">
-                    <p>Package <span t-esc="item" /> / <t t-if="picking.package_qty == 0">
+                    <p>Package <span t-out="item" /> / <t t-if="picking.package_qty == 0">
                             <t t-set="package_qty" t-value="1" />
                         </t>
                         <t
@@ -41,7 +41,7 @@
                             <t t-set="package_qty" t-value="picking.package_qty" />
                         </t>
                         <span
-                            t-esc="package_qty" />
+                            t-out="package_qty" />
                     </p>
                 </div>
             </div>
@@ -59,7 +59,7 @@
                     <t t-foreach="range(1, (picking.package_qty if picking.package_qty and picking.package_qty > 0 else 1) + 1)" t-as="item">
                         <div class="page">
                             <t t-call="l10n_ve_stock.packaging_picking_item">
-                                <t t-raw="0" />
+                                <t t-out="0" />
                             </t>
                         </div>
                         <p style="page-break-after:always" />
@@ -90,7 +90,6 @@
         <field name="model">stock.picking</field>
         <field name="report_type">qweb-pdf</field>
         <field name="report_name">l10n_ve_stock.packaging_picking</field>
-        <field name="report_file">l10n_ve_stock.packaging_picking</field>
         <field name="print_report_name">'Packaging tags - %s' % (object.name)</field>
         <field name="binding_model_id" ref="stock.model_stock_picking" />
         <field name="paperformat_id" ref="l10n_ve_stock.paperformat_packaging_picking" />

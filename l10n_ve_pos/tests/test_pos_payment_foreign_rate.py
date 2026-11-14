@@ -27,6 +27,11 @@ ORIGINAL_RATE = 30.0
 
 @tagged("post_install", "-at_install", "l10n_ve_pos", "pos_payment_foreign_rate")
 class TestPosPaymentForeignRate(TestPosSessionAccountingBase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls._create_rate_of_day(1.0)
+
     def _new_session(self):
         return self.env["pos.session"].create(
             {
@@ -64,7 +69,6 @@ class TestPosPaymentForeignRate(TestPosSessionAccountingBase):
                 "amount_tax": tax_amount,
                 "amount_paid": 0.0,
                 "amount_return": 0.0,
-                "last_order_preparation_change": "{}",
             }
         )
 
@@ -168,21 +172,25 @@ class TestPosPaymentForeignRate(TestPosSessionAccountingBase):
         self.assertAlmostEqual(vals["foreign_rate"], 1 / SALE_RATE, places=12)
         self.assertTrue(vals["manually_set_rate"])
 
+    def _payment_move(self, order):
+        """Entry that settles the invoice of ``order``: Odoo 20 creates it
+        when it generates the invoice (``_generate_pos_order_invoice``)."""
+        invoice = order.with_company(self.company)._generate_pos_order_invoice()
+        term_lines = invoice.line_ids.filtered(
+            lambda line: line.display_type == "payment_term"
+        )
+        counterparts = (
+            term_lines.matched_debit_ids.debit_move_id
+            | term_lines.matched_credit_ids.credit_move_id
+        ) - term_lines
+        return counterparts.move_id
+
     def test_payment_move_rate_convention_keeps_foreign_amounts(self):
         session = self._new_session()
         order = self._draft_order(session)
         payment = self._add_payment(order, foreign_rate=SALE_RATE)
-        # El asiento de pago es de una orden facturada (referencia la factura).
-        invoice = self.env["account.move"].create(
-            {
-                "move_type": "out_invoice",
-                "journal_id": self.invoice_journal.id,
-                "partner_id": self.company.partner_id.id,
-            }
-        )
-        order.write({"account_move": invoice.id})
 
-        move = payment._create_payment_moves()
+        move = self._payment_move(order)
 
         self.assertEqual(len(move), 1)
         self.assertAlmostEqual(move.foreign_inverse_rate, SALE_RATE, places=12)
@@ -199,16 +207,8 @@ class TestPosPaymentForeignRate(TestPosSessionAccountingBase):
         session = self._new_session()
         order = self._draft_order(session)
         payment = self._add_payment(order, foreign_rate=0.0)
-        invoice = self.env["account.move"].create(
-            {
-                "move_type": "out_invoice",
-                "journal_id": self.invoice_journal.id,
-                "partner_id": self.company.partner_id.id,
-            }
-        )
-        order.write({"account_move": invoice.id})
 
-        move = payment._create_payment_moves()
+        move = self._payment_move(order)
 
         # Sin tasa no se fija nada a mano (antes 0 / 0 con manually_set_rate):
         # el asiento conserva la de su fecha y el alterno sigue el del pago.

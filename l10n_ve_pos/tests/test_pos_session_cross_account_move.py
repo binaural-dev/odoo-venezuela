@@ -16,7 +16,7 @@ Spec (fecha del cruce en el dia del usuario, ticket 16145):
 from datetime import date
 from unittest.mock import patch
 
-from odoo import fields
+from odoo import Command, fields
 from odoo.addons.point_of_sale.models.pos_config import PosConfig as CorePosConfig
 from odoo.exceptions import UserError, ValidationError
 from odoo.tests import tagged
@@ -80,18 +80,27 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
         )
 
     def _configure_cross(self, method, *, cross_account_journal=True, cross_journal=True):
-        """Wire up a payment method for the cross move.
+        """Wire up a payment method for the cross move of its payments in
+        ``payment_currency``.
 
-        ``is_foreign_currency`` is the only switch that arms the flow (the
-        base fixture already sets it on all four methods), so this helper
-        only has to fill in the two journals. Passing either flag as False
-        leaves that journal empty, which is the "incomplete configuration"
-        case the flow must skip in silence.
+        The foreign currency of the payment is what arms the flow (the base
+        fixture already makes every method take it), so this helper only has
+        to fill in the two journals of the method's settings for that
+        currency. Passing either flag as False leaves that journal empty,
+        which is the "incomplete configuration" case the flow must skip in
+        silence.
         """
-        vals = {}
-        vals["cross_account_journal"] = self.cross_account_journal.id if cross_account_journal else False
-        vals["cross_journal"] = self.real_bank_journal.id if cross_journal else False
-        method.write(vals)
+        vals = {
+            "cross_account_journal": self.cross_account_journal.id if cross_account_journal else False,
+            "cross_journal": self.real_bank_journal.id if cross_journal else False,
+        }
+        setting = method._get_currency_settings(self.payment_currency)
+        if setting:
+            setting.write(vals)
+        else:
+            self.env["pos.payment.method.currency"].create(
+                dict(vals, payment_method_id=method.id, currency_id=self.payment_currency.id)
+            )
 
     def _cross_moves(self):
         return self.env["account.move"].search(
@@ -626,6 +635,7 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
 
         move = session._create_cross_move_for(
             self.split_cash_method,
+            self.payment_currency,
             amount=58.0,
             foreign_amount=58.0 * 36.5,
             foreign_rate=36.5,
@@ -668,6 +678,7 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
 
         move = session._create_cross_move_for(
             self.split_cash_method,
+            self.payment_currency,
             amount=-25.0,
             foreign_amount=-25.0 * 36.5,
             foreign_rate=36.5,
@@ -697,12 +708,12 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
             "fixture: sin configurar todavia",
         )
         self.assertTrue(
-            session._is_cross_move_eligible(self.split_cash_method),
+            session._is_cross_move_eligible(self.split_cash_method, self.payment_currency),
             "use_suspense=False (cruce de banco, diferencias) ya es elegible "
             "con default_account_id resuelto",
         )
         self.assertFalse(
-            session._is_cross_move_eligible(self.split_cash_method, use_suspense=True),
+            session._is_cross_move_eligible(self.split_cash_method, self.payment_currency, use_suspense=True),
             "use_suspense=True no es elegible sin suspense_account_id en el diario",
         )
 
@@ -716,7 +727,7 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
         )
         self.split_cash_method.journal_id.suspense_account_id = suspense_origin.id
         self.assertFalse(
-            session._is_cross_move_eligible(self.split_cash_method, use_suspense=True),
+            session._is_cross_move_eligible(self.split_cash_method, self.payment_currency, use_suspense=True),
             "con el origen configurado pero el destino vacio sigue sin ser "
             "elegible: esa pata saldria con account_id = False y tumbaria el "
             "cierre de la sesion",
@@ -732,7 +743,7 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
         )
         self.real_bank_journal.suspense_account_id = suspense_destination.id
         self.assertTrue(
-            session._is_cross_move_eligible(self.split_cash_method, use_suspense=True),
+            session._is_cross_move_eligible(self.split_cash_method, self.payment_currency, use_suspense=True),
             "con las dos transitorias configuradas si es elegible",
         )
 
@@ -740,13 +751,9 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
     # Elegibilidad
     # ------------------------------------------------------------------
     def test_no_cross_move_when_not_foreign_currency(self):
-        """is_foreign_currency=False no crea cruce aunque tenga los diarios.
-
-        ``is_foreign_currency`` es el unico interruptor del flujo desde que
-        se retiro ``apply_one_cross_move``.
-        """
+        """A payment made in the currency of the order is not crossed, even
+        when its method has the cross journals for a foreign currency."""
         self._configure_cross(self.split_bank_method)
-        self.split_bank_method.write({"is_foreign_currency": False})
         session = self._new_session().with_company(self.company)
         self._create_paid_order(
             session,
@@ -754,6 +761,7 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
             amount=58.0,
             tax_amount=8.0,
             name="OL/CROSS/NOT-FOREIGN",
+            payment_currency=False,
         )
 
         session._validate_cross_move()
@@ -800,11 +808,17 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
         pay_later_method = self.env["pos.payment.method"].create(
             {
                 "name": "C Pay Later",
-                "is_cash_count": False,
+                "type": "pay_later",
                 "split_transactions": False,
                 "company_id": self.company.id,
                 "journal_id": False,
-                "is_foreign_currency": True,
+                "currency_ids": [Command.set(self.payment_currency.ids)],
+            }
+        )
+        self.env["pos.payment.method.currency"].create(
+            {
+                "payment_method_id": pay_later_method.id,
+                "currency_id": self.payment_currency.id,
                 "cross_account_journal": self.cross_account_journal.id,
                 "cross_journal": self.real_bank_journal.id,
             }
@@ -812,7 +826,7 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
         self.assertEqual(pay_later_method.type, "pay_later")
         session = self._new_session().with_company(self.company)
 
-        self.assertFalse(session._is_cross_move_eligible(pay_later_method))
+        self.assertFalse(session._is_cross_move_eligible(pay_later_method, self.payment_currency))
         self.assertTrue(
             session._get_cross_transitory_account(pay_later_method),
             "el fallback si resuelve una cuenta: lo que excluye al metodo es el tipo",
@@ -904,6 +918,8 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
                 "payment_date": order.date_order,
                 "foreign_rate": 36.5,
                 "foreign_amount": 50.0 * 36.5,
+                "foreign_currency_id": self.payment_currency.id,
+                "amount_currency": 50.0 * 36.5,
             }
         )
         self.assertEqual(len(order.payment_ids), 2)
@@ -1036,8 +1052,8 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
         real_bank_line = move.line_ids.filtered(
             lambda l: l.account_id == self.account_real_bank
         )
-        # La linea de la cuenta real vive en la moneda de la compania
-        # (no la foranea): amount_currency debe ser payment.amount, no
+        # The line of the real account lives in the currency of the company
+        # (not the foreign one): amount_currency must be payment.amount, not
         # payment.foreign_amount.
         self.assertAlmostEqual(real_bank_line.amount_currency, payment.amount, places=2)
         self.assertNotAlmostEqual(
@@ -1156,6 +1172,7 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
                 with self.assertRaises(UserError) as error:
                     session._create_cross_move_for(
                         self.split_bank_method,
+                        self.payment_currency,
                         amount=amount,
                         foreign_amount=amount * 36.5,
                         foreign_rate=36.5,

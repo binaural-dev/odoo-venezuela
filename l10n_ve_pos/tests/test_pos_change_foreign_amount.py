@@ -3,16 +3,15 @@
 Odoo core creates the change payment line server-side
 (``pos.order._process_payment_lines`` -> ``is_change=True``) WITHOUT a
 ``foreign_amount``/``foreign_rate``. Both the invoice payment moves
-(``pos.payment._create_payment_moves``) and the session-close cross moves
+(``pos.order._generate_pos_order_invoice``) and the session-close cross moves
 (``pos.session``) build the alternate-currency columns
 (``foreign_debit``/``foreign_credit``) from ``payment.foreign_amount``, so a
 missing value left the change move's foreign columns at 0 and the alternate
 currency unbalanced against the invoice.
 
 These tests cover the fix: ``pos.order._amount_to_foreign`` and the backfill
-in ``pos.order._process_payment_lines``. The defensive fallback in
-``pos.payment._create_payment_moves`` reuses the same ``_amount_to_foreign``
-helper exercised here.
+in ``pos.order._process_payment_lines``. ``_amount_to_foreign`` is also what fills the
+alternate amount of a change line that reaches the closing without one.
 
 Spec: ``openspec/changes/vuelto-monto-alterno-asiento/specs/l10n_ve_pos/spec.md``
 """
@@ -67,7 +66,6 @@ class TestPosChangeForeignAmount(TestPosSessionAccountingBase):
                 "amount_tax": tax_amount,
                 "amount_paid": 0.0,
                 "amount_return": 0.0,
-                "last_order_preparation_change": "{}",
             }
         )
 
@@ -108,36 +106,55 @@ class TestPosChangeForeignAmount(TestPosSessionAccountingBase):
         order.foreign_currency_rate = 0.0
         self.assertEqual(order._amount_to_foreign(100.0), 0.0)
 
+    def _add_regular_payment(self, order, amount=120.0):
+        order.add_payment(
+            {
+                "name": "PAY",
+                "pos_order_id": order.id,
+                "amount": amount,
+                "payment_method_id": self.combined_cash_method.id,
+                "payment_date": order.date_order,
+                "foreign_amount": amount * 36.5,
+            }
+        )
+
     def test_process_payment_lines_backfills_change_foreign_amount(self):
         session = self._new_session()
         order = self._draft_order(session, rate=36.5)
-        change = self._add_change(order, amount=-16.0, foreign_amount=0.0, foreign_rate=0.0)
-        self.assertFalse(change.foreign_amount)
+        self._add_regular_payment(order)
 
-        # amount_return=0 so core creates no new change line: only our
-        # backfill loop runs, over the existing is_change payment.
+        # Odoo 20 creates the change line itself from ``amount_return``.
         self.env["pos.order"]._process_payment_lines(
-            {"amount_return": 0.0}, order, session, False
+            {"amount_return": -4.0}, order, session, False
         )
 
+        change = order.payment_ids.filtered(lambda p: p.is_change)
+        self.assertEqual(len(change), 1)
         self.assertEqual(
             change.foreign_amount,
-            self.foreign_currency.round(-16.0 * 36.5),
+            self.foreign_currency.round(-4.0 * 36.5),
         )
         self.assertEqual(change.foreign_rate, order.foreign_currency_rate)
 
-    def test_process_payment_lines_does_not_overwrite_existing_foreign_amount(self):
+    def test_process_payment_lines_replaces_the_previous_change_line(self):
         session = self._new_session()
         order = self._draft_order(session, rate=36.5)
-        change = self._add_change(order, amount=-16.0, foreign_amount=-999.0, foreign_rate=1.0)
+        self._add_regular_payment(order)
+        self._add_change(order, amount=-4.0, foreign_amount=-999.0, foreign_rate=1.0)
 
+        # Odoo 20 removes the change of a previous sync and creates it again:
+        # the one that stays is the new one, with the amount valued at the
+        # rate of the order.
         self.env["pos.order"]._process_payment_lines(
-            {"amount_return": 0.0}, order, session, False
+            {"amount_return": -4.0}, order, session, False
         )
 
-        # Guarded by ``not payment.foreign_amount`` — a line that already
-        # carries a foreign amount must be left untouched.
-        self.assertEqual(change.foreign_amount, -999.0)
+        change = order.payment_ids.filtered(lambda p: p.is_change)
+        self.assertEqual(len(change), 1)
+        self.assertEqual(
+            change.foreign_amount,
+            self.foreign_currency.round(-4.0 * 36.5),
+        )
 
     def test_process_payment_lines_ignores_non_change_payment(self):
         session = self._new_session()
@@ -162,3 +179,31 @@ class TestPosChangeForeignAmount(TestPosSessionAccountingBase):
         # The backfill only targets is_change lines; a regular payment that
         # genuinely came in with 0 is not touched here.
         self.assertFalse(regular.foreign_amount)
+
+    def test_change_is_given_in_the_currency_of_the_register(self):
+        """Core gives the change in the currency of the first payment; Odoo 19
+        gave it in the currency of the register, and so does l10n_ve_pos."""
+        session = self._new_session()
+        order = self._draft_order(session, rate=36.5)
+        order.add_payment(
+            {
+                "name": "PAY",
+                "pos_order_id": order.id,
+                "amount": 120.0,
+                "payment_method_id": self.combined_cash_method.id,
+                "payment_date": order.date_order,
+                "foreign_amount": 120.0 * 36.5,
+                "foreign_currency_id": self.payment_currency.id,
+                "amount_currency": 120.0 * 36.5,
+            }
+        )
+
+        self.env["pos.order"]._process_payment_lines(
+            {"amount_return": -4.0}, order, session, False
+        )
+
+        change = order.payment_ids.filtered(lambda p: p.is_change)
+        self.assertEqual(len(change), 1)
+        self.assertFalse(change.foreign_currency_id)
+        self.assertFalse(change.amount_currency)
+        self.assertFalse(change.is_foreign_currency)

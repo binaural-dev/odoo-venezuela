@@ -2,7 +2,7 @@
 
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
-import { Component, xml, useState } from "@odoo/owl";
+import { Component, proxy, useProps, xml } from "@odoo/owl";
 import { _t } from "@web/core/l10n/translation";
 import {
     getBackendFiscalPrinter,
@@ -24,12 +24,12 @@ import { MfFiscalizadorDialog } from "./mf_fiscalizador_dialog";
  * - fiscalizador: Herramienta técnica (modo debug)
  */
 export class MfWebSerialButtonComponent extends Component {
-    static props = ["*"];
     static template = xml`
-        <button class="btn btn-primary" t-att-disabled="state.busy" t-on-click="onClick">
-            <i t-if="state.busy" class="fa fa-spinner fa-spin me-1"/>
-            <span t-esc="state.label"/>
+        <button class="btn btn-primary" t-att-disabled="this.state.busy" t-on-click="this.onClick">
+            <i t-if="this.state.busy" class="oi oi-spin me-1" data-icon="progress_activity"/>
+            <span t-out="this.state.label"/>
         </button>`;
+    props = useProps();
 
     setup() {
         this.orm = useService("orm");
@@ -44,7 +44,7 @@ export class MfWebSerialButtonComponent extends Component {
             fiscalizador: _t("Fiscalizador MF"),
         };
 
-        this.state = useState({
+        this.state = proxy({
             busy: false,
             label: this.buttonLabels[this.props.action] || this.props.action || "MF",
         });

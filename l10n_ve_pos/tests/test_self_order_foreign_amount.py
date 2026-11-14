@@ -53,14 +53,14 @@ class TestSelfOrderForeignAmount(TransactionCase):
             {
                 "name": "Self Order Config",
                 "company_id": cls.company.id,
+                "default_partner_id": cls.company.partner_id.id,
                 "currency_id": cls.foreign_currency.id,
-                "journal_id": cls.sale_journal.id,
-                # invoice_journal_id has the SAME ambient-company default
-                # pitfall as payment_method_ids below
-                # (point_of_sale/models/pos_config.py:90-95) — left unset
+                "closing_journal_id": cls.sale_journal.id,
+                # journal_id has the SAME ambient-company default
+                # pitfall as payment_method_ids below — left unset
                 # it silently pulls in a journal from a DIFFERENT company
                 # and _check_company() rejects the whole record.
-                "invoice_journal_id": cls.sale_journal.id,
+                "journal_id": cls.sale_journal.id,
                 # payment_method_ids' default is computed from
                 # self.env.company (ambient), not from company_id above
                 # (point_of_sale/models/pos_config.py:170) — left unset it
@@ -88,7 +88,6 @@ class TestSelfOrderForeignAmount(TransactionCase):
             "amount_tax": 0.0,
             "amount_paid": 0.0,
             "amount_return": 0.0,
-            "last_order_preparation_change": "{}",
         }
 
     def test_missing_foreign_amount_total_is_computed_via_convert(self):
@@ -144,10 +143,11 @@ class TestSelfOrderForeignAmount(TransactionCase):
             {
                 "name": "No Foreign Config",
                 "company_id": no_foreign_company.id,
-                "journal_id": journal.id,
-                # Same invoice_journal_id/payment_method_ids ambient-company
+                "default_partner_id": no_foreign_company.partner_id.id,
+                "closing_journal_id": journal.id,
+                # Same journal_id/payment_method_ids ambient-company
                 # default pitfall as setUpClass above.
-                "invoice_journal_id": journal.id,
+                "journal_id": journal.id,
                 "payment_method_ids": [(6, 0, [])],
             }
         )
@@ -166,7 +166,6 @@ class TestSelfOrderForeignAmount(TransactionCase):
                 "amount_tax": 0.0,
                 "amount_paid": 0.0,
                 "amount_return": 0.0,
-                "last_order_preparation_change": "{}",
             }
         )
         self.assertEqual(order.foreign_amount_total, 0.0)
