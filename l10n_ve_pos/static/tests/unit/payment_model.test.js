@@ -1,7 +1,7 @@
 import { test, expect, describe } from "@odoo/hoot";
 import { PosPayment } from "@point_of_sale/app/models/pos_payment";
 import "@l10n_ve_pos/overrides/models/payment_model";
-import { makeCurrency, makeBareCurrency, makeOrderStub } from "./utils";
+import { makeCurrency, makeBareCurrency, makeOrderStub, makePaymentStub } from "./utils";
 
 // set_foreign_amount decide entre "pago completo" (fija el monto local en la
 // deuda exacta, sin viaje Bs→$→Bs) y "pago parcial" (conversión estricta).
@@ -11,12 +11,7 @@ const TOTAL = 3622.86;
 const FOREIGN_DUE = 99.26;
 
 function callSetForeignAmount(order, requested) {
-    const payment = {
-        pos_order_id: order,
-        amount: 0,
-        foreign_amount: 0,
-        payment_method_id: { is_foreign_currency: true },
-    };
+    const payment = makePaymentStub(order);
     PosPayment.prototype.set_foreign_amount.call(payment, requested);
     return payment;
 }
@@ -76,12 +71,7 @@ describe("l10n_ve_pos set_foreign_amount", () => {
     test("reeditar la propia línea no se cuenta a sí misma", () => {
         const other = { isDone: () => true, getAmount: () => 1000 };
         const order = makeOrderStub({ totalDue: TOTAL });
-        const payment = {
-            pos_order_id: order,
-            amount: 0,
-            foreign_amount: 0,
-            payment_method_id: { is_foreign_currency: true },
-        };
+        const payment = makePaymentStub(order);
         order.payment_ids = [payment, other];
         // Deuda restante 2.622,86 Bs → $71,86. Expected como expresión para
         // igualar bit a bit la resta en flotante que hace el código.
@@ -96,12 +86,7 @@ describe("l10n_ve_pos set_foreign_amount", () => {
     });
 
     test("orden sin helpers de conversión: monto local 0", () => {
-        const payment = {
-            pos_order_id: {},
-            amount: 99,
-            foreign_amount: 0,
-            payment_method_id: { is_foreign_currency: true },
-        };
+        const payment = makePaymentStub({}, { amount: 99 });
         PosPayment.prototype.set_foreign_amount.call(payment, 25);
         expect(payment.amount).toBe(0);
         expect(payment.foreign_amount).toBe(25);
@@ -196,54 +181,34 @@ describe("l10n_ve_pos set_foreign_amount — reembolso a tasa exacta", () => {
 
     test("_recomputeForeignFromLocal (método local Bs) usa la tasa exacta", () => {
         const order = makeExactRefund();
-        const payment = {
-            pos_order_id: order,
-            amount: REFUND_DUE, // -3600 Bs
-            foreign_amount: 0,
-            payment_method_id: { is_foreign_currency: false },
-        };
+        const payment = makePaymentStub(order, { amount: REFUND_DUE });
         PosPayment.prototype._recomputeForeignFromLocal.call(payment);
         // -3600 / 40 (exacta) = -90.
         expect(payment.foreign_amount).toBe(-90);
     });
 });
 
-// _recomputeForeignFromLocal corre en TODO pago (setAmount), sin importar
-// is_foreign_currency: un pago en Bs también necesita su equivalente en USD
+// _recomputeForeignFromLocal corre en TODO pago (setAmount), sin importar la
+// moneda en que se cobró: un pago en Bs también necesita su equivalente en USD
 // para la contabilidad dual (openspec/migration-lessons.md, "Pendientes por
 // tratar (2026-07-10)"). Antes se zereaba a propósito para métodos locales.
 describe("l10n_ve_pos _recomputeForeignFromLocal", () => {
-    test("método local (Bs): calcula el equivalente foráneo, no lo zerea", () => {
+    test("pago en Bs: calcula el equivalente foráneo, no lo zerea", () => {
         const order = makeOrderStub({ totalDue: TOTAL });
-        const payment = {
-            pos_order_id: order,
-            amount: TOTAL,
-            foreign_amount: 0,
-            payment_method_id: { is_foreign_currency: false },
-        };
+        const payment = makePaymentStub(order, { amount: TOTAL });
         PosPayment.prototype._recomputeForeignFromLocal.call(payment);
         expect(payment.foreign_amount).toBe(FOREIGN_DUE);
     });
 
-    test("método foráneo: sigue calculando igual que antes", () => {
+    test("pago en divisa: sigue calculando igual que antes", () => {
         const order = makeOrderStub({ totalDue: TOTAL });
-        const payment = {
-            pos_order_id: order,
-            amount: TOTAL,
-            foreign_amount: 0,
-            payment_method_id: { is_foreign_currency: true },
-        };
+        const payment = makePaymentStub(order, { amount: TOTAL });
         PosPayment.prototype._recomputeForeignFromLocal.call(payment);
         expect(payment.foreign_amount).toBe(FOREIGN_DUE);
     });
 
     test("sin orden o sin localToForeign: cae a 0", () => {
-        const payment = {
-            pos_order_id: null,
-            amount: TOTAL,
-            foreign_amount: 99,
-            payment_method_id: { is_foreign_currency: false },
-        };
+        const payment = makePaymentStub(null, { amount: TOTAL, foreign_amount: 99 });
         PosPayment.prototype._recomputeForeignFromLocal.call(payment);
         expect(payment.foreign_amount).toBe(0);
     });
@@ -280,5 +245,74 @@ describe("l10n_ve_pos set_foreign_amount — signo en reembolso agregado", () =>
         const p = callSetForeignAmount(makeOrderStub({ totalDue: 3650 }), -10);
         expect(p.foreign_amount).toBe(-10);
         expect(p.amount).toBe(-365);
+    });
+});
+
+// El pago en una divisa distinta a la de la orden (moneda elegida en el método
+// de pago, campos nativos `foreign_currency_id` y `amount_currency`): lo que se
+// teclea en esa moneda entra por set_foreign_amount; lo tecleado en la moneda de
+// la orden, por el setAmount del core más el equivalente alterno.
+describe("l10n_ve_pos setAmount por moneda", () => {
+    const bs = { id: 2, round: (v) => v };
+    const usd = { id: 1 };
+
+    test("lo tecleado en la divisa del pago va por set_foreign_amount", () => {
+        const typed = [];
+        const payment = {
+            isForeignPayment: true,
+            foreign_currency_id: usd,
+            pos_order_id: { assertEditable() {}, currency: bs },
+            set_foreign_amount: (v) => typed.push(v),
+        };
+        PosPayment.prototype.setAmount.call(payment, 5, usd);
+        expect(typed).toEqual([5]);
+    });
+
+    test("lo tecleado en Bs usa el core y recalcula el alterno", () => {
+        const recomputed = [];
+        const payment = {
+            isForeignPayment: false,
+            currency: bs,
+            pos_order_id: {
+                assertEditable() {},
+                currency: bs,
+                convertAmountToCurrency: (v) => v,
+            },
+            _recomputeForeignFromLocal: () => recomputed.push(true),
+        };
+        PosPayment.prototype.setAmount.call(payment, 100, bs);
+        expect(payment.amount).toBe(100);
+        expect(recomputed).toEqual([true]);
+    });
+});
+
+// Una divisa que no es la alterna de la compañía (EUR) se convierte con su
+// propia tasa (la nativa del core), no con la tasa de la caja.
+describe("l10n_ve_pos set_foreign_amount en otra divisa", () => {
+    const eur = { ...makeCurrency(0.01), convertToDefaultCurrency: (v) => v * 1000 };
+    const makeEurPayment = () => {
+        const order = {
+            ...makeOrderStub({ totalDue: TOTAL }),
+            currency: makeCurrency(0.01),
+            convertAmountToCurrency: (v) => v / 1000,
+        };
+        order.currency.convert = (v) => v;
+        return makePaymentStub(order, { usesAlternateEngine: false, currency: eur });
+    };
+
+    test("cubre la deuda: fija la deuda local exacta y guarda lo cobrado", () => {
+        const payment = makeEurPayment();
+        PosPayment.prototype.set_foreign_amount.call(payment, 3.62);
+        expect(payment.amount).toBe(TOTAL);
+        expect(payment.amount_currency).toBe(3.62);
+        // El alterno (USD) sale del monto local: 3.622,86 / 36,5.
+        expect(payment.foreign_amount).toBe(FOREIGN_DUE);
+    });
+
+    test("pago parcial: conversión con la tasa de la propia divisa", () => {
+        const payment = makeEurPayment();
+        PosPayment.prototype.set_foreign_amount.call(payment, 1);
+        expect(payment.amount).toBe(1000);
+        expect(payment.amount_currency).toBe(1);
     });
 });

@@ -2,9 +2,9 @@ from . import test_pos_data_loading
 from . import test_pos_pricelist_chain_loading
 from . import test_pos_serialization
 from . import test_pos_session_accounting_common
-from . import test_pos_session_accounting_accumulators
-from . import test_pos_session_accounting_move_creation
+from . import test_pos_session_close_foreign_amounts
 from . import test_pos_session_cross_account_move
+from . import test_pos_payment_method_currency
 from . import test_self_order_foreign_amount
 from . import test_pos_config_convert_precision
 from . import test_pos_refund_foreign_price

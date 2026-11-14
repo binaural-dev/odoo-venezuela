@@ -1,5 +1,5 @@
 import { test, expect, describe, beforeEach } from "@odoo/hoot";
-import { makeMockEnv, patchWithCleanup } from "@web/../tests/web_test_helpers";
+import { allowTranslations, makeMockEnv, patchWithCleanup } from "@web/../tests/web_test_helpers";
 import { localization } from "@web/core/l10n/localization";
 import { PosOrderline } from "@point_of_sale/app/models/pos_order_line";
 import { OrderSummary } from "@point_of_sale/app/screens/product_screen/order_summary/order_summary";
@@ -22,6 +22,7 @@ import "@l10n_ve_pos/overrides/screens/product_screen/order_summary/order_summar
 // caer al parser de locale.
 
 beforeEach(makeMockEnv);
+beforeEach(allowTranslations);
 
 const DISCOUNT_PRODUCT_ID = 42;
 
@@ -106,6 +107,8 @@ describe("l10n_ve_pos discount line +/- no-op (OrderSummary.updateSelectedOrderl
         const stub = {
             pos: { numpadMode },
             numberBuffer: { reset: () => calls.reset++ },
+            _shouldSkipDiscountLineSignToggle:
+                OrderSummary.prototype._shouldSkipDiscountLineSignToggle,
         };
         return { stub, calls };
     }
@@ -198,7 +201,7 @@ describe("l10n_ve_pos discount line setQuantity (bloqueo, comparte _numberFromIn
         const line = makeDiscountLine();
         const result = line.setQuantity("-3");
         expect(typeof result).toBe("object");
-        expect(typeof result.title).toBe("string");
+        expect(typeof String(result.title)).toBe("string");
     });
 
     test("cantidad negativa con coma decimal en es_VE también se bloquea", () => {

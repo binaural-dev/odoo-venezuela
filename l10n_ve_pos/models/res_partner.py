@@ -49,3 +49,17 @@ class ResPartner(models.Model):
                 continue
             values[fname] = value.id if self._fields[fname].type == "many2one" else value
         return values
+
+    def action_open_partner_view(self):
+        """Open the reduced Venezuelan form (``view_partner_form_pos``)
+        instead of the generic PoS one, and mark the context so ``default_get``
+        preloads the company address."""
+        action = super().action_open_partner_view()
+        action["views"] = [
+            (self.env.ref("l10n_ve_pos.view_partner_form_pos").id, "form")
+        ]
+        action["context"] = {
+            **(action.get("context") or {}),
+            "l10n_ve_pos_partner_defaults": True,
+        }
+        return action

@@ -1,8 +1,9 @@
 import { test, expect, describe } from "@odoo/hoot";
 import { PosStore } from "@point_of_sale/app/services/pos_store";
+import { PosAccessRightPlugin } from "@point_of_sale/app/plugins/access_right_plugin";
 import "@l10n_ve_pos/overrides/services/pos_store";
 
-// "Permitir crear productos" (allow_product_creation_in_pos): el getter que
+// "Permitir crear productos" (allow_product_creation_in_pos): el getter (del plugin de permisos) que
 // muestra "Crear producto" en el menú y editProduct(), que abre el formulario.
 
 const ADD_ACTION = "point_of_sale.product_template_action_add_pos";
@@ -12,7 +13,9 @@ function makeStore({ allowed, canCreate = true }) {
     const actions = [];
     const store = {
         // module_pos_hr apagado: el getter de pos_hr delega en el core.
-        config: { allow_product_creation_in_pos: allowed, module_pos_hr: false },
+        config: { allow_product_creation_in_pos: allowed, iface_available_categ_ids: [] },
+        session: { id: 1 },
+        selectedCategory: null,
         canUserCreateProduct: canCreate,
         action: { doAction: (action) => actions.push(action) },
         orderContainsProduct: () => false,
@@ -27,9 +30,10 @@ function makeStore({ allowed, canCreate = true }) {
 }
 
 function hasAccess(store) {
-    return Object.getOwnPropertyDescriptor(PosStore.prototype, "hasProductCreationAccess").get.call(
-        store
-    );
+    return Object.getOwnPropertyDescriptor(
+        PosAccessRightPlugin.prototype,
+        "hasProductCreationAccess"
+    ).get.call(store);
 }
 
 describe("l10n_ve_pos creación de productos", () => {

@@ -4,6 +4,7 @@ import { Orderline } from "@point_of_sale/app/components/orderline/orderline";
 import { patch } from "@web/core/utils/patch";
 import { formatCurrency } from "@web/core/currency";
 import { _t } from "@web/core/l10n/translation";
+import { usePos } from "@point_of_sale/app/hooks/pos_hook";
 
 // Ticket 15725: el core no pinta el precio de las líneas hijas de un combo,
 // solo el del padre (la suma de ellas). Cada hija muestra su parte del precio
@@ -12,10 +13,15 @@ import { _t } from "@web/core/l10n/translation";
 // El descuento de la hija sigue oculto, como en el core (`discount: ... &&
 // !line.combo_parent_id`): su displayPrice ya lo trae aplicado.
 patch(Orderline.prototype, {
+    setup() {
+        super.setup?.(...arguments);
+        this.pos = usePos();
+    },
+
     get lineScreenValues() {
         const vals = super.lineScreenValues;
         const line = this.line;
-        if (line.order_id && line.combo_parent_id && !this.props.basic_receipt) {
+        if (line.order_id && line.combo_parent_id) {
             vals.price =
                 line.getDiscount() === 100
                     ? _t("Free")

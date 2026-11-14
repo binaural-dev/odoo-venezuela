@@ -1,2 +1,5 @@
 id,name,model_id,group_id/id,operation,domain
 access_pos_payment_report,access_pos_payment_report,pos.payment.report,base.group_everyone,crud,
+access_pos_payment_method_currency_user,access_pos_payment_method_currency_user,pos.payment.method.currency,point_of_sale.group_pos_user,r,
+access_pos_payment_method_currency_manager,access_pos_payment_method_currency_manager,pos.payment.method.currency,point_of_sale.group_pos_manager,crud,
+rule_pos_payment_method_currency_multi_company,PoS Payment Method Currency,pos.payment.method.currency,,crud,"[('company_id', 'in', company_ids)]"

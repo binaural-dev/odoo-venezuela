@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <template id="pos_order_receipt_foreign" inherit_id="point_of_sale.pos_order_receipt">
+        <xpath expr="//t[@name='taxes_foreach']" position="replace"/>
+        <xpath expr="//td[@name='total']/parent::tr" position="after">
+            <tr class="text-bold" t-if="extra_data['prices'].get('foreign_total_amount')">
+                <td class="text-start w-70" name="foreign_total">TOTAL</td>
+                <td class="text-end w-30"><span class="total-amount font-monospace" t-out="extra_data['prices']['foreign_total_amount']" /></td>
+            </tr>
+        </xpath>
+    </template>
+</odoo>

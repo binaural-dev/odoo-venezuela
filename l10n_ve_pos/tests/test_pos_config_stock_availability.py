@@ -37,6 +37,15 @@ class TestPosConfigStockAvailability(TransactionCase):
                 "company_id": cls.company.id,
             }
         )
+        purchase_tax = cls.env["account.tax"].create(
+            {
+                "name": "Test Purchase Tax",
+                "amount": 16.0,
+                "type_tax_use": "purchase",
+                "tax_group_id": tax_group.id,
+                "company_id": cls.company.id,
+            }
+        )
         # A new company does not always get a warehouse here: create it so the
         # PoS operation type (and its source location) exists.
         cls.warehouse = cls.env["stock.warehouse"].search(
@@ -54,7 +63,7 @@ class TestPosConfigStockAvailability(TransactionCase):
                     "name": name,
                     "company_id": cls.company.id,
                     "taxes_id": [(6, 0, tax.ids)],
-                    "supplier_taxes_id": [(6, 0, tax.ids)],
+                    "supplier_taxes_id": [(6, 0, purchase_tax.ids)],
                     **vals,
                 }
             )

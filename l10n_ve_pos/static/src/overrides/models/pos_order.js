@@ -31,6 +31,17 @@ patch(PosOrder.prototype, {
  get_foreign_currency(){
         return this.config.foreign_currency_id;
     },
+  get isCustomerRequired() {
+    // "Identify Customer" (split_transactions): a payment method that asks for
+    // the customer. Odoo 20 only keeps it for the customer account method.
+    if (super.isCustomerRequired) {
+      return true;
+    }
+    return (
+      !this.partner_id &&
+      this.payment_ids.some((payment) => payment.payment_method_id?.split_transactions)
+    );
+  },
   get_display_rate() {
     // For an already-synced (finalized) order — e.g. one reopened from the
     // ticket screen — show the rate the order was SOLD at, not today's live
