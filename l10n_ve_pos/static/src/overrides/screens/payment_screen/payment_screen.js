@@ -75,6 +75,17 @@ patch(PaymentScreen.prototype, {
     if (this.paymentLines.length === 0) {
       this.makeAnimation();
     }
+    const methodCurrencies = paymentMethod.availableCurrencies;
+    if (
+      !args.currency &&
+      methodCurrencies.length &&
+      !methodCurrencies.some((currency) => currency.id === this.pos.config.currency_id.id)
+    ) {
+      // A method that does not take the currency of the register (Zelle, in
+      // dollars) has no currency buttons when it takes just one: its single
+      // button pays in that currency.
+      args = { ...args, currency: methodCurrencies[0] };
+    }
     const order = this.currentOrder;
     const localDueBefore = Number(order?.remainingDue) || 0;
     const result = order.addPaymentline(paymentMethod, args);

@@ -795,6 +795,18 @@ class PosSession(models.Model):
             )
         return move
 
+    def _create_partial_reversal_move_from_session_closing(self, orders):
+        """Give the entry that takes ``orders`` out of the closing entry, when
+        they are invoiced afterwards, the alternate amounts of their payments:
+        core builds its ``payment_term`` lines without them, and the receivable
+        of the invoice was left with the whole alternate amount of the sale.
+        """
+        move = super()._create_partial_reversal_move_from_session_closing(orders)
+        orders[:1]._restore_term_foreign_amounts(
+            move, orders._prepare_account_move_line_data_for_payments(orders.partner_id)
+        )
+        return move
+
     def _restore_closing_foreign_amounts(self, move, payments_data):
         """Give the closing entry the alternate amounts of the sales, as Odoo 19
         stamped them: each ``payment_term`` line carries the sum of the

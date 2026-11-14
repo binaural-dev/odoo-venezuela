@@ -206,3 +206,30 @@ class TestPosSessionCloseForeignAmounts(TestPosSessionClosingBase):
         expected = 120.0 * 36.5 - 4.0 * 36.5
         for line in settlement:
             self.assertAlmostEqual(self._foreign(line), expected, places=2)
+
+    def test_invoicing_after_the_closing_balances_the_alternate_amount(self):
+        self.sale_journal.currency_id = False
+        session = self._open_session()
+        order = self._create_paid_order(
+            session,
+            method=self.cash_method,
+            amount=116.0,
+            foreign_rate=1.0,
+            name="OL/F/G1",
+        )
+        self._close(session, 116.0)
+
+        invoice = order.with_company(self.company)._generate_pos_order_invoice()
+
+        reversal = self.env["account.move"].search(
+            [("reversed_pos_order_id", "=", order.id)]
+        )
+        self.assertTrue(reversal)
+        reversal_terms = reversal.line_ids.filtered(
+            lambda line: line.display_type == "payment_term"
+        )
+        self.assertAlmostEqual(self._foreign(reversal_terms), 116.0, places=2)
+        receivable = (invoice.line_ids | reversal.line_ids).filtered(
+            lambda line: line.account_id == reversal_terms[:1].account_id
+        )
+        self.assertAlmostEqual(sum(receivable.mapped("foreign_balance")), 0.0, places=2)

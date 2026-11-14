@@ -137,3 +137,56 @@ class TestPosChangePaymentMoves(TestPosSessionAccountingBase):
 
         self.assertAlmostEqual(invoice.amount_total, 116.0)
         self.assertTrue(invoice.currency_id.is_zero(invoice.amount_residual))
+
+    def _receivable_foreign_balance(self, invoice):
+        term_lines = invoice.line_ids.filtered(
+            lambda line: line.display_type == "payment_term"
+        )
+        receivable = self.env["account.move.line"].search(
+            [
+                ("company_id", "=", self.company.id),
+                ("account_id", "=", term_lines[:1].account_id.id),
+                ("parent_state", "=", "posted"),
+            ]
+        )
+        return sum(receivable.mapped("foreign_balance"))
+
+    def test_term_lines_carry_the_foreign_amount_of_payment_and_change(self):
+        """The alternate amounts of the payments add up to the 684.00 that the
+        invoice lines of this fixture carry (valued at the rate of the day)."""
+        order = self._order()
+        self._pay(order, self.combined_cash_method, 120.0, foreign_amount=830.0)
+        self._pay(
+            order, self.split_cash_method, -4.0, is_change=True, foreign_amount=-146.0
+        )
+
+        invoice, moves = self._payment_moves(order)
+
+        term_lines = invoice.line_ids.filtered(
+            lambda line: line.display_type == "payment_term"
+        )
+        self.assertEqual(len(term_lines), 2)
+        debit = term_lines.filtered(lambda line: line.balance > 0)
+        credit = term_lines.filtered(lambda line: line.balance < 0)
+        self.assertAlmostEqual(debit.foreign_debit, 830.0, places=2)
+        self.assertAlmostEqual(credit.foreign_credit, 146.0, places=2)
+        self.assertAlmostEqual(self._receivable_foreign_balance(invoice), 0.0, places=2)
+
+    def test_receivable_foreign_balance_with_two_methods_and_change(self):
+        order = self._order()
+        self._pay(order, self.combined_cash_method, 50.0, foreign_amount=300.0)
+        self._pay(order, self.combined_bank_method, 70.0, foreign_amount=450.0)
+        self._pay(
+            order, self.split_cash_method, -4.0, is_change=True, foreign_amount=-66.0
+        )
+
+        invoice, moves = self._payment_moves(order)
+
+        term_lines = invoice.line_ids.filtered(
+            lambda line: line.display_type == "payment_term"
+        )
+        self.assertEqual(len(term_lines), 3)
+        self.assertAlmostEqual(
+            sum(term_lines.mapped("foreign_balance")), 684.0, places=2
+        )
+        self.assertAlmostEqual(self._receivable_foreign_balance(invoice), 0.0, places=2)

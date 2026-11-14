@@ -287,7 +287,7 @@ class PosOrder(models.Model):
             payments_data += order._prepare_account_move_line_data_for_payments(
                 order.partner_id
             )
-        return super(
+        invoice = super(
             PosOrder,
             self.with_context(
                 l10n_ve_pos_payments_data={
@@ -296,3 +296,59 @@ class PosOrder(models.Model):
                 }
             ),
         )._generate_pos_order_invoice()
+        self._restore_term_foreign_amounts(invoice, payments_data)
+        return invoice
+
+    def _restore_term_foreign_amounts(self, move, payments_data):
+        """Give each ``payment_term`` line of ``move`` (the invoice of the
+        orders, or the entry that reverses their payments in the closing entry
+        of the session) the alternate amount of the payments it groups, as the
+        entries that settle them carry it.
+
+        Odoo 20 puts the payments on the invoice as ``payment_term`` lines (the
+        cash handed over as a debit, the change as a credit) where Odoo 19 had a
+        single line for the whole sale. ``l10n_ve_accountant`` spreads the
+        alternate total of the sale over those lines in proportion to their
+        balance, which cannot tell the change from the payment: $20 paying a
+        $12.04 sale left the invoice with $8.61 and $0.00 against payments of
+        $20.00 and $7.96, and a residual of $3.43 in alternate currency on the
+        receivable. Whatever the payments do not add up to against the sale
+        (cents of rounding) goes to the largest line, as the residual that
+        Odoo 19 left between its single line and its payments.
+        """
+        foreign_currency = move.company_id.foreign_currency_id
+        term_lines = move.line_ids.filtered(
+            lambda line: line.display_type == "payment_term"
+        ).sorted("id")
+        if (
+            not foreign_currency
+            or len(term_lines) != len(payments_data)
+            or all(
+                foreign_currency.is_zero(entry["metadata"]["foreign_amount"])
+                for entry in payments_data
+            )
+        ):
+            return
+        amounts = {}
+        for line, entry in zip(term_lines, payments_data):
+            amounts[line] = foreign_currency.round(
+                abs(entry["metadata"]["foreign_amount"])
+            )
+        signed_term = sum(
+            (1 if line.balance > 0 else -1) * amount for line, amount in amounts.items()
+        )
+        other_balance = sum((move.line_ids - term_lines).mapped("foreign_balance"))
+        difference = foreign_currency.round(-other_balance - signed_term)
+        if not foreign_currency.is_zero(difference):
+            largest = max(amounts, key=lambda line: amounts[line])
+            adjusted = amounts[largest] + (1 if largest.balance > 0 else -1) * difference
+            if adjusted >= 0:
+                amounts[largest] = adjusted
+        for line, amount in amounts.items():
+            line.with_context(skip_invoice_sync=True).write(
+                {
+                    "foreign_debit": amount if line.balance > 0 else 0.0,
+                    "foreign_credit": amount if line.balance < 0 else 0.0,
+                    "not_foreign_recalculate": True,
+                }
+            )
