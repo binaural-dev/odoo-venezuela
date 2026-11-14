@@ -6,7 +6,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Sales/Sales",
-    "version": "19.0.0.0.1",
+    "version": "20.0.1.0.0",
     "depends": [
         "l10n_ve_sale",
         "l10n_ve_pos",
@@ -14,5 +14,6 @@
     ],
     "images": ["static/description/icon.png"],
     "data": [],
-    "installable": False,
+    "installable": True,
+    "binaural_migrated": True,
 }
