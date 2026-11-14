@@ -46,3 +46,27 @@ class ResConfigSettings(models.TransientModel):
         related='company_id.convert_currency_from_sale_order',
         readonly=False,
     )
+
+    global_discount_account_id = fields.Many2one(
+        related="company_id.global_discount_account_id", readonly=False
+    )
+
+    discount_method_limit_enabled = fields.Boolean(related="company_id.discount_method_limit_enabled", readonly=False)
+
+    discount_allow_line_percent = fields.Boolean(related="company_id.discount_allow_line_percent", readonly=False)
+
+    discount_allow_line_amount = fields.Boolean(related="company_id.discount_allow_line_amount", readonly=False)
+
+    discount_allow_global_subtotal = fields.Boolean(related="company_id.discount_allow_global_subtotal", readonly=False)
+
+    discount_allow_global_total = fields.Boolean(related="company_id.discount_allow_global_total", readonly=False)
+
+    discount_max_limit_enabled = fields.Boolean(related="company_id.discount_max_limit_enabled", readonly=False)
+
+    discount_max_line = fields.Float(related="company_id.discount_max_line", readonly=False)
+
+    discount_max_global_subtotal = fields.Float(related="company_id.discount_max_global_subtotal", readonly=False)
+
+    discount_max_global_total = fields.Float(related="company_id.discount_max_global_total", readonly=False)
+
+    discount_approval_enabled = fields.Boolean(related="company_id.discount_approval_enabled", readonly=False)

@@ -446,6 +446,20 @@ class AccountMove(models.Model):
                     total_residual_company += line.amount_residual
             sign = move.direction_sign
             move.amount_residual_company = -sign * total_residual_company
+            # A draft invoice takes its residual from `tax_totals`. If something
+            # inside the computation of `tax_totals` reads an amount of the same
+            # invoice (the IGTF, the alternate totals...), this compute runs
+            # re-entrantly and gets False for `tax_totals`: the residual would be
+            # stored as 0 and the draft shown as "Paid". Then the totals of the
+            # lines (which are already synchronized at that point) are the residual.
+            if (
+                move.state == 'draft'
+                and move.is_invoice(include_receipts=True)
+                and not move.tax_totals
+                and not move.currency_id.is_zero(move.amount_total)
+            ):
+                move.amount_residual = move.amount_total
+                move.amount_residual_signed = move.amount_total_signed
 
     @api.model
     def _prorate_company_currency_amount(self, lines, amount, currency):

@@ -1,4 +1,5 @@
 from odoo.tests import TransactionCase, tagged
+from odoo.addons.l10n_ve_invoice.tests.common import enable_historical_rate_fixtures
 from odoo import Command, fields
 from unittest.mock import patch
 
@@ -7,6 +8,7 @@ from unittest.mock import patch
 class TestMoveActionPostAlertWizard(TransactionCase):
     def setUp(self):
         super().setUp()
+        enable_historical_rate_fixtures(self)
         self.env.user.tz = "America/Caracas"
         self.company = self.env.ref("base.main_company")
         self.currency_usd = self.env.ref("base.USD")

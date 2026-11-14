@@ -1,12 +1,16 @@
 from odoo import api, fields, models, _
+from odoo.exceptions import UserError
 from odoo.tools import float_round
+
+from .l10n_ve_discount_document import is_discount_applying
 import logging
 
 _logger = logging.getLogger(__name__)
 
 
 class SaleOrderLine(models.Model):
-    _inherit = "sale.order.line"
+    _inherit = ["sale.order.line", "l10n_ve.discount.line.mixin"]
+    _name = "sale.order.line"
 
     foreign_currency_id = fields.Many2one(
         related="order_id.foreign_currency_id", store=True
@@ -30,6 +34,98 @@ class SaleOrderLine(models.Model):
     )
 
     invoiced = fields.Boolean(compute="_compute_invoiced", store=True, copy=False)
+
+    def _discount_quantity(self):
+        return self.product_uom_qty
+
+    def _get_line_discount_type(self, company=None, vals=None):
+        order = self.order_id
+        if not order and vals and vals.get("order_id"):
+            order = self.env["sale.order"].browse(vals["order_id"])
+        if order:
+            return order._get_doc_discount_type()
+        company = company or self.company_id or self.env.company
+        return company.discount_type or "percent"
+
+    def _get_effective_discount_percent(self):
+        self.ensure_one()
+        if self._uses_discount_fixed():
+            return self._get_exact_discount_percentage()
+        return self.discount or 0.0
+
+    @api.constrains("product_uom_qty")
+    def _check_discount_fixed_quantity(self):
+        self._check_discount_fixed_not_exceeding_subtotal()
+
+    @api.depends("discount_fixed", "order_id.discount_mode")
+    def _compute_amount(self):
+        return super()._compute_amount()
+
+    def _check_order_not_locked_by_approval(self, orders=None):
+        """The lines of an order waiting for a discount approval are locked."""
+        if self.env.su or is_discount_applying(self.env):
+            return
+        orders = orders if orders is not None else self.order_id
+        if any(order.state == "to_approve" for order in orders):
+            raise UserError(
+                _(
+                    "This order is waiting for a discount approval and cannot be "
+                    "edited. A discount approver can approve or reject the "
+                    "discount, or the order can be cancelled."
+                )
+            )
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        self._check_order_not_locked_by_approval(
+            self.env["sale.order"].browse([v["order_id"] for v in vals_list if v.get("order_id")])
+        )
+        for vals in vals_list:
+            order = self.env["sale.order"].browse(vals.get("order_id"))
+            if order and ("discount" in vals or "discount_fixed" in vals):
+                order._discount_guard(vals)
+                self._enforce_discount_exclusivity(vals)
+        lines = super().create(vals_list)
+        lines.order_id._reapply_global_discount()
+        if any("discount" in v or "discount_fixed" in v for v in vals_list):
+            lines.order_id._evaluate_discount_approval()
+        return lines
+
+    def write(self, vals):
+        if not set(vals) <= {"state", "invoice_status"}:
+            self._check_order_not_locked_by_approval()
+        touches_discount = "discount" in vals or "discount_fixed" in vals
+        if touches_discount:
+            for order in self.order_id:
+                order._discount_guard(vals)
+        if touches_discount and not is_discount_applying(self.env):
+            for line in self:
+                line_vals = dict(vals)
+                line._enforce_discount_exclusivity(line_vals, company=line.company_id)
+                super(SaleOrderLine, line).write(line_vals)
+            res = True
+        else:
+            res = super().write(vals)
+        if {"price_unit", "product_uom_qty", "product_id", "display_type"} & set(vals):
+            self.order_id._reapply_global_discount()
+        if touches_discount and not is_discount_applying(self.env):
+            self.order_id._evaluate_discount_approval()
+        return res
+
+    def unlink(self):
+        self._check_order_not_locked_by_approval()
+        orders = self.order_id
+        res = super().unlink()
+        orders.exists()._reapply_global_discount()
+        return res
+
+    def _prepare_invoice_line(self, **optional_values):
+        res = super()._prepare_invoice_line(**optional_values)
+        if not self.display_type:
+            res["discount_fixed"] = (
+                self.discount_fixed if self._uses_discount_fixed() else 0.0
+            )
+        return res
 
     # override
     @api.depends("product_id", "product_uom_id", "product_uom_qty","order_id.currency_id")
@@ -127,7 +223,7 @@ class SaleOrderLine(models.Model):
                 precision_digits=precision,
             )
 
-    @api.depends("product_uom_qty", "foreign_price", "discount", "tax_ids")
+    @api.depends("product_uom_qty", "foreign_price", "discount", "discount_fixed", "tax_ids")
     def _compute_foreign_subtotal(self):
         """Subtotal en moneda alterna.
 
@@ -138,7 +234,7 @@ class SaleOrderLine(models.Model):
         """
         for line in self:
             line_discount_price_unit = line.foreign_price * (
-                1 - (line.discount / 100.0)
+                1 - (line._get_effective_discount_percent() / 100.0)
             )
             foreign_subtotal = line_discount_price_unit * line.product_uom_qty
 

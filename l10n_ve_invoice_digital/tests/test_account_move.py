@@ -1,4 +1,5 @@
 from odoo.exceptions import UserError, ValidationError, AccessError
+from odoo.addons.l10n_ve_invoice.tests.common import enable_historical_rate_fixtures
 from odoo.addons.l10n_ve_invoice_digital.services.tfhka_client import TfhkaBusinessError
 from odoo.addons.l10n_ve_invoice_digital.services.tfhka_service_base import TfhkaDataError
 from odoo import fields, Command
@@ -15,6 +16,7 @@ class TestAccountMoveApiCalls(TransactionCase):
 
     def setUp(self):
         super().setUp()
+        enable_historical_rate_fixtures(self)
         self.env.registry.clear_cache()
         _ = self.env["account.move"]
         Account = self.env["account.account"]

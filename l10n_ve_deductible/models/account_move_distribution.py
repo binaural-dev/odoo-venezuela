@@ -1,8 +1,6 @@
-import math
-
 from odoo import models
 
-EPS = 1e-9
+from odoo.addons.l10n_ve_invoice.tools.discount import spread_amount
 
 
 class AccountMove(models.Model):
@@ -47,21 +45,7 @@ class AccountMove(models.Model):
 
     def _spread_deductible_amount(self, amount, gross):
         """{line: share} of `amount` over the lines in `gross` ({line: gross})."""
-        total = sum(gross.values())
-        rounding = self.currency_id.rounding
-        ideal = {line: amount * value / total / rounding for line, value in gross.items()}
-        cap = {line: max(math.ceil(value / rounding - EPS) - 1, 0) for line, value in gross.items()}
-        units = {line: min(math.floor(ideal[line] + EPS), cap[line]) for line in gross}
-        leftover = round(amount / rounding) - sum(units.values())
-        by_remainder = sorted(gross, key=lambda line: units[line] - ideal[line])
-        while leftover > 0:
-            room = [line for line in by_remainder if units[line] < cap[line]][:leftover]
-            if not room:
-                break
-            for line in room:
-                units[line] += 1
-            leftover -= len(room)
-        return {line: self.currency_id.round(count * rounding) for line, count in units.items()}
+        return spread_amount(amount, gross, self.currency_id.rounding)
 
     def _get_deductible_line_percents(self):
         """{line: exact discount %}: the document's % on every line, or in
