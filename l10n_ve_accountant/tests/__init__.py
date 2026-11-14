@@ -25,4 +25,5 @@ from . import test_server_date_vs_user_tz
 from . import test_rate_date_user_tz
 from . import test_entry_rate_date
 from . import test_alternate_totals_block
+from . import test_global_price_included_exempt
 from . import test_cash_basis_foreign
