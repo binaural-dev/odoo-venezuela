@@ -9,7 +9,7 @@
                  máquina fiscal todavía está imprimiendo en segundo plano.
                  (El botón flotante de debug lo aporta ahora l10n_ve_pos_self_order;
                  este módulo solo extiende el panel de debug con lo fiscal.) -->
-            <div t-if="selfOrder.printingFiscalInvoice"
+            <div t-if="this.selfOrder.printingFiscalInvoice"
                  class="position-fixed top-0 start-0 w-100 min-vh-100 d-flex flex-column justify-content-center align-items-center bg-black bg-opacity-75 text-white"
                  style="z-index: 2100;">
                 <span class="spinner-border mb-3" style="width: 3rem; height: 3rem;" role="status"/>

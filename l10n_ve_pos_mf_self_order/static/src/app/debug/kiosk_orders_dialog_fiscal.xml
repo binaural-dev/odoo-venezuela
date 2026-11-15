@@ -7,7 +7,7 @@
         <xpath expr="//span[hasclass('o_kiosk_order_badges')]" position="inside">
             <span t-if="st === 'pending_fiscal'" class="badge text-bg-warning ms-2">Pending fiscal</span>
             <span t-if="st === 'complete'" class="badge text-bg-success ms-2">
-                Fiscal <t t-esc="order.mf_invoice_number"/>
+                Fiscal <t t-out="order.mf_invoice_number"/>
             </span>
         </xpath>
 
@@ -18,40 +18,40 @@
             </span>
             <span t-if="st === 'complete'" class="text-success">
                 fiscal invoice issued
-                <span class="fw-bold" t-esc="selected.mf_invoice_number"/>
+                <span class="fw-bold" t-out="this.selected.mf_invoice_number"/>
             </span>
         </xpath>
 
         <!-- Detalle del pago verificado por el VPOS de Megasoft -->
         <xpath expr="//div[hasclass('o_kiosk_order_payment')]" position="inside">
-            <div t-if="selectedPayment.megasoft_auth">
-                Authorization: <t t-esc="selectedPayment.megasoft_auth"/>
+            <div t-if="this.selectedPayment.megasoft_auth">
+                Authorization: <t t-out="this.selectedPayment.megasoft_auth"/>
             </div>
-            <div t-if="selectedPayment.megasoft_reference">
-                Reference: <t t-esc="selectedPayment.megasoft_reference"/>
+            <div t-if="this.selectedPayment.megasoft_reference">
+                Reference: <t t-out="this.selectedPayment.megasoft_reference"/>
             </div>
-            <div t-if="selectedPayment.megasoft_lote">
-                Batch: <t t-esc="selectedPayment.megasoft_lote"/>
+            <div t-if="this.selectedPayment.megasoft_lote">
+                Batch: <t t-out="this.selectedPayment.megasoft_lote"/>
             </div>
-            <div t-if="selectedPayment.megasoft_card">
-                Card: <t t-esc="selectedPayment.megasoft_card"/>
-                <t t-if="selectedPayment.megasoft_card_type">
-                    (<t t-esc="selectedPayment.megasoft_card_type"/>)
+            <div t-if="this.selectedPayment.megasoft_card">
+                Card: <t t-out="this.selectedPayment.megasoft_card"/>
+                <t t-if="this.selectedPayment.megasoft_card_type">
+                    (<t t-out="this.selectedPayment.megasoft_card_type"/>)
                 </t>
             </div>
-            <div t-if="selectedPayment.megasoft_bank">
-                Bank: <t t-esc="selectedPayment.megasoft_bank"/>
+            <div t-if="this.selectedPayment.megasoft_bank">
+                Bank: <t t-out="this.selectedPayment.megasoft_bank"/>
             </div>
         </xpath>
 
         <!-- Acciones de máquina fiscal según el estado -->
         <xpath expr="//div[hasclass('o_kiosk_order_actions')]" position="inside">
             <button t-if="st === 'pending_fiscal'" type="button" class="btn btn-primary"
-                    t-on-click="onPrint" t-att-disabled="state.busy">
+                    t-on-click="this.onPrint" t-att-disabled="this.state.busy">
                 Print fiscal invoice
             </button>
             <button t-if="st === 'complete'" type="button" class="btn btn-outline-primary"
-                    t-on-click="onPrint" t-att-disabled="state.busy">
+                    t-on-click="this.onPrint" t-att-disabled="this.state.busy">
                 Reprint copy
             </button>
         </xpath>
