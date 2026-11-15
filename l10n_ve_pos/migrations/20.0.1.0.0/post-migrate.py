@@ -1,7 +1,8 @@
 """Apply the plan written by ``pre-migrate.py`` (ADR-023).
 
-For every register with several cash payment methods: the first one that is
-not in a foreign currency survives as "the cash method" and takes the
+For every register with several cash payment methods: the one whose tender
+currency is the register currency (else the first one that is not in a foreign
+currency) survives as "the cash method" and takes the
 currencies of the others in ``currency_ids``; its cross journals by currency
 become ``pos.payment.method.currency`` records; the payments of the old
 methods move to it with the currency they were made in; the old methods are
@@ -17,7 +18,10 @@ was in that currency (USD) it is what the customer handed over, so it becomes
 alternate currency too, so the euros are not recorded anywhere: they are
 re-derived from the local amount with the rate of that currency on the day of
 the payment. Payments of the method in Bs keep the local amount only, as in
-Odoo 19.
+Odoo 19. In a register in another currency the Bs handed over are the company
+currency: they are derived from the rate of the order here, and
+``binaural_pos_multicurrency`` replaces them with the exact ``tender_amount``
+of Odoo 19.
 
 The plan table stays for ``l10n_ve_pos_igtf`` (``apply_igtf`` of each merged
 method and currency) and ``l10n_ve_pos_mf`` (fiscal printer code); ``end-migrate.py``
@@ -88,11 +92,25 @@ def migrate(cr, version):
             is_alternate = bool((cr.fetchone() or [False])[0])
             cr.execute(
                 """
+                SELECT company.currency_id = %s
+                  FROM pos_payment_method method
+                  JOIN res_company company ON company.id = method.company_id
+                 WHERE method.id = %s
+                """,
+                (currency, keeper),
+            )
+            is_company = bool((cr.fetchone() or [False])[0])
+            cr.execute(
+                """
                 UPDATE pos_payment payment
                    SET payment_method_id = %(keeper)s,
                        foreign_currency_id = %(currency)s,
                        amount_currency = CASE WHEN %(is_alternate)s
                            THEN payment.foreign_amount
+                           WHEN %(is_company)s
+                           THEN ROUND((payment.amount / NULLIF((
+                               SELECT pos_order.currency_rate FROM pos_order
+                                WHERE pos_order.id = payment.pos_order_id), 0))::numeric, 2)
                            ELSE ROUND((payment.amount * COALESCE((
                                SELECT rate.rate
                                  FROM res_currency_rate rate
@@ -110,6 +128,7 @@ def migrate(cr, version):
                     "currency": currency,
                     "old": old,
                     "is_alternate": is_alternate,
+                    "is_company": is_company,
                 },
             )
         elif merged:

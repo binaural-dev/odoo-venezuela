@@ -7,6 +7,14 @@ method per register that takes every currency (``currency_ids``), so the
 settings by currency live in ``pos.payment.method.currency`` and the payments
 of the old methods move to the surviving one.
 
+The surviving cash method is the one whose tender currency is the currency of
+the register (Odoo 19 rule of ``binaural_pos_multicurrency``: a foreign method
+collects in a foreign currency, otherwise the currency of its journal, or the
+company currency when the journal has none). In a register in the company
+currency that is the Bs cash, as before; in a register in dollars it is the
+cash in dollars, and the cash in Bs and the banks without currency (Pago
+movil) contribute the company currency.
+
 This step runs before the module is loaded, while the Odoo 19 columns are
 still there, and only writes the plan to ``l10n_ve_pos_method_merge``: what
 moves where and with which currency, plus the ``apply_igtf`` flag the old
@@ -57,14 +65,18 @@ def migrate(cr, version):
                m.cross_journal,
                m.cross_account_journal,
                COALESCE({igtf}, FALSE),
-               COALESCE(cj.currency_id, comp.foreign_currency_id),
-               COALESCE(m.company_id, cfg.company_id)
+               CASE WHEN COALESCE(m.is_foreign_currency, FALSE)
+                    THEN COALESCE(cj.currency_id, comp.foreign_currency_id)
+                    ELSE COALESCE(j.currency_id, comp.currency_id) END,
+               COALESCE(m.company_id, cfg.company_id),
+               COALESCE(cfgj.currency_id, comp.currency_id)
           FROM pos_payment_method m
           JOIN pos_config_pos_payment_method_rel rel
             ON rel.pos_payment_method_id = m.id
           JOIN pos_config cfg ON cfg.id = rel.pos_config_id
           JOIN res_company comp ON comp.id = COALESCE(m.company_id, cfg.company_id)
           LEFT JOIN account_journal j ON j.id = m.journal_id
+          LEFT JOIN account_journal cfgj ON cfgj.id = cfg.journal_id
           LEFT JOIN account_journal cj ON cj.id = m.cross_journal
          ORDER BY rel.pos_config_id, m.sequence, m.id
         """
@@ -77,19 +89,23 @@ def migrate(cr, version):
         cash = [m for m in methods if m[3] == "cash"]
         keeper = None
         if cash:
-            keeper = next((m for m in cash if not m[4]), cash[0])
+            keeper = next(
+                (m for m in cash if m[8] == m[10]),
+                next((m for m in cash if not m[4]), cash[0]),
+            )
         for method in methods:
             (_cfg, method_id, _seq, jtype, is_foreign, cross, cross_account,
-             apply_igtf, currency, _company) = method
+             apply_igtf, currency, _company, register_currency) = method
+            collects_in_other_currency = is_foreign or currency != register_currency
             if jtype == "cash":
-                if method_id == keeper[1] and not is_foreign:
+                if method_id == keeper[1] and not collects_in_other_currency:
                     continue
                 rows.append((
                     config_id, keeper[1], method_id,
-                    currency if is_foreign else None,
+                    currency if collects_in_other_currency else None,
                     cross, cross_account, apply_igtf,
                 ))
-            elif is_foreign and jtype == "bank":
+            elif jtype == "bank" and collects_in_other_currency:
                 rows.append((
                     config_id, method_id, method_id,
                     currency, cross, cross_account, apply_igtf,
