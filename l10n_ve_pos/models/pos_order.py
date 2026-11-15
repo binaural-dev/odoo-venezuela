@@ -60,9 +60,7 @@ class PosOrder(models.Model):
         return res
     @api.model
     def create_from_ui(self, orders, draft=False):
-        context = dict(self.env.context)
-        context['from_pos'] = True
-        return super(PosOrder, self.with_context(context)).create_from_ui(orders, draft)
+        return super(PosOrder, self.with_context(from_pos=True)).create_from_ui(orders, draft)
 
 class PosOrderLine(models.Model):
     _inherit = "pos.order.line"
