@@ -49,7 +49,8 @@ patch(OrderPaymentValidation.prototype, {
    * fiscal ya la abrió con su comando de gaveta (como en 19, donde el core
    * llamaba al proxy de hardware y no a `openCashbox`), así que se omite la
    * segunda apertura. `openCashbox` es lo primero que ejecuta el core, antes
-   * de su primer `await`.
+   * de su primer `await`. Si no la abrió la factura (p. ej. orden operativa),
+   * `pos.openCashbox` no envía nada a la gaveta fiscal durante la validación.
    */
   async finalizeValidation() {
     const order = this.order;
@@ -57,11 +58,13 @@ patch(OrderPaymentValidation.prototype, {
       order.mf_invoice_number && this.pos.has_cashbox && order.isPaidWithCash()
     );
     this.pos._mfDrawerOpenedByInvoice = openedByInvoice;
+    this.pos._mfValidatingOrder = order;
     let result;
     try {
       result = super.finalizeValidation(...arguments);
     } finally {
       this.pos._mfDrawerOpenedByInvoice = false;
+      this.pos._mfValidatingOrder = null;
     }
     return result;
   },

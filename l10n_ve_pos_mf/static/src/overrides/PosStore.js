@@ -44,10 +44,15 @@ patch(PosStore.prototype, {
   /**
    * Abre la gaveta usando el comando directo a la máquina fiscal.
    * En 19 la firma es openCashbox(action) (cash in/out manual).
+   * Durante la validación de una orden (`_mfValidatingOrder`) no se envía
+   * nada a la gaveta fiscal: en 19 la validación no pasaba por aquí.
    */
   async openCashbox(action) {
     if (this._mfDrawerOpenedByInvoice) {
       return;
+    }
+    if (this._mfValidatingOrder && !this.mfOpensDrawerOnValidation(this._mfValidatingOrder)) {
+      return super.openCashbox(...arguments);
     }
     const fiscalPrinter = this.getFiscalPrinter();
 
@@ -64,6 +69,17 @@ patch(PosStore.prototype, {
       }
     }
     return super.openCashbox(...arguments);
+  },
+
+  /**
+   * Indica si validar la orden abre la gaveta por la máquina fiscal. Como en
+   * 19 es falso: la gaveta la abre el comando de la factura fiscal o el
+   * cash in/out manual, nunca la validación.
+   * @param {PosOrder} order
+   * @returns {boolean}
+   */
+  mfOpensDrawerOnValidation(order) {
+    return false;
   },
 
   /**
