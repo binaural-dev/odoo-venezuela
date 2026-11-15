@@ -9,4 +9,22 @@
             </tr>
         </xpath>
     </template>
+
+    <template id="pos_orderline_receipt_foreign" inherit_id="point_of_sale.pos_orderline_receipt">
+        <xpath expr="//td[@name='price_subtotal_incl']" position="inside">
+            <t t-if="line.get('foreign_price_subtotal_incl')" t-out="' / ' + line['foreign_price_subtotal_incl']"/>
+        </xpath>
+    </template>
+
+    <template id="pos_orderline_receipt_information_foreign" inherit_id="point_of_sale.pos_orderline_receipt_information">
+        <xpath expr="//span[@name='standard-unit-price']" position="before">
+            <div t-if="line.get('aliquot_type')" class="text-normal aliquot-type" t-out="line['aliquot_type']"/>
+        </xpath>
+    </template>
+
+    <template id="pos_order_receipt_header_foreign" inherit_id="point_of_sale.pos_order_receipt_header">
+        <xpath expr="(//div[@name='partner_info']//div[@t-if=&quot;partner['vat']&quot;])[2]" position="before">
+            <div t-if="partner.get('address')" name="partner_address"><span t-out="partner['address']"/></div>
+        </xpath>
+    </template>
 </odoo>

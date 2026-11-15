@@ -18,3 +18,6 @@ from . import test_pos_config_stock_availability
 from . import test_server_date_vs_user_tz
 from . import test_pos_config_product_creation
 from . import test_pos_product_available_qty
+from . import test_pos_closing_notes
+from . import test_pos_method_merge_end_migration
+from . import test_pos_order_receipt

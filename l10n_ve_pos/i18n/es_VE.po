@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 20.0+e-20261105\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-14 20:53+0000\n"
-"PO-Revision-Date: 2026-11-14 20:53+0000\n"
+"POT-Creation-Date: 2026-11-15 00:56+0000\n"
+"PO-Revision-Date: 2026-11-15 00:56+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -276,6 +276,7 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_make_payment__display_name
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_order__display_name
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_order_line__display_name
+#: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_order_receipt__display_name
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_payment__display_name
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_payment_method__display_name
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_payment_method_currency__display_name
@@ -455,6 +456,7 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_make_payment__id
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_order__id
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_order_line__id
+#: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_order_receipt__id
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_payment__id
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_payment_method__id
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_payment_method_currency__id
@@ -744,6 +746,11 @@ msgid "Point of Sale Order Line"
 msgstr "Línea de la orden del Punto de venta"
 
 #. module: l10n_ve_pos
+#: model:ir.model,name:l10n_ve_pos.model_pos_order_receipt
+msgid "Point of Sale Order Receipt Generator"
+msgstr "Generador de recibos de órdenes del punto de venta"
+
+#. module: l10n_ve_pos
 #: model:ir.model,name:l10n_ve_pos.model_pos_payment
 msgid "Point of Sale Payment"
 msgstr "Pago en el punto de venta"
@@ -922,6 +929,13 @@ msgstr "Impuesto"
 
 #. module: l10n_ve_pos
 #. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/utils/generate_printer_data.js:0
+#: code:addons/odoo-venezuela/l10n_ve_pos/static/src/overrides/utils/generate_printer_data.js:0
+msgid "Tax ID"
+msgstr "Número de identificación fiscal"
+
+#. module: l10n_ve_pos
+#. odoo-javascript
 #: code:addons/l10n_ve_pos/static/src/overrides/components/order_display/order_display.xml:0
 #: code:addons/odoo-venezuela/l10n_ve_pos/static/src/overrides/components/order_display/order_display.xml:0
 msgid "Taxes:"
@@ -1083,6 +1097,13 @@ msgstr ""
 msgid ""
 "You cannot reconcile a payment linked to a POS session that is still open"
 msgstr ""
+
+#. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_session.py:0
+#: code:addons/odoo-venezuela/l10n_ve_pos/models/pos_session.py:0
+msgid "You don't have the access rights to close the register."
+msgstr "No tiene permisos para cerrar la caja registradora."
 
 #. module: l10n_ve_pos
 #. odoo-python

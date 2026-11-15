@@ -11,7 +11,8 @@ This step runs before the module is loaded, while the Odoo 19 columns are
 still there, and only writes the plan to ``l10n_ve_pos_method_merge``: what
 moves where and with which currency, plus the ``apply_igtf`` flag the old
 method had (``l10n_ve_pos_igtf`` reads that table, to put the flag on the
-currency settings, and drops it). ``post-migrate.py`` applies it.
+currency settings, and ``l10n_ve_pos_mf`` the fiscal printer code).
+``post-migrate.py`` applies it and ``end-migrate.py`` drops the table.
 """
 
 

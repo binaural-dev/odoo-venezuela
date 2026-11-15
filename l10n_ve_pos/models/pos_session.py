@@ -2,7 +2,7 @@ from datetime import datetime
 
 from odoo import models, fields, api, _, Command
 from odoo.tools import float_is_zero, float_compare
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import AccessError, UserError, ValidationError
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -741,6 +741,21 @@ class PosSession(models.Model):
             }
         )
         return move
+
+    def update_closing_notes(self, notes):
+        """Store the closing note the cashier typed in the closing popup.
+
+        Odoo 19 sent it with ``update_closing_control_state_session``; Odoo 20
+        keeps it in the popup state and never sends it, so the popup calls this
+        method before closing, for every register.
+        """
+        self.ensure_one()
+        if not self.env.user.has_group("point_of_sale.group_pos_user"):
+            raise AccessError(_("You don't have the access rights to close the register."))
+        if self.state == "closed":
+            return False
+        self.closing_notes = notes or False
+        return True
 
     def close_session_from_ui(self, payment_method_closing={}):
         """Create the cross moves and round the orders once the session is

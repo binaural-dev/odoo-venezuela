@@ -7,6 +7,7 @@ from . import pos_payment_method_currency
 from . import pos_make_payment
 from . import pos_order
 from . import pos_order_line
+from . import pos_order_receipt
 from . import res_config_settings
 from . import res_company
 from . import pos_payment

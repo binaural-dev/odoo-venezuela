@@ -20,7 +20,8 @@ the payment. Payments of the method in Bs keep the local amount only, as in
 Odoo 19.
 
 The plan table stays for ``l10n_ve_pos_igtf`` (``apply_igtf`` of each merged
-method and currency), which drops it.
+method and currency) and ``l10n_ve_pos_mf`` (fiscal printer code); ``end-migrate.py``
+drops it once every module has been updated.
 """
 import logging
 
