@@ -1,6 +1,6 @@
 /** @odoo-module */
 
-import { Component } from "@odoo/owl";
+import { Component, useProps } from "@odoo/owl";
 import { usePos } from "@point_of_sale/app/hooks/pos_hook";
 import { useService } from "@web/core/utils/hooks";
 import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
@@ -12,7 +12,7 @@ import { _t } from "@web/core/l10n/translation";
  */
 export class FiscalReports extends Component {
     static template = "l10n_ve_pos_mf.FiscalReports";
-    static props = {};
+    props = useProps();
 
     setup() {
         this.pos = usePos();

@@ -9,7 +9,7 @@
                     <ReprintInvoiceButton order="_selectedSyncedOrder" />
                 </t>
                 <t t-if="!_selectedSyncedOrder.mf_invoice_number">
-                    <PrintPendingOrderButton order="_selectedSyncedOrder" onOrderFiscalized.bind="onOrderFiscalized" />
+                    <PrintPendingOrderButton order="_selectedSyncedOrder" onOrderFiscalized.bind="this.onOrderFiscalized" />
                 </t>
             </t>
         </xpath>
@@ -21,7 +21,7 @@
         <xpath expr="//td[hasclass('order-name')]" position="after">
             <td class="align-middle">
                 <div class="small text-muted">MF</div>
-                <div class="fw-bolder"><t t-esc="order.mf_invoice_number || ''"/></div>
+                <div class="fw-bolder"><t t-out="order.mf_invoice_number || ''"/></div>
             </td>
         </xpath>
 

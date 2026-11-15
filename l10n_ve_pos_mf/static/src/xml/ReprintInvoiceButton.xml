@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates id="template" xml:space="preserve">
     <t t-name="l10n_ve_pos_mf.ReprintInvoiceButton">
-        <button class="control-button btn btn-secondary btn-lg lh-lg flex-grow-1 flex-shrink-1" t-on-click="_onClick">
+        <button class="control-button btn btn-secondary btn-lg lh-lg flex-grow-1 flex-shrink-1" t-on-click="this._onClick">
             <i class="oi me-1" data-icon="print"></i>
             <span>Reimprimir Documento Fiscal</span>
         </button>

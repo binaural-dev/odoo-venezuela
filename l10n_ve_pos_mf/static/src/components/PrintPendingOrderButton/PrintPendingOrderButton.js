@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { Component, useState } from "@odoo/owl";
+import { Component, proxy, t, useProps } from "@odoo/owl";
 import { usePos } from "@point_of_sale/app/hooks/pos_hook";
 import { useService } from "@web/core/utils/hooks";
 import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
@@ -23,19 +23,15 @@ import { _t } from "@web/core/l10n/translation";
  */
 export class PrintPendingOrderButton extends Component {
     static template = "l10n_ve_pos_mf.PrintPendingOrderButton";
-    static props = {
-        order: { type: Object, optional: true },
-        onOrderFiscalized: { type: Function, optional: true },
-    };
-    static defaultProps = {
-        onOrderFiscalized: () => {},
-    };
+    props = useProps({
+        order: t.object().optional(),
+        onOrderFiscalized: t.function().optional(() => () => {}),
+    });
 
     setup() {
         this.pos = usePos();
         this.dialog = useService("dialog");
-        this.orm = useService("orm");
-        this.state = useState({ isPrinting: false });
+        this.state = proxy({ isPrinting: false });
     }
 
     getFiscalPrinter() {
@@ -106,24 +102,29 @@ export class PrintPendingOrderButton extends Component {
             // 2. Persistir en pos.order (via sudo en backend, ya que estos
             // campos son readonly=True a nivel de modelo) y propagar los
             // mismos datos al account.move asociado, si existe.
-            const mfResult = await this.orm.call("pos.order", "write_mf_invoice_data", [
+            //    Se llama por `pos.data` y no por el servicio `orm`: al fijar el
+            //    número fiscal el botón desaparece de la lista y el servicio,
+            //    ligado al componente, ya no entrega la respuesta.
+            await this.pos.data.call("pos.order", "write_mf_invoice_data", [
                 [order.id],
                 order.mf_invoice_number,
                 order.fiscal_machine,
                 order.mf_reportz || false,
             ]);
 
-            // 3. Redirigir a finalización inmediatamente
-            // (el refresco de pendientes se hace en segundo plano)
+            // 3. Refrescar el pedido desde el servidor y redirigir a la pantalla
+            // de finalización. En 20 la recarga reemplaza el registro del
+            // pedido: si se navega antes, la pantalla se pierde y vuelve a la lista.
             const orderUuid = order.uuid;
-            this.pos.navigate("ReceiptScreen", { orderUuid });
-
-            this.props.onOrderFiscalized(order.id).catch((refreshError) => {
+            try {
+                await this.props.onOrderFiscalized(order.id);
+            } catch (refreshError) {
                 console.warn(
                     "PrintPendingOrderButton:: No se pudo refrescar la lista de pendientes",
                     refreshError
                 );
-            });
+            }
+            this.pos.navigate("FeedbackScreen", { orderUuid });
         } catch (error) {
             console.error("PrintPendingOrderButton:: Error al imprimir pedido pendiente", error);
             this._alert(

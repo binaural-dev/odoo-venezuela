@@ -3,7 +3,7 @@
 import { ClosePosPopup } from "@point_of_sale/app/components/popups/closing_popup/closing_popup";
 import { patch } from "@web/core/utils/patch";
 import { useService } from "@web/core/utils/hooks";
-import { useState } from "@odoo/owl";
+import { proxy } from "@odoo/owl";
 import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { ask } from "@point_of_sale/app/utils/make_awaitable_dialog";
 import { _t } from "@web/core/l10n/translation";
@@ -12,7 +12,7 @@ patch(ClosePosPopup.prototype, {
   setup() {
     super.setup(...arguments);
     this.orm = useService("orm");
-    this.mfState = useState({ isPrintingReport: false });
+    this.mfState = proxy({ isPrintingReport: false });
     // Permiso VE: usuarios con l10n_ve_pos_mf.group_pos_close_native ven
     // ademas un boton de cierre nativo (sin Reporte Z ni validacion de
     // pedidos sin facturar), junto al flujo dual existente.
@@ -198,7 +198,7 @@ patch(ClosePosPopup.prototype, {
       return;
     }
 
-    // Flujo nativo de cierre de Odoo 19: confirm() valida diferencias de
+    // Flujo nativo de cierre de Odoo 20: confirm() valida diferencias de
     // caja y luego llama a closeSession() (respeta overrides encadenados).
     await this.confirm();
   },
