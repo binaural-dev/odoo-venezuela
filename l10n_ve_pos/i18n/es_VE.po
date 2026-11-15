@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 20.0+e-20261105\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-15 00:56+0000\n"
-"PO-Revision-Date: 2026-11-15 00:56+0000\n"
+"POT-Creation-Date: 2026-11-15 01:37+0000\n"
+"PO-Revision-Date: 2026-11-15 01:37+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -170,6 +170,27 @@ msgstr "Cambiar cantidad en orden de POS"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
 msgid "Change state to draft in account moves from POS"
 msgstr "Cambiar estado a borrador en movimientos contables desde el POS"
+
+#. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_session.py:0
+#: code:addons/odoo-venezuela/l10n_ve_pos/models/pos_session.py:0
+msgid "Closing counted: %s \n"
+msgstr "Contado al cierre: %s \n"
+
+#. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_session.py:0
+#: code:addons/odoo-venezuela/l10n_ve_pos/models/pos_session.py:0
+msgid "Closing difference: %s \n"
+msgstr "Diferencia de cierre: %s \n"
+
+#. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_session.py:0
+#: code:addons/odoo-venezuela/l10n_ve_pos/models/pos_session.py:0
+msgid "Closing expected: %s \n"
+msgstr "Cierre esperado: %s \n"
 
 #. module: l10n_ve_pos
 #: model:ir.model,name:l10n_ve_pos.model_res_company
@@ -640,6 +661,13 @@ msgid ""
 "Only refund lines can have a negative quantity. To return products, use the "
 "refund flow: Orders → select the original order → Refund."
 msgstr ""
+
+#. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_session.py:0
+#: code:addons/odoo-venezuela/l10n_ve_pos/models/pos_session.py:0
+msgid "Opening control message: "
+msgstr "Mensaje de control de apertura: "
 
 #. module: l10n_ve_pos
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos

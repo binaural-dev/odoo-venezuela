@@ -10,6 +10,12 @@
         </xpath>
     </template>
 
+    <template id="pos_order_receipt_change_foreign" inherit_id="point_of_sale.pos_order_receipt">
+        <xpath expr="//td[@name='change']/following-sibling::td[@t-else]" position="attributes">
+            <attribute name="t-out">extra_data['prices'].get('change_amount') or order['amount_return']</attribute>
+        </xpath>
+    </template>
+
     <template id="pos_orderline_receipt_foreign" inherit_id="point_of_sale.pos_orderline_receipt">
         <xpath expr="//td[@name='price_subtotal_incl']" position="inside">
             <t t-if="line.get('foreign_price_subtotal_incl')" t-out="' / ' + line['foreign_price_subtotal_incl']"/>
@@ -23,6 +29,8 @@
     </template>
 
     <template id="pos_order_receipt_header_foreign" inherit_id="point_of_sale.pos_order_receipt_header">
+        <xpath expr="(//div[@name='partner_info']//t[@t-out=&quot;extra_data['partner_vat_label']&quot;])[1]" position="replace"/>
+        <xpath expr="(//div[@name='partner_info']//t[@t-out=&quot;extra_data['partner_vat_label']&quot;])[1]" position="replace"/>
         <xpath expr="(//div[@name='partner_info']//div[@t-if=&quot;partner['vat']&quot;])[2]" position="before">
             <div t-if="partner.get('address')" name="partner_address"><span t-out="partner['address']"/></div>
         </xpath>

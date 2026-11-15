@@ -19,6 +19,7 @@ patch(GeneratePrinterData.prototype, {
 
   generateTaxData() {
     const data = super.generateTaxData(...arguments);
+    data.change_amount = this.order.amount_return ? this.formatCurrency(this.order.amount_return) : false;
     const foreignTotal = this.formatForeignAmount(this.order.get_foreign_total_with_tax());
     if (foreignTotal) {
       data.foreign_total_amount = foreignTotal;
@@ -35,11 +36,26 @@ patch(GeneratePrinterData.prototype, {
     }));
   },
 
+  generatePaymentData() {
+    const payments = super.generatePaymentData(...arguments);
+    return this.order.payment_ids
+      .map((line, index) =>
+        line.isDifferentCurrency
+          ? {
+              ...payments[index],
+              payment_method_data: {
+                name: `${line.payment_method_id?.name || ""} (${line.currency.name})`,
+              },
+              amount: this.formatCurrency(line.getAmount(), line.pos_order_id.currency),
+            }
+          : payments[index]
+      )
+      .filter((payment, index) => !this.order.payment_ids[index].is_change);
+  },
+
   generateReceiptData() {
     const data = super.generateReceiptData(...arguments);
-    if (!this.order.partner_id?.country_id?.vat_label) {
-      data.extra_data.partner_vat_label = _t("Tax ID");
-    }
+    data.order.amount_return_currency = 0;
     return data;
   },
 });

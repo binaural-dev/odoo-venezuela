@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from odoo import models, fields, api, _, Command
-from odoo.tools import float_is_zero, float_compare
+from odoo.tools import float_is_zero, float_compare, plaintext2html
 from odoo.exceptions import AccessError, UserError, ValidationError
 import logging
 
@@ -756,6 +756,45 @@ class PosSession(models.Model):
             return False
         self.closing_notes = notes or False
         return True
+
+    def _handle_cash_statement_entries(self, payment_method_closing={}):
+        """At closing, post the cash details message Odoo 19 posted in the
+        chatter of the session: the closing difference, the expected and the
+        counted cash of the register, with the closing note. Odoo 20 posts
+        only the opening one."""
+        cash_method = self.config_id._get_cash_payment_method()
+        is_closing = bool(cash_method and self.bank_statement_id)
+        if is_closing:
+            counted = payment_method_closing.get(str(cash_method.id), 0)
+            counted = counted or payment_method_closing.get(cash_method.id, 0)
+            offset = self._get_closing_cash_offset()
+            expected = self.bank_statement_id.balance_end - offset
+            counted -= offset
+        res = super()._handle_cash_statement_entries(payment_method_closing)
+        if is_closing:
+            self._post_closing_cash_details_message(expected, counted - expected, self.closing_notes)
+        return res
+
+    def _get_closing_cash_offset(self):
+        """Amount of the cash statement that the cash count of the closing
+        does not cover. Modules that keep part of the cash apart (a secondary
+        drawer) return it here, so the message shows the count of the register."""
+        self.ensure_one()
+        return 0.0
+
+    def _post_closing_cash_details_message(self, expected, difference, notes):
+        self.ensure_one()
+        currency = self.currency_id
+        message = _("Closing difference: %s \n", currency.format(difference))
+        message += _("Closing expected: %s \n", currency.format(expected))
+        message += _("Closing counted: %s \n", currency.format(expected + difference))
+        if notes:
+            message += _("Opening control message: ")
+            message += notes
+        self.message_post(
+            body=plaintext2html(message),
+            email_from=self.env.user.email or "admin@example.com",
+        )
 
     def close_session_from_ui(self, payment_method_closing={}):
         """Create the cross moves and round the orders once the session is
