@@ -16,6 +16,7 @@ Las pruebas corren en dos compañías (ver ``TestPosSessionAccountingBase``):
 En las dos la tercera moneda es EUR.
 """
 
+from datetime import timedelta
 from unittest.mock import patch
 
 from odoo import Command, fields
@@ -245,6 +246,36 @@ class TestPosTenderCurrency(TestPosSessionAccountingBase):
         rates = self.usd_config.tender_currency_rates[str(self.eur.id)]
         self.assertAlmostEqual(rates["foreign_rate"], self.EUR_RATE, places=6)
         self.assertAlmostEqual(rates["foreign_inverse_rate"], 1 / self.EUR_RATE, places=9)
+
+    def test_tender_rates_keep_the_day_of_the_session(self):
+        """Ticket 16351: la sesión se abrió ayer (EUR a 1,10) y hoy el EUR está
+        a 1,16: la caja sigue con las tasas de cobro del día de la sesión."""
+        session = self._new_session()
+        session.set_opening_control(0, "")
+        yesterday = session.foreign_rate_date - timedelta(days=1)
+        Rate = self.env["res.currency.rate"]
+        for currency, rate in ((self.eur, 1 / 1.10), (self.foreign_currency, self.FOREIGN_RATE_OF_DAY)):
+            Rate.create(
+                {"name": yesterday, "currency_id": currency.id, "company_id": self.company.id, "rate": rate}
+            )
+        session.foreign_rate_date = yesterday  # abierta ayer
+        self.usd_config.invalidate_recordset(["foreign_rate", "foreign_inverse_rate", "tender_currency_rates"])
+        rates = self.usd_config.tender_currency_rates[str(self.eur.id)]
+        self.assertAlmostEqual(rates["foreign_rate"], 1.10, places=6)
+
+    def test_opening_detects_an_outdated_tender_rate(self):
+        """Ticket 16351: el navegador tiene la tasa de cobro del EUR de una carga
+        anterior: la caja no abre con ella."""
+        session = self._new_session()
+        eur_key = str(self.eur.id)
+        loaded = {
+            "foreign_inverse_rate": self.usd_config.foreign_inverse_rate,
+            "currencies": {},
+            "tender_currency_rates": {eur_key: {"foreign_inverse_rate": 1 / 1.10}},
+        }
+        self.assertEqual(session.check_opening_rate(loaded)["status"], "outdated")
+        loaded["tender_currency_rates"] = self.usd_config.tender_currency_rates
+        self.assertEqual(session.check_opening_rate(loaded), {"status": "ok"})
 
     def test_rates_are_the_ones_of_the_company_of_the_pos(self):
         """``compute_rate`` busca las tasas de ``env.company``: el compute las

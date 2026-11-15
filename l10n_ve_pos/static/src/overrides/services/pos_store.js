@@ -5,6 +5,10 @@ import { PosStore } from "@point_of_sale/app/services/pos_store";
 import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { ConnectionLostError } from "@web/core/network/rpc";
 import { _t } from "@web/core/l10n/translation";
+import { deserializeDate, formatDate } from "@web/core/l10n/dates";
+import { makeAwaitable } from "@point_of_sale/app/utils/make_awaitable_dialog";
+
+const { DateTime } = luxon;
 
 patch(PosStore.prototype, {
   /**
@@ -53,6 +57,7 @@ patch(PosStore.prototype, {
     if (!(await this._checkOrderBeforePayment(this.getOrder()))) {
       return;
     }
+    this._notifySessionRateFromPreviousDay();
     return await super.pay(...arguments);
   },
 
@@ -62,7 +67,148 @@ patch(PosStore.prototype, {
     if (!(await this._checkOrderBeforePayment(this.getOrder()))) {
       return;
     }
+    this._notifySessionRateFromPreviousDay();
     return await super.validateOrderFast(...arguments);
+  },
+
+  async afterProcessServerData() {
+    const res = await super.afterProcessServerData(...arguments);
+    if (this.isSessionRateFromPreviousDay) {
+      this.dialog.add(AlertDialog, {
+        title: _t("Session from a previous day"),
+        body: this._sessionRateFromPreviousDayMessage(),
+      });
+    }
+    return res;
+  },
+
+  /**
+   * Tasas que tiene este navegador: la de la caja (pos.config), las de las
+   * monedas de cobro (tender_currency_rates) y el `rate` de cada moneda, con el
+   * que el core pasa la lista de precios en divisa a la moneda de la caja.
+   */
+  _getLoadedRates() {
+    const currencies = {};
+    for (const currency of this.models["res.currency"].getAll()) {
+      currencies[currency.id] = currency.rate;
+    }
+    return {
+      foreign_inverse_rate: this.config.foreign_inverse_rate,
+      currencies,
+      tender_currency_rates: this.config.tender_currency_rates || {},
+    };
+  },
+
+  /**
+   * Antes de abrir la sesión: la tasa cargada en el navegador debe ser la de
+   * la sesión (la del día). Devuelve:
+   * - "ok": abrir como siempre.
+   * - "blocked": no abrir (sin tasa del día, o se recargan los datos).
+   * - "reload": la tasa es vieja pero hay órdenes pagadas sin sincronizar, que
+   *   solo se envían con la sesión abierta y que una recarga perdería: abrir,
+   *   y recargar los datos enseguida (reloadData sincroniza antes).
+   */
+  async checkOpeningRate() {
+    let result;
+    try {
+      result = await this.data.call("pos.session", "check_opening_rate", [
+        this.session.id,
+        this._getLoadedRates(),
+      ]);
+    } catch (error) {
+      // Sin conexión el core ya avisa que la caja no se puede abrir.
+      if (error instanceof ConnectionLostError) {
+        return "ok";
+      }
+      // Sesión borrada: el core recarga el PdV; cualquier otro error sube.
+      await this.reloadIfSessionDeleted(error);
+      return "blocked";
+    }
+    if (result?.status === "missing") {
+      this.dialog.add(AlertDialog, {
+        title: _t("No rate of the day"),
+        body: _t(
+          "There is no %(currency)s rate for %(date)s. Load the rate of the day before opening the register.",
+          { currency: result.currency, date: result.date }
+        ),
+      });
+      return "blocked";
+    }
+    if (result?.status === "outdated") {
+      const values = { rate: result.rate, currency: result.currency, date: result.date };
+      if (this.models["pos.order"].some((o) => o.isUnsyncedPaid && o.state !== "cancel")) {
+        await makeAwaitable(this.dialog, AlertDialog, {
+          title: _t("Outdated rate"),
+          body: _t(
+            "This register has an old rate loaded and paid orders that were not sent yet. The register will open to send them and then reload its data with the rate of the day, %(rate)s (%(currency)s, %(date)s). Do not sell before the reload.",
+            values
+          ),
+        });
+        return "reload";
+      }
+      await makeAwaitable(this.dialog, AlertDialog, {
+        title: _t("Outdated rate"),
+        body: _t(
+          "This register has an old rate loaded. The rate of the day is %(rate)s (%(currency)s, %(date)s). The data will be reloaded before opening the register.",
+          values
+        ),
+      });
+      await this.reloadData(true);
+      return "blocked";
+    }
+    return "ok";
+  },
+
+  /**
+   * El popup de apertura solo marca la sesión como abierta: el navegador no
+   * recibe el día de su tasa hasta la próxima carga. Sin él, el aviso de
+   * sesión de un día anterior no saldría en el equipo que la abrió.
+   */
+  async loadSessionRateDate() {
+    try {
+      const [session] = await this.data.call("pos.session", "read", [
+        [this.session.id],
+        ["foreign_rate_date"],
+      ]);
+      if (session?.foreign_rate_date) {
+        this.session.foreign_rate_date = deserializeDate(session.foreign_rate_date);
+      }
+    } catch (error) {
+      // Sin conexión llega en la próxima carga; no impide vender.
+      if (!(error instanceof ConnectionLostError)) {
+        throw error;
+      }
+    }
+  },
+
+  /**
+   * La sesión sigue abierta después de medianoche: cobra con la tasa del día
+   * en que se abrió (no se mezclan tasas en una sesión).
+   */
+  get isSessionRateFromPreviousDay() {
+    const rateDate = this.session?.foreign_rate_date;
+    if (!rateDate || this.session.state !== "opened") {
+      return false;
+    }
+    const rateDay = typeof rateDate === "string" ? rateDate : rateDate.toISODate();
+    return rateDay < DateTime.now().toISODate();
+  },
+
+  _sessionRateFromPreviousDayMessage() {
+    const rateDate = this.session.foreign_rate_date;
+    const day = typeof rateDate === "string" ? rateDate : formatDate(rateDate);
+    return _t(
+      "This session was opened on %(date)s and every sale uses the rate of that day. Close it and open a new one to sell with today's rate.",
+      { date: day }
+    );
+  },
+
+  _notifySessionRateFromPreviousDay() {
+    if (this.isSessionRateFromPreviousDay) {
+      this.notification.add(this._sessionRateFromPreviousDayMessage(), {
+        type: "warning",
+      });
+    }
   },
 
   /**

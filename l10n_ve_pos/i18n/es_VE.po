@@ -1264,3 +1264,89 @@ msgstr ""
 #: code:addons/l10n_ve_pos/static/src/overrides/services/pos_store.js:0
 msgid "ordered %(requested)s, on hand %(available)s"
 msgstr "pedido %(requested)s, a mano %(available)s"
+
+#. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_session.py:0
+msgid ""
+"The register cannot be opened: there is no %(currency)s rate for %(date)s. "
+"Load the rate of the day and try again."
+msgstr ""
+"No se puede abrir la caja: no hay tasa de %(currency)s para el %(date)s. "
+"Carga la tasa del día y vuelve a intentarlo."
+
+#. module: l10n_ve_pos
+#: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_session__foreign_rate_date
+msgid "Rate Date"
+msgstr "Fecha de la tasa"
+
+#. module: l10n_ve_pos
+#: model:ir.model.fields,help:l10n_ve_pos.field_pos_session__foreign_rate_date
+msgid ""
+"Day of the rate the session works with: the day it was opened. Every order "
+"of the session uses the rate of that day, even after midnight."
+msgstr ""
+"Día de la tasa con la que trabaja la sesión: el día en que se abrió. Todas "
+"las órdenes de la sesión usan la tasa de ese día, aun después de medianoche."
+
+#. module: l10n_ve_pos
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/services/pos_store.js:0
+msgid "Session from a previous day"
+msgstr "Sesión de un día anterior"
+
+#. module: l10n_ve_pos
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/services/pos_store.js:0
+msgid "No rate of the day"
+msgstr "Sin tasa del día"
+
+#. module: l10n_ve_pos
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/services/pos_store.js:0
+msgid ""
+"There is no %(currency)s rate for %(date)s. Load the rate of the day before "
+"opening the register."
+msgstr ""
+"No hay tasa de %(currency)s para el %(date)s. Carga la tasa del día antes de "
+"abrir la caja."
+
+#. module: l10n_ve_pos
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/services/pos_store.js:0
+msgid "Outdated rate"
+msgstr "Tasa desactualizada"
+
+#. module: l10n_ve_pos
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/services/pos_store.js:0
+msgid ""
+"This register has an old rate loaded. The rate of the day is %(rate)s "
+"(%(currency)s, %(date)s). The data will be reloaded before opening the "
+"register."
+msgstr ""
+"Esta caja tiene cargada una tasa vieja. La tasa del día es %(rate)s "
+"(%(currency)s, %(date)s). Se recargarán los datos antes de abrir la caja."
+
+#. module: l10n_ve_pos
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/services/pos_store.js:0
+msgid ""
+"This session was opened on %(date)s and every sale uses the rate of that "
+"day. Close it and open a new one to sell with today's rate."
+msgstr ""
+"Esta sesión se abrió el %(date)s y todas sus ventas usan la tasa de ese día. "
+"Ciérrala y abre una nueva para vender con la tasa de hoy."
+
+#. module: l10n_ve_pos
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/services/pos_store.js:0
+msgid ""
+"This register has an old rate loaded and paid orders that were not sent "
+"yet. The register will open to send them and then reload its data with the "
+"rate of the day, %(rate)s (%(currency)s, %(date)s). Do not sell before the "
+"reload."
+msgstr ""
+"Esta caja tiene cargada una tasa vieja y órdenes pagadas sin enviar. La caja "
+"se abrirá para enviarlas y enseguida recargará sus datos con la tasa del "
+"día, %(rate)s (%(currency)s, %(date)s). No vendas antes de la recarga."
