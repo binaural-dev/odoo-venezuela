@@ -128,7 +128,20 @@ class TestKioskPublicRoutes(TransactionCase):
             }
         )
         cls.company.write(
-            {"account_sale_tax_id": tax.id, "account_purchase_tax_id": tax.id}
+            {
+                "account_sale_tax_id": tax.id,
+                "account_purchase_tax_id": cls.env["account.tax"]
+                .create(
+                    {
+                        "name": "Kiosk Purchase Tax",
+                        "amount": 0.0,
+                        "type_tax_use": "purchase",
+                        "tax_group_id": tax_group.id,
+                        "company_id": cls.company.id,
+                    }
+                )
+                .id,
+            }
         )
         category = cls.env["product.category"].create(
             {
@@ -169,11 +182,11 @@ class TestKioskPublicRoutes(TransactionCase):
         def _make_config(name):
             config = cls.env["pos.config"].create(
                 {
+                    "default_partner_id": cls.company.partner_id.id,
                     "name": name,
                     "company_id": cls.company.id,
                     "currency_id": vef.id,
                     "journal_id": sale_journal.id,
-                    "invoice_journal_id": sale_journal.id,
                     "self_ordering_mode": "kiosk",
                     "self_ordering_default_user_id": admin.id,
                     # El modo kiosko no admite métodos de pago en efectivo
@@ -281,7 +294,6 @@ class TestKioskPublicRoutes(TransactionCase):
                 "amount_tax": 0.0,
                 "amount_paid": 100.0,
                 "amount_return": 0.0,
-                "last_order_preparation_change": "{}",
                 "lines": [
                     Command.create(
                         {
@@ -656,7 +668,7 @@ class TestKioskPublicRoutes(TransactionCase):
                 },
             ]
         )
-        city_a = self.env["res.country.city"].create(
+        city_a = self.env["res.city"].create(
             {"name": "Ciudad A Kiosko", "country_id": ve.id, "state_id": state_a.id}
         )
         parish_a = self.env["res.country.parish"].create(
@@ -851,6 +863,7 @@ class TestKioskPublicRoutes(TransactionCase):
         payload = {
             "uuid": str(uuid.uuid4()),
             "partner_id": signed_id,
+            "session_id": self.config.current_session_id.id,
             "lines": [],
             "amount_total": 0.0,
             "amount_tax": 0.0,

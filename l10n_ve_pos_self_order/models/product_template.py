@@ -23,19 +23,34 @@ class ProductTemplate(models.Model):
         return ["|", ("is_storable", "=", False), ("product_variant_ids", "in", in_stock)]
 
     @api.model
-    def _load_pos_self_data_domain(self, data, config):
+    def _load_pos_self_metadata(self, data, search_params={}):
         """El autopedido no pasa por el ``canBeDisplayed`` de la caja: arma la
         cuadrícula, el buscador de "solo escaneo / búsqueda" y el escaneo con
         todo lo que carga, así que con el ajuste el almacenable sin stock se
-        deja fuera de la carga (como el core con ``self_order_available``). El
-        tope de productos cargados cuenta entonces solo lo que se puede vender.
+        deja fuera de la carga (como el core con ``self_order_available``).
         El Kiosko no guarda caché en el navegador: cada carga de la página lee
         el stock actual.
+
+        En 20 el core arma los productos del autopedido con la carga de la
+        caja (``_load_pos_metadata``) y ``_load_pos_self_data_domain`` solo
+        aporta el dominio informativo, así que el filtro se aplica al
+        resultado. Las opciones de combo y los productos opcionales de lo que
+        queda se conservan: llegan con ``self_order_available = False``
+        (``_load_pos_self_data_read``).
         """
-        domain = super()._load_pos_self_data_domain(data, config)
+        data = super()._load_pos_self_metadata(data, search_params)
+        config = data["pos.config"]["records"]
         if not config.pos_show_just_products_with_available_qty:
-            return domain
-        return Domain.AND([domain, self._pos_self_available_qty_domain(config)])
+            return data
+        records = data["product.template"]["records"]
+        available = self.search(
+            Domain.AND([[("id", "in", records.ids)], self._pos_self_available_qty_domain(config)])
+        )
+        options = available.combo_ids.combo_item_ids.product_id.product_tmpl_id | (
+            available.pos_optional_product_ids
+        )
+        data["product.template"]["records"] = available | (records & options)
+        return data
 
     @api.model
     def _load_pos_self_data_read(self, data, config):

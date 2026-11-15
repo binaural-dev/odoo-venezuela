@@ -1,4 +1,6 @@
 import { patch } from "@web/core/utils/patch";
+import { usePlugin } from "@odoo/owl";
+import { DebugModePlugin } from "@web/core/debug_mode_plugin";
 import { selfOrderIndex } from "@pos_self_order/app/self_order_index";
 import { IdentificationPage } from "@l10n_ve_pos_self_order/app/pages/identification_page/identification_page";
 import { KioskDebugDialog } from "@l10n_ve_pos_self_order/app/debug/kiosk_debug_dialog";
@@ -22,6 +24,11 @@ patch(selfOrderIndex, {
  * botón).
  */
 patch(selfOrderIndex.prototype, {
+    setup() {
+        super.setup(...arguments);
+        this.debugMode = usePlugin(DebugModePlugin);
+    },
+
     openKioskDebug() {
         this.selfOrder.dialog.add(KioskDebugDialog, {});
     },

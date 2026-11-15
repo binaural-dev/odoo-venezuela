@@ -59,7 +59,7 @@ function initProducts(showOnlyAvailable = true) {
                 getAllBy: () => ({ [category.id]: [...templates] }),
                 filter: (predicate) => templates.filter(predicate),
             },
-            "product.product": { get: () => undefined },
+            "product.product": { get: () => undefined, filter: () => [] },
         },
     };
     SelfOrder.prototype.initProducts.call(selfOrder);

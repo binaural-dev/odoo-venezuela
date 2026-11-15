@@ -1,4 +1,4 @@
-import { Component } from "@odoo/owl";
+import { Component, useProps } from "@odoo/owl";
 import { useSelfOrder } from "@pos_self_order/app/services/self_order_service";
 import { formatCurrency } from "@point_of_sale/app/models/utils/currency";
 import { CartPage } from "@pos_self_order/app/pages/cart_page/cart_page";
@@ -23,7 +23,7 @@ import { ProductListPage } from "@pos_self_order/app/pages/product_list_page/pro
  */
 export class KioskAmountsSummary extends Component {
     static template = "l10n_ve_pos_self_order.KioskAmountsSummary";
-    static props = {};
+    props = useProps();
 
     setup() {
         this.selfOrder = useSelfOrder();

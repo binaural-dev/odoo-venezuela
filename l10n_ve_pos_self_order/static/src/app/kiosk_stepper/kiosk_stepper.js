@@ -1,4 +1,4 @@
-import { Component } from "@odoo/owl";
+import { Component, useProps } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 import { useSelfOrder } from "@pos_self_order/app/services/self_order_service";
 import { _t } from "@web/core/l10n/translation";
@@ -23,7 +23,7 @@ const STEPS = [
 
 export class KioskStepper extends Component {
     static template = "l10n_ve_pos_self_order.KioskStepper";
-    static props = {};
+    props = useProps();
 
     setup() {
         this.selfOrder = useSelfOrder();

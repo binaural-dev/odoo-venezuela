@@ -5,7 +5,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Point of Sale",
-    "version": "19.0.1.7.0",
+    "version": "20.0.1.0.0",
     "depends": [
         "l10n_ve_pos",
         "l10n_ve_location",
@@ -35,5 +35,6 @@
     "application": True,
     "images": ["static/description/icon.png"],
     "binaural": True,
-    "installable": False,
+    "installable": True,
+    "binaural_migrated": True,
 }

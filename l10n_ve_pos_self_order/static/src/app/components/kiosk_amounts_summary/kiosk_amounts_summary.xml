@@ -8,20 +8,20 @@
         <div class="o_ve_kiosk_amounts w-100 ms-auto o-so-tabular-nums">
             <div class="d-flex justify-content-between text-muted fs-5">
                 <span>Subtotal</span>
-                <span t-esc="formatAmount(baseAmount)"/>
+                <span t-out="this.formatAmount(this.baseAmount)"/>
             </div>
-            <div t-foreach="taxGroups" t-as="taxGroup" t-key="taxGroup.id"
+            <div t-foreach="this.taxGroups" t-as="taxGroup" t-key="taxGroup.id"
                  class="d-flex justify-content-between text-muted fs-5">
-                <span t-esc="formatTaxGroupLabel(taxGroup)"/>
-                <span t-esc="formatAmount(taxGroup.tax_amount_currency)"/>
+                <span t-out="this.formatTaxGroupLabel(taxGroup)"/>
+                <span t-out="this.formatAmount(taxGroup.tax_amount_currency)"/>
             </div>
             <div class="d-flex justify-content-between align-items-baseline fs-3 fw-bold border-top mt-1 pt-1">
                 <span>Total</span>
-                <span class="text-primary" t-esc="formatAmount(localTotal)"/>
+                <span class="text-primary" t-out="this.formatAmount(this.localTotal)"/>
             </div>
-            <div t-if="showForeignTotal" class="d-flex justify-content-between fs-5 fw-semibold">
-                <span>Total <t t-esc="foreignCurrency.name"/></span>
-                <span t-esc="formatForeignTotal()"/>
+            <div t-if="this.showForeignTotal" class="d-flex justify-content-between fs-5 fw-semibold">
+                <span>Total <t t-out="this.foreignCurrency.name"/></span>
+                <span t-out="this.formatForeignTotal()"/>
             </div>
         </div>
     </t>
