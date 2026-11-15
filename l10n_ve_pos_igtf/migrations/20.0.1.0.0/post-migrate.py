@@ -8,7 +8,8 @@ the method takes several currencies and the flag lives in
 ``l10n_ve_pos`` (its ``pre-migrate.py``) leaves the plan of the merge in
 ``l10n_ve_pos_method_merge`` with the ``apply_igtf`` each old method had, and
 ``post-migrate.py`` applies it; this step reads it to set the flag on the
-setting of the method that survives, and drops the table, the last to need it.
+setting of the method that survives. It does not drop the table: the other
+modules read it too, and the ``end-migrate.py`` of ``l10n_ve_pos`` drops it.
 
 A method in the currency of the register (Bs) that had the flag has no setting
 to hold it: IGTF is charged on payments in foreign currency. They are listed in
@@ -80,4 +81,3 @@ def migrate(cr, version):
             "is not applied to them in Odoo 20",
             lost,
         )
-    cr.execute("DROP TABLE l10n_ve_pos_method_merge")

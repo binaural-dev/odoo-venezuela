@@ -6,6 +6,9 @@ code of the fiscal printer of Odoo 19 hung from each method ("Efectivo Bs.",
 "Efectivo $" and "Efectivo EUR" could have a different one, and the printer
 treats the codes 20 to 24 as foreign currency): the survivor keeps its own
 and takes, per currency, the code of each method it absorbed.
+
+The plan table is dropped by the ``end-migrate.py`` of ``l10n_ve_pos``, after every
+module has read it.
 """
 import logging
 

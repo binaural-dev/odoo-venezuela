@@ -58,6 +58,18 @@ class TestFiscalCode(TransactionCase):
         )
         self.assertEqual(payment._get_fiscal_code(), "20")
 
+    def test_04b_credit_note_code_of_a_pos_payment(self):
+        move = self.env["account.move"]
+        if not hasattr(move, "_mf_pos_payment_fiscal_code"):
+            self.skipTest("l10n_ve_account_mf is not installed")
+        values = {"payment_method_id": self.cash.id}
+        usd = self.env["pos.payment"].new({**values, "foreign_currency_id": self.usd.id})
+        eur = self.env["pos.payment"].new({**values, "foreign_currency_id": self.eur.id})
+        bs = self.env["pos.payment"].new(values)
+        self.assertEqual(move._mf_pos_payment_fiscal_code(usd), "20")
+        self.assertEqual(move._mf_pos_payment_fiscal_code(eur), "01")
+        self.assertEqual(move._mf_pos_payment_fiscal_code(bs), "01")
+
     def test_05_setting_is_loaded_in_the_pos(self):
         fields_list = self.Setting._load_pos_data_fields(self.env["pos.config"])
         self.assertIn("code_fiscal_printer", fields_list)
@@ -95,3 +107,5 @@ class TestFiscalCode(TransactionCase):
         self.env.invalidate_all()
         self.assertEqual(self.cash._get_fiscal_code(self.eur), "21")
         self.assertEqual(self.cash._get_fiscal_code(self.usd), "20")
+        cr.execute("SELECT to_regclass('l10n_ve_pos_method_merge')")
+        self.assertTrue(cr.fetchone()[0], "the end script of l10n_ve_pos drops the plan")

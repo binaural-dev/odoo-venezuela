@@ -83,17 +83,4 @@ patch(TicketScreen.prototype, {
         }
         return super.getFilteredOrderList();
     },
-
-    /**
-     * Callback invocado por PrintPendingOrderButton tras imprimir con exito.
-     * Recarga el pedido desde el backend para que la lista de "Pendientes
-     * por facturar" deje de mostrarlo.
-     * @param {number} orderId - id backend (pos.order) del pedido impreso
-     */
-    async onOrderFiscalized(orderId) {
-        if (orderId) {
-            await this.pos.data.loadServerOrders([["id", "=", orderId]]);
-        }
-        await this._updateSyncedOrders();
-    },
 });

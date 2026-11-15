@@ -88,7 +88,7 @@ class TestPosIgtfDataMigration(TransactionCase):
 
         self.assertTrue(self.usd_setting.apply_igtf)
         self.assertFalse(self.eur_setting.apply_igtf)
-        self.assertFalse(self._table_exists())
+        self.assertTrue(self._table_exists(), "the end script of l10n_ve_pos drops it")
 
     def test_flag_is_kept_when_any_old_method_of_the_pair_had_it(self):
         self._plan(

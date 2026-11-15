@@ -9,7 +9,7 @@
                     <ReprintInvoiceButton order="_selectedSyncedOrder" />
                 </t>
                 <t t-if="!_selectedSyncedOrder.mf_invoice_number">
-                    <PrintPendingOrderButton order="_selectedSyncedOrder" onOrderFiscalized.bind="this.onOrderFiscalized" />
+                    <PrintPendingOrderButton order="_selectedSyncedOrder" />
                 </t>
             </t>
         </xpath>
