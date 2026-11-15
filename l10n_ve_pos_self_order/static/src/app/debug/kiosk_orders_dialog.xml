@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates id="template" xml:space="preserve">
     <t t-name="l10n_ve_pos_self_order.KioskOrdersDialog">
-        <Dialog title="dialogTitle" size="'lg'">
+        <Dialog title="this.dialogTitle" size="'lg'">
             <div class="d-flex" style="gap: 12px; min-height: 320px;">
                 <!-- Lista de órdenes -->
                 <div class="d-flex flex-column" style="width: 42%; overflow-y: auto; max-height: 60vh;">

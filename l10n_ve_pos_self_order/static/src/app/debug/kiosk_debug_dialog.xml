@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates id="template" xml:space="preserve">
     <t t-name="l10n_ve_pos_self_order.KioskDebugDialog">
-        <Dialog title="dialogTitle" size="'md'">
+        <Dialog title="this.dialogTitle" size="'md'">
             <div class="d-flex flex-column gap-2">
                 <!-- El módulo fiscal inyecta ANTES de este botón su badge de estado
                      de conexión y los botones de máquina fiscal (t-inherit). -->

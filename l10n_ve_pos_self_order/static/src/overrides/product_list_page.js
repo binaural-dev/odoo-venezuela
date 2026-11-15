@@ -78,7 +78,7 @@ patch(ProductListPage.prototype, {
         }
         const results = [];
         for (const tmpl of this.selfOrder.models["product.template"].getAll()) {
-            if (!tmpl.self_order_available) {
+            if (!tmpl.self_order_available || tmpl._is_pos_special_product) {
                 continue;
             }
             const haystack = [tmpl.name, tmpl.display_name, tmpl.barcode, tmpl.default_code]

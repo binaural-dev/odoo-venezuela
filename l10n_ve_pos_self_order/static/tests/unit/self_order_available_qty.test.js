@@ -11,9 +11,10 @@ import "@l10n_ve_pos_self_order/overrides/pos_category";
 
 const category = { id: 1 };
 
-function template(name, { isStorable = true, available = true } = {}) {
+function template(name, { isStorable = true, available = true, special = false } = {}) {
     return {
         id: name,
+        _is_pos_special_product: special,
         is_storable: isStorable,
         self_order_available: available,
         pos_categ_ids: [category],
@@ -24,6 +25,7 @@ const templates = [
     template("con stock"),
     template("opcion sin stock", { available: false }),
     template("servicio no disponible", { isStorable: false, available: false }),
+    template("propina", { isStorable: false, special: true }),
 ];
 
 const coreGrid = ["con stock", "opcion sin stock", "servicio no disponible"];
@@ -75,8 +77,13 @@ describe("l10n_ve_pos_self_order cuadrícula con productos disponibles", () => {
         expect(initProducts()).toEqual(["con stock", "servicio no disponible"]);
     });
 
-    test("ajuste apagado: la cuadrícula es la del core", () => {
+    test("ajuste apagado: la cuadrícula es la del core sin los productos especiales", () => {
         expect(associatedProducts(false)).toEqual(coreGrid);
         expect(initProducts(false)).toEqual(coreGrid);
+    });
+
+    test("los productos especiales del PdV no salen en la cuadrícula", () => {
+        expect(associatedProducts()).not.toInclude("propina");
+        expect(initProducts()).not.toInclude("propina");
     });
 });

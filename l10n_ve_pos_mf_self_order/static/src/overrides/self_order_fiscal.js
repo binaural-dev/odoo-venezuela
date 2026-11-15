@@ -82,13 +82,13 @@ patch(SelfOrder.prototype, {
                 order &&
                 !order.mf_invoice_number &&
                 // NO auto-imprimir si la factura CONTABLE de Odoo aún está
-                // pendiente (`is_invoiced === false`): la orden se pagó pero su
+                // pendiente (`is_singly_invoiced === false`): la orden se pagó pero su
                 // facturación se difirió (ver pos.order._process_saved_order en
                 // l10n_ve_pos_self_order). Queda pendiente por facturar en la
                 // máquina fiscal también; se resuelve desde el panel de
                 // recuperación (crear factura → imprimir fiscal). Emitir un nº
                 // fiscal sin account.move donde estamparlo crearía un desfase.
-                order.is_invoiced &&
+                order.is_singly_invoiced &&
                 ["paid", "done", "invoiced"].includes(order.state) &&
                 // Guard de reentrada: `confirmationPage` es el punto por el que
                 // reentra el bus PAYMENT_STATUS, y puede hacerlo ANTES de que la

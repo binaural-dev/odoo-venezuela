@@ -87,7 +87,7 @@ export class KioskOrdersDialog extends Component {
         if (!order) {
             return "none";
         }
-        if (order.state === "invoiced" || order.is_invoiced) {
+        if (order.state === "invoiced" || order.is_singly_invoiced) {
             return "invoiced";
         }
         return "pending_invoice";
