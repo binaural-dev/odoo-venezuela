@@ -32,15 +32,47 @@ class AccountMoveRetention(models.Model):
         """Convert a company-currency amount to the document currency.
 
         Single conversion of these rules: `_convert()` at the document date.
-        The rate date is the source of truth of the whole engine; if that
-        date's rate changes after posting, the process is to reset the
-        document to draft and set the date again so it recomputes.
+        If the rate of that date differs from the one the invoice was posted
+        with, `_check_retention_rate_matches_invoice` raises before any rule
+        uses this conversion.
         """
         self.ensure_one()
         return self.company_id.currency_id._convert(
             amount_company_currency, self.currency_id, self.company_id,
             self._retention_rate_date(), round=rounding,
         )
+
+    def _check_retention_rate_matches_invoice(self):
+        """Raise if the rate of the document date no longer is the invoice's.
+
+        The rounding rules convert with the rate of the document date, while
+        the invoice keeps the one it was posted with (`invoice_currency_rate`).
+        If that date's rate was edited after posting, the difference cannot be
+        told apart from a rounding one, so the user must fix the invoice (or
+        the retention) before issuing it.
+        """
+        self.ensure_one()
+        stored_rate = self.invoice_currency_rate
+        if not stored_rate or self.currency_id == self.company_id.currency_id:
+            return
+        current_rate = self.company_id.currency_id._get_conversion_rate(
+            self.company_id.currency_id, self.currency_id, self.company_id,
+            self._retention_rate_date(),
+        )
+        if abs(current_rate - stored_rate) > 1e-6 * max(abs(current_rate), abs(stored_rate)):
+            raise UserError(
+                _(
+                    "The rate registered for the currency on the invoice date "
+                    "(%(current)s) differs from the rate of invoice %(invoice)s "
+                    "(%(stored)s). Correct the invoice or the registered rate for "
+                    "that currency so that they match."
+                )
+                % {
+                    "invoice": self.display_name,
+                    "stored": round(1 / stored_rate, 4),
+                    "current": round(1 / current_rate, 4) if current_rate else 0.0,
+                }
+            )
 
     def _retention_closes_document_currency_debt(self, retention_amount_company_currency):
         """True if the retention, converted to the document currency, equals the
@@ -82,6 +114,7 @@ class AccountMoveRetention(models.Model):
             or company_currency.is_zero(diff)
         ):
             return None
+        self._check_retention_rate_matches_invoice()
         step = company_currency.rounding
 
         def within(bound):

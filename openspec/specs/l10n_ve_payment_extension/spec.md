@@ -851,6 +851,15 @@ Los valores alternos `foreign_*` de las líneas de retención son heredados: no 
 - **WHEN** la retención cierra la deuda comercial en la moneda del documento pero la diferencia supera `_retention_max_accepted_difference()`
 - **THEN** la diferencia se trata como monto real y no se lleva a diferencial cambiario
 
+### Requirement: Tasa editada tras crear la factura bloquea las reglas de redondeo
+
+Cuando `_retention_difference_within_currency_precision` tenga que evaluar una diferencia no nula sobre un documento en moneda extranjera, el sistema DEBE (MUST) comparar la tasa de la fecha del documento con `invoice_currency_rate` y lanzar `UserError` si difieren, tanto al crear/editar las líneas de la retención como al emitirla. Sin diferencia, o en moneda de compañía, no se revisa nada.
+
+#### Scenario: Tasa del día editada después de confirmar la factura
+- **GIVEN** una factura en USD confirmada con una tasa y la tasa de su fecha editada después
+- **WHEN** la retención tiene una diferencia contra el pendiente
+- **THEN** el sistema lanza `UserError` indicando que la tasa registrada difiere de la de la factura y que se corrija la factura o la tasa registrada
+
 ### Requirement: El importe alterno del pago de una retención usa la fecha de tasa de su asiento
 
 El importe alterno (`foreign_amount`) de un pago de retención (`is_retention`) DEBE (MUST) calcularse con la misma fecha de tasa con la que se valoran las líneas de su asiento: la fecha de la factura retenida (`invoice_date`, o `date` si falta) cuando todas las líneas del pago pertenecen a una única factura, y no con `payment.date` (la fecha contable de la retención). Ambos lados DEBEN (MUST) compartir la misma regla (`account.payment._get_retention_foreign_rate_date`) para que no puedan diverger. Los pagos que no son retención conservan el cálculo por `payment.date`. La fecha contable del pago y de su asiento no cambia.

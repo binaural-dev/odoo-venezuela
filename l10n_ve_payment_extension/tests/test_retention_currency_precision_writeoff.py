@@ -1253,3 +1253,44 @@ class TestRetentionCurrencyPrecisionWriteoff(RetentionTestCommon):
         self.assertEqual(retention.state, "draft")
         self.assertFalse(invoice._retention_closes_document_currency_debt(due + one_cent))
 
+
+    def _edit_rate_of_today(self, new_rate):
+        """Edit today's table rate after the invoice was posted."""
+        self.env["res.currency.rate"].search([
+            ("currency_id", "=", self.currency_usd.id),
+            ("name", "=", fields.Date.today()),
+            ("company_id", "in", (False, self.company.id)),
+        ]).write({
+            "rate": 1 / new_rate,
+            "company_rate": 1 / new_rate,
+            "inverse_company_rate": new_rate,
+        })
+
+    def test_edited_rate_after_posting_blocks_the_rounding_rules(self):
+        """If the rate of the invoice date was edited after posting, the rounding
+        rules cannot trust their conversion: raise instead of guessing."""
+        invoice = self._invoice_in_usd(1000.0)
+        due = abs(invoice.amount_residual_signed)
+        one_bs = due + 1.0
+        self._edit_rate_of_today(780.0)
+        with self.assertRaises(UserError):
+            invoice._retention_difference_within_currency_precision(one_bs)
+
+    def test_edited_rate_after_posting_blocks_issuing_the_retention(self):
+        """Issuing (action_post) of a retention with a difference also raises."""
+        invoice = self._invoice_in_usd(1000.0)
+        due = abs(invoice.amount_residual_signed)
+        retention = self._retention_for(
+            invoice, self.currency_vef.round(due + self._grain(invoice) / 4), "20260900000904",
+        )
+        self._edit_rate_of_today(780.0)
+        with self.assertRaises(UserError):
+            retention.action_post()
+
+    def test_unedited_rate_does_not_block_exact_retentions(self):
+        """No difference, no check: an exact retention is issued as before and a
+        rate edit alone never blocks it."""
+        invoice = self._invoice_in_usd(1000.0)
+        due = abs(invoice.amount_residual_signed)
+        self._edit_rate_of_today(780.0)
+        self.assertIsNone(invoice._retention_difference_within_currency_precision(due))

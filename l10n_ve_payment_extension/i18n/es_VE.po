@@ -3952,3 +3952,15 @@ msgstr ""
 #: code:addons/l10n_ve_payment_extension/models/fees_retention.py:0
 msgid "The last tier must have no upper limit (leave 'stop' empty)."
 msgstr "El último tramo no debe tener límite superior (deje 'stop' vacío)."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_move.py:0
+msgid ""
+"The rate registered for the currency on the invoice date (%(current)s) "
+"differs from the rate of invoice %(invoice)s (%(stored)s). Correct the "
+"invoice or the registered rate for that currency so that they match."
+msgstr ""
+"La tasa registrada de la moneda en la fecha de la factura (%(current)s) "
+"difiere de la tasa de la factura %(invoice)s (%(stored)s). Corrija la "
+"factura o la tasa registrada para dicha moneda para que concuerden."
