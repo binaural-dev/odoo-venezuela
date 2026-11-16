@@ -8,8 +8,8 @@ Las listas de facturas y notas de crédito de clientes y de proveedores
 (`account.view_out_invoice_tree`, `account.view_out_credit_note_tree`,
 `account.view_in_invoice_bill_tree`, `account.view_in_invoice_refund_tree`) SHALL
 mostrar, de forma contigua y en este orden, `amount_untaxed_signed`,
-`amount_tax_signed`, `amount_total_signed`, `foreign_untaxed_total`,
-`foreign_tax_total` y `foreign_total_billed`.
+`amount_tax_signed`, `amount_total_signed`, `foreign_untaxed_total` y
+`foreign_total_billed`.
 
 Cada una de esas columnas SHALL llevar `sum` (totaliza al pie), SHALL ser
 visible por defecto y SHALL tener un `width` predeterminado.
@@ -21,15 +21,15 @@ largos se cortaban hasta que cada usuario ajustaba el ancho.
 
 - **GIVEN** cualquiera de las cuatro listas
 - **WHEN** se carga la vista
-- **THEN** las seis columnas de montos son contiguas
-- **AND** van Bs. sin impuestos, Bs. impuesto, Bs. total, $ sin impuestos,
-  $ impuesto y $ total
+- **THEN** las cinco columnas de montos son contiguas
+- **AND** van Bs. sin impuestos, Bs. impuesto, Bs. total, $ sin impuestos y
+  $ total
 
 #### Scenario: Totales al pie
 
 - **GIVEN** una lista con varias facturas
 - **WHEN** se muestra la lista
-- **THEN** cada una de las seis columnas muestra su total al pie
+- **THEN** cada una de las cinco columnas muestra su total al pie
 
 #### Scenario: Ancho predeterminado
 

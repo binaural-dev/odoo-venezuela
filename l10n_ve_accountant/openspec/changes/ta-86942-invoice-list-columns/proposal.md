@@ -21,17 +21,14 @@ problemas:
 `l10n_ve_accountant_view_invoice_tree_inherit` (`views/account_move.xml`, hereda
 `account.view_invoice_tree`, de la que cuelgan las cuatro listas):
 
-- Las seis columnas de montos van contiguas y en este orden: Bs. sin impuestos,
-  Bs. impuesto, Bs. total, $ sin impuestos, $ impuesto, $ total. El impuesto va
-  siempre después del total sin impuestos, en ambas monedas.
-- Todas llevan `sum="Total"` y `optional="show"`.
-- Campo nuevo `foreign_tax_total` (almacenado, calculado como
-  `foreign_total_billed - foreign_untaxed_total`) para poder mostrar y
-  totalizar el impuesto en moneda alterna. El impuesto en Bs. reutiliza
-  `amount_tax_signed`, movido a su nueva posición.
-- Ancho predeterminado: `width="180px"` en las columnas de montos (las seis
-  propias, `Impuestos no incluidos`, `Total` e `Importe adeudado`)
-  y `140px` en `Número`.
+- Las cinco columnas de montos van contiguas y en este orden: Bs. sin
+  impuestos, Bs. impuesto, Bs. total, $ sin impuestos, $ total.
+- `amount_tax_signed` (Impuestos, Bs.) solo se mueve: pasa a ir justo después
+  del total sin impuestos. No se agregan columnas ni campos nuevos.
+- Las cuatro columnas propias llevan `sum="Total"` y `optional="show"`.
+- Ancho predeterminado: `width="180px"` en las columnas de montos (las cuatro
+  propias, `Impuestos no incluidos`, `Total` e `Importe adeudado`).
+  `Número` conserva el ancho nativo de Odoo.
 
 Se mantiene el atributo nativo `width` en lugar de una clase CSS: la lista de
 Odoo usa `table-layout: fixed` con anchos en línea, y una clase no evita el
@@ -46,9 +43,7 @@ recorte con puntos suspensivos.
 ## Impact
 
 - Archivos: `l10n_ve_accountant/views/account_move.xml`,
-  `models/account_move.py` (campo `foreign_tax_total` y etiquetas),
-  `i18n/es_VE.po`, `__manifest__.py` (versión `.45`), `tests/test_invoice_list_columns.py`, `tests/__init__.py`.
-- Campo almacenado nuevo: al actualizar el módulo Odoo lo calcula para las
-  facturas existentes, sin migración.
+  `__manifest__.py` (versión `.45`), `tests/test_invoice_list_columns.py`, `tests/__init__.py`.
+- Solo vista: sin cambios de modelo, datos ni traducciones.
 - Usuarios que ya ajustaron columnas conservan sus anchos guardados en el
   navegador hasta restablecerlos.
