@@ -19,7 +19,7 @@ from odoo.addons.l10n_ve_accountant.tests.test_indexed_payments import TestIndex
 CARACAS_TZ = "America/Caracas"
 
 
-@tagged("post_install", "-at_install", "l10n_ve_auto_post_custom")
+@tagged("post_install", "-at_install", "l10n_ve_accountant_asset")
 class TestAutoPostCustom(TestIndexedPayments):
     def setUp(self):
         super().setUp()
