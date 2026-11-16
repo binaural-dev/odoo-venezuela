@@ -2168,3 +2168,19 @@ msgstr ""
 "No puede confirmar un pago con un importe de 0.0. Si el pago se convirtió a "
 "%(currency)s, el importe convertido es menor a la unidad mínima de la moneda "
 "(%(rounding)s) y se redondeó a cero."
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__foreign_tax_total
+msgid "Foreign Tax Total"
+msgstr "Total de impuestos alterno"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_move__foreign_tax_total
+msgid "Tax amount of the invoice in the alternate currency"
+msgstr "Monto de impuestos de la factura en la moneda alterna"
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+msgid "Tax Total"
+msgstr "Total de impuestos"

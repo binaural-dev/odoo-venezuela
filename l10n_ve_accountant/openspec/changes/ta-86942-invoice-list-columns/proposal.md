@@ -21,11 +21,16 @@ problemas:
 `l10n_ve_accountant_view_invoice_tree_inherit` (`views/account_move.xml`, hereda
 `account.view_invoice_tree`, de la que cuelgan las cuatro listas):
 
-- Las cuatro columnas propias van contiguas: Bs. sin impuestos, Bs. total,
-  $ sin impuestos, $ total.
-- Las cuatro llevan `sum="Total"` y `optional="show"`.
-- Ancho predeterminado: `width="180px"` en las columnas de montos (las cuatro
-  propias, `Impuestos no incluidos`, `Impuestos`, `Total` e `Importe adeudado`)
+- Las seis columnas de montos van contiguas y en este orden: Bs. sin impuestos,
+  Bs. impuesto, Bs. total, $ sin impuestos, $ impuesto, $ total. El impuesto va
+  siempre después del total sin impuestos, en ambas monedas.
+- Todas llevan `sum="Total"` y `optional="show"`.
+- Campo nuevo `foreign_tax_total` (almacenado, calculado como
+  `foreign_total_billed - foreign_untaxed_total`) para poder mostrar y
+  totalizar el impuesto en moneda alterna. El impuesto en Bs. reutiliza
+  `amount_tax_signed`, movido a su nueva posición.
+- Ancho predeterminado: `width="180px"` en las columnas de montos (las seis
+  propias, `Impuestos no incluidos`, `Total` e `Importe adeudado`)
   y `140px` en `Número`.
 
 Se mantiene el atributo nativo `width` en lugar de una clase CSS: la lista de
@@ -40,9 +45,10 @@ recorte con puntos suspensivos.
 
 ## Impact
 
-- Archivos: `l10n_ve_accountant/views/account_move.xml`, `__manifest__.py`
-  (versión `.45`), `tests/test_invoice_list_columns.py`, `tests/__init__.py`.
-- Solo vista: sin cambios de modelo, datos ni traducciones (se reutiliza la
-  etiqueta `Total`).
+- Archivos: `l10n_ve_accountant/views/account_move.xml`,
+  `models/account_move.py` (campo `foreign_tax_total` y etiquetas),
+  `i18n/es_VE.po`, `__manifest__.py` (versión `.45`), `tests/test_invoice_list_columns.py`, `tests/__init__.py`.
+- Campo almacenado nuevo: al actualizar el módulo Odoo lo calcula para las
+  facturas existentes, sin migración.
 - Usuarios que ya ajustaron columnas conservan sus anchos guardados en el
   navegador hasta restablecerlos.
