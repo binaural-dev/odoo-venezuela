@@ -27,7 +27,8 @@
                         </div>
                         <div class="content-group">
                             <div class="mt16">
-                                <field name="donation_income_account_ids" widget="many2many_tags"/>
+                                <field name="donation_income_account_ids" widget="many2many_tags"
+                                       domain="[('account_type', '=', 'income'), ('company_ids', 'parent_of', company_id)]"/>
                             </div>
                         </div>
                     </div>

@@ -35,17 +35,17 @@
                     </td>
                     <td style="width: 50%;">
                         <p>
-                            <span class="fw-bold">Razón Social: </span><span t-out="o.company_id.name" /><br />
-                            <span class="fw-bold">RIF: </span><span t-out="o.company_id.vat or ''" /><br />
-                            <span class="fw-bold">Dirección Fiscal: </span><span t-out="o.company_id.street or ''" /><t t-if="o.company_id.city"><span t-out="', ' + o.company_id.city" /></t><br />
-                            <span class="fw-bold">Teléfono: </span><span t-out="o.company_id.phone or ''" />
+                            <span class="fw-bold">Company Name: </span><span t-out="o.company_id.name" /><br />
+                            <span class="fw-bold">Tax ID: </span><span t-out="o.company_id.vat or ''" /><br />
+                            <span class="fw-bold">Fiscal Address: </span><span t-out="o.company_id.street or ''" /><t t-if="o.company_id.city"><span t-out="', ' + o.company_id.city" /></t><br />
+                            <span class="fw-bold">Phone: </span><span t-out="o.company_id.phone or ''" />
                         </p>
                     </td>
                     <td style="width: 34%; text-align: right;">
-                        <h3>Recibo de Donación</h3>
-                        <p><span class="fw-bold">No. de recibo: </span><span t-out="receipt_number" /></p>
+                        <h3>Donation Receipt</h3>
+                        <p><span class="fw-bold">Receipt No.: </span><span t-out="receipt_number" /></p>
                         <p>
-                            <span class="fw-bold">Fecha del recibo: </span>
+                            <span class="fw-bold">Receipt Date: </span>
                             <span t-out="receipt_date" t-options="{'widget': 'date'}" />
                         </p>
                     </td>
@@ -53,24 +53,24 @@
             </table>
 
             <!-- ===== BENEFICIARY ===== -->
-            <h5>Datos del beneficiario</h5>
+            <h5>Beneficiary Information</h5>
             <table>
                 <tr>
                     <td style="width: 55%;">
                         <p>
-                            <span class="fw-bold">Nombre / Razón social: </span>
+                            <span class="fw-bold">Name / Company Name: </span>
                             <span t-out="beneficiary.name or '____________________'" />
                         </p>
                         <p>
-                            <span class="fw-bold">RIF / Cédula: </span>
-                            <span t-out="((beneficiary.prefix_vat or '') + '-' + beneficiary.vat) if beneficiary and beneficiary.vat else '____________________'" />
+                            <span class="fw-bold">Tax ID / ID Number: </span>
+                            <span t-out="((beneficiary.commercial_partner_id.prefix_vat or '') + '-' + beneficiary.commercial_partner_id.vat) if beneficiary and beneficiary.commercial_partner_id.vat else '____________________'" />
                         </p>
                         <p>
-                            <span class="fw-bold">Dirección: </span>
+                            <span class="fw-bold">Address: </span>
                             <span t-out="(beneficiary and (beneficiary.contact_address or beneficiary.street)) or '____________________'" />
                         </p>
                         <p t-if="beneficiary and beneficiary.phone">
-                            <span class="fw-bold">Teléfono: </span>
+                            <span class="fw-bold">Phone: </span>
                             <span t-out="beneficiary.phone" />
                         </p>
                     </td>
@@ -81,31 +81,31 @@
             </table>
 
             <!-- ===== AMOUNT ===== -->
-            <h5>Monto de la donación</h5>
+            <h5>Donation Amount</h5>
             <table>
                 <tr>
                     <td style="width: 50%;">
                         <p>
-                            <span class="fw-bold">Monto: </span>
+                            <span class="fw-bold">Amount: </span>
                             <span t-out="amounts['amount']" t-options="{'widget': 'monetary', 'display_currency': amounts['currency']}" />
                         </p>
                     </td>
                     <td t-if="amounts['equivalent_currency']" style="width: 50%;">
                         <p>
-                            <span class="fw-bold">Equivalente en <span t-out="amounts['equivalent_currency'].name" />: </span>
+                            <span class="fw-bold">Equivalent in <span t-out="amounts['equivalent_currency'].name" />: </span>
                             <span t-out="amounts['equivalent_amount']" t-options="{'widget': 'monetary', 'display_currency': amounts['equivalent_currency']}" />
                         </p>
                         <p>
-                            <span class="fw-bold">Tasa (BCV): </span>
+                            <span class="fw-bold">Rate (BCV): </span>
                             <span t-out="amounts['rate']" t-options="{'widget': 'float', 'precision': 4}" />
-                            <span t-out="amounts['currency'].name" /> por <span t-out="amounts['equivalent_currency'].name" />
+                            <span t-out="amounts['currency'].name" /> per <span t-out="amounts['equivalent_currency'].name" />
                         </p>
                     </td>
                 </tr>
             </table>
 
             <!-- ===== CONCEPT ===== -->
-            <h5>Concepto</h5>
+            <h5>Concept</h5>
             <t t-if="donation_line_data">
                 <t t-call="l10n_ve_donation.donation_product_table" />
             </t>
@@ -117,7 +117,7 @@
             </t>
 
             <!-- ===== OBSERVATIONS ===== -->
-            <h5>Observaciones</h5>
+            <h5>Remarks</h5>
             <p t-if="observations" t-out="observations" />
             <t t-else="">
                 <p>______________________________________________________________________________</p>
@@ -125,10 +125,9 @@
 
             <!-- ===== LEGAL TEXT ===== -->
             <p id="donation_receipt_legal" class="receipt-legal">
-                Por medio del presente recibo, <strong><span t-out="o.company_id.name" /></strong>, RIF
-                <strong><span t-out="o.company_id.vat or ''" /></strong>, deja constancia de haber otorgado a
-                <strong><span t-out="beneficiary.name or '____________________'" /></strong> la donación aquí descrita, en forma
-                pura, simple e irrevocable.
+                By means of this receipt, <strong><span t-out="o.company_id.name" /></strong>, Tax ID
+                <strong><span t-out="o.company_id.vat or ''" /></strong>, certifies having given to
+                <strong><span t-out="beneficiary.name or '____________________'" /></strong> the donation described herein, as a pure, simple and irrevocable donation.
             </p>
 
             <!-- ===== SIGNATURES ===== -->
@@ -136,14 +135,14 @@
                 <tr>
                     <td style="width: 50%;">
                         <div class="receipt-signature">
-                            <strong>Representante Legal de la Institución</strong><br />
-                            <span style="font-size: 9px;">Nombre, Firma y Sello</span>
+                            <strong>Legal Representative of the Institution</strong><br />
+                            <span style="font-size: 9px;">Name, Signature and Seal</span>
                         </div>
                     </td>
                     <td style="width: 50%;">
                         <div class="receipt-signature">
-                            <strong>Beneficiario</strong><br />
-                            <span style="font-size: 9px;">Nombre, Cédula y Firma</span>
+                            <strong>Beneficiary</strong><br />
+                            <span style="font-size: 9px;">Name, ID Number and Signature</span>
                         </div>
                     </td>
                 </tr>
@@ -180,10 +179,11 @@
                         <t t-set="receipt_number" t-value="o.name" />
                         <t t-set="receipt_date" t-value="o.date_done" />
                         <t t-set="beneficiary" t-value="o.partner_id" />
-                        <t t-set="amounts" t-value="o._get_donation_receipt_amounts()" />
+                        <t t-set="goods" t-value="o._get_donation_goods_data()" />
+                        <t t-set="amounts" t-value="goods['amounts']" />
                         <t t-set="concept_lines" t-value="[]" />
-                        <t t-set="donation_line_data" t-value="o._get_donation_product_lines()" />
-                        <t t-set="donation_grand_total" t-value="o._get_donation_grand_total()" />
+                        <t t-set="donation_line_data" t-value="goods['lines']" />
+                        <t t-set="donation_grand_total" t-value="goods['total']" />
                         <t t-set="donation_cost_currency" t-value="o.company_id.currency_id" />
                         <t t-set="observations" t-value="o.donation_reason" />
                         <t t-call="l10n_ve_donation.donation_receipt_body" />

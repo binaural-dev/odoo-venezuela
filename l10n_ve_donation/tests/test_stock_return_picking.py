@@ -97,15 +97,6 @@ class TestStockReturnPicking(TestDonationCommon):
         self.assertTrue(self._returns_of(picking))
 
     def test_03_donation_receipt_cannot_be_returned(self):
-        # A correct donation receipt: its origin is a received donations location.
-        self.company.donation_income_account_ids = self.account_income
-        origin = self.env["stock.location"].create({
-            "name": "Donations received (return test)",
-            "usage": "inventory",
-            "location_id": self.warehouse_donation.view_location_id.id,
-            "company_id": self.company.id,
-            "valuation_account_id": self.account_income.id,
-        })
         receipt_type = self.env["stock.picking.type"].create({
             "name": "Donation Receipt Return Test",
             "code": "incoming",
@@ -113,7 +104,6 @@ class TestStockReturnPicking(TestDonationCommon):
             "warehouse_id": self.warehouse_donation.id,
             "company_id": self.company.id,
             "is_donation_picking_type": True,
-            "default_location_src_id": origin.id,
         })
         product = self._storable_product("Return Receipt Test Product")
         picking = self.env["stock.picking"].create({

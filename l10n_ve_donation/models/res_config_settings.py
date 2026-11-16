@@ -10,5 +10,6 @@ class ResConfigSettings(models.TransientModel):
         "account.account",
         string="Received Donations Accounts",
         related="company_id.donation_income_account_ids",
+        check_company=True,
         readonly=False,
     )

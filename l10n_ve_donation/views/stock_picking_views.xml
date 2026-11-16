@@ -8,6 +8,7 @@
             <xpath expr="//field[@name='origin']" position="after">
                 <field name="is_donation" readonly="1" invisible="not is_donation" force_save="1"/>
                 <field name="donation_reason" invisible="not is_donation or sale_id or picking_type_code != 'outgoing'" readonly="state in ('done', 'cancel')"/>
+                <field name="has_donation_income_accounts" invisible="1"/>
             </xpath>
 
             <!-- The 'Donation' transfer reason is assigned automatically
@@ -35,7 +36,7 @@
                     string="Print Donation Certificate"
                     type="object"
                     groups="stock.group_stock_user"
-                    invisible="not is_donation or sale_id or picking_type_code != 'incoming' or state != 'done'"
+                    invisible="not is_donation or sale_id or picking_type_code != 'incoming' or state != 'done' or not has_donation_income_accounts"
                 />
             </xpath>
         </field>
