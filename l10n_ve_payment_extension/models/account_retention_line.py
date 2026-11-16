@@ -1,6 +1,6 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError
-from odoo.tools import float_compare
+from odoo.tools import float_compare, float_is_zero
 import logging
 _logger = logging.getLogger(__name__)
 
@@ -232,6 +232,8 @@ class AccountRetentionLine(models.Model):
             tax_groups_and_taxes = record._get_iva_tax_groups_and_taxes(invoice_id)
 
             if not tax_groups_and_taxes:
+                # There is no IVA to retain: a line without aliquot is not created.
+                record.move_id = False
                 return {
                     "warning": {
                         "title": _("Atención"),
@@ -288,6 +290,16 @@ class AccountRetentionLine(models.Model):
                 None,
             )
             if not match:
+                if float_is_zero(record.aliquot, precision_digits=2):
+                    # There is no IVA retention at a 0% rate: go back to the
+                    # aliquot proposed for the invoice instead of keeping it.
+                    record._onchange_move_id()
+                    return {
+                        "warning": {
+                            "title": _("Atención"),
+                            "message": _("An IVA retention line cannot have a 0% aliquot."),
+                        }
+                    }
                 continue
 
             tax_group, tax = match
@@ -569,19 +581,7 @@ class AccountRetentionLine(models.Model):
 
                         total_taxable_base = total_taxable_base * (line.percentage_tax_base / 100.0)
 
-                        rates = sorted(line.tariff_id.accumulated_rate_ids, key=lambda r: r.start)
-
-                        selected_rate = None
-                        for rate in rates:
-                            is_infinity_tier = (rate.stop == 0)
-                            if not is_infinity_tier:
-                                if rate.start <= total_taxable_base <= rate.stop:
-                                    selected_rate = rate
-                                    break 
-                            else:
-                                if total_taxable_base >= rate.start:
-                                    selected_rate = rate
-                                    break
+                        selected_rate = line.tariff_id.get_accumulated_rate(total_taxable_base)
 
                         if selected_rate:
                             record.invoice_total = record.move_id.tax_totals["total_amount"]

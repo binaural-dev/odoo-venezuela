@@ -6,18 +6,12 @@ from io import StringIO
 class GenerateTxt(http.Controller):
     @http.route("/web/binary/download_retention_iva_txt", type="http", auth="user")
     def download_retention_iva_txt(self, date_start, date_end, company_id, **kw):
+        wizard = request.env["wizard.retention.iva"]
         retentions = request.env["account.retention"].search(
-            [
-                ("date", ">=", date_start),
-                ("date", "<=", date_end),
-                ("state", "=", "emitted"),
-                ("type_retention", "=", "iva"),
-                ("type", "=", "in_invoice"),
-                ("company_id", "=", int(company_id)),
-            ]
+            wizard._get_retention_iva_domain(date_start, date_end, int(company_id))
         )
 
-        data = request.env["wizard.retention.iva"]._retention_iva(retentions)
+        data = wizard._retention_iva(retentions)
         f = StringIO()
         for l in data:
             f.write(l.get("RIF del agente de retención") + "\t")

@@ -24,7 +24,7 @@ class TestPaymentRetention(RetentionTestCommon):
             "type_retention": "iva", "type": "in_invoice",
             "company_id": self.company.id, "partner_id": self.partner_pnr_75.id,
             "date": fields.Date.today(), "date_accounting": fields.Date.today(),
-            "retention_line_ids": [Command.create({
+            "retention_line_ids": [Command.create({"aliquot": 16.0,
                 "move_id": invoice.id, "name": "IVA Line",
                 "invoice_total": 232.0, "invoice_amount": 200.0,
                 "retention_amount": 32.0, "foreign_invoice_amount": 200.0,
@@ -138,7 +138,7 @@ class TestPaymentRetention(RetentionTestCommon):
             "type_retention": "iva", "type": "in_invoice",
             "company_id": self.company.id, "partner_id": self.partner_pnr_75.id,
             "date": fields.Date.today(), "date_accounting": fields.Date.today(),
-            "retention_line_ids": [Command.create({
+            "retention_line_ids": [Command.create({"aliquot": 16.0,
                 "move_id": invoice.id, "name": "IVA Line",
                 "invoice_total": 232.0, "invoice_amount": 200.0,
                 "retention_amount": 32.0, "foreign_invoice_amount": 200.0,
@@ -161,7 +161,7 @@ class TestPaymentRetention(RetentionTestCommon):
             "type_retention": "iva", "type": "in_invoice",
             "company_id": self.company.id, "partner_id": self.partner_pnr_75.id,
             "date": fields.Date.today(), "date_accounting": fields.Date.today(),
-            "retention_line_ids": [Command.create({
+            "retention_line_ids": [Command.create({"aliquot": 16.0,
                 "move_id": invoice.id, "name": "IVA Line",
                 "invoice_total": 232.0, "invoice_amount": 200.0,
                 "retention_amount": 32.0, "foreign_invoice_amount": 200.0,
@@ -230,7 +230,7 @@ class TestPaymentRetention(RetentionTestCommon):
             "type_retention": "iva", "type": "in_invoice",
             "company_id": self.company.id, "partner_id": self.partner_pnr_75.id,
             "date": fields.Date.today(), "date_accounting": fields.Date.today(),
-            "retention_line_ids": [Command.create({
+            "retention_line_ids": [Command.create({"aliquot": 16.0,
                 "move_id": invoice.id, "name": "IVA Line",
                 "invoice_total": 232.0, "invoice_amount": 200.0,
                 "retention_amount": 32.0, "foreign_invoice_amount": 200.0,
@@ -254,7 +254,7 @@ class TestPaymentRetention(RetentionTestCommon):
                 "company_id": self.company.id, "partner_id": self.partner_pnr_75.id,
                 "date": fields.Date.today(), "date_accounting": fields.Date.today(),
                 "is_third_party_retention": True,
-                "retention_line_ids": [Command.create({
+                "retention_line_ids": [Command.create({"aliquot": 16.0,
                     "move_id": invoice.id, "name": "IVA Line",
                     "invoice_total": 232.0, "invoice_amount": 200.0,
                     "retention_amount": 32.0,
@@ -397,7 +397,7 @@ class TestPaymentRetention(RetentionTestCommon):
             "type_retention": "iva", "type": "in_invoice",
             "company_id": self.company.id, "partner_id": self.partner_pnr_75.id,
             "date": fields.Date.today(), "date_accounting": fields.Date.today(),
-            "retention_line_ids": [Command.create({
+            "retention_line_ids": [Command.create({"aliquot": 16.0,
                 "move_id": invoice.id, "name": "IVA Line",
                 "invoice_total": 232.0, "invoice_amount": 200.0,
                 "retention_amount": 32.0, "foreign_invoice_amount": 200.0,
@@ -491,7 +491,7 @@ class TestPaymentRetention(RetentionTestCommon):
             "type_retention": "iva", "type": "out_invoice",
             "company_id": self.company.id, "partner_id": self.partner_pnr_75.id,
             "date": fields.Date.today(), "date_accounting": fields.Date.today(),
-            "retention_line_ids": [Command.create({
+            "retention_line_ids": [Command.create({"aliquot": 16.0,
                 "move_id": invoice.id, "name": "IVA Line",
                 "invoice_total": 232.0, "invoice_amount": 200.0,
                 "retention_amount": 32.0, "foreign_invoice_amount": 200.0,
@@ -576,7 +576,7 @@ class TestPaymentRetention(RetentionTestCommon):
             "type_retention": "iva", "type": "in_invoice",
             "company_id": self.company.id, "partner_id": self.partner_pnr_75.id,
             "date": fields.Date.today(), "date_accounting": fields.Date.today(),
-            "retention_line_ids": [Command.create({
+            "retention_line_ids": [Command.create({"aliquot": 16.0,
                 "move_id": invoice.id, "name": "IVA Line",
                 "invoice_total": 232.0, "invoice_amount": 200.0,
                 "retention_amount": 32.0, "foreign_invoice_amount": 200.0,
@@ -606,7 +606,7 @@ class TestPaymentRetention(RetentionTestCommon):
             "type_retention": "iva", "type": "in_invoice",
             "company_id": self.company.id, "partner_id": self.partner_pnr_75.id,
             "date": fields.Date.today(), "date_accounting": fields.Date.today(),
-            "retention_line_ids": [Command.create({
+            "retention_line_ids": [Command.create({"aliquot": 16.0,
                 "move_id": invoice.id, "name": "IVA Line",
                 "invoice_total": 232.0, "invoice_amount": 200.0,
                 "retention_amount": 32.0, "foreign_invoice_amount": 200.0,
@@ -656,7 +656,7 @@ class TestPaymentRetention(RetentionTestCommon):
             "type_retention": "iva", "type": "in_invoice",
             "company_id": self.company.id, "partner_id": self.partner_pnr_75.id,
             "date": fields.Date.today(), "date_accounting": fields.Date.today(),
-            "retention_line_ids": [Command.create({
+            "retention_line_ids": [Command.create({"aliquot": 16.0,
                 "move_id": invoice.id, "name": "IVA Line",
                 "invoice_total": 232.0, "invoice_amount": 200.0,
                 "retention_amount": 32.0, "foreign_invoice_amount": 200.0,
@@ -715,7 +715,7 @@ class TestPaymentRetention(RetentionTestCommon):
             "type_retention": "iva", "type": "in_invoice",
             "company_id": self.company.id, "partner_id": self.partner_pnr_75.id,
             "date": fields.Date.today(), "date_accounting": fields.Date.today(),
-            "retention_line_ids": [Command.create({
+            "retention_line_ids": [Command.create({"aliquot": 16.0,
                 "move_id": invoice.id, "name": "IVA Line",
                 "invoice_total": 232.0, "invoice_amount": 200.0,
                 "retention_amount": 32.0, "foreign_invoice_amount": 200.0,
@@ -743,7 +743,7 @@ class TestPaymentRetention(RetentionTestCommon):
             "type_retention": "iva", "type": "in_invoice",
             "company_id": self.company.id, "partner_id": self.partner_pnr_75.id,
             "date": fields.Date.today(), "date_accounting": fields.Date.today(),
-            "retention_line_ids": [Command.create({
+            "retention_line_ids": [Command.create({"aliquot": 16.0,
                 "move_id": invoice.id, "name": "IVA Line",
                 "invoice_total": 232.0, "invoice_amount": 200.0,
                 "retention_amount": 32.0, "foreign_invoice_amount": 200.0,
