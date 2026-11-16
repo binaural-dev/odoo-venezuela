@@ -141,6 +141,11 @@ usa `higea_donation` (no se renombra): `print_donation_certificate`,
 `_get_donation_grand_total`, `product_line_donation`,
 `is_donation_picking_type`, `donation_reason`, `donation_menu`.
 
+> Nota (rama `ta-86967-donation-received-documents`): `print_donation_certificate` cambió
+> de significado. Ya no imprime el documento de la entrega (ahora `print_donation_receipt`,
+> el Recibo) sino el Certificado de una donación RECIBIDA. `higea_donation` 17 usa los
+> nombres con el significado de 17; al portarlo a 19 se ajusta a este contrato.
+
 ## Testing
 
 `TransactionCase` sobre `StockAccountTestCommon` de `l10n_ve_stock_account`.
