@@ -35,7 +35,7 @@ msgstr "%(currency)s no es una moneda del método de pago %(method)s."
 #: code:addons/l10n_ve_pos/models/pos_session.py:0
 #: code:addons/odoo-venezuela/l10n_ve_pos/models/pos_session.py:0
 msgid "%(journal)s: suspense account"
-msgstr ""
+msgstr "%(journal)s: cuenta transitoria"
 
 #. module: l10n_ve_pos
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.table_payment_report_pos_general
@@ -228,12 +228,12 @@ msgstr "Creado en"
 #. module: l10n_ve_pos
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_payment_method_currency__cross_account_journal
 msgid "Cross Account Journal"
-msgstr ""
+msgstr "Diario de Cruce de Cuentas"
 
 #. module: l10n_ve_pos
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_payment_method_currency__cross_journal
 msgid "Cross Journal"
-msgstr ""
+msgstr "Diario afectado de banco o efectivo"
 
 #. module: l10n_ve_pos
 #: model:ir.model.fields,help:l10n_ve_pos.field_pos_payment_method__currency_setting_ids
@@ -286,6 +286,8 @@ msgid ""
 "Discount line price cannot be positive. Product \"%(product)s\" has a price "
 "of %(price)s in order %(order)s."
 msgstr ""
+"El precio de la línea de descuento no puede ser positivo. El producto "
+"\"%(product)s\" tiene un precio de %(price)s en la orden %(order)s."
 
 #. module: l10n_ve_pos
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_account_move__display_name
@@ -340,7 +342,7 @@ msgstr "No permitir ventas menores a"
 #: code:addons/l10n_ve_pos/static/src/overrides/screens/payment_screen/payment_screen.js:0
 #: code:addons/odoo-venezuela/l10n_ve_pos/static/src/overrides/screens/payment_screen/payment_screen.js:0
 msgid "Empty Paymentline"
-msgstr ""
+msgstr "Linea de Pago Vacía"
 
 #. module: l10n_ve_pos
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_payment_report__end_date
@@ -381,7 +383,7 @@ msgstr "Monto alterno"
 #: code:addons/l10n_ve_pos/static/src/overrides/screens/payment_status/payment_status.xml:0
 #: code:addons/odoo-venezuela/l10n_ve_pos/static/src/overrides/screens/payment_status/payment_status.xml:0
 msgid "Foreign Change"
-msgstr ""
+msgstr "Cambio alterno"
 
 #. module: l10n_ve_pos
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_config__foreign_currency_id
@@ -417,7 +419,7 @@ msgstr "Tasa alterna"
 #: code:addons/l10n_ve_pos/static/src/overrides/screens/payment_status/payment_status.xml:0
 #: code:addons/odoo-venezuela/l10n_ve_pos/static/src/overrides/screens/payment_status/payment_status.xml:0
 msgid "Foreign Remaining"
-msgstr ""
+msgstr "Restante alterno"
 
 #. module: l10n_ve_pos
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_order_line__foreign_subtotal
@@ -507,7 +509,7 @@ msgstr "Identificar cliente"
 #: code:addons/l10n_ve_pos/static/src/overrides/services/pos_store.js:0
 #: code:addons/odoo-venezuela/l10n_ve_pos/static/src/overrides/services/pos_store.js:0
 msgid "Insufficient stock"
-msgstr ""
+msgstr "Stock insuficiente"
 
 #. module: l10n_ve_pos
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
@@ -607,13 +609,17 @@ msgid ""
 "has a quantity of %(qty)s in order %(order)s. To return products, use the "
 "refund flow from the orders screen instead of a negative quantity."
 msgstr ""
+"La cantidad negativa solo se permite en líneas de reembolso. El producto "
+"\"%(product)s\" tiene una cantidad de %(qty)s en la orden %(order)s. Para "
+"devolver productos, use el flujo de reembolso desde la pantalla de órdenes "
+"en lugar de una cantidad negativa."
 
 #. module: l10n_ve_pos
 #. odoo-javascript
 #: code:addons/l10n_ve_pos/static/src/overrides/models/pos_order_line.js:0
 #: code:addons/odoo-venezuela/l10n_ve_pos/static/src/overrides/models/pos_order_line.js:0
 msgid "Negative quantity not allowed"
-msgstr ""
+msgstr "Cantidad negativa no permitida"
 
 #. module: l10n_ve_pos
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
@@ -661,6 +667,9 @@ msgid ""
 "Only refund lines can have a negative quantity. To return products, use the "
 "refund flow: Orders → select the original order → Refund."
 msgstr ""
+"Solo las líneas de reembolso pueden tener cantidad negativa. Para devolver "
+"productos, use el flujo de reembolso: Órdenes → seleccione la orden original "
+"→ Reembolso."
 
 #. module: l10n_ve_pos
 #. odoo-python
@@ -699,7 +708,7 @@ msgstr "Moneda del pago"
 #. module: l10n_ve_pos
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_payment_method_currency__payment_method_id
 msgid "Payment Method"
-msgstr ""
+msgstr "Método de Pago"
 
 #. module: l10n_ve_pos
 #: model:ir.model,name:l10n_ve_pos.model_pos_payment_method_currency
@@ -967,14 +976,14 @@ msgstr "Número de identificación fiscal"
 #: code:addons/l10n_ve_pos/static/src/overrides/components/order_display/order_display.xml:0
 #: code:addons/odoo-venezuela/l10n_ve_pos/static/src/overrides/components/order_display/order_display.xml:0
 msgid "Taxes:"
-msgstr ""
+msgstr "Impuestos:"
 
 #. module: l10n_ve_pos
 #. odoo-python
 #: code:addons/l10n_ve_pos/models/product_category.py:0
 #: code:addons/odoo-venezuela/l10n_ve_pos/models/product_category.py:0
 msgid "The category %s does not belong to this company."
-msgstr ""
+msgstr "La categoría %s no pertenece a la compañía actual."
 
 #. module: l10n_ve_pos
 #. odoo-python
@@ -985,6 +994,9 @@ msgid ""
 "%(accounts)s\n"
 "Set them in the journal configuration and try again."
 msgstr ""
+"No se puede crear el asiento de cruce del método de pago %(method)s porque faltan estas cuentas:\n"
+"%(accounts)s\n"
+"Configúrelas en el diario y vuelva a intentarlo."
 
 #. module: l10n_ve_pos
 #: model:ir.model.fields,help:l10n_ve_pos.field_pos_payment_method__split_transactions
@@ -1007,14 +1019,14 @@ msgstr "El pago se hizo en una moneda distinta a la de la orden."
 #: code:addons/l10n_ve_pos/controllers/controller.py:0
 #: code:addons/odoo-venezuela/l10n_ve_pos/controllers/controller.py:0
 msgid "The product's '%s' You do not have enough stock in the warehouse %s"
-msgstr ""
+msgstr "El producto '%s' no tiene suficiente stock en el almacén '%s'"
 
 #. module: l10n_ve_pos
 #. odoo-python
 #: code:addons/l10n_ve_pos/controllers/controller.py:0
 #: code:addons/odoo-venezuela/l10n_ve_pos/controllers/controller.py:0
 msgid "The product's '%s' not available in stock warehouse %s"
-msgstr ""
+msgstr "Los productos '%s' no están disponibles en el almacén %s"
 
 #. module: l10n_ve_pos
 #: model:ir.model.fields,help:l10n_ve_pos.field_pos_payment__foreign_rate
@@ -1030,13 +1042,16 @@ msgid ""
 "%(accounts)s\n"
 "Set them in Accounting > Configuration > Journals."
 msgstr ""
+"No se puede abrir la sesión: el asiento de cruce de estos métodos de pago necesita cuentas que no están configuradas:\n"
+"%(accounts)s\n"
+"Configúrelas en Contabilidad > Configuración > Diarios."
 
 #. module: l10n_ve_pos
 #. odoo-python
 #: code:addons/l10n_ve_pos/models/pos_config.py:0
 #: code:addons/odoo-venezuela/l10n_ve_pos/models/pos_config.py:0
 msgid "The session must have a foreign currency or active"
-msgstr ""
+msgstr "La sesión debe tener una moneda extranjera o estar activa"
 
 #. module: l10n_ve_pos
 #. odoo-javascript
@@ -1049,6 +1064,11 @@ msgid ""
 "\n"
 "Adjust the quantities to continue with the payment."
 msgstr ""
+"No hay stock suficiente en el almacén para:\n"
+"\n"
+"%s\n"
+"\n"
+"Ajusta las cantidades para continuar con el pago."
 
 #. module: l10n_ve_pos
 #. odoo-javascript
@@ -1100,14 +1120,14 @@ msgstr ""
 #: code:addons/l10n_ve_pos/static/src/overrides/screens/payment_screen/payment_screen_top.xml:0
 #: code:addons/odoo-venezuela/l10n_ve_pos/static/src/overrides/screens/payment_screen/payment_screen_top.xml:0
 msgid "View Payments Origin"
-msgstr ""
+msgstr "Ver Pagos del Origen"
 
 #. module: l10n_ve_pos
 #. odoo-javascript
 #: code:addons/l10n_ve_pos/static/src/overrides/screens/payment_screen/payment_screen.js:0
 #: code:addons/odoo-venezuela/l10n_ve_pos/static/src/overrides/screens/payment_screen/payment_screen.js:0
 msgid "You can't validate with empty payment lines"
-msgstr ""
+msgstr "No puede validar con lineas de pago vacias"
 
 #. module: l10n_ve_pos
 #. odoo-python
@@ -1117,6 +1137,8 @@ msgid ""
 "You cannot modify a journal entry linked to a POS session that is still "
 "opened"
 msgstr ""
+"No puede modificar un asiento contable vinculado a una sesión de POS que aún"
+" está abierta"
 
 #. module: l10n_ve_pos
 #. odoo-python
@@ -1125,6 +1147,8 @@ msgstr ""
 msgid ""
 "You cannot reconcile a payment linked to a POS session that is still open"
 msgstr ""
+"No puede romper conciliación de un pago vinculado a una sesión de POS que "
+"aún está abierta"
 
 #. module: l10n_ve_pos
 #. odoo-python
@@ -1138,21 +1162,21 @@ msgstr "No tiene permisos para cerrar la caja registradora."
 #: code:addons/l10n_ve_pos/models/pos_session.py:0
 #: code:addons/odoo-venezuela/l10n_ve_pos/models/pos_session.py:0
 msgid "an account of the move lines"
-msgstr ""
+msgstr "una cuenta de las líneas del asiento"
 
 #. module: l10n_ve_pos
 #. odoo-python
 #: code:addons/l10n_ve_pos/models/pos_session.py:0
 #: code:addons/odoo-venezuela/l10n_ve_pos/models/pos_session.py:0
 msgid "incoming payments account"
-msgstr ""
+msgstr "cuenta de pagos entrantes"
 
 #. module: l10n_ve_pos
 #. odoo-python
 #: code:addons/l10n_ve_pos/models/pos_session.py:0
 #: code:addons/odoo-venezuela/l10n_ve_pos/models/pos_session.py:0
 msgid "outgoing payments account"
-msgstr ""
+msgstr "cuenta de pagos salientes"
 
 #. module: l10n_ve_pos
 #: model:ir.model,name:l10n_ve_pos.model_report_l10n_ve_pos_payment_report_pos

@@ -18,7 +18,7 @@ msgstr ""
 #. module: l10n_ve_pos_igtf
 #: model:ir.model.fields,field_description:l10n_ve_pos_igtf.field_pos_payment_method_currency__apply_igtf
 msgid "Apply IGTF"
-msgstr ""
+msgstr "Aplicar IGTF"
 
 #. module: l10n_ve_pos_igtf
 #. odoo-javascript
@@ -185,3 +185,5 @@ msgid ""
 "You have the IGTF configuration turned on, first configure the account and "
 "the percentage"
 msgstr ""
+"Tienes la configuracion de IGTF encendida, configura primero la cuenta "
+"contable y el porcentaje"
