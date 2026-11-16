@@ -24,10 +24,16 @@ patch(contextualUtilsService, {
       return formatCurrency(parseFloat(valueStr), hasSymbol);
     };
 
+    // Formatea en una moneda concreta (la de cobro de una línea de pago, p. ej.
+    // EUR), con el formato local, igual que formatForeignCurrency.
+    const formatCurrencyById = (value, currencyId, hasSymbol = true) =>
+      formatMonetary(value || 0, { currencyId, noSymbol: !hasSymbol });
+
     env.utils = {
       ...env.utils,
       formatForeignCurrency,
       formatStrForeignCurrency,
+      formatCurrencyById,
     };
   }
 

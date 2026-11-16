@@ -9,8 +9,11 @@ Verifies the cruce automatico in ``pos_session.py``: ``_validate_cross_move``
 Spec: ``openspec/changes/l10n-ve-pos-cross-move-by-split-transactions/specs/pos-cross-account-move/spec.md``
 Spec (venta en efectivo entre transitorias, ticket 15219):
 ``openspec/changes/cruce-venta-efectivo-entre-transitorias/specs/l10n_ve_pos/spec.md``
+Spec (fecha del cruce en el dia del usuario, ticket 16145):
+``openspec/specs/l10n_ve_pos/spec.md``
 """
 
+from datetime import date
 from unittest.mock import patch
 
 from odoo import fields
@@ -287,11 +290,13 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
         self.assertAlmostEqual(transitory_leg.foreign_debit, abs(payment.foreign_amount), places=2)
 
     def test_combine_net_negative_uses_outgoing_branch(self):
-        """Combine cuyo neto queda negativo produce UN asiento saliente.
+        """Combine con mas devoluciones que ventas: UN asiento con la pata de
+        entradas y la de salidas (tarea 86066).
 
-        La ruta combine legacy solo tenia rama entrante. Al netear los pagos
-        del metodo, un neto negativo (mas devoluciones que ventas) es
-        alcanzable y debe salir por la rama espejo.
+        La ruta combine legacy solo tenia rama entrante; despues un neto
+        negativo salia por la rama espejo con un solo par de lineas. Ahora el
+        asiento lleva una pata por direccion (venta 40 entrante, devolucion
+        100 saliente) y el neto que pasa a la cuenta real sigue siendo -60.
         """
         self._configure_cross(self.combined_bank_method)
         session = self._new_session().with_company(self.company)
@@ -313,15 +318,77 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
         session._validate_cross_move()
 
         moves = self._cross_moves()
-        self.assertEqual(len(moves), 1)
-        real_leg, transitory_leg = self._legs(
+        self.assertEqual(len(moves), 1, "un asiento por metodo y sesion")
+        real_legs, transitory_legs = self._legs(
             moves, self.combined_bank_method.outstanding_account_id
         )
-        self.assertAlmostEqual(real_leg.credit, 60.0, places=2, msg="|40 - 100|")
-        self.assertAlmostEqual(transitory_leg.debit, 60.0, places=2)
+        self.assertEqual(sorted(real_legs.mapped("balance")), [-100.0, 40.0])
+        self.assertEqual(sorted(transitory_legs.mapped("balance")), [-40.0, 100.0])
+        self.assertAlmostEqual(sum(real_legs.mapped("balance")), -60.0, places=2, msg="40 - 100")
+        self.assertAlmostEqual(sum(transitory_legs.mapped("balance")), 60.0, places=2)
+
+    def test_combine_opposite_sign_nets_cross_each_leg_on_its_own(self):
+        """Venta y devolucion a tasas distintas en la misma sesion (tarea
+        86066, hallazgo 6): venta de 40 a 50 (2.000 en la alterna) y
+        devolucion de 60 a 10 (-600): neto -20 en la moneda de la caja y
+        +1.400 en la alterna. Con un solo par de lineas, la linea del diario
+        real (en la alterna) quedaba con saldo y ``amount_currency`` de signos
+        opuestos y ``account_move_line_check_amount_currency_balance_sign``
+        rechazaba el cierre. Cada pata tiene signos coherentes."""
+        self._configure_cross(self.combined_bank_method)
+        session = self._new_session().with_company(self.company)
+        self._create_paid_order(
+            session, method=self.combined_bank_method, amount=40.0, tax_amount=0.0,
+            foreign_rate=50.0, name="OL/CROSS/OPP-SALE",
+        )
+        self._create_paid_order(
+            session, method=self.combined_bank_method, amount=-60.0, tax_amount=0.0,
+            foreign_rate=10.0, name="OL/CROSS/OPP-REFUND",
+        )
+
+        session._validate_cross_move()
+
+        move = self._cross_moves()
+        self.assertEqual(len(move), 1)
+        self.assertEqual(len(move.line_ids), 4)
+        for line in move.line_ids:
+            self.assertGreaterEqual(line.amount_currency * line.balance, 0.0)
+        real_legs, _transitory_legs = self._legs(
+            move, self.combined_bank_method.outstanding_account_id
+        )
+        self.assertEqual(real_legs.currency_id, self.foreign_currency)
+        self.assertAlmostEqual(sum(real_legs.mapped("balance")), -20.0, places=2)
+        self.assertAlmostEqual(sum(real_legs.mapped("amount_currency")), 1400.0, places=2)
+
+    def test_combine_zero_net_in_the_pos_currency_still_crosses_the_foreign_amount(self):
+        """Neto cero en la moneda de la caja con alterna de diferencia (venta
+        y devolucion de 40 a tasas distintas): antes no se creaba el cruce y
+        esa alterna nunca pasaba al diario real."""
+        self._configure_cross(self.combined_bank_method)
+        session = self._new_session().with_company(self.company)
+        self._create_paid_order(
+            session, method=self.combined_bank_method, amount=40.0, tax_amount=0.0,
+            foreign_rate=50.0, name="OL/CROSS/ZERO-SALE",
+        )
+        self._create_paid_order(
+            session, method=self.combined_bank_method, amount=-40.0, tax_amount=0.0,
+            foreign_rate=10.0, name="OL/CROSS/ZERO-REFUND",
+        )
+
+        session._validate_cross_move()
+
+        move = self._cross_moves()
+        self.assertEqual(len(move), 1)
+        real_legs, _transitory_legs = self._legs(
+            move, self.combined_bank_method.outstanding_account_id
+        )
+        self.assertAlmostEqual(sum(real_legs.mapped("balance")), 0.0, places=2)
+        self.assertAlmostEqual(sum(real_legs.mapped("amount_currency")), 1600.0, places=2)
 
     def test_combine_net_zero_creates_nothing(self):
-        """Combine cuyo neto es cero no crea asiento: no hay nada que cruzar."""
+        """Combine cuyo neto es cero, en la moneda de la caja y en la alterna
+        (venta y devolucion a la misma tasa), no crea asiento: no hay nada que
+        cruzar."""
         self._configure_cross(self.combined_bank_method)
         session = self._new_session().with_company(self.company)
         self._create_paid_order(
@@ -451,7 +518,11 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
         )
 
     def test_cash_sale_net_negative_mirrors_the_entry(self):
-        """Neto negativo en efectivo: el asiento entre transitorias se invierte."""
+        """Neto negativo en efectivo: el asiento entre transitorias se invierte.
+
+        Desde la tarea 86066 el asiento combinado lleva una pata de entradas
+        (venta 40) y otra de salidas (devolucion 100), cada una invertida por
+        ``use_suspense``; el neto que mueve cada cuenta es el mismo de antes."""
         self._configure_cross(self.combined_cash_method)
         suspense_origin, suspense_cross = self._configure_use_suspense_accounts(
             self.combined_cash_method
@@ -480,14 +551,18 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
             lambda l: l.account_id == suspense_origin
         )
         cross_leg = moves.line_ids.filtered(lambda l: l.account_id == suspense_cross)
-        self.assertAlmostEqual(origin_leg.credit, 60.0, places=2, msg="|40 - 100|")
-        self.assertAlmostEqual(cross_leg.debit, 60.0, places=2)
-        self.assertAlmostEqual(origin_leg.debit, 0.0, places=2)
-        self.assertAlmostEqual(cross_leg.credit, 0.0, places=2)
+        self.assertEqual(sorted(origin_leg.mapped("balance")), [-100.0, 40.0])
+        self.assertEqual(sorted(cross_leg.mapped("balance")), [-40.0, 100.0])
+        self.assertAlmostEqual(sum(origin_leg.mapped("balance")), -60.0, places=2, msg="40 - 100")
+        self.assertAlmostEqual(sum(cross_leg.mapped("balance")), 60.0, places=2)
         self.assertGreater(
-            origin_leg.foreign_credit, 0.0, "el alterno tambien se invierte"
+            sum(origin_leg.mapped("foreign_credit")) - sum(origin_leg.mapped("foreign_debit")),
+            0.0,
+            "el alterno tambien se invierte",
         )
-        self.assertGreater(cross_leg.foreign_debit, 0.0)
+        self.assertGreater(
+            sum(cross_leg.mapped("foreign_debit")) - sum(cross_leg.mapped("foreign_credit")), 0.0
+        )
         self.assertFalse(
             moves.line_ids.filtered(
                 lambda l: l.account_id in (self.account_cash, self.account_real_bank)
@@ -1163,3 +1238,82 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
                 self.assertIn(self.real_bank_journal.name, str(error.exception))
                 savepoint.rollback()
         self.assertFalse(self._cross_moves())
+
+    # ------------------------------------------------------------------
+    # Fecha del cruce: el dia del usuario, no el dia UTC (ticket 16145)
+    # ------------------------------------------------------------------
+    # 2026-03-11 00:30 UTC == 2026-03-10 20:30 en Caracas (UTC-4): el servidor
+    # ya esta en el dia siguiente, que todavia no tiene tasa.
+    NIGHT_UTC = "2026-03-11 00:30:00"
+    CARACAS_DAY = date(2026, 3, 10)
+
+    def _night_session(self, method):
+        """Sesion de un cajero en Caracas con una venta en ``method`` y tasa
+        cargada solo para el dia local: el dia UTC no la tiene."""
+        self.env["res.currency.rate"].create(
+            {
+                "name": self.CARACAS_DAY,
+                "currency_id": self.foreign_currency.id,
+                "company_id": self.company.id,
+                "rate": 40.0,
+            }
+        )
+        self._configure_cross(method)
+        self._configure_use_suspense_accounts(method)
+        session = (
+            self._new_session()
+            .with_company(self.company)
+            .with_context(tz="America/Caracas")
+        )
+        self._create_paid_order(
+            session,
+            method=method,
+            amount=58.0,
+            tax_amount=8.0,
+            foreign_rate=36.5,
+            name="OL/CROSS/NIGHT",
+        )
+        return session
+
+    def test_combine_cross_move_closed_at_night_takes_the_user_day(self):
+        """Cierre a las 8:30 pm de Caracas: el cruce queda del dia local.
+
+        El metodo agrupado se fecha con ``stop_at``, que es un Datetime en
+        UTC. ``account.move.date`` es Date y lo truncaba con ``.date()`` al
+        dia UTC (el siguiente): ``l10n_ve_accountant`` pedia la tasa de ese
+        dia, que no existe, y el cierre se detenia con "No hay una tasa
+        asignada para USD al <manana>" (Nova, sesion AV. VICTORIA/00029).
+        """
+        session = self._night_session(self.combined_cash_method)
+        session.stop_at = self.NIGHT_UTC
+
+        session._validate_cross_move()
+
+        move = self._cross_moves()
+        self.assertEqual(len(move), 1)
+        self.assertEqual(
+            move.date,
+            self.CARACAS_DAY,
+            "el cruce del cierre va en el dia del cajero, no en el dia UTC",
+        )
+
+    def test_split_cross_move_paid_at_night_takes_the_user_day(self):
+        """Pago registrado a las 8:30 pm de Caracas en un metodo con
+        "Identificar cliente": su cruce, fechado con el ``create_date`` del
+        pago (UTC), tambien queda del dia local."""
+        session = self._night_session(self.split_cash_method)
+        payment = session.order_ids.payment_ids
+        self.env.cr.execute(
+            SQL(
+                "UPDATE pos_payment SET create_date = %s WHERE id = %s",
+                self.NIGHT_UTC,
+                payment.id,
+            )
+        )
+        payment.invalidate_recordset(["create_date"])
+
+        session._validate_cross_move()
+
+        move = self._cross_moves()
+        self.assertEqual(len(move), 1)
+        self.assertEqual(move.date, self.CARACAS_DAY)

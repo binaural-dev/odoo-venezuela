@@ -50,27 +50,35 @@ class TestPosSessionAccountingBase(TransactionCase):
     alternate currency difference without them.
     """
 
+    # Company and foreign currency of the fixture, by name: by default the
+    # company in USD with VEF as foreign currency. A subclass can swap them
+    # (the real setup, a company in Bs with USD as foreign currency).
+    company_currency_name = "USD"
+    foreign_currency_name = "VEF"
+
+    @classmethod
+    def _get_fixture_currency(cls, name):
+        currency = (
+            cls.env["res.currency"]
+            .with_context(active_test=False)
+            .search([("name", "=", name)], limit=1)
+        )
+        if currency and not currency.active:
+            currency.active = True
+        return currency
+
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        usd = cls.env.ref("base.USD")
         cls.company = cls.env["res.company"].create(
             {
                 "name": "Test VE Slice C Co",
-                "currency_id": usd.id,
+                "currency_id": cls._get_fixture_currency(cls.company_currency_name).id,
                 "country_id": cls.env.ref("base.ve").id,
             }
         )
 
-
-        vef = (
-            cls.env["res.currency"]
-            .with_context(active_test=False)
-            .search([("name", "=", "VEF")], limit=1)
-        )
-        if vef and not vef.active:
-            vef.active = True
-        cls.foreign_currency = vef
+        cls.foreign_currency = cls._get_fixture_currency(cls.foreign_currency_name)
         cls.company.write({"foreign_currency_id": cls.foreign_currency.id})
 
         Account = cls.env["account.account"]
@@ -377,16 +385,21 @@ class TestPosSessionAccountingBase(TransactionCase):
     # ------------------------------------------------------------------
     @classmethod
     def _create_rate_of_day(cls, rate):
-        """VEF rate dated today, the date of the moves these tests create.
+        """VEF rate dated the user's today, the date of the moves these tests create.
 
         ``l10n_ve_rate`` only accepts the rate of the move's exact date, so a
         test that creates moves without one stops on "There is no rate
         assigned". Pass a value different from the sale rate, so the moves
         that keep the order's rate are still told apart from the day's one.
+
+        The user's day, not the UTC one (``fields.Date.today()``): the core
+        and the cross move date their moves with ``context_today``, so in a
+        database whose user has a time zone (America/Caracas) the two days
+        differ from 8 pm on and the moves would not find this rate.
         """
         cls.env["res.currency.rate"].create(
             {
-                "name": fields.Date.today(),
+                "name": fields.Date.context_today(cls.env.user),
                 "currency_id": cls.foreign_currency.id,
                 "company_id": cls.company.id,
                 "rate": rate,
