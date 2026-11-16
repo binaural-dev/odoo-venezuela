@@ -7,7 +7,6 @@ AMOUNT_COLUMNS = [
     "amount_tax_signed",
     "amount_total_signed",
     "foreign_untaxed_total",
-    "foreign_tax_total",
     "foreign_total_billed",
 ]
 
@@ -41,7 +40,7 @@ class TestInvoiceListColumns(TransactionCase):
                 self.assertEqual(
                     positions[-1] - positions[0],
                     len(AMOUNT_COLUMNS) - 1,
-                    "Las seis columnas de montos deben ser contiguas",
+                    "Las cinco columnas de montos deben ser contiguas",
                 )
 
     def test_amount_columns_have_sum_and_width(self):
