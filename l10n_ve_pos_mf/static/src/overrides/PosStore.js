@@ -786,10 +786,11 @@ patch(PosStore.prototype, {
    * para el detalle numérico completo, incluida una variante alternativa que
    * se descartó por no reproducir correctamente el camino OFF.
    *
-   * Limitación conocida: un descuento MANUAL por línea (el cajero teclea un %
-   * directamente) no tiene marca de campaña, así que llega con
-   * `campaign_discount_percent = 0` y su descuento completo se contabiliza en
-   * el agregado del pie en vez de en su propio `q-`.
+   * Descuento de línea SIN marca de campaña (manual, o de una orden recuperada
+   * del servidor sin marca — ticket 16441): sin `preAppliedMeta` sale entero
+   * en el `q-` de su línea (ver `lineOwnDiscountAmount`); antes no salía en
+   * ningún `q-` y la factura fiscal cobraba el bruto. Con `preAppliedMeta` el
+   * botón global ya lo reemplazó por el % global, que va al pie.
    *
    * C1 (revisión formal): si la marca de campaña de una línea (ver
    * `binaural_pos_pricelist_line_discount/orderline_model.js`) quedó desfasada
@@ -939,6 +940,30 @@ patch(PosStore.prototype, {
       );
       totalCampaignDiscountAmount += lineCampaignDiscountAmount;
 
+      // --- Monto del `q-` de ESTA línea --------------------------------
+      // Sin `preAppliedMeta`, `line.discount` es SOLO el descuento propio de
+      // la línea: el global, si lo hay, viaja aparte en las líneas negativas
+      // y sale por el `q-` agregado del pie (`globalDiscountAmount`). Ese
+      // descuento propio se imprime ENTERO bajo su producto, venga o no de una
+      // campaña con marca: si sólo se imprimiera la porción de campaña, un
+      // descuento sin marca —manual, o el de una orden recuperada del servidor
+      // cuya marca no viajó (ticket 16441: orden en espera recuperada con
+      // `discount = 30` y sin marca)— no saldría en NINGÚN `q-` y la factura
+      // fiscal cobraría el precio bruto. Cuando la marca sí está,
+      // `campaign_discount_percent === line.discount` y el monto es el mismo
+      // de antes.
+      //
+      // Con `preAppliedMeta`, `line.discount` trae compuesto el global, que se
+      // imprime agregado al pie, así que la línea lleva sólo su campaña.
+      const lineOwnDiscountAmount = preAppliedMeta
+        ? lineCampaignDiscountAmount
+        : computeLineDiscountAmount({
+            grossUnitPrice: priceUnit,
+            netUnitPrice: netAfterLineDiscount,
+            quantity,
+            rounding,
+          });
+
       return {
         product_name: line.name,
         product_code: line.code || line.default_code,
@@ -949,10 +974,10 @@ patch(PosStore.prototype, {
         // Precio BRUTO, antes de cualquier descuento. printInvoice registra el
         // ítem con este precio y emite `q-<monto>` justo después.
         gross_price_unit: priceUnit,
-        // SÓLO el descuento de campaña de esta línea (acotado, ver C1 arriba).
-        // El global agregado NO va aquí: viaja en `global_only_discount_amount`
+        // Descuento propio de esta línea (ver `lineOwnDiscountAmount`). El
+        // global agregado NO va aquí: viaja en `global_only_discount_amount`
         // a nivel de orden.
-        discount_amount: lineCampaignDiscountAmount,
+        discount_amount: lineOwnDiscountAmount,
         quantity: line.quantity,
         fiscal_code: line.tax,  // 0=Exento, 1=General, 2=Reducido, 3=Adicional
         discount: 0,
