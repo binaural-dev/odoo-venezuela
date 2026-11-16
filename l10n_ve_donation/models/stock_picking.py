@@ -13,9 +13,21 @@ class StockPicking(models.Model):
         tracking=True,
         store=True,
         help="Marks the picking as a donation. It is set by the Donations "
-        "menu or when the picking is created from a donation sale order.",
+        "menu, by the card of a donation operation type, or when the "
+        "picking is created from a donation sale order.",
     )
     donation_reason = fields.Char(string="Donation Reason")
+    has_donation_income_accounts = fields.Boolean(
+        string="Company Receives Donations",
+        compute="_compute_has_donation_income_accounts",
+        help="The company has received donations accounts configured. Without "
+        "them the donation receptions are not handled and have no certificate.",
+    )
+
+    @api.depends("company_id.donation_income_account_ids")
+    def _compute_has_donation_income_accounts(self):
+        for picking in self:
+            picking.has_donation_income_accounts = bool(picking.company_id.donation_income_account_ids)
 
     @api.depends("sale_id.is_donation")
     def _compute_is_donation(self):
@@ -148,10 +160,13 @@ class StockPicking(models.Model):
                 picking.is_donation
                 and not picking.sale_id
                 and picking.picking_type_code == "incoming"
+                # Without received donations accounts the receipt is checked
+                # as any other receipt: the company does not receive donations.
+                and picking.company_id.donation_income_account_ids
             ):
                 if not picking.partner_id:
                     raise UserError(_(
-                        "You must set the donor (Receive From) to validate a donation receipt."
+                        "You must set the donor (Receive From) to validate a donation reception."
                     ))
                 errors = picking._get_donation_receipt_config_errors()
                 if errors:
@@ -236,35 +251,32 @@ class StockPicking(models.Model):
         `super()`."""
         self.ensure_one()
         errors = []
-        if not self._has_real_time_valuation_moves():
-            return errors
         income_accounts = self.company_id.donation_income_account_ids
-        if not income_accounts:
-            errors.append(_(
-                "The company %(company)s has no received donations accounts configured. Set "
-                "them in the settings of the company (Received Donations Accounts).",
-                company=self.company_id.display_name,
-            ))
+        if not income_accounts or not self._has_real_time_valuation_moves():
+            return errors
         moves = self.move_ids.filtered(lambda move: move.state != "cancel")
         for location in self.location_id | moves.location_id:
             if location.usage != "inventory":
                 # The account of a location that is not an inventory one is
                 # not evaluated: the origin itself must be changed.
                 errors.append(_(
-                    "The origin %(location)s of a donation receipt must be an Inventory Loss "
-                    "location, e.g. \"Donations received\". Change the origin of the receipt.",
+                    "The origin %(location)s of a donation reception must be an Inventory Loss "
+                    "location (the Odoo type for the virtual counterpart of the stock that "
+                    "enters without a vendor: it does not mean a loss), e.g. \"Donations "
+                    "received\". Change the origin of the reception.",
                     location=location.display_name,
                 ))
             elif not location.valuation_account_id:
                 errors.append(_(
-                    "The origin %(location)s of a donation receipt has no Stock Valuation "
-                    "Account. Use as origin a received donations location (Inventory Loss) and "
-                    "set its Stock Valuation Account with one of the received donations "
-                    "accounts (%(accounts)s), in Inventory > Configuration > Locations.",
+                    "The origin %(location)s of a donation reception has no Stock Valuation "
+                    "Account. Use as origin a received donations location (type Inventory "
+                    "Loss, the only type that allows an account; it does not mean a loss) and "
+                    "set its Loss Account with one of the received donations accounts "
+                    "(%(accounts)s), in Inventory > Configuration > Locations.",
                     location=location.display_name,
                     accounts=", ".join(income_accounts.mapped("display_name")),
                 ))
-            elif income_accounts and location.valuation_account_id not in income_accounts:
+            elif location.valuation_account_id not in income_accounts:
                 errors.append(_(
                     "The Stock Valuation Account %(account)s of the origin %(location)s is not a "
                     "received donations account. Set one of them (%(accounts)s) in Inventory > "
@@ -313,24 +325,53 @@ class StockPicking(models.Model):
         self.ensure_one()
         return sum(row["total_value"] for row in self._get_donation_product_lines())
 
-    def _get_donation_receipt_amounts(self):
-        """Amounts of the receipt of a delivery: the cost of the goods (see
-        `_get_donation_grand_total`) and, when its valuation entries have an
-        alternate amount, its equivalent at the rate of the entry, so that a
-        reprint always gives the same numbers."""
+    def _get_donation_goods_data(self):
+        """The goods of the document (product lines, their total at cost and
+        the amounts), computed once for the report."""
         self.ensure_one()
-        entries = self.move_ids.account_move_id.filtered(lambda entry: entry.state == "posted")
-        entry = entries[:1]
+        lines = self._get_donation_product_lines()
+        total = sum(row["total_value"] for row in lines)
+        return {"lines": lines, "total": total, "amounts": self._get_donation_picking_amounts(total)}
+
+    def _get_donation_picking_amounts(self, total=None):
+        """Amounts of the document of a picking (the Donation Receipt of a delivery
+        and the Donation Certificate of a receipt): the cost of ALL its goods
+        (`total`, see `_get_donation_grand_total`) and its equivalent in the
+        alternate currency. The rate is the one stored in its first posted
+        valuation entry, so that a reprint always gives the same numbers; a
+        picking without valuation entries (no product with automated
+        valuation) takes the rate of its date, and without a rate the
+        equivalent is omitted. The equivalent is the total at that rate (the
+        entries only value part of the goods)."""
+        self.ensure_one()
+        if total is None:
+            total = self._get_donation_grand_total()
+        company = self.company_id
+        entry = self.move_ids.account_move_id.filtered(lambda move: move.state == "posted")[:1]
+        if entry:
+            foreign_currency = entry.foreign_currency_id
+            foreign_rate, foreign_inverse_rate = entry.foreign_rate, entry.foreign_inverse_rate
+        else:
+            foreign_currency = company.foreign_currency_id
+            rates = (
+                self.env["res.currency.rate"].with_company(company).compute_rate(
+                    foreign_currency.id, self._get_donation_document_date(), raise_if_not_found=False
+                ) if foreign_currency else {}
+            )
+            foreign_rate = rates.get("foreign_rate", 0.0)
+            foreign_inverse_rate = rates.get("foreign_inverse_rate", 0.0)
         return self.env["account.move"]._compute_donation_amounts(
-            self.company_id.currency_id,
-            entry.foreign_currency_id,
-            self._get_donation_grand_total(),
-            sum(entries.mapped("foreign_debit")),
-            entry.foreign_rate,
-            entry.foreign_inverse_rate,
+            company.currency_id,
+            foreign_currency,
+            total,
+            total * foreign_inverse_rate,
+            foreign_rate,
+            foreign_inverse_rate,
         )
 
     def _get_donation_beneficiary(self):
+        """Contact of the beneficiary of a donation delivery (the donor, in a
+        receipt): the contact of the picking."""
         self.ensure_one()
         return self.partner_id
 
@@ -340,20 +381,36 @@ class StockPicking(models.Model):
         return fields.Date.context_today(self, self.date_done or self.scheduled_date)
 
     def print_donation_certificate(self):
-        """The certificate of a donation receipt (goods), delivered to the
+        """The certificate of a donation reception (goods), delivered to the
         donor."""
         self.ensure_one()
         if not (self.is_donation and not self.sale_id and self.picking_type_code == "incoming"):
             raise UserError(_(
-                "This picking is not a donation receipt: only those have a Donation "
+                "This picking is not a donation reception: only those have a Donation "
                 "Certificate. A donation delivery has a Donation Receipt."
             ))
+        if not self.company_id.donation_income_account_ids:
+            raise UserError(_(
+                "The company has no received donations accounts: set them in the "
+                "settings to receive donations and print their Donation Certificate."
+            ))
+        if self.state != "done":
+            raise UserError(_("The Donation Certificate is printed once the reception is done."))
         return self.env.ref("l10n_ve_donation.action_donation_certificate_stock_picking").report_action(self)
 
     def print_donation_receipt(self):
+        """The receipt of a donation delivery (goods), delivered to the
+        beneficiary. A donation reception (incoming) has a certificate
+        instead."""
         self.ensure_one()
-        if self.picking_type_code == "incoming":
+        if self.is_donation and not self.sale_id and self.picking_type_code == "incoming":
             raise UserError(_(
-                "This picking is a donation receipt: its document is the Donation Certificate."
+                "This picking is a donation reception: its document is the Donation Certificate."
             ))
+        if not (self.is_donation and not self.sale_id and self.picking_type_code == "outgoing"):
+            raise UserError(_(
+                "This picking is not a donation delivery: only those have a Donation Receipt."
+            ))
+        if self.state != "done":
+            raise UserError(_("The Donation Receipt is printed once the delivery is done."))
         return self.env.ref("l10n_ve_donation.action_donation_receipt_stock_picking").report_action(self)

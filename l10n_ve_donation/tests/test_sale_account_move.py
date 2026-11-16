@@ -570,8 +570,14 @@ class TestSaleAccountMove(TestDonationCommon):
         self.assertEqual(move.state, "posted")
 
     def test_16_print_donation_receipt(self):
-        """Print action returns an action dict."""
-        move = self.env["account.move"].create({
+        """Print action returns an action dict for a posted donation entry,
+        and is refused for what is not one."""
+        move = self.env["account.move"].create(self._entry_vals())
+        move.with_context(move_action_post_alert=True).action_post()
+        action = move.print_donation_receipt()
+        self.assertTrue(isinstance(action, dict))
+        self.assertIn("type", action)
+        invoice = self.env["account.move"].create({
             "move_type": "out_invoice",
             "partner_id": self.company.partner_id.id,
             "journal_id": self.journal_sale.id,
@@ -586,9 +592,8 @@ class TestSaleAccountMove(TestDonationCommon):
                 }),
             ],
         })
-        action = move.print_donation_receipt()
-        self.assertTrue(isinstance(action, dict))
-        self.assertIn("type", action)
+        with self.assertRaisesRegex(UserError, "not a donation"):
+            invoice.print_donation_receipt()
 
     def test_17_company_settings(self):
         """Company and settings fields are linked correctly (the stock
@@ -635,31 +640,18 @@ class TestSaleAccountMove(TestDonationCommon):
         self.assertNotEqual(order_b.warehouse_id, self.warehouse_donation)
 
     def test_19_receipt_shows_real_beneficiary(self):
-        """The donation receipt (account.move) shows the real
-        beneficiary's name/RIF in both mentions, not the company
-        -- even though the print button is only shown for
-        move_type == 'entry', the report itself is not restricted."""
+        """The Donation Receipt of a money donation given shows the name and
+        the RIF of the real beneficiary (the contact of the header), not the
+        company that appears in the lines."""
         beneficiary = self.env["res.partner"].create({
             "name": "Fundación Beneficiaria Test",
             "vat": "J-12345678-9",
         })
-        move = self.env["account.move"].create({
-            "move_type": "out_invoice",
-            "partner_id": beneficiary.id,
-            "journal_id": self.journal_sale.id,
-            "is_donation": True,
-            "invoice_date": fields.Date.today(),
-            "date": fields.Date.today(),
-            "invoice_line_ids": [
-                Command.create({
-                    "product_id": self.product_donation.id,
-                    "quantity": 1,
-                    "price_unit": 100,
-                }),
-            ],
-        })
-        self.assertNotEqual(move.partner_id, self.company.partner_id)
-        # `l10n_ve_invoice` only prints posted documents.
+        vals = self._entry_vals()
+        vals["partner_id"] = beneficiary.id
+        move = self.env["account.move"].create(vals)
+        self.assertEqual(move.partner_id, beneficiary)
+        self.assertEqual(move.line_ids.partner_id, self.company.partner_id)
         move.with_context(move_action_post_alert=True).action_post()
         self.assertEqual(move.state, "posted")
         report = self.env.ref("l10n_ve_donation.action_donation_receipt_account_move")
@@ -733,17 +725,17 @@ class TestSaleAccountMove(TestDonationCommon):
         self.assertEqual(amounts["rate"], move.foreign_rate)
 
         html = self._render_receipt(move)
-        self.assertIn("Monto de la donación", html)
+        self.assertIn("Donation Amount", html)
         # The amount is numeric (no amount in words) and the rate shows 4 decimals.
         self.assertNotIn(amounts["currency"].amount_to_text(amounts["amount"]), html)
         rate_html = self.env["ir.qweb.field.float"].value_to_html(amounts["rate"], {"precision": 4})
         self.assertIn(rate_html, html)
         self.assertNotIn(self.env["ir.qweb.field.float"].value_to_html(amounts["rate"], {"precision": 6}), html)
-        self.assertIn("Equivalente en", html)
-        self.assertIn("Tasa (BCV)", html)
+        self.assertIn("Equivalent in", html)
+        self.assertIn("Rate (BCV)", html)
         self.assertIn("Aporte para el comedor", html)
         self.assertIn("Entry 1", html)
-        self.assertNotIn("bienes", html)
+        self.assertNotIn("goods", html)
 
     def test_23_receipt_without_alternate_amount_omits_the_equivalent(self):
         move = self.env["account.move"].create(self._entry_vals())
@@ -754,9 +746,9 @@ class TestSaleAccountMove(TestDonationCommon):
         self.assertEqual(amounts["equivalent_amount"], 0.0)
 
         html = self._render_receipt(move)
-        self.assertIn("Monto de la donación", html)
-        self.assertNotIn("Equivalente en", html)
-        self.assertNotIn("Tasa (BCV)", html)
+        self.assertIn("Donation Amount", html)
+        self.assertNotIn("Equivalent in", html)
+        self.assertNotIn("Rate (BCV)", html)
 
     def test_23b_amounts_with_the_bolivar_as_company_currency(self):
         """Company in bolivars, alternate currency USD: the bolivar amount

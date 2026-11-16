@@ -17,9 +17,10 @@ class AccountMove(models.Model):
     is_incoming_donation = fields.Boolean(
         string="Received Donation",
         compute="_compute_is_incoming_donation",
-        help="The entry is a donation RECEIVED by the company. Not stored: a view "
-        "cannot call `_is_incoming_donation()`, so it is exposed as a computed "
-        "field to decide which document to offer.",
+        help="The entry is a donation received by the company: a manual entry "
+        "marked as donation with a line on one of the received donations "
+        "accounts of the company. Its document is the Donation Certificate; "
+        "the one of a donation given is the Donation Receipt.",
     )
 
     @api.depends("is_donation", "move_type", "company_id.donation_income_account_ids", "line_ids.account_id")
@@ -27,17 +28,20 @@ class AccountMove(models.Model):
         for move in self:
             move.is_incoming_donation = move._is_incoming_donation()
 
-    def _is_incoming_donation(self):
+    def _is_incoming_donation(self, donation=None):
         """True if the entry is a donation RECEIVED by the company: a manual
         entry marked as donation with some line on one of the received
         donations accounts of the company. The direction is told by the
         account and not by the journal: one journal can hold both directions.
         Only manual entries (`entry`): a donation invoice (given) can use the
-        same income account through the donation product."""
+        same income account through the donation product. `donation` tells
+        the mark to consider when the entry is about to be marked."""
         self.ensure_one()
         income_accounts = self.company_id.donation_income_account_ids
+        if donation is None:
+            donation = self.is_donation
         return bool(
-            self.is_donation
+            donation
             and self.move_type == "entry"
             and income_accounts
             and income_accounts & self.line_ids.account_id
@@ -100,6 +104,13 @@ class AccountMove(models.Model):
         its own: the receipt of its picking lists the products and their
         cost."""
         self.ensure_one()
+        if not (self.is_donation and self.move_type == "entry"):
+            raise UserError(_(
+                "This journal entry is not a donation: only the donation entries have a "
+                "Donation Receipt."
+            ))
+        if self.reversed_entry_id:
+            raise UserError(self._get_donation_reversal_error())
         if self.is_stock_valuation_entry:
             pickings = self.stock_move_ids.picking_id
             raise UserError(_(
@@ -111,7 +122,20 @@ class AccountMove(models.Model):
             raise UserError(_(
                 "This entry is a donation received: its document is the Donation Certificate."
             ))
+        if self.state != "posted":
+            raise UserError(_("The Donation Receipt is printed once the entry is posted."))
         return self.env.ref("l10n_ve_donation.action_donation_receipt_account_move").report_action(self)
+
+    def _get_donation_reversal_error(self):
+        """A reversal copies `is_donation` and the accounts of the entry it
+        cancels, so it looks like a donation of its own: it has no Donation
+        Receipt or Certificate, which belong to the original entry."""
+        self.ensure_one()
+        return _(
+            "This entry is the reversal of %(entry)s and has no donation document. Print the "
+            "Donation Receipt or Certificate of the original entry.",
+            entry=self.reversed_entry_id.display_name,
+        )
 
     def print_donation_certificate(self):
         """The certificate of the journal entry is the one of a money
@@ -122,6 +146,10 @@ class AccountMove(models.Model):
                 "This entry is not a donation received: only those have a Donation "
                 "Certificate. A donation given has a Donation Receipt."
             ))
+        if self.reversed_entry_id:
+            raise UserError(self._get_donation_reversal_error())
+        if self.state != "posted":
+            raise UserError(_("The Donation Certificate is printed once the entry is posted."))
         return self.env.ref("l10n_ve_donation.action_donation_certificate_account_move").report_action(self)
 
     def _get_donation_counterparty(self):
@@ -232,14 +260,21 @@ class AccountMove(models.Model):
             )
         return result
 
+    def _post(self, soft=True):
+        """The lines of a donation RECEIVED must carry the donor. It is
+        checked here and not in `action_post`, so that it also covers the
+        posting that does not go through it (the automatic posting of the
+        draft entries). Before posting, while the entry is a draft."""
+        for move in self.filtered(lambda m: m.state == "draft" and m._is_incoming_donation()):
+            move._check_incoming_donation_before_post()
+        return super()._post(soft=soft)
+
     def action_post(self):
         # Only the invoices that are posted by this call get a credit note:
         # calling it on an already posted one must not reverse it again.
         draft_invoices = self.filtered(
             lambda m: m.state == "draft" and m.is_donation and m.move_type == "out_invoice"
         )
-        for move in self.filtered(lambda m: m.state == "draft" and m._is_incoming_donation()):
-            move._check_incoming_donation_before_post()
         # Last chance to fill the partner of the lines, still in draft.
         self._fill_donation_entry_line_partner()
         res = super().action_post()
@@ -266,25 +301,38 @@ class AccountMove(models.Model):
         return res
 
     def write(self, vals):
+        if vals.get("is_donation"):
+            # The lines that copied the contact of the header are replaced
+            # before the write: the constraint runs inside it.
+            self._fill_donation_entry_line_partner(marking=True)
         res = super().write(vals)
         if vals.get("is_donation"):
             self._fill_donation_entry_line_partner()
         return res
 
-    def _fill_donation_entry_line_partner(self):
+    def _fill_donation_entry_line_partner(self, marking=False):
         """The journal items of a donation entry carry the company partner
         (see `_check_partner_donation`). It is set while the entry is a
         draft, not when it is posted: a journal that locks the posted
         entries with a hash does not accept to write the partner of the
         lines of a posted entry. The lines that already have a partner are
-        left as they are. The entries of a donation RECEIVED are not filled:
-        their lines carry the donor."""
+        left as they are, except the ones that copied the beneficiary of the
+        header or its commercial partner (the line takes the commercial
+        partner of the header when it is created without one): the beneficiary
+        stays in the header only. The entries of a donation RECEIVED are not
+        filled: their lines carry the donor. `marking` fills the entries that
+        are about to be marked as donation (before the mark is written)."""
         for move in self.filtered(
-            lambda m: m.is_donation and m.move_type == "entry" and m.state == "draft"
-            and not m._is_incoming_donation()
+            lambda m: (m.is_donation or marking) and m.move_type == "entry" and m.state == "draft"
+            and not m._is_incoming_donation(donation=True)
         ):
             partner = move.company_id.partner_id or self.env.company.partner_id
-            move.line_ids.filtered(lambda line: not line.partner_id).partner_id = partner
+            # A line copies the commercial partner of the header, which is
+            # the parent of the contact when the beneficiary is a child one.
+            copied = move.partner_id | move.partner_id.commercial_partner_id
+            move.line_ids.filtered(
+                lambda line: not line.partner_id or line.partner_id in copied
+            ).partner_id = partner
 
     def _l10n_ve_skip_refund_origin_validation(self):
         # La NC de donación nunca repite el producto de la factura original

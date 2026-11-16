@@ -12,7 +12,6 @@
          `donation_certificate_legal` (data of the legal representative of the
          company) and `donation_certificate_extra` (more data of the donation). -->
     <template id="donation_certificate_body" name="Donation Certificate - Body">
-        <t t-set="meses" t-value="['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']"/>
         <div class="container-fluid">
             <!-- ===== HEADER ===== -->
             <div class="row mb-3">
@@ -25,10 +24,10 @@
                     </div>
                     <div>
                         <p class="m-0">
-                            <span class="fw-bold">Razón Social: </span><span t-out="o.company_id.name" /><br />
-                            <span class="fw-bold">RIF: </span><span t-out="o.company_id.vat or ''" /><br />
-                            <span class="fw-bold">Dirección Fiscal: </span><span t-out="o.company_id.street or ''" /><t t-if="o.company_id.city"><span t-out="', ' + o.company_id.city" /></t><br />
-                            <span class="fw-bold">Teléfono: </span><span t-out="o.company_id.phone or ''" />
+                            <span class="fw-bold">Company Name: </span><span t-out="o.company_id.name" /><br />
+                            <span class="fw-bold">Tax ID: </span><span t-out="o.company_id.vat or ''" /><br />
+                            <span class="fw-bold">Fiscal Address: </span><span t-out="o.company_id.street or ''" /><t t-if="o.company_id.city"><span t-out="', ' + o.company_id.city" /></t><br />
+                            <span class="fw-bold">Phone: </span><span t-out="o.company_id.phone or ''" />
                         </p>
                     </div>
                 </div>
@@ -36,7 +35,7 @@
             <div class="row mb-4">
                 <div class="col-12 text-center">
                     <h3 style="font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">
-                        Certificado de Donación
+                        Donation Certificate
                     </h3>
                 </div>
             </div>
@@ -46,27 +45,17 @@
                 <div class="col-12">
                     <p style="text-align: justify; line-height: 2; font-size: 14px;">
                         <span id="donation_certificate_legal">
-                            Yo, ______________________________________________________________________, de nacionalidad venezolana,
-                            mayor de edad, y titular de la Cédula de Identidad No. _________________________, actuando en
-                            nombre y representación de <strong><span t-out="o.company_id.name" /></strong>, sociedad
-                            mercantil inscrita en el Registro Mercantil __________________________________________________, en fecha
-                            ___/___/____, bajo el No. _______, Tomo _______, e inscrita en el Registro de Información
-                            Fiscal (R.I.F) bajo el No. <strong><span t-out="o.company_id.vat or '__________________'" /></strong>, suficientemente facultado para este acto
-                            según consta en ____________________________________________________________________________________________,
+                            I, ______________________________________________________________________, of Venezuelan nationality, of legal age, holder of Identity Card No. _________________________, acting on behalf of <strong><span t-out="o.company_id.name" /></strong>, commercial company registered in the Commercial Registry __________________________________________________, on ___/___/____, under No. _______, Volume _______, and registered in the Tax Information Registry (R.I.F.) under No. <strong><span t-out="o.company_id.vat or '__________________'" /></strong>, sufficiently empowered for this act as shown in ____________________________________________________________________________________________,
                         </span>
-                        por el presente documento declaro que en nombre de mi representada recibo en calidad de DONACIÓN, en forma pura y simple, perfecta e
-                        irrevocable, de <strong><span t-out="donor.name or '__________________'" /></strong>, titular del
-                        RIF / Cédula de Identidad No.
-                        <strong><span t-out="((donor.prefix_vat or '') + '-' + donor.vat) if donor and donor.vat else '__________________'" /></strong>,
-                        con domicilio en
-                        <strong><span t-out="(donor and (donor.contact_address or donor.street)) or '__________________'" /></strong>,
-                        teléfono <strong><span t-out="(donor and (donor.phone or donor.mobile)) or '__________________'" /></strong>,
-                        <t t-if="donation_line_data">los siguientes bienes:</t>
-                        <t t-else="">la suma de
-                            <strong><span t-out="amounts['amount']" t-options="{'widget': 'monetary', 'display_currency': amounts['currency']}" /></strong><t t-if="amounts['equivalent_currency']">, equivalente a
+                        by this document I declare that on behalf of my principal I receive as a DONATION, purely and simply, perfectly and irrevocably, from <strong><span t-out="donor.name or '__________________'" /></strong>, holder of Tax ID / Identity Card No.
+                        <strong><span t-out="((donor.commercial_partner_id.prefix_vat or '') + '-' + donor.commercial_partner_id.vat) if donor and donor.commercial_partner_id.vat else '__________________'" /></strong>, with address at
+                        <strong><span t-out="(donor and (donor.contact_address or donor.street)) or '__________________'" /></strong>, phone <strong><span t-out="(donor and (donor.phone or donor.mobile)) or '__________________'" /></strong>,
+                        <t t-if="donation_line_data">the following goods:</t>
+                        <t t-else="">the sum of
+                            <strong><span t-out="amounts['amount']" t-options="{'widget': 'monetary', 'display_currency': amounts['currency']}" /></strong><t t-if="amounts['equivalent_currency']">, equivalent to
                             <strong><span t-out="amounts['equivalent_amount']" t-options="{'widget': 'monetary', 'display_currency': amounts['equivalent_currency']}" /></strong>
-                            a la tasa BCV del día <strong><span t-out="certificate_date.strftime('%d/%m/%Y')" /></strong>, de
-                            <strong><span t-out="amounts['rate']" t-options="{'widget': 'float', 'precision': 4}" /> <span t-out="amounts['currency'].name" /> por <span t-out="amounts['equivalent_currency'].name" /></strong></t>.
+                            at the BCV rate of the day <strong><span t-out="certificate_date.strftime('%d/%m/%Y')" /></strong>, being
+                            <strong><span t-out="amounts['rate']" t-options="{'widget': 'float', 'precision': 4}" /> <span t-out="amounts['currency'].name" /> per <span t-out="amounts['equivalent_currency'].name" /></strong></t>.
                         </t>
                     </p>
                 </div>
@@ -76,12 +65,20 @@
             <div class="row mb-3" t-if="donation_line_data">
                 <div class="col-12" style="font-size: 14px;">
                     <t t-call="l10n_ve_donation.donation_product_table" />
-                    <p class="m-0">
-                        <span class="fw-bold">Valor al costo: </span>
-                        <span t-out="amounts['amount']" t-options="{'widget': 'monetary', 'display_currency': amounts['currency']}" /><t t-if="amounts['equivalent_currency']">, equivalente a
-                        <span t-out="amounts['equivalent_amount']" t-options="{'widget': 'monetary', 'display_currency': amounts['equivalent_currency']}" />
-                        a la tasa BCV del día <span t-out="certificate_date.strftime('%d/%m/%Y')" />, de
-                        <span t-out="amounts['rate']" t-options="{'widget': 'float', 'precision': 4}" /> <span t-out="amounts['currency'].name" /> por <span t-out="amounts['equivalent_currency'].name" /></t>
+                    <p class="m-0" t-if="amounts['equivalent_currency']">
+                        <!-- The table shows the total in the currency of the company: the
+                             value below is the one in the other currency (the bolivar
+                             amount when the company is in USD). -->
+                        <t t-set="value_in_company_currency" t-value="amounts['currency'] == donation_cost_currency" />
+                        <span class="fw-bold">Equivalent value: </span>
+                        <t t-if="value_in_company_currency">
+                            <span t-out="amounts['equivalent_amount']" t-options="{'widget': 'monetary', 'display_currency': amounts['equivalent_currency']}" />
+                        </t>
+                        <t t-else="">
+                            <span t-out="amounts['amount']" t-options="{'widget': 'monetary', 'display_currency': amounts['currency']}" />
+                        </t>
+                        at the BCV rate of the day <span t-out="certificate_date.strftime('%d/%m/%Y')" />, being
+                        <span t-out="amounts['rate']" t-options="{'widget': 'float', 'precision': 4}" /> <span t-out="amounts['currency'].name" /> per <span t-out="amounts['equivalent_currency'].name" />
                     </p>
                 </div>
             </div>
@@ -91,26 +88,19 @@
                 <div class="col-12" style="font-size: 14px;">
                     <div id="donation_certificate_extra" />
                     <p class="m-0">
-                        <span class="fw-bold">Descripción del uso de la donación: </span>______________________________________________
+                        <span class="fw-bold">Description of the use of the donation: </span>______________________________________________
                     </p>
                     <p class="m-0">
-                        <span class="fw-bold">Tipo de donativo: </span>______________________________________________
+                        <span class="fw-bold">Type of donation: </span>______________________________________________
                     </p>
                     <p style="text-align: justify; line-height: 2; font-size: 14px; margin-top: 15px;">
-                        <t t-if="donation_line_data">Los bienes descritos serán destinados</t><t t-else="">Dicha suma será destinada</t>
-                        a lograr los objetivos de dicha organización. Con el otorgamiento de este documento,
-                        <strong><span t-out="donor.name or '__________________'" /></strong> transfiere a mi representada
-                        la propiedad de <t t-if="donation_line_data">los mencionados bienes</t><t t-else="">la mencionada suma</t>.
-                        Y nosotros _______________________________________________________________________________________,
-                        venezolanos, mayores de edad, de este domicilio y titulares de las cédulas de identidad No. _________________________, respectivamente,
-                        actuando en nuestro carácter de Representante Legal, y encontrándonos plenamente facultados, por medio del presente documento declaramos: que
-                        aceptamos para nuestra representada la donación de <t t-if="donation_line_data">los bienes antes descritos</t><t t-else="">la suma antes descrita</t>, en los términos expuestos.
+                        <t t-if="donation_line_data">The goods described will be used</t><t t-else="">Said sum will be used</t>
+                        to achieve the objectives of said organization. By granting this document,
+                        <strong><span t-out="donor.name or '__________________'" /></strong> transfers to my principal the ownership of <t t-if="donation_line_data">the aforementioned goods</t><t t-else="">the aforementioned sum</t>. And we _______________________________________________________________________________________, Venezuelans, of legal age, residents of this city and holders of identity cards No. _________________________, respectively, acting as Legal Representative, and being fully empowered, by this document we declare: that we accept on behalf of our principal the donation of <t t-if="donation_line_data">the goods described above</t><t t-else="">the sum described above</t>, under the terms set forth.
                     </p>
                     <p style="text-align: justify; line-height: 2; font-size: 14px; margin-top: 20px;">
-                        En la ciudad de <strong><span t-out="o.company_id.city or '__________________'" /></strong> a los
-                        <strong><span t-out="certificate_date.strftime('%d')" /></strong> días del mes de
-                        <strong><span t-out="meses[int(certificate_date.strftime('%m')) - 1]" /></strong> de
-                        <strong><span t-out="certificate_date.strftime('%Y')" /></strong>.
+                        In the city of <strong><span t-out="o.company_id.city or '__________________'" /></strong>, on
+                        <strong><span t-out="certificate_date" t-options="{'widget': 'date', 'format': 'long'}" /></strong>.
                     </p>
                 </div>
             </div>
@@ -119,14 +109,14 @@
             <div class="row mt-5 pt-5">
                 <div class="col-6 text-center">
                     <div style="border-top: 1px solid #000; padding-top: 6px; margin: 0 30px;">
-                        <p class="m-0"><strong>Representante Legal del Donante</strong></p>
-                        <p class="m-0" style="font-size: 11px;">Nombre, Firma y Sello</p>
+                        <p class="m-0"><strong>Legal Representative of the Donor</strong></p>
+                        <p class="m-0" style="font-size: 11px;">Name, Signature and Seal</p>
                     </div>
                 </div>
                 <div class="col-6 text-center">
                     <div style="border-top: 1px solid #000; padding-top: 6px; margin: 0 30px;">
-                        <p class="m-0"><strong>Representante Legal del Beneficiario</strong></p>
-                        <p class="m-0" style="font-size: 11px;">Nombre, Firma y Sello</p>
+                        <p class="m-0"><strong>Legal Representative of the Beneficiary</strong></p>
+                        <p class="m-0" style="font-size: 11px;">Name, Signature and Seal</p>
                     </div>
                 </div>
             </div>
@@ -158,9 +148,10 @@
                     <div class="page">
                         <t t-set="donor" t-value="o.partner_id" />
                         <t t-set="certificate_date" t-value="o._get_donation_document_date()" />
-                        <t t-set="amounts" t-value="o._get_donation_receipt_amounts()" />
-                        <t t-set="donation_line_data" t-value="o._get_donation_product_lines()" />
-                        <t t-set="donation_grand_total" t-value="o._get_donation_grand_total()" />
+                        <t t-set="goods" t-value="o._get_donation_goods_data()" />
+                        <t t-set="amounts" t-value="goods['amounts']" />
+                        <t t-set="donation_line_data" t-value="goods['lines']" />
+                        <t t-set="donation_grand_total" t-value="goods['total']" />
                         <t t-set="donation_cost_currency" t-value="o.company_id.currency_id" />
                         <t t-call="l10n_ve_donation.donation_certificate_body" />
                     </div>

@@ -6,10 +6,11 @@ class StockPickingType(models.Model):
 
     is_donation_picking_type = fields.Boolean(
         string="Donation Picking Type",
-        help="Only filters the operation types offered in the form of the "
-        "Inventory > Operations > Donations menu. It does not activate any "
-        "donation logic by itself: a picking is a donation only when its "
-        "`Is Donation` field is set (by that menu, or by a donation sale).",
+        help="Offers the operation type in the Inventory > Operations > "
+        "Donations menu, and the pickings opened from its card are marked "
+        "as donations. The type itself does not activate any donation "
+        "logic: a picking is a donation only when its `Is Donation` field "
+        "is set (by the menu or the card, or by a donation sale).",
     )
 
     @api.constrains(
