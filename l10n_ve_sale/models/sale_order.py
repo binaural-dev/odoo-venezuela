@@ -4,7 +4,7 @@ import logging
 from lxml import etree
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
-from odoo.tools.float_utils import float_is_zero
+from odoo.tools.float_utils import float_compare, float_is_zero
 
 _logger = logging.getLogger(__name__)
 
@@ -38,40 +38,9 @@ class SaleOrder(models.Model):
     )
 
 
-    def default_rate(self):
-        """
-        This method is used to get the rate of the payment.
-
-        Returns
-        -------
-        type = float
-            The rate of the payment
-        """
-        rate_values = self.env["res.currency.rate"].compute_rate(
-            self.env.company.foreign_currency_id.id or self.env.ref("base.VEF").id,
-            fields.Date.context_today(self),
-        )
-        return rate_values.get("foreign_rate", 0)
-
-    def default_inverse_rate(self):
-        """
-        This method is used to get the inverse rate of the payment.
-
-        Returns
-        -------
-        type = float
-            The inverse rate of the payment
-        """
-        rate_values = self.env["res.currency.rate"].compute_rate(
-            self.env.company.foreign_currency_id.id or self.env.ref("base.VEF").id,
-            fields.Date.context_today(self),
-        )
-        return rate_values.get("foreign_inverse_rate", 0)
-
     foreign_rate = fields.Float(
         help="The rate that is gonna be always shown to the user.",
         compute="_compute_rate",
-        default=default_rate,
         digits="Tasa",
         store=True,
         readonly=False,
@@ -81,7 +50,6 @@ class SaleOrder(models.Model):
         help="Rate that will be used as factor to multiply of the foreign currency for this move.",
         compute="_compute_rate",
         digits=(16, 15),
-        default=default_inverse_rate,
         store=True,
         readonly=False,
     )
@@ -95,17 +63,10 @@ class SaleOrder(models.Model):
         store=True,
         readonly=False,
         copy=False,
-        # Mismo criterio que el default de foreign_rate (default_rate, que
-        # resuelve con fields.Date.today()): al crear la orden el ORM aplica
-        # los defaults y no ejecuta _compute_rate, asi que sin este default el
-        # campo nacería vacío y la fecha no coincidiría con la tasa.
-        default=lambda self: fields.Date.context_today(self),
         help=(
             "Date whose exchange rate is used for this order's alternate "
-            "currency amounts. It is not date_order: the core rewrites "
-            "date_order with the confirmation date, and when the rate is "
-            "frozen ('Update sale order rate using date order' disabled) this "
-            "field keeps the date the rate was actually taken from. It is the "
+            "currency amounts: date_order when 'Update sale order rate using "
+            "date order' is enabled, the creation date otherwise. It is the "
             "date passed to the invoice so both convert with the same rate."
         ),
     )
@@ -392,16 +353,27 @@ class SaleOrder(models.Model):
         """
         self._compute_rate()
 
+    def _has_foreign_rate(self):
+        """True si la tasa ya tiene un valor util (con la precision de "Tasa", no solo != 0)."""
+        self.ensure_one()
+        precision = self.env["decimal.precision"].precision_get("Tasa")
+        return not float_is_zero(self.foreign_rate, precision_digits=precision)
+
     def _l10n_ve_rate_date(self):
         """
         Fecha local (tz del usuario) con la que se busca la tasa de la orden.
 
-        date_order se guarda en UTC: su .date() adelanta el dia a partir de las 8 pm en
-        Venezuela y se buscaria la tasa del dia siguiente, que aun no existe.
+        Con "Actualizar la tasa de la orden de venta usando la fecha" activo es la de
+        date_order; apagado, la de creacion de la orden (hoy si aun no se guarda).
+        Ambas se pasan a la fecha del usuario: date_order y create_date se guardan en UTC y
+        su .date() adelanta el dia a partir de las 8 pm en Venezuela, cuando se buscaria la
+        tasa del dia siguiente, que aun no existe.
         """
         self.ensure_one()
-        if self.date_order:
-            return fields.Datetime.context_timestamp(self, self.date_order).date()
+        company = self.company_id or self.env.company
+        moment = self.date_order if company.update_sale_order_rate_using_date_order else self.create_date
+        if moment:
+            return fields.Datetime.context_timestamp(self, moment).date()
         return fields.Date.context_today(self)
 
     @api.depends("foreign_currency_id", "date_order")
@@ -411,8 +383,8 @@ class SaleOrder(models.Model):
         model.
         """
         Rate = self.env["res.currency.rate"]
-        # If the user doesn't want to update the foreign rate using the date order, then don't
-        # compute the rate when it is not zero.
+        # Mientras la orden sea cotizacion la tasa sigue a _l10n_ve_rate_date (date_order o fecha
+        # de creacion segun el ajuste de la compania); aprobada, se conserva.
         for sale in self:
             rate_date = sale._l10n_ve_rate_date()
 
@@ -425,24 +397,15 @@ class SaleOrder(models.Model):
                 sale.manually_set_rate
                 or "website_id" in sale._fields
                 and sale.website_id
-            ):
+            ) and sale._has_foreign_rate():
                 # La tasa viene fijada de fuera; se deja constancia de la fecha
                 # solo si aun no hay ninguna, para no pisar la original.
                 if not sale.foreign_rate_date:
                     sale.foreign_rate_date = rate_date
                 continue
-            company = sale.company_id or self.env.company
-            if (
-                not company.update_sale_order_rate_using_date_order
-                and not float_is_zero(
-                    sale.foreign_rate,
-                    precision_rounding=company.currency_id.rounding,
-                )
-            ):
-                # Tasa congelada: no se recalcula. La fecha se sella la primera
-                # vez (la orden nace con el default de foreign_rate, tomado en
-                # ese momento) y a partir de ahi no se toca, aunque el core
-                # mueva date_order al confirmar.
+            if sale.state not in ("draft", "sent") and sale._has_foreign_rate():
+                # Orden aprobada: ya no se puede editar y su tasa no se mueve (el core
+                # reescribe date_order al confirmar). La fecha se sella la primera vez.
                 if not sale.foreign_rate_date:
                     sale.foreign_rate_date = rate_date
                 continue
@@ -523,13 +486,9 @@ class SaleOrder(models.Model):
     def _prepare_invoice(self):
         invoice_vals = super()._prepare_invoice()
         company = self.company_id or self.env.company
-        invoice_vals["manually_set_rate"] = (
-            self.manually_set_rate or company.use_invoice_rate_from_sale_order
-        )
-        invoice_vals["foreign_rate"] = self.foreign_rate
-        invoice_vals["foreign_inverse_rate"] = self.foreign_inverse_rate
-
         if company.use_invoice_rate_from_sale_order:
+            # La Rate Date queda bloqueada en la vista y en el onchange por
+            # account.move._is_rate_date_locked (no se marca la factura).
             # En esta localizacion invoice_date es la fecha de la TASA; la
             # fecha visible del documento (y la que determina la fecha
             # contable) es invoice_date_display -- ver
@@ -551,6 +510,7 @@ class SaleOrder(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         res = super().create(vals_list)
+        precision = self.env["decimal.precision"].precision_get("Tasa")
         for sale in res:
             Rate = self.env["res.currency.rate"]
             rate_values = Rate.compute_rate(
@@ -558,7 +518,9 @@ class SaleOrder(models.Model):
                 sale._l10n_ve_rate_date(),
             )
             last_foreign_rate = rate_values.get("foreign_rate", 0)
-            if sale.manually_set_rate and sale.foreign_rate != last_foreign_rate:
+            if sale.manually_set_rate and float_compare(
+                sale.foreign_rate, last_foreign_rate, precision_digits=precision
+            ):
                 sale.message_post(
                     body=_(
                         "The rate has been updated from %(last_rate)s to %(rate)s ",
@@ -574,7 +536,11 @@ class SaleOrder(models.Model):
         if (
             vals.get("foreign_rate", False)
             and self.manually_set_rate
-            and self.foreign_rate != self.last_foreign_rate
+            and float_compare(
+                self.foreign_rate,
+                self.last_foreign_rate,
+                precision_digits=self.env["decimal.precision"].precision_get("Tasa"),
+            )
         ):
             self.message_post(
                 body=_(
@@ -672,6 +638,14 @@ class SaleOrder(models.Model):
                         invoice_id.currency_id.name,
                     )
                 )
+
+    def _prepare_confirmation_values(self):
+        """El core reescribe date_order con la fecha de confirmacion; aqui se respeta la que
+        ya tiene la orden (la que eligio el usuario). date_order es obligatoria: nace con el
+        instante de creacion y la fecha de tasa se toma del dia del usuario al leerla."""
+        values = super()._prepare_confirmation_values()
+        values.pop("date_order", None)
+        return values
 
     def action_confirm(self):
         skip_not_allow_sell_products_validation = self.env.context.get(

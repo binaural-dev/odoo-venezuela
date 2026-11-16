@@ -163,51 +163,19 @@ class AccountMove(models.Model):
             if not move.journal_id.is_purchase_international:
                 move.invoice_line_ids.update({"international_purchase_exent_product": False})
 
-    def default_rate(self):
-        """
-        This method is used to get the rate of the payment.
-
-        Returns
-        -------
-        type = float
-            The rate of the payment
-        """
-        rate_values = self.env["res.currency.rate"].compute_rate(
-            self.currency_id.id or self.env.company.currency_id.id,
-            fields.Date.context_today(self),
-        )
-        return rate_values.get("foreign_rate", 0)
-
     foreign_rate = fields.Float(
         compute="_compute_rate",
         digits="Tasa",
-        default=default_rate,
         store=True,
         tracking=True,
     )
     
 
 
-    def default_inverse_rate(self):
-        """
-        This method is used to get the inverse rate of the payment.
-
-        Returns
-        -------
-        type = float
-            The inverse rate of the payment
-        """
-        rate_values = self.env["res.currency.rate"].compute_rate(
-            self.currency_id.id or self.env.company.currency_id.id,
-            fields.Date.context_today(self),
-        )
-        return rate_values.get("foreign_inverse_rate", 0)
-    
     foreign_inverse_rate = fields.Float(
         help="Rate that will be used as factor to multiply of the foreign currency for this move.",
         compute="_compute_rate",
         digits=(16, 15),
-        default=default_inverse_rate,
         store=True,
         index=True,
     )
@@ -574,9 +542,10 @@ class AccountMove(models.Model):
         for move in self:
             if move.debit_origin_id or move.reversed_entry_id:
                 continue
+            if move._is_rate_date_locked():
+                continue
             if move.invoice_date_display and move.is_sale_document(include_receipts=True):
                 move.invoice_date = move.invoice_date_display
-
 
     def _l10n_ve_check_note_date(self, note_date):
         """A Credit/Debit Note is the same transaction as its origin, so its
@@ -807,10 +776,10 @@ class AccountMove(models.Model):
         debit and foreign credit of the line_ids fields (journal entries) when the move is created.
         """
         moves = super().create(vals_list)
+        precision = self.env["decimal.precision"].precision_get("Tasa")
 
         for move in moves:
-            if move.move_type != "in_invoice":
-                move._compute_rate()
+            move._compute_rate()
             if move.move_type in ["out_refund", "in_refund"] and move.reversed_entry_id:
                 move.foreign_rate = move.reversed_entry_id.foreign_rate
                 move.foreign_inverse_rate = move.reversed_entry_id.foreign_inverse_rate
@@ -825,7 +794,9 @@ class AccountMove(models.Model):
                 rate_date = move.invoice_date or move.date or fields.Date.context_today(move)
             rate_values = Rate.compute_rate(move.foreign_currency_id.id, rate_date)
             last_foreign_rate = rate_values.get("foreign_rate", 0)
-            if move.manually_set_rate and move.foreign_rate != last_foreign_rate:
+            if move.manually_set_rate and float_compare(
+                move.foreign_rate, last_foreign_rate, precision_digits=precision
+            ):
                 move.message_post(
                     body=_(
                         "The rate has been updated from %(last_rate)s to %(rate)s ",
@@ -855,8 +826,8 @@ class AccountMove(models.Model):
         amounts in company currency.
 
         The web client does not send an unchanged date on its own (it only
-        sends what the user changed, and the form view does not carry
-        ``foreign_rate``), so this guards against any other caller (RPC,
+        sends what the user changed; ``foreign_rate`` travels hidden with
+        ``force_save``), so this guards against any other caller (RPC,
         imports, other modules).
 
         Scope and limits:
@@ -909,7 +880,11 @@ class AccountMove(models.Model):
             if (
                 vals.get("foreign_rate", False)
                 and move.manually_set_rate
-                and move.foreign_rate != move.last_foreign_rate
+                and float_compare(
+                    move.foreign_rate,
+                    move.last_foreign_rate,
+                    precision_digits=self.env["decimal.precision"].precision_get("Tasa"),
+                )
             ):
                 move.message_post(
                     body=_(
@@ -1204,6 +1179,27 @@ class AccountMove(models.Model):
         """
         self._compute_rate_for_documents(self)
 
+    def _has_foreign_rate(self):
+        """True si la tasa ya tiene un valor util (con la precision de "Tasa", no solo != 0)."""
+        self.ensure_one()
+        precision = self.env["decimal.precision"].precision_get("Tasa")
+        return not float_is_zero(self.foreign_rate, precision_digits=precision)
+
+    def _is_rate_date_locked(self):
+        """Hook: True si la Rate Date esta bloqueada por la configuracion (la factura usa la
+        fecha de tasa de su orden) y no debe seguir a la fecha de la factura. Ventas la
+        implementa para sus facturas."""
+        self.ensure_one()
+        return False
+
+    def _get_rate_date(self):
+        """Fecha con la que se busca la tasa: la Rate Date en facturas (la fecha contable de
+        respaldo) y la fecha contable en asientos, cuyo invoice_date solo trae el "hoy"."""
+        self.ensure_one()
+        if self.move_type == "entry":
+            return self.date
+        return self.invoice_date or self.date
+
     @api.model
     def _compute_rate_for_documents(self, documents):
         """
@@ -1212,16 +1208,25 @@ class AccountMove(models.Model):
         Rate = self.env["res.currency.rate"]
 
         for move in documents:
-            if move.manually_set_rate:
+            if move.manually_set_rate and move._has_foreign_rate():
                 continue
             # "Rate Date" (invoice_date) drives the rate for every invoice,
             # purchases included. An entry's invoice_date is just the default
             # "today", so entries use the accounting date.
-            if move.move_type == "entry":
-                rate_date = move.date
-            else:
-                rate_date = move.invoice_date or move.date
-            rate_date = rate_date or fields.Date.context_today(move)
+            rate_date = move._get_rate_date() or fields.Date.context_today(move)
+            # Registro virtual del form (onchange) de un borrador ya guardado: si la
+            # fecha vuelve a la original se conserva la tasa que ya tenia, en vez de
+            # recalcularla con la tasa actual del dia.
+            origin = move._origin
+            if (
+                origin
+                and isinstance(move.id, api.NewId)
+                and origin._has_foreign_rate()
+                and origin._get_rate_date() == rate_date
+            ):
+                move.foreign_rate = origin.foreign_rate
+                move.foreign_inverse_rate = origin.foreign_inverse_rate
+                continue
             rate_values = Rate.compute_rate(move.foreign_currency_id.id, rate_date)
             move.foreign_rate = rate_values.get("foreign_rate", 0)
             move.foreign_inverse_rate = rate_values.get("foreign_inverse_rate", 0)
