@@ -29,3 +29,5 @@ from . import test_alternate_totals_block
 from . import test_global_price_included_exempt
 from . import test_multicurrency_revaluation
 from . import test_cash_basis_foreign
+
+from . import test_create_manual_rate_future_date
