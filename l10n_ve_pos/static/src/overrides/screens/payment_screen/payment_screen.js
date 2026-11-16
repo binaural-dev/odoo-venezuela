@@ -192,6 +192,32 @@ patch(PaymentScreen.prototype, {
     }
     return res
   },
+  /**
+   * Total due of the payment screen, always in the currency of the register.
+   *
+   * Odoo 20 shows it in the currency of the first payment line; the alternate
+   * currency amount is displayed next to it by this module.
+   */
+  get orderTotalDue() {
+    const order = this.currentOrder;
+    return order.formatAmountInCurrency(order.totalDue, order.currency);
+  },
+  /**
+   * Name of an original payment as its payment line shows it: the payment
+   * method, followed by the currency when the method accepts several.
+   */
+  _originPaymentName(payment) {
+    const [methodId, methodName] = payment.payment_method_id || [];
+    if (!methodName) {
+      return _t("Método desconocido");
+    }
+    const method = this.pos.models["pos.payment.method"].get(methodId);
+    if (!method || method.availableCurrencies.length <= 1) {
+      return methodName;
+    }
+    const currencyName = payment.foreign_currency_id?.[1] || this.pos.config.currency_id.name;
+    return `${methodName} ${currencyName}`;
+  },
   async showPaymentsOrigin() {
     // En Odoo 19, obtener las órdenes origen desde las líneas de reembolso
     const order = this.currentOrder;
@@ -229,7 +255,7 @@ patch(PaymentScreen.prototype, {
       const payment_list = payments.map(el => {
         return {
           id: el.id,
-          label: `${el.payment_method_id?.[1] || _t("Método desconocido")} ${el.display_name || ""} / ${this.pos.formatForeignCurrency(el.foreign_amount || el.amount || 0)}`,
+          label: `${this._originPaymentName(el)} ${el.display_name || ""} / ${this.pos.formatForeignCurrency(el.foreign_amount || el.amount || 0)}`,
           isSelected: false,
           item: el,
         }

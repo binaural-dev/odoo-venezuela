@@ -79,3 +79,45 @@ describe("l10n_ve_pos updateSelectedPaymentline (divisa)", () => {
         expect(calls.setAmount).toEqual([[90, CURRENCY]]);
     });
 });
+
+describe("l10n_ve_pos orderTotalDue", () => {
+    test("total due in the register currency with a first payment in foreign currency", () => {
+        const { get } = Object.getOwnPropertyDescriptor(PaymentScreen.prototype, "orderTotalDue");
+        const currentOrder = {
+            totalDue: 108318.6,
+            currency: { name: "VEF" },
+            orderCurrency: { name: "USD" },
+            formatAmountInCurrency: (amount, currency) => `${currency.name} ${amount}`,
+        };
+        expect(get.call({ currentOrder })).toBe("VEF 108318.6");
+    });
+});
+
+describe("l10n_ve_pos _originPaymentName", () => {
+    const methods = {
+        6: { availableCurrencies: [{ name: "VEF" }, { name: "EUR" }, { name: "USD" }] },
+        5: { availableCurrencies: [{ name: "USD" }] },
+    };
+    const screen = {
+        pos: {
+            config: { currency_id: { name: "VEF" } },
+            models: { "pos.payment.method": { get: (id) => methods[id] } },
+        },
+    };
+
+    function name(payment) {
+        return String(PaymentScreen.prototype._originPaymentName.call(screen, payment));
+    }
+
+    test("a method with several currencies shows the currency of the payment", () => {
+        const dollars = { payment_method_id: [6, "Efectivo Bs."], foreign_currency_id: [1, "USD"] };
+        const bolivares = { payment_method_id: [6, "Efectivo Bs."], foreign_currency_id: false };
+        expect(name(dollars)).toBe("Efectivo Bs. USD");
+        expect(name(bolivares)).toBe("Efectivo Bs. VEF");
+    });
+
+    test("a method with one currency keeps its name", () => {
+        expect(name({ payment_method_id: [5, "ZELLE"], foreign_currency_id: [1, "USD"] })).toBe("ZELLE");
+        expect(name({ payment_method_id: [9, "Removed method"], foreign_currency_id: false })).toBe("Removed method");
+    });
+});

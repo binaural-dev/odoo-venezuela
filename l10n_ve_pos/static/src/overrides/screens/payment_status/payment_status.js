@@ -74,4 +74,16 @@ patch(PaymentScreenStatus.prototype, {
   get currentOrder() {
     return this.props.order;
   },
+
+  /**
+   * Remaining amount or change, always in the currency of the register.
+   *
+   * Odoo 20 converts it to the currency of the first payment line; the
+   * alternate currency amounts are the ones this module adds to the panel.
+   */
+  get amountText() {
+    const order = this.props.order;
+    const amount = order.hasRemainingDue ? order.remainingDue : order.change;
+    return this.pos.formatCurrency(amount, order.currency.id);
+  },
 });

@@ -35,3 +35,36 @@ describe("l10n_ve_pos _clampToZeroForeign", () => {
         expect(clamp(5.25, undefined)).toBe(5.25);
     });
 });
+
+function amountText(order) {
+    const { get } = Object.getOwnPropertyDescriptor(PaymentScreenStatus.prototype, "amountText");
+    const pos = { formatCurrency: (amount, currencyId) => `${currencyId}:${amount}` };
+    return get.call({ props: { order }, pos });
+}
+
+describe("l10n_ve_pos amountText", () => {
+    const register = { id: 2 };
+    const firstPaymentCurrency = { id: 1 };
+
+    test("remaining amount in the register currency with a first payment in foreign currency", () => {
+        const order = {
+            currency: register,
+            orderCurrency: firstPaymentCurrency,
+            hasRemainingDue: true,
+            remainingDue: 3249.56,
+            change: 0,
+        };
+        expect(amountText(order)).toBe("2:3249.56");
+    });
+
+    test("change in the register currency once nothing remains", () => {
+        const order = {
+            currency: register,
+            orderCurrency: firstPaymentCurrency,
+            hasRemainingDue: false,
+            remainingDue: -14257.34,
+            change: 14257.34,
+        };
+        expect(amountText(order)).toBe("2:14257.34");
+    });
+});
