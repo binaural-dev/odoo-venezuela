@@ -3917,6 +3917,66 @@ class TestCoverageGaps(TransactionCase):
         invoice._distribute_invoice_real_portion(invoice, invoice.company_currency_id)
         self._assert_balances(invoice, "distribute-invoice-real-portion")
 
+    def test_distribute_invoice_real_portion_foreign_currency_rate_direction(self):
+        """Regression: when the invoice currency IS the company's foreign
+        currency, the foreign -> company conversion must use `foreign_rate`,
+        not `foreign_inverse_rate`. The two are independent numbers here
+        (deliberately not reciprocal) so that silently swapping them
+        produces a wildly wrong real-portion total instead of a value that
+        merely passes a balance check.
+
+        `_check_currency_id` forbids *creating* an invoice whose currency
+        differs from the company currency, but it only fires when
+        `currency_id` is part of the create/write vals -- it never
+        re-validates untouched rows. Production has thousands of invoices
+        already sitting in the company's foreign currency (from before
+        that guard existed); resetting one of those to draft and
+        re-posting it reaches `_distribute_invoice_real_portion` with
+        `move.currency_id == move.company_id.currency_foreign_id` without
+        ever writing `currency_id` again. Simulate that legacy row via a
+        direct SQL update instead of `create()`.
+        """
+        invoice = self._create_invoice(self.currency_vef, 100.0, tax=False)
+        self.env.cr.execute(
+            "UPDATE account_move SET currency_id = %s WHERE id = %s",
+            (self.currency_usd.id, invoice.id),
+        )
+        invoice.invalidate_recordset()
+        self.assertEqual(invoice.currency_id, self.currency_usd)
+
+        invoice.with_context(l10n_ve_force_rate_write=True).write({
+            "foreign_rate": 36.0,
+            "foreign_inverse_rate": 0.02,
+        })
+        cc = invoice.company_currency_id
+        # Capture before calling: `amount_total` is itself kept in sync with
+        # the distributed line balances, so reading it afterwards would feed
+        # the method's own output back into the expectation.
+        amount_total = invoice.amount_total
+        amount_total_signed = invoice.amount_total_signed
+        invoice_date = invoice.date
+        invoice_currency = invoice.currency_id
+        invoice_company = invoice.company_id
+
+        invoice._distribute_invoice_real_portion(invoice, cc)
+
+        non_pt = invoice.line_ids.filtered(
+            lambda l: l.display_type not in ('payment_term', 'cogs')
+        )
+        sign = -1 if amount_total_signed > 0 else 1
+        expected_total = sign * cc.round(invoice_currency._convert(
+            abs(amount_total), cc, invoice_company, invoice_date,
+            custom_rate=36.0,
+        ))
+        wrong_total = sign * cc.round(invoice_currency._convert(
+            abs(amount_total), cc, invoice_company, invoice_date,
+            custom_rate=0.02,
+        ))
+        self.assertNotAlmostEqual(expected_total, wrong_total, places=0)
+        self.assertAlmostEqual(
+            sum(non_pt.mapped('balance')), expected_total, places=2,
+        )
+
     # NOTE: forcing an invoice with zero payment_term lines isn't possible
     # through normal creation - Odoo core always adds one payment_term
     # line for invoices regardless of invoice_payment_term_id, and
