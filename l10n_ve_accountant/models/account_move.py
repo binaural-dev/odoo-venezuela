@@ -319,6 +319,13 @@ class AccountMove(models.Model):
     )
     foreign_untaxed_total = fields.Monetary(string="foreign untaxed total", currency_field="foreign_currency_id", store=True,
                                             compute='_compute_foreign_untaxed_total' )
+    foreign_tax_total = fields.Monetary(
+        string="Foreign Tax Total",
+        help="Tax amount of the invoice in the alternate currency",
+        currency_field="foreign_currency_id",
+        store=True,
+        compute="_compute_foreign_tax_total",
+    )
 
     # ── Alternate-currency exchange difference traceability ──
     # No custom reversal/idempotency machinery: the standalone entry's own
@@ -749,6 +756,8 @@ class AccountMove(models.Model):
                 foreign_untaxed_total_column = doc.xpath("//list/field[@name='foreign_untaxed_total']")
                 amount_total_signed_column = doc.xpath("//list/field[@name='amount_total_signed']")
                 amount_untaxed_signed_column = doc.xpath("//list/field[@name='amount_untaxed_signed']")
+                foreign_tax_total_column = doc.xpath("//list/field[@name='foreign_tax_total']")
+                amount_tax_signed_column = doc.xpath("//list/field[@name='amount_tax_signed']")
                 if foreign_total_billed_column:
                     foreign_total_billed_column[0].set(
                         "string", _("Total") + " " + foreign_currency_name
@@ -764,6 +773,14 @@ class AccountMove(models.Model):
                 if amount_untaxed_signed_column:
                     amount_untaxed_signed_column[0].set(
                         "string", _("Untaxed Total") + " " + company_currency_symbol
+                    )
+                if foreign_tax_total_column:
+                    foreign_tax_total_column[0].set(
+                        "string", _("Tax Total") + " " + foreign_currency_name
+                    )
+                if amount_tax_signed_column:
+                    amount_tax_signed_column[0].set(
+                        "string", _("Tax Total") + " " + company_currency_symbol
                     )
                 
                 res["arch"] = etree.tostring(doc, encoding="unicode")
@@ -1242,6 +1259,11 @@ class AccountMove(models.Model):
                 move.foreign_taxable_income = move.tax_totals.get(
                     "base_amount_foreign_currency", 0
                 )
+
+    @api.depends("foreign_total_billed", "foreign_untaxed_total")
+    def _compute_foreign_tax_total(self):
+        for move in self:
+            move.foreign_tax_total = move.foreign_total_billed - move.foreign_untaxed_total
 
     @api.depends("tax_totals", "currency_id", "invoice_date", "amount_total")
     def _compute_foreign_total_billed(self):
