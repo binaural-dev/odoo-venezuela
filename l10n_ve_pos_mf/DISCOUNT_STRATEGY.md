@@ -493,19 +493,34 @@ además el pop-up de clamp y el camino con el interruptor en OFF.
 Sólo `printInvoice`, y sólo con `line_discount_via_q` en ON, usa los campos
 nuevos.
 
-### Limitación conocida: descuento MANUAL por línea
+### Descuento de línea SIN marca de campaña (ticket 16441)
 
-Si el cajero teclea un porcentaje directamente sobre una línea (numpad
-"Descuento"), esa línea **no tiene marca de campaña**: llega con
-`campaign_discount_percent = 0`. En consecuencia **no lleva `q-` propio** y su
-descuento completo se contabiliza dentro del agregado "DESC. GLOBAL" del pie.
+Una línea puede llegar con `discount > 0` y `campaign_discount_percent = 0`:
+el cajero tecleó el % a mano (numpad "Descuento"), o la orden se dejó en
+espera y se recuperó del servidor (`export_for_ui_shared_order`) sin la marca
+de campaña. Hasta el ticket 16441 el `q-` por línea llevaba **sólo** la
+porción de campaña, así que ese descuento no salía en ningún `q-`: la factura
+fiscal se imprimía a precio bruto y el pago por el total completo, mientras
+Odoo guardaba la orden con descuento (caso real: KC - MRCAIBO - C2/0497,
+factura fiscal 496).
 
-El ticket sigue cuadrando al céntimo (la identidad de arriba se cumple igual),
-pero la atribución visual es imprecisa: un descuento que el cajero aplicó a un
-producto concreto aparece como si fuera del total del pedido. **No se corrige
-en esta iteración**; queda documentado. Resolverlo requeriría una marca
-equivalente a `campaignDiscountPercent` para el descuento manual, que hoy no
-existe.
+Corrección (`lineOwnDiscountAmount` en `_convertOrderForDriver`):
+
+| Camino | `line.discount` contiene | `q-` de la línea |
+|---|---|---|
+| Sin `preAppliedMeta` | sólo el descuento propio de la línea (el global, si existe, va en las líneas negativas) | el descuento propio **entero**, tenga o no marca |
+| Con `preAppliedMeta` | el % compuesto campaña + global | sólo la campaña (acotada por C1); el resto va al `q-` del pie |
+
+Cuando la línea tiene marca, `campaign_discount_percent === line.discount` y el
+monto es idéntico al de antes. Además `binaural_pos_pricelist_line_discount`
+guarda la marca en `pos.order.line`, así que una orden recuperada vuelve con
+ella.
+
+Si una orden se recupera **después** de aplicarle el Descuento Global con el
+flag `native_global_discount_line` en OFF, `_mf_global_discount_meta` no viaja
+con ella: el `q-` de cada línea sale con el % compuesto (campaña + global) y no
+hay `q-` de pie. El total fiscal es el mismo que cobra Odoo; sólo cambia dónde
+se imprime la porción global.
 
 > **C1 (revisión formal): marca de campaña desfasada por un descuento MANUAL
 > posterior *distinto* sobre una línea que YA traía campaña.** Caso distinto
