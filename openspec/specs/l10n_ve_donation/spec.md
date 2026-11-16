@@ -108,14 +108,14 @@ La vista de formulario de `account.move` DEBE (MUST) ocultar el botón "Restable
 - **WHEN** un usuario abre un asiento de donación publicado
 - **THEN** el botón "Restablecer a borrador" no está disponible y el campo `is_donation` es de solo lectura
 
-### Requirement: Certificado de donación en PDF
+### Requirement: Recibo de donación en PDF
 
-El sistema DEBE (MUST) permitir generar el reporte qweb-pdf "Donation Certificate" (`l10n_ve_donation.action_donation_certificate_account_move`) desde el botón `print_donation_certificate` de `account.move`, disponible únicamente en asientos manuales (`move_type = entry`) publicados y marcados `is_donation`, que no sean el asiento de valoración de una entrega por picking (REQ-DON-016).
+El sistema DEBE (MUST) permitir generar el reporte qweb-pdf "Donation Receipt" (`l10n_ve_donation.action_donation_receipt_account_move`) desde el botón `print_donation_receipt` de `account.move`, disponible únicamente en asientos manuales (`move_type = entry`) publicados y marcados `is_donation`, que no sean el asiento de valoración de una entrega por picking ni una donación recibida (REQ-DON-016, REQ-DON-018). Las donaciones recibidas tienen Certificado de donación (REQ-DON-023).
 
-#### Scenario: Impresión del certificado
+#### Scenario: Impresión del recibo
 
-- **WHEN** un usuario pulsa "Generar Certificado de Donación" en un asiento de donación publicado
-- **THEN** se genera el PDF del certificado de donación de ese asiento
+- **WHEN** un usuario pulsa "Generate Donation Receipt" en un asiento de donación otorgada publicado
+- **THEN** se genera el PDF del recibo de donación de ese asiento
 
 ### Requirement: La nota de crédito de reverso de una donación usa la fecha del usuario
 
@@ -201,13 +201,13 @@ El asiento de valoración de una salida de donación sin pedido DEBE (MUST) qued
 - **Cuando** se valida una entrega que no es de donación y genera asiento de valoración
 - **Entonces** su asiento no se marca como donación; el de una entrega de donación sí
 
-### Requirement: REQ-DON-006 · Certificado de entrega de donación
-Una salida de donación sin pedido validada DEBE (MUST) permitir imprimir el certificado de entrega (`l10n_ve_donation.action_donation_delivery_certificate`), con el costo por línea tomado del valor guardado del movimiento (`stock.move.value`) y por tanto estable entre reimpresiones; antes de validar el costo es cero.
+### Requirement: REQ-DON-006 · Recibo de entrega de donación
+Una salida de donación sin pedido validada DEBE (MUST) permitir imprimir el recibo de entrega (`l10n_ve_donation.action_donation_receipt_stock_picking`, REQ-DON-019), con el costo por línea tomado del valor guardado del movimiento (`stock.move.value`) y por tanto estable entre reimpresiones; antes de validar el costo es cero.
 
 #### Scenario: Reimpresión tras un cambio de costo
 - **Dado** una salida de donación validada con costo unitario 15
 - **Cuando** el costo estándar del producto cambia a 99 y se reimprime
-- **Entonces** el certificado sigue mostrando 15
+- **Entonces** el recibo sigue mostrando 15
 
 ### Requirement: REQ-DON-007 · Las donaciones sin pedido no se devuelven
 El asistente de devolución (`stock.return.picking._create_return`) DEBE (MUST) rechazar la devolución de un picking con `is_donation` y sin pedido de venta; los pickings de un pedido de donación siguen el flujo de devoluciones de ventas. El botón de devolución se oculta en esos pickings. La devolución de la entrega de un pedido de donación NO DEBE (MUST NOT) conservar el motivo de traslado 'Donación': el libro de inventario cuenta como retiro todo movimiento con ese motivo sin mirar su dirección, y la devolución (un movimiento de entrada) contaría como entrada y como retiro.
@@ -337,33 +337,161 @@ En una salida de donación sin pedido (`is_donation and not sale_id`) el botón 
 - **Cuando** el usuario abre el picking
 - **Entonces** no se ofrece "Crear factura"; la misma entrega sin la marca de donación sí lo ofrece
 
-### Requirement: REQ-DON-016 · Certificado de donación de dinero
-El certificado del asiento (`l10n_ve_donation.action_donation_certificate_account_move`) es el de una donación de dinero: DEBE (MUST) enunciar "la suma de" el monto en números, sin monto en letras, con el bolívar primero (la moneda de la compañía si está en bolívares; la moneda alterna si la compañía está en otra moneda, como USD) y la referencia como concepto, y, si el asiento tiene monto alterno, su equivalente en la otra moneda con la tasa BCV guardada en el asiento (bolívares por unidad de esa moneda), con 4 decimales, y su fecha (una reimpresión da los mismos datos). La tasa DEBE (MUST) elegirse según cuál de las dos monedas es el bolívar: `foreign_rate` si la compañía está en bolívares y `foreign_inverse_rate` si la alterna es el bolívar. NO DEBE (MUST NOT) hablar de bienes. El asiento de valoración de una entrega por picking (asiento con movimientos de stock) NO DEBE (MUST NOT) ofrecer el botón "Generar Certificado de Donación", y `print_donation_certificate` DEBE (MUST) rechazarlo con un error que remite al certificado de entrega del picking (REQ-DON-006).
+### Requirement: REQ-DON-016 · Recibo de donación de dinero
+El recibo del asiento (`l10n_ve_donation.action_donation_receipt_account_move`) es el de una donación de dinero otorgada: DEBE (MUST) mostrar el monto en números, sin monto en letras (el bolívar primero y su equivalente con la tasa, REQ-DON-026), el concepto (las líneas de débito que no son de caja, banco ni por cobrar/pagar) y la referencia del asiento como observación; NO DEBE (MUST NOT) hablar de bienes. El asiento de valoración de una entrega por picking NO DEBE (MUST NOT) ofrecer el botón "Generate Donation Receipt", y `print_donation_receipt` DEBE (MUST) rechazarlo con un error que remite al recibo del picking (REQ-DON-006).
 
 #### Scenario: Asiento manual con monto alterno
-- **Dado** un asiento manual de donación publicado por 38.000,00 en bolívares, con tasa BCV 450
-- **Cuando** se imprime el certificado
-- **Entonces** dice "la suma de 38.000,00, equivalente a 84,44 USD a la tasa BCV del día <fecha> de 450,0000", la referencia como concepto, sin monto en letras y sin mencionar bienes
-
-#### Scenario: Compañía en USD con el bolívar como moneda alterna
-- **Dado** una compañía en USD con alterna VEF y un asiento por 84,44 USD (38.000,00 VEF)
-- **Cuando** se imprime el certificado
-- **Entonces** el monto en bolívares va primero (38.000,00), el equivalente es 84,44 USD y la tasa es 450,0000 bolívares por USD, no su inversa
+- **Dado** un asiento manual de donación otorgada publicado por 38.000,00 en bolívares, con tasa BCV 450
+- **Cuando** se imprime el recibo
+- **Entonces** muestra el monto, el equivalente en USD con la tasa BCV, el concepto y la referencia como observación, sin monto en letras y sin mencionar bienes
 
 #### Scenario: Asiento sin monto alterno
 - **Dado** un asiento de donación cuya moneda alterna es la de la compañía
-- **Cuando** se imprime el certificado
-- **Entonces** dice "la suma de" sin la parte del equivalente ni la tasa
+- **Cuando** se imprime el recibo
+- **Entonces** muestra solo el monto, sin equivalente ni tasa
 
 #### Scenario: Asiento de valoración de una entrega por picking
 - **Dado** el asiento de valoración de una entrega de donación validada
 - **Cuando** el usuario abre el asiento
-- **Entonces** no ve el botón "Generar Certificado de Donación"; si se invoca la acción, falla con un error que indica imprimir el certificado de entrega del picking
+- **Entonces** no ve el botón "Generate Donation Receipt"; si se invoca la acción, falla con un error que indica imprimir el recibo del picking
 
 ### Requirement: REQ-DON-017 · Las donaciones no se listan en las guías de despacho
-Una entrega con `is_donation` NO DEBE (MUST NOT) cumplir `match_guide_dispatch_domain`: el certificado de entrega de donación (REQ-DON-006) sustituye a la guía de despacho, así que la entrega no aparece en el listado de guías aunque su tipo de operación sea el de entregas estándar del almacén.
+Una entrega con `is_donation` NO DEBE (MUST NOT) cumplir `match_guide_dispatch_domain`: el recibo de entrega de donación (REQ-DON-006) sustituye a la guía de despacho, así que la entrega no aparece en el listado de guías aunque su tipo de operación sea el de entregas estándar del almacén.
 
 #### Scenario: Entrega de donación con el tipo de entrega estándar
 - **Dado** una entrega de donación validada con el tipo de operación de entregas estándar de un almacén
 - **Cuando** se calcula si entra en el listado de guías de despacho
 - **Entonces** no entra; la misma entrega sin la marca de donación sí entra
+
+### Requirement: REQ-DON-018 · Certificado de la recepción y Recibo de la entrega
+El **Certificado de donación** es el documento de una donación RECIBIDA (lo recibe el donante) y el **Recibo de donación** el de una donación OTORGADA (lo recibe el beneficiario), en dinero (`account.move`) y en mercancía (`stock.picking`). `print_donation_certificate` imprime el certificado y `print_donation_receipt` el recibo; cada método DEBE (MUST) rechazar el documento de la otra dirección con un error que indica el que corresponde, y los botones se muestran según la dirección.
+
+#### Scenario: Cada documento en su dirección
+- **Dado** un asiento de donación recibida y uno de donación otorgada, publicados
+- **Cuando** se imprime el certificado y el recibo de cada uno
+- **Entonces** el certificado solo se imprime en la recibida y el recibo solo en la otorgada; el otro falla indicando el documento que corresponde
+
+### Requirement: REQ-DON-019 · Recibo de donación estandarizado
+El recibo DEBE (MUST) tener una estructura única para el dinero y la mercancía: encabezado de la compañía, número y fecha, datos del beneficiario (nombre, RIF o cédula, dirección y teléfono) (el RIF es el del contacto comercial: un contacto hijo usa el RIF y el prefijo de su empresa), monto con equivalente y tasa, concepto (en dinero, las líneas de gasto; en mercancía, la tabla de productos compartida con lote, vencimiento y costo), observaciones (referencia del asiento o motivo de donación), constancia de donación y firmas, en media hoja carta. Los elementos `donation_receipt_beneficiary_extra` y `donation_receipt_legal` DEBEN (MUST) existir para que otros módulos agreguen datos (paciente, texto legal) por herencia.
+
+#### Scenario: Recibo de una entrega
+- **Dado** una entrega de donación validada con un beneficiario y un motivo
+- **Cuando** se imprime el recibo
+- **Entonces** muestra al beneficiario, la tabla de productos con su total al costo y el motivo como observación
+
+### Requirement: REQ-DON-020 · Cuentas y dirección de las donaciones recibidas
+La compañía DEBE (MUST) poder configurar varias cuentas de ingresos de donaciones recibidas (`donation_income_account_ids`, también en los ajustes). Un asiento es una donación recibida (`_is_incoming_donation`, `is_incoming_donation`) si es un asiento manual (`entry`) marcado `is_donation` con alguna línea en una de esas cuentas; la dirección se decide por la cuenta y no por el diario. Una factura de donación no lo es, aunque use la misma cuenta. Sin cuentas configuradas ningún asiento es recibido y el comportamiento no cambia (la recepción de mercancía tampoco exige donante ni configuración contable, REQ-DON-024). Los ajustes solo admiten cuentas de ingresos de la compañía activa (`check_company` y dominio por compañía). Como la dirección se deduce de las cuentas, NO DEBE (MUST NOT) poder agregarse ni quitarse una cuenta que use algún asiento de donación publicado de la compañía: el documento de ese asiento cambiaría entre Certificado y Recibo.
+
+#### Scenario: Con y sin cuentas
+- **Dado** un asiento manual de donación con una línea en la cuenta de ingresos
+- **Cuando** la compañía no tiene cuentas configuradas, y luego se configura esa cuenta
+- **Entonces** el asiento no es una donación recibida, y después sí lo es
+
+#### Scenario: Cambio de cuentas con asientos publicados
+- **Dado** una donación recibida publicada con la cuenta de ingresos configurada
+- **Cuando** se intenta quitar esa cuenta (o agregar la de una donación otorgada publicada)
+- **Entonces** falla con un error que indica cuántos asientos la usan; los borradores y las cuentas sin uso no bloquean el cambio
+
+### Requirement: REQ-DON-021 · Las líneas de una donación recibida llevan al donante
+Las líneas de un asiento de donación recibida DEBEN (MUST) llevar al donante como contacto. `_check_partner_donation` (compañía en las líneas) y `_fill_donation_entry_line_partner` (relleno con la compañía al crear la línea, al marcar la donación y antes de publicar) NO DEBEN (MUST NOT) aplicarse a ellas; las donaciones otorgadas conservan el contacto de la compañía en las líneas. Cuando la cabecera y las líneas traen contactos distintos, el donante del certificado es el de la cabecera (comportamiento heredado de 17: solo se validan las líneas y `_get_donation_counterparty` toma primero la cabecera).
+
+#### Scenario: Donante en las líneas
+- **Dado** un asiento de donación recibida con el donante en sus líneas
+- **Cuando** se guarda
+- **Entonces** se acepta y las líneas conservan al donante; la misma entrega de líneas en una donación otorgada se rechaza
+
+#### Scenario: Cabecera distinta del donante de las líneas
+- **Dado** una donación recibida cuya cabecera es otro contacto que el de sus líneas
+- **Cuando** se imprime el certificado
+- **Entonces** nombra al contacto de la cabecera
+
+### Requirement: REQ-DON-022 · Validación al publicar una donación recibida
+Antes de publicar, `_check_incoming_donation_before_post` (punto de extensión) se ejecuta en `_post`, así que lo cubren `action_post`, la publicación automática y cualquier publicación directa, y DEBE (MUST) verificar que todas las líneas tengan contacto, distinto de la compañía, y que sea el mismo donante en todas. La validación corre con el asiento en borrador y NO DEBE (MUST NOT) escribir nada en él: funciona en diarios con "Bloquear asientos con hash".
+
+#### Scenario: Líneas sin donante o con donantes distintos
+- **Dado** un asiento de donación recibida con una línea sin contacto, o con la compañía, o con dos donantes
+- **Cuando** se publica
+- **Entonces** falla con un mensaje que indica el donante y el asiento sigue en borrador
+
+### Requirement: REQ-DON-023 · Certificado de donación recibida en dinero
+El certificado del asiento (`l10n_ve_donation.action_donation_certificate_account_move`) DEBE (MUST) declarar la recepción de "la suma de" el monto (REQ-DON-026) del donante (nombre, RIF o cédula del contacto comercial, domicilio y teléfono, `_get_donation_counterparty`: la cabecera o el contacto de las líneas), con descripción del uso y tipo de donativo en blanco, destino de la donación, fecha y firmas. Los elementos `donation_certificate_legal` (datos del representante legal de la compañía) y `donation_certificate_extra` DEBEN (MUST) existir como puntos de extensión.
+
+#### Scenario: Certificado al donante
+- **Dado** una donación recibida en dinero, publicada
+- **Cuando** se imprime el certificado
+- **Entonces** muestra al donante con su RIF y domicilio, la suma recibida y no menciona bienes
+
+### Requirement: REQ-DON-024 · Recepción de donaciones de mercancía
+Cuando la compañía tiene cuentas de donaciones recibidas (REQ-DON-020), una recepción de donación sin pedido (`is_donation`, entrante) DEBE (MUST) tener al donante ("Recibir de") para validarse; sin cuentas la recepción valida como antes, sin donante ni configuración contable. Con productos de valoración automatizada, `_get_donation_receipt_config_errors` (punto de extensión) DEBE (MUST) exigir, solo cuando la compañía tiene cuentas de donaciones recibidas, que el origen sea una ubicación de tipo Pérdida de inventario y que su cuenta de valoración sea una de ellas: el asiento de valoración (core 19: crédito = cuenta de la ubicación de origen cuando la tiene) queda Debe inventario / Haber ingreso por donación. Una entrega de donación NO DEBE (MUST NOT) tener como destino una ubicación cuya cuenta sea de donaciones recibidas. Un picking nuevo abierto desde la tarjeta de un tipo de donación queda marcado como donación.
+
+#### Scenario: Recepción correcta
+- **Dado** una recepción de un producto `real_time` desde "Donaciones recibidas" con la cuenta de ingresos como cuenta de valoración
+- **Cuando** se valida
+- **Entonces** el asiento de valoración acredita la cuenta de ingresos y debita el inventario
+
+#### Scenario: Compañía sin cuentas de donaciones recibidas
+- **Dado** una compañía sin cuentas de donaciones recibidas y una recepción de donación sin donante, desde cualquier origen
+- **Cuando** se valida
+- **Entonces** valida como una recepción normal, sin exigir donante ni configuración contable
+
+#### Scenario: Configuración incoherente
+- **Dado** una recepción cuyo origen no es de pérdida de inventario, no tiene cuenta, o tiene una que no es de donaciones recibidas
+- **Cuando** se valida
+- **Entonces** falla con un mensaje que indica qué corregir
+
+### Requirement: REQ-DON-025 · Certificado de la recepción de mercancía
+El certificado de una recepción (`l10n_ve_donation.action_donation_certificate_stock_picking`) DEBE (MUST) listar los productos con la tabla compartida (lote, vencimiento y costo desde `stock.move.value`) y el total al costo de todas sus líneas con su equivalente (`_get_donation_picking_amounts`): el total por la tasa guardada en el primer asiento de valoración publicado, o por la tasa de la fecha del documento cuando no hay asientos (sin tasa se omite el equivalente), de modo que una reimpresión da los mismos datos aunque el picking mezcle productos con y sin valoración automatizada. Bajo la tabla, que muestra el total en la moneda de la compañía, el "Equivalent value" DEBE (MUST) ser el valor en la otra moneda: el monto en bolívares cuando la compañía está en USD (como Higea) y el equivalente en USD cuando está en bolívares; el monto en bolívares nunca falta (REQ-DON-026). Las líneas se calculan una vez por documento (`_get_donation_goods_data`). El botón y `print_donation_certificate` se ofrecen solo en recepciones de donación `done` de una compañía con cuentas de donaciones recibidas (`has_donation_income_accounts`); sin cuentas la recepción es inerte y no tiene certificado.
+
+#### Scenario: Certificado de una recepción
+- **Dado** una recepción de donación validada
+- **Cuando** se imprime el certificado
+- **Entonces** muestra al donante, los productos con su total al costo y "los siguientes bienes"
+
+#### Scenario: Compañía en USD con alterna en bolívares
+- **Dado** una recepción de donación de una compañía en USD con alterna en bolívares
+- **Cuando** se imprime el certificado
+- **Entonces** bajo la tabla (en USD) se muestra el monto en bolívares como "Equivalent value" con la tasa BCV
+
+#### Scenario: Compañía sin cuentas de donaciones recibidas
+- **Dado** una recepción de donación `done` de una compañía sin cuentas de donaciones recibidas
+- **Cuando** el usuario abre el picking o invoca `print_donation_certificate`
+- **Entonces** no ve el botón y el método falla indicando que se deben configurar las cuentas
+
+#### Scenario: Picking con productos de las dos valoraciones
+- **Dado** una recepción con un producto de valoración automatizada (costo 10) y otro de valoración periódica (costo 5)
+- **Cuando** se imprime el certificado
+- **Entonces** el monto es 15 y el equivalente es 15 por la tasa del asiento de valoración
+
+### Requirement: REQ-DON-026 · Monto y tasa de los documentos de donación
+Los documentos DEBEN (MUST) mostrar el monto en bolívares primero (`_compute_donation_amounts`): la moneda de la compañía si está en bolívares, la alterna si la compañía está en otra moneda (como USD), con su equivalente en la otra moneda y la tasa BCV guardada en el asiento (bolívares por unidad de esa moneda), de modo que una reimpresión dé los mismos datos. La tasa DEBE (MUST) elegirse según cuál moneda es el bolívar: `foreign_rate` si la compañía está en bolívares y `foreign_inverse_rate` si la alterna lo es. Sin monto alterno o sin tasa se omite el equivalente.
+
+#### Scenario: Compañía en USD con alterna en bolívares
+- **Dado** una compañía en USD con alterna VEF y un monto de 84,44 USD (38.000,00 VEF)
+- **Cuando** se imprime un documento
+- **Entonces** el monto en bolívares va primero y la tasa es 450,0000 bolívares por USD, no su inversa
+
+### Requirement: REQ-DON-027 · Beneficiario de una donación otorgada en dinero
+En un asiento manual de donación otorgada (`is_donation`, `entry`, no recibida) el formulario DEBE (MUST) mostrar el contacto de la cabecera como "Beneficiary" (editable en borrador; no se muestra en las recibidas, donde el donante va en las líneas). Las líneas siguen con la compañía: las que copian el contacto de la cabecera al crearse (o al marcar la donación) se reemplazan por la compañía, y un contacto distinto en una línea sigue rechazándose (`_check_partner_donation`). El Recibo de donación DEBE (MUST) mostrar al beneficiario (nombre, RIF o cédula y dirección).
+
+#### Scenario: Donación otorgada con beneficiario
+- **Dado** un asiento manual de donación otorgada con un contacto en la cabecera y sin contacto en las líneas
+- **Cuando** se guarda y se publica
+- **Entonces** se acepta, la cabecera conserva al beneficiario, las líneas quedan con la compañía y el Recibo muestra al beneficiario
+
+#### Scenario: Marcar la donación después
+- **Dado** un asiento manual con un contacto en la cabecera y sin la marca de donación (sus líneas copiaron el contacto comercial de la cabecera)
+- **Cuando** se marca "Es Donación"
+- **Entonces** se acepta y las líneas quedan con la compañía; el reemplazo corre antes de escribir la marca porque la restricción corre dentro de la escritura
+
+### Requirement: REQ-DON-028 · Guardas de impresión de los documentos
+Los métodos `print_donation_receipt` y `print_donation_certificate` DEBEN (MUST) revisar el documento antes de imprimir, sin depender de la visibilidad de los botones: en `account.move`, que sea un asiento manual (`entry`) de donación publicado, el recibo de una otorgada y que no sea el asiento de valoración de una entrega, el certificado de una recibida; en `stock.picking`, que sea una donación sin pedido y `done`, el recibo de una entrega (saliente) y el certificado de una recepción (entrante). Cada negación DEBE (MUST) fallar con un error que indica el documento que corresponde. El asiento de reversión de otro (`reversed_entry_id` lleno) NO DEBE (MUST NOT) tener documento: copia la marca y las cuentas del original, pero los documentos pertenecen al original.
+
+#### Scenario: Documentos que no son donación
+- **Dado** una factura, un asiento normal, un asiento de donación en borrador y un picking de donación sin hacer
+- **Cuando** se invoca el método de impresión
+- **Entonces** falla con un error sin generar el documento
+
+#### Scenario: Reversión de una donación
+- **Dado** el asiento de reversión de una donación publicada (copia la marca y las cuentas del original)
+- **Cuando** se invoca el método de impresión o se abre el formulario
+- **Entonces** el método falla indicando que el documento es el del asiento original y los botones no se ofrecen; el original conserva su Recibo o Certificado
