@@ -27,3 +27,4 @@ from . import test_entry_rate_date
 from . import test_alternate_totals_block
 from . import test_multicurrency_revaluation
 from . import test_cash_basis_foreign
+from . import test_invoice_list_columns

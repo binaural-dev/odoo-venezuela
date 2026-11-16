@@ -238,12 +238,30 @@
             <xpath expr="//list/field[@name='invoice_date'][last()]" position="after">
                 <field name="invoice_date_display" optional="show" />
             </xpath>
+            <!-- Orden: primero los montos en Bs. (sin impuestos, total) y luego los
+                 montos en divisa ($: sin impuestos, total). Todos totalizan al pie. -->
             <xpath expr="//list/field[@name='amount_total_in_currency_signed']" position="before">
                 <field name="foreign_currency_id" column_invisible="True"/>
-                <field name="amount_total_signed" optional="hide"/>
-                <field name="amount_untaxed_signed" optional="hide"/>
-                <field name="foreign_total_billed" widget="monetary" optional="hide"/>
-                <field name="foreign_untaxed_total" widget="monetary" optional="hide"/>
+                <field name="amount_untaxed_signed" sum="Total" optional="show" width="180px"/>
+                <field name="amount_total_signed" sum="Total" optional="show" width="180px"/>
+                <field name="foreign_untaxed_total" widget="monetary" sum="Total" optional="show" width="180px"/>
+                <field name="foreign_total_billed" widget="monetary" sum="Total" optional="show" width="180px"/>
+            </xpath>
+            <!-- Anchos predeterminados para no tener que ajustarlos en cada ingreso -->
+            <xpath expr="//list/field[@name='name']" position="attributes">
+                <attribute name="width">140px</attribute>
+            </xpath>
+            <xpath expr="//list/field[@name='amount_untaxed_in_currency_signed']" position="attributes">
+                <attribute name="width">180px</attribute>
+            </xpath>
+            <xpath expr="//list/field[@name='amount_tax_signed']" position="attributes">
+                <attribute name="width">180px</attribute>
+            </xpath>
+            <xpath expr="//list/field[@name='amount_total_in_currency_signed']" position="attributes">
+                <attribute name="width">180px</attribute>
+            </xpath>
+            <xpath expr="//list/field[@name='amount_residual_signed']" position="attributes">
+                <attribute name="width">180px</attribute>
             </xpath>
         </field>
     </record>
