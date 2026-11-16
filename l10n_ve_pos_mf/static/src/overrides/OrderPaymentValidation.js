@@ -71,6 +71,10 @@ patch(OrderPaymentValidation.prototype, {
 
   /**
    * Normaliza el descuento global e imprime la orden en la máquina fiscal.
+   * The UI is blocked with a message while the machine prints: this runs on
+   * the payment screen, before the feedback screen, so without the block the
+   * cashier sees nothing during the print (in 19 the print ran inside
+   * `finalizeValidation`, which the core blocked).
    * @returns {Promise<boolean>} false si la impresión falló (el diálogo de
    * error ya se mostró) y la validación no debe continuar.
    */
@@ -95,6 +99,7 @@ patch(OrderPaymentValidation.prototype, {
     // 2. Imprimir en máquina fiscal (offline - no requiere internet)
     if (pos.useFiscalMachine() && !order.mf_invoice_number) {
       console.info("MF:: Iniciando impresión fiscal");
+      pos.env.services.ui.block({ message: _t("Imprimiendo en la máquina fiscal...") });
       try {
         const response = await pos.pushToMF(order);
 
@@ -115,6 +120,8 @@ patch(OrderPaymentValidation.prototype, {
           body: error.message || _t("Error inesperado durante la impresión fiscal"),
         });
         return false;
+      } finally {
+        pos.env.services.ui.unblock();
       }
     } else {
       console.info("MF:: Impresión fiscal omitida", {
