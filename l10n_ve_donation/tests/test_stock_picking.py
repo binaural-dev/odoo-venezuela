@@ -10,7 +10,7 @@ from .common import TestDonationCommon
 class TestDonationStockPicking(TestDonationCommon):
     """`is_donation` and the donation rules that `l10n_ve_donation` adds to
     `stock.picking`: menu default, transfer reason, validation, delivery
-    configuration errors and the cost of the delivery certificate."""
+    configuration errors and the cost of the delivery receipt."""
 
     @classmethod
     def setUpClass(cls):
@@ -216,14 +216,14 @@ class TestDonationStockPicking(TestDonationCommon):
             "l10n_ve_donation.donation_receipt_template_stock_picking", picking.ids
         )
         self.assertIn(self.partner.name.encode(), html)
-        self.assertIn(b"Recibo de Donaci", html)
+        self.assertIn(b"Donation Receipt", html)
         self.assertIn(b"Medication for the clinic", html)
         # The detail of the goods is the shared product table, with its total.
         self.assertIn(b"Total at cost", html)
 
     def test_delivery_receipt_amounts_come_from_the_cost_of_the_goods(self):
         picking = self._create_donation_picking(quantity=2.0, partner=self.partner, validate=True)
-        amounts = picking._get_donation_receipt_amounts()
+        amounts = picking._get_donation_picking_amounts()
         self.assertAlmostEqual(amounts["amount"], picking._get_donation_grand_total())
         self.assertTrue(amounts["amount"])
         self.assertEqual(amounts["currency"], self.company.currency_id)
@@ -239,7 +239,7 @@ class TestDonationStockPicking(TestDonationCommon):
             wizard._create_return()
 
     def test_donation_delivery_is_not_listed_in_the_dispatch_guides(self):
-        """The donation delivery certificate replaces the dispatch guide: a
+        """The donation delivery receipt replaces the dispatch guide: a
         donation delivery of a standard delivery operation type (the one
         that is listed in the guides) is not listed; without the donation
         mark it is."""

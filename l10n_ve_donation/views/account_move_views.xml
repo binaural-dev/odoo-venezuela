@@ -17,21 +17,25 @@
             <xpath expr="//form//header" position="inside">
                 <button
                     name="print_donation_receipt"
-                    string="Generar Recibo de Donación"
+                    string="Generate Donation Receipt"
                     type="object"
                     class="btn-primary"
-                    invisible="not is_donation or (state != 'posted' or move_type != 'entry') or is_stock_valuation_entry or is_incoming_donation"/>
+                    invisible="not is_donation or (state != 'posted' or move_type != 'entry') or is_stock_valuation_entry or is_incoming_donation or reversed_entry_id"/>
                 <button
                     name="print_donation_certificate"
-                    string="Generar Certificado de Donación"
+                    string="Generate Donation Certificate"
                     type="object"
                     class="btn-primary"
-                    invisible="not is_donation or (state != 'posted' or move_type != 'entry') or is_stock_valuation_entry or not is_incoming_donation"/>
+                    invisible="not is_donation or (state != 'posted' or move_type != 'entry') or is_stock_valuation_entry or not is_incoming_donation or reversed_entry_id"/>
             </xpath>
             <xpath expr="//field[@name='ref']" position="after">
                 <field name="can_reverse_donation_move" invisible="1"/>
                 <field name="is_stock_valuation_entry" invisible="1"/>
                 <field name="is_incoming_donation" invisible="1"/>
+                <field name="partner_id" string="Beneficiary"
+                       invisible="not is_donation or move_type != 'entry' or is_incoming_donation"
+                       readonly="state != 'draft'"
+                       options="{'no_quick_create': True}"/>
                 <field name="is_donation" readonly="state != 'draft' or move_type != 'entry'"/>
             </xpath>
         </field>
