@@ -42,11 +42,12 @@ class TestPosSessionReportZ(TransactionCase):
         )
         cls.config = cls.env["pos.config"].create(
             {
+                # Odoo 20 rejects the "Odoo POS" partner of another company.
+                "default_partner_id": cls.company.partner_id.id,
                 "name": "MF Report Z Box",
                 "company_id": cls.company.id,
                 "currency_id": vef.id,
                 "journal_id": sale_journal.id,
-                "invoice_journal_id": sale_journal.id,
                 "payment_method_ids": [(6, 0, [])],
             }
         )

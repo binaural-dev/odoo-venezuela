@@ -78,8 +78,19 @@ class TestKioskCloseSessionZ(TransactionCase):
                 "company_id": cls.company.id,
             }
         )
+        # Odoo 20 only accepts a purchase tax as the default supplier tax of
+        # the products (``supplier_taxes_id`` filters on ``type_tax_use``).
+        purchase_tax = cls.env["account.tax"].create(
+            {
+                "name": "Kiosk Close Z Purchase Tax",
+                "amount": 0.0,
+                "type_tax_use": "purchase",
+                "tax_group_id": tax_group.id,
+                "company_id": cls.company.id,
+            }
+        )
         cls.company.write(
-            {"account_sale_tax_id": tax.id, "account_purchase_tax_id": tax.id}
+            {"account_sale_tax_id": tax.id, "account_purchase_tax_id": purchase_tax.id}
         )
         category = cls.env["product.category"].create(
             {
@@ -154,6 +165,7 @@ class TestKioskCloseSessionZ(TransactionCase):
         cls.card_method = cls.env["pos.payment.method"].create(
             {
                 "name": "Kiosk Close Z Card",
+                "type": "bank",
                 "journal_id": bank_journal.id,
                 "company_id": cls.company.id,
             }
@@ -162,11 +174,12 @@ class TestKioskCloseSessionZ(TransactionCase):
         def _make_config(name, mode="kiosk"):
             config = cls.env["pos.config"].create(
                 {
+                    # Odoo 20 rejects the "Odoo POS" partner of another company.
+                    "default_partner_id": cls.company.partner_id.id,
                     "name": name,
                     "company_id": cls.company.id,
                     "currency_id": vef.id,
                     "journal_id": sale_journal.id,
-                    "invoice_journal_id": sale_journal.id,
                     "self_ordering_mode": mode,
                     "self_ordering_default_user_id": cls.kiosk_user.id,
                     "payment_method_ids": [(6, 0, [cls.card_method.id])],
@@ -239,7 +252,6 @@ class TestKioskCloseSessionZ(TransactionCase):
                 "amount_tax": 0.0,
                 "amount_paid": 100.0 if state != "draft" else 0.0,
                 "amount_return": 0.0,
-                "last_order_preparation_change": "{}",
                 "lines": [
                     Command.create(
                         {
@@ -499,9 +511,10 @@ class TestKioskCloseSessionZHttp(HttpCase):
         def _make_config(name, mode):
             config = cls.env["pos.config"].create(
                 {
+                    # Odoo 20 rejects the "Odoo POS" partner of another company.
+                    "default_partner_id": company.partner_id.id,
                     "name": name,
                     "journal_id": journal.id,
-                    "invoice_journal_id": journal.id,
                     "self_ordering_mode": mode,
                     "self_ordering_default_user_id": pos_user.id,
                     "payment_method_ids": [(6, 0, [])],
