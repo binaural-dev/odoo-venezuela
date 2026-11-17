@@ -2,9 +2,11 @@ from odoo import fields
 from odoo.tests import TransactionCase, tagged
 from .common import enable_historical_rate_fixtures
 
+from .common import ForeignRateFixture
+
 
 @tagged("post_install", "-at_install", "l10n_ve_invoice")
-class TestDebitNoteFiscalPeriodWarning(TransactionCase):
+class TestDebitNoteFiscalPeriodWarning(ForeignRateFixture, TransactionCase):
     def setUp(self):
         super().setUp()
         enable_historical_rate_fixtures(self)
@@ -45,6 +47,8 @@ class TestDebitNoteFiscalPeriodWarning(TransactionCase):
                 "company_id": self.company.id,
             }
         )
+
+        self._set_foreign_rates(['2026-01-15', '2026-01-20', '2026-03-01', '2026-03-05', '2026-03-10', '2026-09-02', '2026-09-10', '2026-09-16'])
 
     def _create_posted_bill(self, invoice_date_display, date=None):
         bill = self.env["account.move"].create(

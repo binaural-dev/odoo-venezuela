@@ -5,11 +5,12 @@ from odoo import Command, fields
 from odoo.addons.l10n_ve_invoice_digital.services.tfhka_service_base import TfhkaSequenceMismatchError
 from unittest.mock import patch, MagicMock
 import logging
+from odoo.addons.l10n_ve_invoice.tests.common import ForeignRateFixture
 
 _logger = logging.getLogger(__name__)
 
 @tagged("post_install", "-at_install", "l10n_ve_invoice_digital", "retention_digital") 
-class TestAccumulatedRate(TransactionCase):
+class TestAccumulatedRate(ForeignRateFixture, TransactionCase):
     def setUp(self):
         super().setUp()
         self.currency_vef = self.env.ref("base.VEF")
@@ -262,6 +263,8 @@ class TestAccumulatedRate(TransactionCase):
             "company_id": self.env.company.id,
         })
 
+        self._set_foreign_rates()
+
     def _create_invoice(self):
         invoice = self.env["account.move"].create({
             "move_type": "in_invoice",
@@ -300,16 +303,29 @@ class TestAccumulatedRate(TransactionCase):
         # own account_retention.py documents and avoids elsewhere.
         today = fields.Date.context_today(self)
 
-        with Form(self.env["account.retention"].with_context(default_type="in_invoice", default_type_retention=type_retention)) as retention_form:
+        # En IVA se usa la vista propia de IVA (la vista por defecto no trae la alicuota de la linea): al elegir
+        # el contacto el formulario ya carga las lineas de sus facturas con su alicuota; una linea de IVA sin
+        # alicuota la rechaza `_check_iva_lines_have_aliquot` al aprobar.
+        is_iva = type_retention == "iva"
+        view = "l10n_ve_payment_extension.view_retention_iva_form_l10n_ve_payment_extension" if is_iva else None
+
+        with Form(
+            self.env["account.retention"].with_context(default_type="in_invoice", default_type_retention=type_retention),
+            view=view,
+        ) as retention_form:
             retention_form.partner_id = self.partner_a
             retention_form.date_accounting = today
 
         retention = retention_form.save()
 
-        with Form(retention) as retention_form_edit:
+        if is_iva and retention.retention_line_ids.filtered(lambda l: l.move_id == invoice):
+            return retention
+
+        with Form(retention, view=view) as retention_form_edit:
             with retention_form_edit.retention_line_ids.new() as line:
                 line.move_id = invoice
-                line.payment_concept_id = self.payment_concept
+                if not is_iva:
+                    line.payment_concept_id = self.payment_concept
 
         retention = retention_form_edit.save()
 

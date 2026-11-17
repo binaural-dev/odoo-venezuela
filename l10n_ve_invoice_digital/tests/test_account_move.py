@@ -7,11 +7,12 @@ from unittest.mock import patch, MagicMock
 from datetime import datetime, timedelta
 import logging
 import requests
+from odoo.addons.l10n_ve_invoice.tests.common import ForeignRateFixture
 
 _logger = logging.getLogger(__name__)
 
 @tagged("post_install", "-at_install", "l10n_ve_invoice_digital", "invoice_digital") 
-class TestAccountMoveApiCalls(TransactionCase):
+class TestAccountMoveApiCalls(ForeignRateFixture, TransactionCase):
 
     def setUp(self):
         super().setUp()
@@ -230,6 +231,8 @@ class TestAccountMoveApiCalls(TransactionCase):
             'supplier_taxes_id': [Command.set([self.tax_iva16_purchase.id])],
         })
 
+        self._set_foreign_rates([fields.Date.today() - timedelta(days=3)])
+
     def _next_correlative(self):
         """Numero de control unico dentro del test."""
         self._correlative_seq = getattr(self, "_correlative_seq", 0) + 1
@@ -338,6 +341,11 @@ class TestAccountMoveApiCalls(TransactionCase):
         company.invalidate_recordset(["currency_id"])
         self.env.cr.execute("UPDATE product_pricelist SET currency_id = %s", (currency.id,))
         self.env["product.pricelist"].search([]).invalidate_recordset(["currency_id"])
+        # Con la compañía en `currency`, la otra moneda del par es la alterna de los documentos:
+        # compute_rate necesita su tasa de hoy.
+        for other in (self.currency_usd, self.currency_vef):
+            if other != currency:
+                self._set_foreign_rates(currency=other)
 
     def _create_subsidiary(self, name="Sucursal prueba"):
         analytic_plan = self.env['account.analytic.plan'].create({

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- La ND de proveedor nace en el diario de compras de su factura: el título del PDF
+         estándar solo mira move_type y la rotulaba "Factura de proveedor". -->
+    <template id="report_invoice_document_debit_note_title" inherit_id="account.report_invoice_document">
+        <xpath expr="//t[@name='vendor_bill_title']" position="replace">
+            <t name="vendor_bill_title">
+                <t t-if="o._is_debit_note()">Vendor Debit Note</t>
+                <t t-else="">Vendor Bill</t>
+            </t>
+        </xpath>
+    </template>
+</odoo>

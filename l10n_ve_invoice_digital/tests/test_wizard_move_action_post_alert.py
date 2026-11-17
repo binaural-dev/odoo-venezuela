@@ -1,10 +1,11 @@
 from odoo.tests import TransactionCase, tagged
 from odoo import Command, fields
 from unittest.mock import patch
+from odoo.addons.l10n_ve_invoice.tests.common import ForeignRateFixture
 
 
 @tagged("post_install", "-at_install", "l10n_ve_invoice_digital", "move_action_post_alert")
-class TestMoveActionPostAlertWizard(TransactionCase):
+class TestMoveActionPostAlertWizard(ForeignRateFixture, TransactionCase):
     def setUp(self):
         super().setUp()
         self.env.user.tz = "America/Caracas"
@@ -66,6 +67,8 @@ class TestMoveActionPostAlertWizard(TransactionCase):
             # O19: account.account es multi-compañía (company_ids M2m).
             "company_ids": [Command.link(self.company.id)],
         })
+
+        self._set_foreign_rates()
 
     def _create_invoice(self, post=True):
         prod = self.env['product.product'].create({

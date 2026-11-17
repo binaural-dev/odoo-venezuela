@@ -1,46 +1,29 @@
-from unittest.mock import patch
-
-from odoo import api
-
-NEUTRAL_FIXTURE_INVERSE_RATE = 1.0
+from odoo import fields
 
 
-def enable_historical_rate_fixtures(testcase):
-    """`l10n_ve_rate` resolves a rate ONLY for the exact date it is asked for
-    (`ResCurrencyRate.compute_rate`, no nearest/previous fallback) and raises
-    when there is none. These fixtures create invoices on arbitrary dates
-    without declaring a rate for each. For the duration of the test, when the
-    exact-date rate is missing, it is created on the requested date from the
-    most recent earlier rate of that currency (or a neutral one) and the real
-    method is called. Production code is untouched.
-    """
-    rate_model = type(testcase.env["res.currency.rate"])
-    original = rate_model.compute_rate
+class ForeignRateFixture:
+    """Tasa de la moneda alterna para las fechas que usa una prueba.
 
-    @api.model
-    def compute_rate(self, foreign_currency_id, rate_date, *args, **kwargs):
-        company = self.env.company
-        if foreign_currency_id and foreign_currency_id != company.currency_id.id:
-            domain = [
-                ("currency_id", "=", foreign_currency_id),
-                ("company_id", "in", (company | company.root_id).ids),
-            ]
-            rates = self.env["res.currency.rate"].sudo()
-            if not rates.search_count(domain + [("name", "=", rate_date)]):
-                earlier = rates.search(
-                    domain + [("name", "<=", rate_date)], order="name desc", limit=1
-                )
-                rates.create(
-                    {
-                        "currency_id": foreign_currency_id,
-                        "company_id": earlier.company_id.id or company.root_id.id,
-                        "name": rate_date,
-                        "inverse_company_rate": earlier.inverse_company_rate
-                        or NEUTRAL_FIXTURE_INVERSE_RATE,
-                    }
-                )
-        return original(self, foreign_currency_id, rate_date, *args, **kwargs)
+    `res.currency.rate.compute_rate` (l10n_ve_rate) solo usa la tasa de la fecha exacta y falla con
+    "There is no rate assigned" si no existe. Una prueba que crea facturas sin crear tasas
+    queda en error en una base limpia: se llama al final de su `setUp`, cuando la compañía ya tiene
+    su moneda y su moneda alterna. El valor de la tasa da igual a estas pruebas: no revisan montos
+    en moneda alterna."""
 
-    patcher = patch.object(rate_model, "compute_rate", compute_rate)
-    patcher.start()
-    testcase.addCleanup(patcher.stop)
+    def _set_foreign_rates(self, dates=(), rate=1.0, currency=None):
+        """`currency`: la moneda que recibe la tasa; por defecto la alterna de la compañía."""
+        company = self.company
+        currency = currency or company.foreign_currency_id
+        Rate = self.env["res.currency.rate"]
+        for date in {fields.Date.today(), *map(fields.Date.to_date, dates)}:
+            if not Rate.search_count([
+                ("currency_id", "=", currency.id),
+                ("company_id", "=", company.id),
+                ("name", "=", date),
+            ]):
+                Rate.create({
+                    "name": date,
+                    "currency_id": currency.id,
+                    "company_id": company.id,
+                    "company_rate": rate,
+                })

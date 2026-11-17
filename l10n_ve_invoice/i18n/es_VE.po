@@ -969,3 +969,8 @@ msgstr "Forma Libre"
 #: model:ir.model,name:l10n_ve_invoice.model_l10n_ve_discount_line_mixin
 msgid "Line fixed amount discount"
 msgstr "Descuento de importe fijo de línea"
+
+#. module: l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_invoice_document_debit_note_title
+msgid "Vendor Debit Note"
+msgstr "Nota de débito de proveedor"
