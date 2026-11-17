@@ -11,7 +11,7 @@ export class MfReportsWebSerialButtonComponent extends Component {
     static props = ["*"];
     static template = xml`
         <button class="btn btn-primary mb-2" t-att-disabled="state.busy" t-on-click="onClick">
-            <i t-if="state.busy" class="fa fa-spinner fa-spin me-1"/>
+            <i t-if="state.busy" class="oi oi-spin me-1" data-icon="progress_activity"/>
             <span t-esc="state.label"/>
         </button>`;
 

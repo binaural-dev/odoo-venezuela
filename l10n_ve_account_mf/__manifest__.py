@@ -20,13 +20,13 @@
         "l10n_ve_tax_payer",
     ],
     "data": [
-        "security/ir.model.access.csv",
         "views/account_move.xml",
         "views/account_move_views.xml",
         "views/account_journal.xml",
         "views/res_config_settings.xml",
         "wizards/mf_reports_wizard_views.xml",
         "wizards/accounting_reports_views.xml",
+        'security/ir.access.csv',
     ],
     "assets": {
         "web.assets_backend": [

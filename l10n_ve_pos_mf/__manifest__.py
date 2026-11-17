@@ -13,7 +13,6 @@
         "l10n_ve_mf_base",
     ],
     "data": [
-        "security/ir.model.access.csv",
         "security/res_group.xml",
         "views/pos_config.xml",
         "views/pos_order.xml",
@@ -23,6 +22,7 @@
         "views/pos_payment_method.xml",
         "wizard/wizard_sales_book.xml",
         "views/res_config_settings.xml",
+        'security/ir.access.csv',
     ],
     "assets": {
         "point_of_sale._assets_pos": [

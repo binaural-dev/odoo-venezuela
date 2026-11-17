@@ -1,0 +1,10 @@
+id,name,model_id,group_id/id,operation,domain
+access_stock_location_manager,stock_location_manager,stock.location,base.group_everyone,crud,
+access_stock_picking_alter_location_user,access.stock.picking.alter.location.user,stock.picking.alter.location,base.group_user,r,
+access_stock_picking_alter_location_edit,access.stock.picking.alter.location.edit,stock.picking.alter.location,l10n_ve_stock.group_physical_location_edit,crud,
+stock_picking_alter_location_company_rule,Stock Picking Alter Location: Multi-Company,stock.picking.alter.location,,crud,"['|', ('company_id', 'in', company_ids), ('company_id', '=', False)]"
+access_stock_picking_alter_location_line_user,access.stock.picking.alter.location.line.user,stock.picking.alter.location.line,base.group_user,r,
+access_stock_picking_alter_location_line_edit,access.stock.picking.alter.location.line.edit,stock.picking.alter.location.line,l10n_ve_stock.group_physical_location_edit,crud,
+stock_picking_alter_location_line_company_rule,Stock Picking Alter Location Line: Multi-Company,stock.picking.alter.location.line,,crud,"['|', ('company_id', 'in', company_ids), ('company_id', '=', False)]"
+access_move_alter_location_qtities_wizard,access.move.alter.location.qtities.wizard,move.alter.location.qtities.wizard,base.group_user,crud,
+product_category_multi_company_rule,Product Category: Multi-Company,product.category,,crud," ['|', ('company_id', 'in', company_ids), ('company_id', '=', False)]"

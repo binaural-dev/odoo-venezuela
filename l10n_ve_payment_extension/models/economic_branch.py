@@ -6,13 +6,10 @@ class EconomicBranch(models.Model):
     _name = "economic.branch"
     _rec_name = "name"
     _description = "Economic Branch"
-    _sql_constraints = [
-        (
-            "name_uniq",
-            "unique (name)",
-            "You may not register an economic sector with the same name.",
-        )
-    ]
+    _name_uniq = models.Constraint(
+        'unique (name)',
+        "You may not register an economic sector with the same name.",
+    )
 
     name = fields.Char(required=True, store=True)
     status = fields.Selection(

@@ -8,7 +8,7 @@
     "version": "19.0.1.0.0",
     "depends": ["web"],
     "data": [
-        "security/ir.model.access.csv",
+        'security/ir.access.csv',
     ],
     "pre_init_hook": "pre_init_hook",
     "installable": False,

@@ -1,0 +1,7 @@
+id,name,model_id,group_id/id,operation,domain
+access_auditlog_log_seniat,auditlog.log.seniat,auditlog.log,l10n_ve_auditlog.group_audit_report_seniat,r,
+access_auditlog_rule_seniat,auditlog.rule.seniat,auditlog.rule,l10n_ve_auditlog.group_audit_report_seniat,r,
+access_auditlog_log_line_seniat,auditlog.log.line.seniat,auditlog.log.line,l10n_ve_auditlog.group_audit_report_seniat,r,
+access_ir_model_fields_seniat,ir.model.fields.seniat,ir.model.fields,l10n_ve_auditlog.group_audit_report_seniat,r,
+access_ir_model_seniat,ir.model.seniat,ir.model,l10n_ve_auditlog.group_audit_report_seniat,r,
+access_ir_actions_todo_seniat,ir.actions.todo.seniat,ir.actions.todo,l10n_ve_auditlog.group_audit_report_seniat,r,

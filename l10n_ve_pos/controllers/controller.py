@@ -10,7 +10,7 @@ _logger = logging.getLogger(__name__)
 
 class ValidateQtyProducts(http.Controller):
     @http.route(
-        "/validate_products_order", type="json", auth="public", website=False, sitemap=False
+        "/validate_products_order", type="jsonrpc", auth="public", website=False, sitemap=False
     )
     def validate_products_order(self, lines, qty, **kwargs):
         if lines and qty:
@@ -36,7 +36,7 @@ class ValidateQtyProducts(http.Controller):
             return data
 
     @http.route(
-        "/validate_products_in_warehouse", type="json", auth="public", website=False, sitemap=False
+        "/validate_products_in_warehouse", type="jsonrpc", auth="public", website=False, sitemap=False
     )
     def validate_products_in_warehouse(self, product_ids, picking_type_id, qty,sell_kit_from_another_store, **kwargs):
         data = {"status": 200, "msg": "Success", "msg_error": False}

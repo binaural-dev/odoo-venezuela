@@ -222,7 +222,7 @@ class AccountMoveInh(models.Model):
         )
 
         if self.has_printed(values["sequence"]):
-            context = dict(self._context or {})
+            context = dict(self.env.context or {})
             context[
                 "message"
             ] = f"""

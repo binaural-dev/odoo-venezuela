@@ -44,7 +44,7 @@ class SaleOrder(models.Model):
     @api.model
     def _default_document(self):
         """Get the default value for the document field from the partner's default_document."""
-        partner = self.env["res.partner"].browse(self._context.get("default_partner_id"))
+        partner = self.env["res.partner"].browse(self.env.context.get("default_partner_id"))
         return partner.default_document if partner else "invoice"
 
     ### ONCHANGE ###

@@ -47,13 +47,13 @@
                             decoration-success="has_emited_islr_retention"
                             decoration-warning="not has_emited_islr_retention">
                         
-                        <i class="fa fa-check-circle text-success" 
+                        <i class="oi oi-filled text-success" data-icon="check_circle" 
                         title="Retencion islr"
                         aria-label="Retención islr"
                         invisible="not has_emited_islr_retention" 
                         style="font-size: 1.5em; margin-left: 10px; margin-right: 5px;"/>
                         
-                        <i class="fa fa-exclamation-circle text-warning" 
+                        <i class="oi oi-filled text-warning" data-icon="error" 
                         title="Retención islr w"
                         aria-label="Retencion islr w"
                         invisible="has_emited_islr_retention" 
@@ -75,13 +75,13 @@
                             decoration-success="has_emited_iva_retention"
                             decoration-warning="not has_emited_iva_retention">
                         
-                        <i class="fa fa-check-circle text-success" 
+                        <i class="oi oi-filled text-success" data-icon="check_circle" 
                         invisible="not has_emited_iva_retention" 
                         title="Retención iva"
                         aria-label="Retención iva"
                         style="font-size: 1.5em; margin-left: 10px; margin-right: 5px;"/>
                         
-                        <i class="fa fa-exclamation-circle text-warning" 
+                        <i class="oi oi-filled text-warning" data-icon="error" 
                         invisible="has_emited_iva_retention" 
                         title="Retención iva w"
                         aria-label="Retención iva w"
@@ -103,13 +103,13 @@
                             decoration-success="has_emited_municipal_retention"
                             decoration-warning="not has_emited_municipal_retention">
                         
-                        <i class="fa fa-check-circle text-success" 
+                        <i class="oi oi-filled text-success" data-icon="check_circle" 
                         title="Retención municipal"
                         aria-label="Retención municipal"
                         invisible="not has_emited_municipal_retention" 
                         style="font-size: 1.5em; margin-left: 10px; margin-right: 5px;"/>
                         
-                        <i class="fa fa-exclamation-circle text-warning" 
+                        <i class="oi oi-filled text-warning" data-icon="error" 
                         title="Retención municipal w"
                         aria-label="Retención municipal w"
                         invisible="has_emited_municipal_retention" 
@@ -183,7 +183,7 @@
                         name="action_view_third_party_iva_retentions"
                         type="object"
                         class="oe_stat_button"
-                        icon="fa-balance-scale"
+                        icon="balance"
                         invisible="not is_third_party_retention or move_type not in ('in_invoice', 'in_receipt', 'in_refund')"
                     >
                         <field name="third_party_iva_retention_count" widget="statinfo" string="Third Party IVA Ret."/>
@@ -192,7 +192,7 @@
                         name="action_view_third_party_islr_retentions"
                         type="object"
                         class="oe_stat_button"
-                        icon="fa-university"
+                        icon="account_balance"
                         invisible="not is_third_party_retention or move_type not in ('in_invoice', 'in_receipt', 'in_refund')"
                     >
                         <field name="third_party_islr_retention_count" widget="statinfo" string="Third Party ISLR Ret."/>

@@ -21,7 +21,6 @@
     ],
     "data": [
         "security/ir.model.access.csv",
-        "security/ir_rule.xml",
         "data/sequence_data.xml",
         "data/type_person_data.xml",
         "data/account_withholding_type_data.xml",
@@ -59,6 +58,7 @@
         "wizard/wizard_retention_iva.xml",
         "wizard/batch_retentions_wizard.xml",
         "views/menu.xml",
+        'security/ir.access.csv',
     ],
     "images": ["static/description/icon.png"],
     "application": True,

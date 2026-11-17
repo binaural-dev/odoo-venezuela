@@ -27,25 +27,25 @@ export class MfFiscalizadorDialog extends Component {
         <Dialog title="title" size="'lg'">
             <div class="d-flex gap-2 mb-3 flex-wrap">
                 <button class="btn btn-primary" t-att-disabled="state.busy" t-on-click="connect">
-                    <i class="fa fa-plug me-1"/>Conectar
+                    <i class="oi me-1" data-icon="power"/>Conectar
                 </button>
                 <button class="btn btn-secondary" t-att-disabled="state.busy" t-on-click="readStatus">
-                    <i class="fa fa-heartbeat me-1"/>Estado (ENQ)
+                    <i class="oi me-1" data-icon="cardiology"/>Estado (ENQ)
                 </button>
                 <button class="btn btn-secondary" t-att-disabled="state.busy" t-on-click="readS1">
-                    <i class="fa fa-info-circle me-1"/>Datos S1
+                    <i class="oi oi-filled me-1" data-icon="info"/>Datos S1
                 </button>
                 <button class="btn btn-secondary" t-att-disabled="state.busy" t-on-click="readS4">
-                    <i class="fa fa-credit-card me-1"/>Medios de Pago (S4)
+                    <i class="oi me-1" data-icon="credit_card"/>Medios de Pago (S4)
                 </button>
                 <button class="btn btn-info" t-att-disabled="state.busy" t-on-click="readIgtfInfo">
-                    <i class="fa fa-globe me-1"/>Info IGTF (S3+S25)
+                    <i class="oi me-1" data-icon="public"/>Info IGTF (S3+S25)
                 </button>
                 <button class="btn btn-warning" t-att-disabled="state.busy" t-on-click="reportX">
-                    <i class="fa fa-file-text-o me-1"/>Reporte X
+                    <i class="oi me-1" data-icon="article"/>Reporte X
                 </button>
                 <button class="btn btn-danger" t-att-disabled="state.busy" t-on-click="reportZ">
-                    <i class="fa fa-lock me-1"/>Reporte Z
+                    <i class="oi me-1" data-icon="lock"/>Reporte Z
                 </button>
                 <span class="ms-auto align-self-center">
                     <span t-if="state.connected" class="badge text-bg-success">Conectada</span>

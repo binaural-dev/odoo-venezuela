@@ -27,7 +27,7 @@
                                 type="object"
                                 string="View Origin Document"
                                 class="oe_stat_button"
-                                icon="fa-external-link"
+                                icon="open_in_new"
                                 invisible="not res_id"/>
                     </div>
                     <group>

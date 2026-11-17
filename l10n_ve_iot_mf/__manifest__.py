@@ -20,7 +20,6 @@
         "l10n_ve_stock_account",
     ],
     "data": [
-        "security/ir.model.access.csv",
         "data/iot_port.xml",
         "views/account_tax.xml",
         "views/account_move.xml",
@@ -30,6 +29,7 @@
         "views/res_config_setting_views.xml",
         "views/account_move_views.xml",
         "wizards/accounting_reports_views.xml",
+        'security/ir.access.csv',
     ],
     "assets": {"web.assets_backend": ["l10n_ve_iot_mf/static/src/js/*.js"]},
     "installable": False,

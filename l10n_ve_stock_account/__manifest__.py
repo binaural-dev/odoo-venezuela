@@ -17,7 +17,6 @@
         "web",
     ],
     "data": [
-        "security/ir.model.access.csv",
         "security/res_groups.xml",
         "data/dispatch_guide_paperformat.xml",
         "data/dispatch_note_paperformat.xml",
@@ -41,6 +40,7 @@
         "report/dispatch_guide_template.xml",
         "report/report_invoice_free_form.xml",
         "wizard/stock_picking_self_consumption_alert_views.xml",
+        'security/ir.access.csv',
     ],
     "application": True,
     "auto_install": False,

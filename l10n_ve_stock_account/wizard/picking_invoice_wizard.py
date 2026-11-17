@@ -19,7 +19,7 @@ class PickingInvoiceWizard(models.TransientModel):
                 self.multiple_invoice()
     
     def unique_invoice(self):
-        active_ids = self._context.get("active_ids")
+        active_ids = self.env.context.get("active_ids")
         picking_ids = self.env["stock.picking"].browse(active_ids)
         picking_id_check_state = picking_ids.filtered(lambda x: x.state != 'done')
 
@@ -53,7 +53,7 @@ class PickingInvoiceWizard(models.TransientModel):
             father_picking.create_multi_invoice(picking_ids)
             
     def multiple_invoice(self):
-        active_ids = self._context.get("active_ids")
+        active_ids = self.env.context.get("active_ids")
         picking_ids = self.env["stock.picking"].browse(active_ids)
         picking_id_check_state = picking_ids.filtered(lambda x: x.state_guide_dispatch != 'to_invoice')
         if picking_id_check_state: 
@@ -79,7 +79,7 @@ class PickingInvoiceWizard(models.TransientModel):
     @api.model
     def default_get(self, fields):
         res = super(PickingInvoiceWizard, self).default_get(fields)
-        active_ids = self._context.get("active_ids")
+        active_ids = self.env.context.get("active_ids")
         res['pickings_ids'] = [(6, 0, active_ids)]
         return res
     

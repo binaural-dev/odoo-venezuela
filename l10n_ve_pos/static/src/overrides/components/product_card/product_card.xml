@@ -15,7 +15,7 @@
           </t>
           <t t-elif="stockStatus === 'error'">N/A</t>
           <t t-else="">
-            <i class="fa fa-fw fa-spin fa-circle-o-notch" aria-hidden="true"/>
+            <i class="oi oi-fw oi-spin" data-icon="autorenew" aria-hidden="true"/>
           </t>
         </div>
       </t>

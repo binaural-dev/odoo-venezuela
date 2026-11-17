@@ -59,7 +59,7 @@ class AccountPaymentRegister(models.TransientModel):
             self.group_payment = False
         self.journal_id = self.env.company.iva_customer_retention_journal_id.id
         self.edit_retention_fields = False
-        move_ids = self._context.get("active_ids", [])
+        move_ids = self.env.context.get("active_ids", [])
         invoices = self.env["account.move"].browse(move_ids)
 
         lines = self._load_iva_retention_lines(invoices)

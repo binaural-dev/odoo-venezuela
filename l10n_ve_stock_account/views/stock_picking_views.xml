@@ -96,7 +96,7 @@
             </xpath>
             <xpath expr="//div[@name='button_box']" position="inside">
                 <button name="action_open_picking_invoice" type="object"
-                            class="oe_stat_button" icon="fa-file-text"
+                            class="oe_stat_button" icon="article" icon_class="oi-filled"
                             invisible="invoice_count == 0">
                     <field name="invoice_count" widget="statinfo"/>
                 </button>

@@ -21,7 +21,6 @@
     ],
     # always loaded
     "data": [
-        "security/ir.model.access.csv",
         "data/res_group.xml",
         "views/pos_payment_method.xml",
         "views/pos_order.xml",
@@ -32,6 +31,7 @@
         "security/res_group.xml",
         "wizard/payment_report.xml",
         "report/payment_report.xml",
+        'security/ir.access.csv',
     ],
     "images": ["static/description/icon.png"],
     "application": True,

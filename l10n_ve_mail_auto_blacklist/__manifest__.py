@@ -9,11 +9,11 @@
     'license': 'LGPL-3',
     'depends': ['mass_mailing'],
     'data': [
-        'security/ir.model.access.csv',
         'views/mail_bounce_event_views.xml',
         'views/mail_bounce_event_menus.xml',
         'views/mail_blacklist_views.xml',
         'views/res_config_settings_views.xml',
+        'security/ir.access.csv',
     ],
     'images': ['static/description/icon.png'],
     'installable': False,

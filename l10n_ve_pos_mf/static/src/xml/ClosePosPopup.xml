@@ -11,7 +11,7 @@
                 t-att-disabled="!canConfirm() or mfState.isPrintingReport"
                 title="Imprime el Reporte Z y cierra la sesion de POS">
                 <t t-if="mfState.isPrintingReport">
-                    <i class="fa fa-spinner fa-spin me-1"/>Procesando...
+                    <i class="oi oi-spin me-1" data-icon="progress_activity"/>Procesando...
                 </t>
                 <t t-else="">Cerrar sesion e imprimir Z</t>
             </button>
@@ -24,7 +24,7 @@
                 t-att-disabled="mfState.isPrintingReport"
                 title="Generar Reporte X">
                 <t t-if="mfState.isPrintingReport">
-                    <i class="fa fa-spinner fa-spin me-1"/>Imprimiendo...
+                    <i class="oi oi-spin me-1" data-icon="progress_activity"/>Imprimiendo...
                 </t>
                 <t t-else="">Reporte X</t>
             </button>

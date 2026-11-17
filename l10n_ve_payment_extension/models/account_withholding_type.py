@@ -5,10 +5,14 @@ class TypeWithholding(models.Model):
     _name = "account.withholding.type"
     _description = "Type Withholding"
     _order = "create_date desc"
-    _sql_constraints = [
-        ("unique_name", "UNIQUE(name)", "You cannot add withholdings with the same name"),
-        ("unique_value", "UNIQUE(value)", "You can not add withholdings with the same Value"),
-    ]
+    _unique_name = models.Constraint(
+        'UNIQUE(name)',
+        "You cannot add withholdings with the same name",
+    )
+    _unique_value = models.Constraint(
+        'UNIQUE(value)',
+        "You can not add withholdings with the same Value",
+    )
 
     def case_upper(self, string,field_name):
         if string:

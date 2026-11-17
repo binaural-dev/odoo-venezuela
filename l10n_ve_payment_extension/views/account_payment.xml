@@ -40,7 +40,7 @@
                                                     
                                                     <div class="d-flex flex-wrap align-items-center gap-2 mt-1">
                                                         <small class="text-secondary fw-semibold">
-                                                            <i class="fa fa-file-text-o me-1" title="Document"/>
+                                                            <i class="oi me-1" data-icon="article" title="Document"/>
                                                             <t t-out="record.move_id.value"/>
                                                         </small>
                                                         

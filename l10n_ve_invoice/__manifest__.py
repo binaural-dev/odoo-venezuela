@@ -18,8 +18,6 @@
     ],
     "data": [
         "security/l10n_ve_invoice_groups.xml",
-        "security/ir.model.access.csv",
-        "security/ir_rule.xml",
         "data/account_data.xml",
         "data/invoice_free_form_paperformat.xml",
         "report/report_ir_actions_report.xml",
@@ -30,6 +28,7 @@
         "views/menu.xml",
         "wizard/accounting_reports_views.xml",
         "views/account_debit_note_view.xml",
+        'security/ir.access.csv',
     ],
     "assets": {
         "web.assets_backend": [

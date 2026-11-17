@@ -15,7 +15,7 @@ class TestAccountMoveApiCalls(TransactionCase):
 
     def setUp(self):
         super().setUp()
-        self.env.registry.clear_cache()
+        self.env.transaction.invalidate_ormcache()
         _ = self.env["account.move"]
         Account = self.env["account.account"]
         Journal = self.env["account.journal"]
