@@ -391,15 +391,30 @@ class AccountMove(models.Model):
     def _l10n_ve_check_international_purchase_rates(self):
         """Importaciones: la Rate Date puede ser posterior a la Invoice Date,
         pero la moneda alterna y la del documento deben tener tasa exacta en
-        ambas fechas (`compute_rate` lanza UserError si falta alguna)."""
+        ambas fechas (`compute_rate` lanza UserError si falta alguna). Una
+        fecha vacia tambien se rechaza: sin fecha no hay tasa que validar."""
         self.ensure_one()
         currencies = (self.foreign_currency_id | self.currency_id).filtered(
             lambda c: c != self.company_id.currency_id
         )
         rate_model = self.env["res.currency.rate"]
-        for rate_date in (self.invoice_date_display, self.invoice_date):
+        labels = {
+            name: desc["string"]
+            for name, desc in self.fields_get(
+                ["invoice_date", "invoice_date_display"]
+            ).items()
+        }
+        for field_name in ("invoice_date_display", "invoice_date"):
+            rate_date = self[field_name]
             if not rate_date:
-                continue
+                raise UserError(
+                    _(
+                        "%(document)s: the rate on the %(field)s is required to "
+                        "confirm an international purchase, but that date is empty.",
+                        document=self.display_name,
+                        field=labels[field_name],
+                    )
+                )
             for currency in currencies:
                 rate_model.compute_rate(currency.id, rate_date)
 

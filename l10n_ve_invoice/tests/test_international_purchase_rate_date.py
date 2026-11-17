@@ -132,3 +132,9 @@ class TestInternationalPurchaseRateDate(TransactionCase):
         ).unlink()
         with self.assertRaises(UserError):
             bill.action_post()
+
+    def test_import_without_invoice_date_is_blocked(self):
+        bill = self._bill(self.journal_import, self.rate_day)
+        bill.invoice_date_display = False
+        with self.assertRaisesRegex(UserError, "that date is empty"):
+            bill._l10n_ve_check_international_purchase_rates()

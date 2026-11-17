@@ -960,3 +960,13 @@ msgstr ""
 msgid "Free Form"
 msgstr "Forma Libre"
 
+
+#. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/models/account_move.py:0
+msgid ""
+"%(document)s: the rate on the %(field)s is required to confirm an "
+"international purchase, but that date is empty."
+msgstr ""
+"%(document)s: se requiere la tasa de la %(field)s para confirmar una compra "
+"internacional, pero esa fecha está vacía."
