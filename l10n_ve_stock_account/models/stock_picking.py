@@ -1197,10 +1197,16 @@ class StockPicking(models.Model):
                     and warehouse
                     and warehouse.is_consignation_warehouse
                 ):
-                    picking.transfer_reason_id = consignment_reason.id
-                    picking.is_consignment_readonly = True
+                    # Solo se asigna lo que cambia: asignar un campo no calculado
+                    # dentro del compute hace un write() completo por albaran
+                    # (fill_historical_transfer_reasons recalcula todos al instalar).
+                    if picking.transfer_reason_id != consignment_reason:
+                        picking.transfer_reason_id = consignment_reason.id
+                    if not picking.is_consignment_readonly:
+                        picking.is_consignment_readonly = True
                 else:
-                    picking.is_consignment_readonly = False
+                    if picking.is_consignment_readonly:
+                        picking.is_consignment_readonly = False
                     # Sin una razon valida, el respaldo generico de abajo tomaba la
                     # primera permitida (consignacion) en almacenes que no lo son:
                     # se usa la de la compania o, si no hay, traslado entre almacenes.
@@ -1208,9 +1214,14 @@ class StockPicking(models.Model):
                         default_reason = picking._get_default_internal_transfer_reason(
                             picking.picking_type_id, picking.company_id, picking.location_dest_id
                         )
-                        picking.transfer_reason_id = (
-                            default_reason or transfer_between_warehouses_reason
-                        )
+                        reason = default_reason or transfer_between_warehouses_reason
+                        # Al instalar el modulo sobre albaranes existentes, este calculo
+                        # corre antes de cargar data/transfer_reason.xml: no hay motivo
+                        # que asignar, y escribir uno vacio dispara
+                        # _check_transfer_reason_required y aborta la instalacion. El
+                        # post_init_hook rellena los historicos cuando los motivos existen.
+                        if reason:
+                            picking.transfer_reason_id = reason
 
             # Force update of transfer_reason_id field to avoid inconsistencies
             if allowed_reason_ids:
