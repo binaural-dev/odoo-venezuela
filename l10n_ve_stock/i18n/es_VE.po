@@ -217,7 +217,7 @@ msgstr ""
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location_line__available_qty
 msgid "Available Quantities"
-msgstr ""
+msgstr "Cantidad disponible"
 
 #. module: l10n_ve_stock
 #. odoo-python
@@ -954,7 +954,7 @@ msgstr "Categoría del producto"
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location_line__location_id
 msgid "Product Location"
-msgstr ""
+msgstr "Ubicación"
 
 #. module: l10n_ve_stock
 #: model:ir.model,name:l10n_ve_stock.model_stock_move_line
@@ -1412,3 +1412,8 @@ msgstr ""
 #: model:ir.actions.report,name:l10n_ve_stock.inventory_valuation_report
 msgid "inventory Valuation"
 msgstr "Valoración de inventario"
+
+#. module: l10n_ve_stock
+#: model:ir.model.constraint,message:l10n_ve_stock.constraint_stock_picking_alter_location_line_location_uniq
+msgid "This location is already in the other locations of the product."
+msgstr "Esta ubicación ya está en las otras ubicaciones del producto."
