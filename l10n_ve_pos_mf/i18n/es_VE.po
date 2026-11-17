@@ -347,6 +347,11 @@ msgid "Report Z"
 msgstr "Reporte Z"
 
 #. module: l10n_ve_pos_mf
+#: model:ir.model.fields,field_description:l10n_ve_pos_mf.field_pos_session__report_z_date
+msgid "Report Z Date"
+msgstr "Fecha del Reporte Z"
+
+#. module: l10n_ve_pos_mf
 #. odoo-javascript
 #: code:addons/l10n_ve_pos_mf/static/src/xml/Navbar.xml:0
 #, python-format
@@ -411,8 +416,8 @@ msgstr "Serial de la Máquina fiscal:"
 #. module: l10n_ve_pos_mf
 #: model:ir.model.fields,field_description:l10n_ve_pos_mf.field_pos_config__serial_machine
 #: model:ir.model.fields,field_description:l10n_ve_pos_mf.field_pos_session__serial_machine
-msgid "Serial of fiscal machine"
-msgstr "Serial de la maquina fiscal"
+msgid "Serial de Máquina Fiscal"
+msgstr "Serial de la máquina fiscal"
 
 #. module: l10n_ve_pos_mf
 #: model:ir.model.fields,field_description:l10n_ve_pos_mf.field_pos_config__traditional_line
