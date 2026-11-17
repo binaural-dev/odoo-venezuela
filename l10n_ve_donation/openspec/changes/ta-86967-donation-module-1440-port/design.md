@@ -1,18 +1,17 @@
 # Design
 
-## D1. La rama vive en odoo-venezuela, no en el repo del cliente
+## D1. El módulo vive en odoo-venezuela, no en el repo del cliente
 
 En las instancias 19 la raíz del cliente va **después** de `odoo-venezuela` en
 `addons_path` (arreglo de traducciones), así que una carpeta
 `l10n_ve_donation/` en el repo de Higea quedaría tapada. Los dependientes
 (`binaural_operative`, `binaural_stock_dispatch_note`, `l10n_ve_inventory_book`)
-dependen del módulo por nombre. Higea fija la rama como pin, como hace hoy
-con #1440 en 17.
+dependen del módulo por nombre. Los clientes lo consumen desde odoo-venezuela.
 
 ## D2. `is_donation` en `stock.picking` pertenece al módulo (dependencia invertida)
 
 En 19, `l10n_ve_donation` depende de `l10n_ve_stock_account` y toda la lógica
-de donación se sacó de ahí (`2033a9a1f`). Lo que `9675a0f0c` puso en
+de donación se sacó de ahí. Lo que la lógica de #1440 puso en
 `l10n_ve_stock_account` de 17 (campo guardado, `_get_new_picking_values`,
 rama del motivo, `readonly` de la vista) se rehace dentro del módulo sin
 tocar `l10n_ve_stock_account`. Se usa el campo de V19 (computado guardado
@@ -60,21 +59,19 @@ donación y `self_consumption` a autoconsumo.
 
 `l10n_ve_accountant.action_post` devuelve el wizard `move.action.post.alert.wizard`
 y no publica; el wizard llama otra vez con `move_action_post_alert=True`.
-`action_post` de donación conserva la guarda del pin: si el padre devolvió un
+`action_post` de donación conserva la guarda de la versión 17: si el padre devolvió un
 dict, retorna sin hacer nada; en la segunda llamada reversa y publica la nota
 de cada factura que **esa llamada** publicó (se calcula la lista de borradores
 antes de `super()`), de modo que un lote de varias facturas recibe una nota
 cada una y volver a publicar una ya publicada no la reversa otra vez. Como esa
 publicación ocurre sin la clave de contexto de `_reverse_moves`, la exención de
 la validación de origen de `l10n_ve_invoice` se decide por el campo guardado
-`is_donation` (`_l10n_ve_skip_refund_origin_validation`). Se corrige respecto al
-pin el uso de `self` en lugar de `move` (`active_ids`, `journal_id`).
+`is_donation` (`_l10n_ve_skip_refund_origin_validation`). Se corrige respecto a
+la versión 17 el uso de `self` en lugar de `move` (`active_ids`, `journal_id`).
 
-La nota de crédito se crea **sin** `skip_invoice_sync`. La llave venía de
-`maintenance-19.0` (`00f1441f2f`) y en 19 impide al core generar las líneas de
+La nota de crédito se crea **sin** `skip_invoice_sync`. En 19 la llave impide al core generar las líneas de
 impuesto y de cobro: la nota quedaba en 0,00 y la factura sin neutralizar.
-En 17.0 ya se había quitado por un desbalance parecido (`ea52357301`, tarea
-69610) y ese arreglo no llegó a 19. Se descubrió al recorrer el flujo en la
+En 17 ya se había quitado por un desbalance parecido (tarea 69610). Se descubrió al recorrer el flujo en la
 interfaz: ningún test comprobaba los montos de la nota.
 
 ## D6. Costo del certificado de entrega
@@ -95,9 +92,9 @@ bajo `block[@name='l10n_ve_stock_block']` con el mismo `div id`
 ## D8. Asiento manual de donación: partner en borrador, nada al publicar
 
 Las donaciones recibidas en dinero son asientos manuales que el usuario marca
-(manual de donaciones de Higea, flujo F3). Se restaura la vista del pin:
+(manual de donaciones de Higea, flujo F3). Se restaura la vista de la versión 17:
 `is_donation` visible y editable solo en asientos manuales en borrador (V19 lo
-ocultaba hasta estar marcado, `0fac17542c`).
+ocultaba hasta estar marcado).
 
 El partner de la compañía en los apuntes ya no se escribe en `action_post`: un
 diario con "Bloquear asientos con hash" no permite editar partner ni etiqueta de
@@ -108,10 +105,9 @@ que un `_compute_partner_id` no sirve), el `write` de `account.move` al marcar
 `is_donation`, y justo antes de publicar. Los apuntes que ya tienen partner se
 respetan y el constraint `_check_partner_donation` sigue validando.
 
-Se retira el sufijo `" - <ref>"` que se agregaba a la etiqueta. Venía de 17.0
-(`73790e31c9`, "Migracion de donaciones", sin ticket), no existe en
-`maintenance-19.0` y solo lo consume `higea_donation` (que lo quita para armar
-el concepto del recibo). Decisión del usuario.
+Se retira el sufijo `" - <ref>"` que se agregaba a la etiqueta de los apuntes: venía de la
+versión 17 y solo lo consume `higea_donation` (que lo quita para armar el concepto del
+recibo).
 
 ## D9. "Crear factura" oculto en una donación sin pedido
 
@@ -141,7 +137,7 @@ usa `higea_donation` (no se renombra): `print_donation_certificate`,
 `_get_donation_grand_total`, `product_line_donation`,
 `is_donation_picking_type`, `donation_reason`, `donation_menu`.
 
-> Nota (rama `ta-86967-donation-received-documents`): `print_donation_certificate` cambió
+> Nota (change `ta-86967-donation-received-documents`): `print_donation_certificate` cambió
 > de significado. Ya no imprime el documento de la entrega (ahora `print_donation_receipt`,
 > el Recibo) sino el Certificado de una donación RECIBIDA. `higea_donation` 17 usa los
 > nombres con el significado de 17; al portarlo a 19 se ajusta a este contrato.

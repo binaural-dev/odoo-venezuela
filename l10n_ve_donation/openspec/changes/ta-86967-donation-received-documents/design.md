@@ -46,7 +46,7 @@ depender de la visibilidad de los botones.
 ## D6. Recepción inerte sin cuentas
 `button_validate` y `_get_donation_receipt_config_errors` solo exigen donante y
 configuración contable cuando la compañía tiene `donation_income_account_ids`. Sin cuentas
-la recepción valida como en la rama 86967: una compañía que no recibe donaciones no
+la recepción valida como en `ta-86967-donation-module-1440-port`: una compañía que no recibe donaciones no
 cambia. El campo de los ajustes valida la compañía (`check_company` y dominio).
 
 ## D7. Montos de un picking
@@ -96,4 +96,4 @@ misma condición; los documentos son los del asiento original.
 - Campo explícito de dirección en el asiento: el usuario eligió mantener la inferencia
   por cuentas, como Higea.
 - Módulo nuevo `l10n_ve_donation_received`: el usuario eligió el módulo existente.
-- Contacto real en las líneas de las otorgadas: se mantiene lo de la rama 86967.
+- Contacto real en las líneas de las otorgadas: se mantiene lo de `ta-86967-donation-module-1440-port`.

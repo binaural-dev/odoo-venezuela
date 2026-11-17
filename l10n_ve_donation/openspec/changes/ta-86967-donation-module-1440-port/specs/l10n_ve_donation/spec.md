@@ -244,7 +244,7 @@ Al publicar (`action_post`) una factura de cliente de donación, si `l10n_ve_acc
 - **Entonces** la de donación recibe su nota con el producto de donación y la normal se revierte por el flujo estándar, cada una con sus valores por defecto
 
 ### Requirement: Asignación del partner de la compañía al publicar un asiento manual de donación
-**Razón**: reemplazado por REQ-DON-014. El partner se asigna en borrador y publicar no escribe sobre el asiento (un diario con hash no lo permite). También se retira el sufijo " - <ref>" que `action_post` agregaba a la etiqueta de los apuntes (introducido en 17.0, `73790e31c9`; no existe en `maintenance-19.0`).
+**Razón**: reemplazado por REQ-DON-014. El partner se asigna en borrador y publicar no escribe sobre el asiento (un diario con hash no lo permite). También se retira el sufijo " - <ref>" que `action_post` agregaba a la etiqueta de los apuntes.
 
 ### Requirement: Certificado de donación en PDF
 **Razón**: el certificado era un acta de donación de bienes (el motivo como "bienes" y el valor en blanco) y el botón se mostraba también en el asiento de valoración de las entregas por picking. Pasa a ser el de una donación de dinero y se oculta en esos asientos (REQ-DON-016).
