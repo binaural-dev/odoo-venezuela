@@ -17,43 +17,57 @@ msgstr ""
 
 #. module: l10n_ve_accountant_asset
 #: model:ir.model.fields.selection,name:l10n_ve_accountant_asset.selection__account_move__auto_post__custom
-msgid "Personalizado"
+msgid "Custom"
 msgstr "Personalizado"
 
 #. module: l10n_ve_accountant_asset
 #: model:ir.model.fields,field_description:l10n_ve_accountant_asset.field_account_move__auto_post_custom_date
-msgid "Fecha de publicación"
+msgid "Custom Publication Date"
 msgstr "Fecha de publicación"
+
+#. module: l10n_ve_accountant_asset
+#: model:ir.model.fields,field_description:l10n_ve_accountant_asset.field_account_move__auto_post_custom_publish_date
+msgid "Publication Date"
+msgstr "Fecha de Publicación"
+
+#. module: l10n_ve_accountant_asset
+#: model:ir.model.fields,help:l10n_ve_accountant_asset.field_account_move__auto_post_custom_publish_date
+msgid "Scheduled posting date of the entry; if it is not custom, its date."
+msgstr ""
+"Fecha de publicación programada de la cuota; si no es personalizada, su "
+"fecha."
 
 #. module: l10n_ve_accountant_asset
 #: model:ir.model.fields,help:l10n_ve_accountant_asset.field_account_move__auto_post_custom_date
 msgid ""
-"Día en que el documento se publicará automáticamente. Mientras tanto queda "
-"en borrador con la fecha de hoy. Nota: se tomará la tasa de ese día."
+"Day on which the document will be posted automatically. Meanwhile it stays "
+"in draft with today's date. Note: the rate of that day will be used."
 msgstr ""
 "Día en que el documento se publicará automáticamente. Mientras tanto queda "
 "en borrador con la fecha de hoy. Nota: se tomará la tasa de ese día."
 
 #. module: l10n_ve_accountant_asset
 #: model:ir.model.fields,field_description:l10n_ve_accountant_asset.field_account_move__auto_post_custom_last_attempt
-msgid "Último intento de publicación personalizada"
+msgid "Last Custom Posting Attempt"
 msgstr "Último intento de publicación personalizada"
 
 #. module: l10n_ve_accountant_asset
 #: model:ir.model.fields,help:l10n_ve_accountant_asset.field_account_move__auto_post_custom_last_attempt
 msgid ""
-"Día del último intento fallido de publicación automática. Evita que el cron "
-"reintente el mismo documento más de una vez al día."
+"Day of the last failed automatic posting attempt. Prevents the cron from "
+"retrying the same document more than once a day."
 msgstr ""
 "Día del último intento fallido de publicación automática. Evita que el cron "
 "reintente el mismo documento más de una vez al día."
 
 #. module: l10n_ve_accountant_asset
+#. odoo-python
 #: code:addons/l10n_ve_accountant_asset/models/account_move.py:0
 msgid "The custom auto-post is not available for this type of document."
 msgstr "La publicación personalizada no está disponible para este tipo de documento."
 
 #. module: l10n_ve_accountant_asset
+#. odoo-python
 #: code:addons/l10n_ve_accountant_asset/models/account_move.py:0
 msgid ""
 "Invoices issued through a fiscal printer cannot be posted automatically on a "
@@ -63,11 +77,13 @@ msgstr ""
 "automáticamente en una fecha personalizada."
 
 #. module: l10n_ve_accountant_asset
+#. odoo-python
 #: code:addons/l10n_ve_accountant_asset/models/account_move.py:0
 msgid "The publication date is required for the custom auto-post."
 msgstr "La fecha de publicación es obligatoria para la publicación personalizada."
 
 #. module: l10n_ve_accountant_asset
+#. odoo-python
 #: code:addons/l10n_ve_accountant_asset/models/account_move.py:0
 msgid ""
 "The publication date (%(date)s) cannot be earlier than the creation date of "
@@ -77,11 +93,13 @@ msgstr ""
 "creación del documento (%(created)s)."
 
 #. module: l10n_ve_accountant_asset
+#. odoo-python
 #: code:addons/l10n_ve_accountant_asset/models/account_move.py:0
 msgid "%(document)s is scheduled to be posted automatically on %(date)s."
 msgstr "%(document)s está programado para publicarse automáticamente el %(date)s."
 
 #. module: l10n_ve_accountant_asset
+#. odoo-python
 #: code:addons/l10n_ve_accountant_asset/models/account_move.py:0
 msgid ""
 "The automatic posting scheduled for %(date)s could not be done: %(error)s. "
@@ -91,11 +109,13 @@ msgstr ""
 "%(error)s. Se reintentará el día siguiente."
 
 #. module: l10n_ve_accountant_asset
+#. odoo-python
 #: code:addons/l10n_ve_accountant_asset/models/account_move.py:0
 msgid "The document could not be posted."
 msgstr "No se pudo publicar el documento."
 
 #. module: l10n_ve_accountant_asset
+#. odoo-python
 #: code:addons/l10n_ve_accountant_asset/wizard/validate_account_move.py:0
 msgid ""
 "The selected documents are scheduled to be posted automatically on their "
@@ -103,3 +123,11 @@ msgid ""
 msgstr ""
 "Los documentos seleccionados están programados para publicarse "
 "automáticamente en su fecha de publicación."
+
+#. module: l10n_ve_accountant_asset
+#. odoo-python
+#: code:addons/l10n_ve_accountant_asset/models/account_move.py:0
+msgid ""
+"The move could not be posted for the following reason: %(error_message)s"
+msgstr ""
+"El asiento no se puede publicar debido al siguiente motivo: %(error_message)s"
