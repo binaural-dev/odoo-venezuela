@@ -16,8 +16,11 @@
                     and the rate will not be recalculated when the invoice date changes.
                 </div>
             </xpath>
-            <xpath expr="//field[@name='invoice_date']" position="attributes">
-                <attribute name="readonly">state != 'draft' or reversed_entry_id or debit_origin_id or (use_invoice_rate_from_sale_order and move_type == 'out_invoice' and sale_order_count == 1)</attribute>
+            <xpath expr="//field[@name='invoice_date'][@invisible=&quot;move_type not in ('out_invoice', 'out_refund', 'out_receipt')&quot;]" position="attributes">
+                <!-- Se agrega a la condicion base de l10n_ve_accountant (no se copia). -->
+                <attribute name="readonly"
+                           add="(use_invoice_rate_from_sale_order and move_type == 'out_invoice' and sale_order_count == 1)"
+                           separator=" or "/>
             </xpath>
         </field>
     </record>

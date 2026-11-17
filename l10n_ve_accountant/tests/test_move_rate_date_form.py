@@ -96,3 +96,67 @@ class TestMoveRateDateForm(TransactionCase):
                 form.partner_id = self.partner
                 self._set_date(form, move_type, self.past)
             self._assert_rates(form.save(), self.past)
+
+    def test_reopening_saved_invoice_keeps_its_rate_if_official_rate_changes(self):
+        # Si se corrige la tasa oficial de un dia ya usado, abrir la factura guardada y
+        # volver a la misma fecha no la mueve a la tasa corregida.
+        for move_type in ("out_invoice", "in_invoice"):
+            move = self.env["account.move"].create({
+                "move_type": move_type,
+                "partner_id": self.partner.id,
+                "invoice_date": self.past,
+            })
+            saved = move.foreign_rate
+            self.assertAlmostEqual(saved, self._expected(self.past)["foreign_rate"], places=6)
+            self.env["res.currency.rate"].search([
+                ("currency_id", "=", self.usd.id),
+                ("company_id", "=", self.company.id),
+                ("name", "=", self.past),
+            ]).rate = 1 / 20.0
+            self.assertNotAlmostEqual(self._expected(self.past)["foreign_rate"], saved, places=6)
+            with Form(move) as form:
+                # abrir y editar otro campo no recalcula la tasa guardada
+                self.assertAlmostEqual(form.foreign_rate, saved, places=6)
+                form.narration = "reopened"
+            self.assertAlmostEqual(move.foreign_rate, saved, places=6, msg=move_type)
+            with Form(move) as form:
+                # cambiar la fecha y volver a la original conserva la tasa en el form
+                self._set_date(form, move_type, self.today)
+                self._set_date(form, move_type, self.past)
+                self.assertAlmostEqual(form.foreign_rate, saved, places=6)
+            # deja la tasa del dia como estaba para la siguiente vuelta
+            self.env["res.currency.rate"].search([
+                ("currency_id", "=", self.usd.id),
+                ("company_id", "=", self.company.id),
+                ("name", "=", self.past),
+            ]).rate = 1 / 30.0
+
+    def test_manual_invoice_without_rate_gets_one(self):
+        # manually_set_rate sin ninguna tasa fijada aun: igual se calcula; con una, se respeta.
+        for move_type in ("out_invoice", "in_invoice"):
+            move = self.env["account.move"].create({
+                "move_type": move_type,
+                "partner_id": self.partner.id,
+                "invoice_date": self.past,
+                "manually_set_rate": True,
+            })
+            self._assert_rates(move, self.past)
+            move = self.env["account.move"].create({
+                "move_type": move_type,
+                "partner_id": self.partner.id,
+                "invoice_date": self.past,
+                "manually_set_rate": True,
+                "foreign_rate": 77.0,
+            })
+            self.assertEqual(move.foreign_rate, 77.0)
+
+    def test_residual_rate_is_treated_as_no_rate(self):
+        # Un residuo de redondeo no cuenta como "ya tiene tasa": se recalcula.
+        move = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "invoice_date": self.past,
+            "manually_set_rate": True,
+            "foreign_rate": 1e-12,
+        })
+        self._assert_rates(move, self.past)

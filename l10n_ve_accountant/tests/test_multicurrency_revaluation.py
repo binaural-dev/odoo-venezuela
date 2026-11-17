@@ -91,6 +91,17 @@ class TestMulticurrencyRevaluation(TransactionCase):
         self.product = self.env["product.product"].create(
             {"name": "Producto Reval", "type": "service"}
         )
+        # `l10n_ve_invoice` (presente cuando se instala `l10n_ve_sale`) exige un
+        # impuesto en cada línea al publicar: uno exento mantiene los importes.
+        self.tax_exempt = self.env["account.tax"].create(
+            {
+                "name": "Exento Reval",
+                "amount_type": "percent",
+                "amount": 0.0,
+                "type_tax_use": "none",
+                "company_id": self.company.id,
+            }
+        )
         self.report = self.env.ref("account_reports.multicurrency_revaluation_report")
 
         # Diario de banco con métodos de pago con cuenta (la localización lo exige).
@@ -150,7 +161,7 @@ class TestMulticurrencyRevaluation(TransactionCase):
                             "quantity": 1,
                             "price_unit": amount,
                             "account_id": self.income.id,
-                            "tax_ids": [(5,)],
+                            "tax_ids": [(6, 0, self.tax_exempt.ids)],
                         },
                     )
                 ],
