@@ -27,7 +27,8 @@ problemas:
   del total sin impuestos. No se agregan columnas ni campos nuevos.
 - Las cuatro columnas propias llevan `sum="Total"` y `optional="show"`.
 - Ancho predeterminado: `width="180px"` en las columnas de montos (las cuatro
-  propias, `Impuestos no incluidos`, `Total` e `Importe adeudado`).
+  propias, `Impuestos no incluidos`, `Total` e `Importe adeudado`) y `330px` en `invoice_partner_display_name`
+  (Cliente / Proveedor), suficiente para un nombre de unos 45 caracteres.
   `Número` conserva el ancho nativo de Odoo.
 
 Se mantiene el atributo nativo `width` en lugar de una clase CSS: la lista de

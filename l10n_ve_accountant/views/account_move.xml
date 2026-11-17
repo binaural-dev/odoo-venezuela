@@ -256,6 +256,12 @@
                 <xpath expr="//list/field[@name='amount_tax_signed']" position="move"/>
             </xpath>
             <!-- Anchos predeterminados para no tener que ajustarlos en cada ingreso -->
+            <xpath expr="//list/field[@name='invoice_partner_display_name'][1]" position="attributes">
+                <attribute name="width">330px</attribute>
+            </xpath>
+            <xpath expr="//list/field[@name='invoice_partner_display_name'][2]" position="attributes">
+                <attribute name="width">330px</attribute>
+            </xpath>
             <xpath expr="//list/field[@name='amount_untaxed_in_currency_signed']" position="attributes">
                 <attribute name="width">180px</attribute>
             </xpath>
