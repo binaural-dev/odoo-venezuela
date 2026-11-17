@@ -96,7 +96,7 @@ class TestRetentionPaymentMoveDate(RetentionTestCommon):
             "date": self.date_accounting,
             "date_accounting": self.date_accounting,
             "number": number,
-            "retention_line_ids": [Command.create({
+            "retention_line_ids": [Command.create({"aliquot": 16.0,
                 "move_id": invoice.id,
                 "name": "IVA Line",
                 "invoice_total": invoice_total_vef,

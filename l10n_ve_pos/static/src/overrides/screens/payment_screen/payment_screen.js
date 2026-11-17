@@ -49,6 +49,16 @@ patch(PaymentScreen.prototype, {
         // Cached on the order; the sync conversion helpers read it.
         order.refund_foreign_rate = numericRate;
       }
+      // Same for the tender currencies (EUR...): the refund gives back the
+      // same euros at the rate they were collected (getRefundTenderRate).
+      if (this.pos.config.payment_method_ids.some((method) => method.tender_currency_id)) {
+        const tenderRates = await this.orm.call("pos.order", "get_refund_tender_rates", [
+          Array.from(originOrderIds),
+        ]);
+        if (tenderRates && typeof tenderRates === "object") {
+          order.refund_tender_rates = tenderRates;
+        }
+      }
     } catch (error) {
       // Non-fatal: fall back to the aggregate-rate conversion.
       console.warn("[l10n_ve_pos] no se pudo prefetch la tasa de reembolso:", error);
@@ -73,6 +83,37 @@ patch(PaymentScreen.prototype, {
       (typeof order?.get_due === "function" ? order.get_due() : 0)
     ) || 0;
     const result = await super.addNewPaymentLine(method);
+
+    const tenderLine = this.selectedPaymentLine;
+    const tenderCurrency =
+      result && tenderLine?.payment_method_id === method ? tenderLine.getTenderCurrency?.() : null;
+    if (tenderCurrency) {
+      // Método en una tercera moneda (EUR): sin la tasa del día la línea
+      // valdría 0 en la caja. Se quita y se avisa en vez de cobrar mal.
+      const main = order._getMainCurrency();
+      if (
+        !order._getPosConversionRate(main, tenderCurrency) ||
+        !order._getPosConversionRate(tenderCurrency, main)
+      ) {
+        this.deletePaymentLine(tenderLine.uuid);
+        this.dialog.add(AlertDialog, {
+          title: _t("No exchange rate"),
+          body: _t(
+            "There is no exchange rate of the day for %(currency)s: the payment method %(method)s cannot be used. Load the rate and reload the Point of Sale data.",
+            { currency: tenderCurrency.name, method: method.name }
+          ),
+        });
+        return false;
+      }
+      // El core propuso lo adeudado en la moneda de la caja (setAmount →
+      // tender_amount, su conversión). El teclado trabaja en la moneda de
+      // cobro: se muestra ese monto en euros, con formato local (nunca
+      // toFixed: en es_VE el "." es separador de miles).
+      this.numberBuffer.set(
+        this.env.utils.formatCurrencyById(tenderLine.getTenderAmount(), tenderCurrency.id, false)
+      );
+      return result;
+    }
 
     if (method?.is_foreign_currency && localDueBefore !== 0) {
       const line = this.selectedPaymentLine;
@@ -132,6 +173,10 @@ patch(PaymentScreen.prototype, {
     }
 
     // >>  BINAURAL
+    const tenderCurrency = this.selectedPaymentLine.getTenderCurrency?.();
+    if (tenderCurrency) {
+      return this._updateSelectedTenderPaymentline(amount, tenderCurrency);
+    }
     if (!selectedMethod.is_foreign_currency) {
       return super.updateSelectedPaymentline(amount);
     }
@@ -185,6 +230,49 @@ patch(PaymentScreen.prototype, {
       } else {
         this.selectedPaymentLine.setAmount(amount);
       }
+    }
+  },
+  // Línea cuya moneda de cobro no es la de la caja (PosPayment.getTenderCurrency):
+  // lo tecleado está en la moneda de cobro y va por setTenderAmount.
+  _updateSelectedTenderPaymentline(amount, currency) {
+    const line = this.selectedPaymentLine;
+    if (amount === false) {
+      if (this.numberBuffer.get() === null) {
+        amount = null;
+      } else if (this.numberBuffer.get() === "") {
+        amount = 0;
+      } else {
+        amount = this.numberBuffer.getFloat();
+      }
+    }
+
+    const order = this.currentOrder;
+    const hasCashPaymentMethod = this.payment_methods_from_config.some(
+      (paymentMethod) => paymentMethod.type === "cash"
+    );
+    if (amount !== null && !hasCashPaymentMethod) {
+      // Tope del core (no pagar de más sin efectivo), comparado en la moneda de cobro.
+      const limit = order._convertAtRate(
+        order.remainingDue + line.amount,
+        line._getTenderRates(currency).toTender,
+        currency
+      );
+      if (currency.comp(Math.abs(amount), Math.abs(limit)) === GT) {
+        line.setAmount(0);
+        this.numberBuffer.set(this.env.utils.formatCurrencyById(limit, currency.id, false));
+        amount = limit;
+        this.showMaxValueError();
+      }
+    }
+
+    const paymentTerminal = line.payment_method_id.payment_terminal;
+    if (paymentTerminal && !["pending", "retry"].includes(line.getPaymentStatus())) {
+      return;
+    }
+    if (amount === null) {
+      this.deletePaymentLine(line.uuid);
+    } else {
+      line.setTenderAmount(amount);
     }
   },
   async _isOrderValid(isForceValidate) {

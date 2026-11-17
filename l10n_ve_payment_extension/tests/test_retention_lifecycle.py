@@ -383,7 +383,7 @@ class TestRetentionLifecycle(RetentionTestCommon):
             "date": fields.Date.today(),
             "date_accounting": accounting_date,
             "retention_line_ids": [
-                Command.create({
+                Command.create({"aliquot": 16.0,
                     "move_id": old_invoice.id,
                     "name": "IVA Retention Line",
                     "invoice_total": old_invoice.amount_total,

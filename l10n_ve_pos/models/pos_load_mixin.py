@@ -25,4 +25,11 @@ class PosLoadMixin(models.AbstractModel):
             and self._name in self._pos_stock_dependent_models()
         ):
             return False
+        # Las monedas (3 o 4 registros) llegan siempre completas: una moneda de
+        # cobro agregada a un método después de la última carga tiene un
+        # ``write_date`` viejo y la carga limitada no la traería, y sin ella el
+        # PdV no puede redondear ni mostrar sus montos. Sus tasas viajan en
+        # ``pos.config`` (``tender_currency_rates``), que el core ya carga entero.
+        if self._name == "res.currency":
+            return False
         return super()._last_server_date_to_load()

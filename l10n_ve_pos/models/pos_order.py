@@ -1,4 +1,8 @@
+import logging
+
 from odoo import api, fields, models
+
+_logger = logging.getLogger(__name__)
 
 
 class PosOrder(models.Model):
@@ -120,6 +124,66 @@ class PosOrder(models.Model):
             payments_without_rate.write({"foreign_rate": rate})
         return res
 
+    def _set_payment_tender_values(self):
+        """Moneda y monto de cobro de los pagos con un método en una tercera
+        moneda (``pos.payment.method.tender_currency_id``).
+
+        La orden serializa sus pagos anidados sin pasar por
+        ``PosPayment.serializeForORM``: llega ``tender_amount`` (un campo del
+        registro en el PdV) pero no la moneda, que es la del método. Un pago sin
+        ``tender_amount`` (PdV con un bundle anterior, pago creado en el
+        backend con ``pos.make.payment``) lo toma de su monto: ver
+        ``_get_payment_tender_amount``.
+        """
+        self.ensure_one()
+        for payment in self.payment_ids.filtered("payment_method_id.tender_currency_id"):
+            currency = payment.payment_method_id.tender_currency_id
+            vals = {}
+            if payment.tender_currency_id != currency:
+                vals["tender_currency_id"] = currency.id
+            if not payment.tender_amount and payment.amount:
+                vals["tender_amount"] = self._get_payment_tender_amount(payment, currency)
+                if not vals["tender_amount"]:
+                    # Casi siempre, sin tasa del día (ni de los cobros
+                    # originales, en un reembolso); también un monto de
+                    # céntimos que redondea a 0. La sincronización no se
+                    # bloquea: el PdV y el cobro desde el backend
+                    # (``pos.make.payment``) ya impiden cobrar sin tasa, así
+                    # que solo llega aquí una orden de un bundle anterior o
+                    # encolada sin conexión.
+                    _logger.warning(
+                        "Payment %s of order %s: %s %s converted to 0 %s (no exchange rate of "
+                        "the day for %s?), its tender amount is left at 0.",
+                        payment.id, self.name, payment.amount, self.currency_id.name,
+                        currency.name, currency.name,
+                    )
+            if vals:
+                payment.write(vals)
+
+    def _get_payment_tender_amount(self, payment, currency):
+        """``payment.amount`` (moneda de la caja) en la moneda de cobro
+        ``currency``. En un reembolso, a la tasa con la que se cobraron en esa
+        moneda los pagos de las órdenes originales (``get_refund_tender_rates``),
+        igual que el PdV: se devuelven los mismos euros. Si no, a la tasa del
+        día de la caja (``pos.config._convert``).
+
+        Las órdenes originales son las de todas las líneas reembolsadas, como
+        el ``originOrderIds`` del PdV, y no ``refunded_order_id``, que es solo
+        la primera (``_compute_refund_related_fields`` del core). Hoy un
+        reembolso tiene una sola orden original (``sync_from_ui`` del core
+        rechaza uno de varias), así que es una defensa para uno armado por
+        código."""
+        self.ensure_one()
+        original_orders = self.lines.refunded_orderline_id.order_id
+        refund_rate = (
+            self.get_refund_tender_rates(original_orders.ids).get(currency.id)
+            if original_orders
+            else 0.0
+        )
+        if refund_rate:
+            return currency.round(payment.amount / refund_rate)
+        return self.config_id._convert(payment.amount, self.currency_id, currency)
+
     def _get_payment_foreign_rate(self):
         """Main → foreign multiplier the payments of this order are valued at:
         the order's own, or the original sale's for a refund (the POS values a
@@ -134,7 +198,12 @@ class PosOrder(models.Model):
     def _process_saved_order(self, draft):
         # Before super: it marks the order paid and creates the payment moves
         # and the invoice, which read the foreign amounts. Runs for the POS
-        # sync and for the backend return wizard (pos.make.payment).
+        # sync (after ``_process_payment_lines``) and for the backend payment
+        # wizard (pos.make.payment, which never goes through
+        # ``_process_payment_lines``): both paths get the tender currency of
+        # their payments here, before their signs are aligned.
+        for order in self:
+            order._set_payment_tender_values()
         self._align_foreign_signs()
         return super()._process_saved_order(draft)
 
@@ -156,6 +225,8 @@ class PosOrder(models.Model):
             for payment in order.payment_ids:
                 if payment.amount * payment.foreign_amount < 0:
                     payment.foreign_amount = -payment.foreign_amount
+                if payment.amount * payment.tender_amount < 0:
+                    payment.tender_amount = -payment.tender_amount
 
     @api.model
     def get_payments_order_refund(self, order_ids):
@@ -194,6 +265,35 @@ class PosOrder(models.Model):
         total_local = sum(abs(p.amount) for p in payments)
         total_foreign = sum(abs(p.foreign_amount) for p in payments)
         return total_local / total_foreign if total_foreign else 0.0
+
+    @api.model
+    def get_refund_tender_rates(self, order_ids):
+        """Por moneda de cobro, la tasa efectiva (moneda de la caja por unidad)
+        con la que se cobraron los pagos en esa moneda de las órdenes
+        originales: ``sum(|amount|) / sum(|tender_amount|)``.
+
+        Mismo criterio que ``get_refund_foreign_rate`` para la alterna: el
+        reembolso de un pago en EUR devuelve los mismos euros a la tasa con la
+        que se cobraron, no a la del día. ``{}`` si no hubo pagos en una
+        tercera moneda.
+
+        :return: ``{currency_id: rate}``
+        """
+        if not order_ids:
+            return {}
+        if isinstance(order_ids, int):
+            order_ids = [order_ids]
+        payments = self.browse(order_ids).exists().payment_ids.filtered(
+            lambda p: p.tender_currency_id
+            and p.tender_currency_id == p.payment_method_id.tender_currency_id
+            and p.tender_amount
+        )
+        rates = {}
+        for currency, currency_payments in payments.grouped("tender_currency_id").items():
+            total_tender = sum(abs(p.tender_amount) for p in currency_payments)
+            if total_tender:
+                rates[currency.id] = sum(abs(p.amount) for p in currency_payments) / total_tender
+        return rates
 
     def _prepare_refund_values(self, current_session):
         return super()._prepare_refund_values(current_session)

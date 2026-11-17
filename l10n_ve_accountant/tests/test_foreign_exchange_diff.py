@@ -6,18 +6,14 @@ from lxml import etree
 from odoo.exceptions import UserError, ValidationError
 from odoo.tests import TransactionCase, tagged
 from odoo import fields
+from odoo.tools import date_utils
 import logging
 
 _logger = logging.getLogger(__name__)
 
 
-@tagged("post_install", "-at_install", "l10n_ve_foreign_exchange_diff")
-class TestForeignExchangeDiff(TransactionCase):
-    """Alternate-currency amounts injected into Odoo's native exchange
-    difference entry, and the standalone entry when only the alternate
-    currency differs. Covers amounts, signs, posted state, and the
-    reconciliation-break/reversal flow for both cases.
-    """
+class ForeignExchangeDiffMixin:
+    """setUp y helpers de tasas compartidos por los tests del diferencial alterno."""
 
     def setUp(self):
         super().setUp()
@@ -31,8 +27,14 @@ class TestForeignExchangeDiff(TransactionCase):
         # has a real unique constraint of one rate per (currency, day).
         # Settlement installments go up to `settlement_date` + 6 days: keep them
         # all in the past (a payment cannot be dated after today).
-        self.booking_date = self.today - timedelta(days=20)
-        self.settlement_date = self.today - timedelta(days=10)
+        # Fechas fijas (no relativas a hoy): la diferencia cambiaria nativa se
+        # asienta el ultimo dia del mes del pago, asi que si las fechas dependen
+        # de la fecha de ejecucion los escenarios cambian segun el dia (pagos que
+        # cruzan de mes o caen justo en fin de mes). Los pagos parciales de los
+        # escenarios (+3 y +6 dias) quedan dentro de junio de 2026, sin tocar el
+        # ultimo dia del mes (30).
+        self.booking_date = fields.Date.to_date("2026-06-01")
+        self.settlement_date = fields.Date.to_date("2026-06-10")
 
         self.company.write({
             "currency_id": self.currency_vef.id,
@@ -146,6 +148,11 @@ class TestForeignExchangeDiff(TransactionCase):
             "company_rate": 1.0 / ves_per_usd,
             "inverse_company_rate": ves_per_usd,
         }
+        # Una tasa declarada por el test nunca es "automatica": si esa fecha ya
+        # habia sido rellenada por `_ensure_usd_rate` (p. ej. el ultimo dia del
+        # mes cuando un pago cae justo ese dia), `_ensure_usd_rate` no debe
+        # volver a pisarla con la tasa anterior.
+        self.__dict__.setdefault("_auto_rate_dates", set()).discard(date)
         existing = self.Rate.search([
             ("name", "=", date),
             ("currency_id", "=", self.currency_usd.id),
@@ -169,7 +176,10 @@ class TestForeignExchangeDiff(TransactionCase):
         cambia ese dia".
         """
         auto_dates = self.__dict__.setdefault("_auto_rate_dates", set())
-        for date in dates:
+        # Core dates its exchange entries with `journal.accounting_date`, which
+        # can land on the month end: that day needs a rate too (same as native).
+        month_ends = {fields.Date.end_of(d, "month") for d in dates}
+        for date in sorted(set(dates) | month_ends):
             exists = self.Rate.search_count([
                 ("name", "=", date),
                 ("currency_id", "=", self.currency_usd.id),
@@ -185,6 +195,15 @@ class TestForeignExchangeDiff(TransactionCase):
             if previous:
                 self._set_usd_rate(date, previous.inverse_company_rate)
                 auto_dates.add(date)
+
+
+@tagged("post_install", "-at_install", "l10n_ve_foreign_exchange_diff")
+class TestForeignExchangeDiff(ForeignExchangeDiffMixin, TransactionCase):
+    """Alternate-currency amounts injected into Odoo's native exchange
+    difference entry, and the standalone entry when only the alternate
+    currency differs. Covers amounts, signs, posted state, and the
+    reconciliation-break/reversal flow for both cases.
+    """
 
     def _create_invoice(self, amount=100.0, currency=None, booking_ves_per_usd=None):
         # Doesn't force `foreign_inverse_rate` manually: as long as the
@@ -216,7 +235,10 @@ class TestForeignExchangeDiff(TransactionCase):
         currency = currency or self.currency_vef
         journal = self.bank_journal_usd if currency == self.currency_usd else self.bank_journal
         amount = move.amount_total if amount is None else amount
-        self._ensure_usd_rate(date or self.settlement_date, self.today)
+        # La diferencia cambiaria nativa se asienta el ultimo dia del mes del pago
+        # y tambien necesita la tasa de esa fecha exacta.
+        payment_date = date or self.settlement_date
+        self._ensure_usd_rate(payment_date, date_utils.end_of(payment_date, "month"), self.today)
         payment = self.env["account.payment"].with_company(self.company).create({
             "amount": amount,
             "date": date or self.settlement_date,
@@ -522,6 +544,7 @@ class TestForeignExchangeDiff(TransactionCase):
             "journal_id": self.bank_journal_usd.id,
             "payment_method_line_id": self.bank_journal_usd.inbound_payment_method_line_ids[:1].id,
         })
+        self._ensure_usd_rate(settlement_2)
         payment_2.action_post()
         payment_line_2 = payment_2.move_id.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
         (receivable_line + payment_line_2).reconcile()
