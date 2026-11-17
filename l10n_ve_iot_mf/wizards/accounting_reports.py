@@ -28,7 +28,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
         move_model = self.env["account.move"]
         domain = self._get_domain()
-        moves = move_model.search(domain, order="invoice_date_display asc")
+        moves = move_model.search(domain, order=self._get_book_order())
         return moves
     
     def _get_sale_book_field_groups(self):

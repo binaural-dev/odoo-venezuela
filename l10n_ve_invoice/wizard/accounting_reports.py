@@ -912,8 +912,21 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         ] and move.state in ["cancel"]:
             return "03-ANU"
 
+    def _get_book_order(self):
+        """Orden de los documentos en el libro.
+
+        invoice_date_display es Date: sin desempate, las facturas de un mismo
+        día salen en el orden físico de la tabla, que cambia cada vez que se
+        modifica una factura. En el libro de ventas se desempata por la
+        fecha-hora de registro (invoice_date_display_datetime) y luego por id;
+        el libro de compras no cambia.
+        """
+        if self.report == "sale":
+            return "invoice_date_display asc, invoice_date_display_datetime asc, id asc"
+        return "invoice_date_display asc"
+
     def search_moves(self):
-        order = "invoice_date_display asc"
+        order = self._get_book_order()
         env = self.env
         move_model = env["account.move"]
         domain = self._get_domain()
@@ -1620,45 +1633,17 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 total_line = idx_line + 2
                 worksheet.write(row_resume, idx_line + 2, line, cell_formats.get("number"))
 
-            if not is_purchase:
-                if resume.get("total"):
-                    total_c_formula = f"=SUM(C{index_to_start + 5}:C{row_resume})"
-                    total_d_formula = f"=SUM(D{index_to_start + 5}:D{row_resume})"
-                    total_e_formula = f"=SUM(E{index_to_start + 5}:E{row_resume})"
-                    total_f_formula = f"=SUM(F{index_to_start + 5}:F{row_resume})"
-
+            if resume.get("total"):
+                first_row = index_to_start + 5
+                for col in range(2, 8):
+                    col_letter = chr(ord("A") + col)
                     worksheet.write_formula(
-                        row_resume, 2, total_c_formula, cell_formats.get("number")
+                        row_resume,
+                        col,
+                        f"=SUM({col_letter}{first_row}:{col_letter}{row_resume})",
+                        cell_formats.get("number"),
                     )
-                    worksheet.write_formula(
-                        row_resume, 3, total_d_formula, cell_formats.get("number")
-                    )
-                    worksheet.write_formula(
-                        row_resume, 4, total_e_formula,cell_formats.get("number")
-                    )
-                    worksheet.write_formula(
-                        row_resume, 5, total_f_formula,cell_formats.get("number")
-                    )
-
-            else:
-                if resume.get("total"):
-                    total_c_formula = f"=SUM(C{index_to_start + 5}:C{row_resume})"
-                    total_d_formula = f"=SUM(D{index_to_start + 5}:D{row_resume})"
-                    total_e_formula = f"=SUM(E{index_to_start + 5}:E{row_resume})"
-                    total_f_formula = f"=SUM(F{index_to_start + 5}:F{row_resume})"
-
-                    worksheet.write_formula(
-                        row_resume, 2, total_c_formula, cell_formats.get("number")
-                    )
-                    worksheet.write_formula(
-                        row_resume, 3, total_d_formula, cell_formats.get("number")
-                    )
-                    worksheet.write_formula(
-                        row_resume, 4, total_e_formula,cell_formats.get("number")
-                    )
-                    worksheet.write_formula(
-                        row_resume, 5, total_f_formula,cell_formats.get("number")
-                    )
+                continue
 
             values = resume.get("values", [0, 0, 0, 0])
             base_total_neto = (values[0] if len(values) > 0 else 0) + (values[2] if len(values) > 2 else 0)

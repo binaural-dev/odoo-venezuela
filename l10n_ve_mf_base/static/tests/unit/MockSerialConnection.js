@@ -22,6 +22,7 @@ export class MockSerialConnection {
         this.responseQueue = []; // Cola de respuestas a devolver
         this.lastWriteData = null;
         this.s1Payload = null;
+        this.responseHandler = null;
         this.currentStatus = {
             // STS1/STS2 base (equivalente a impresora lista en modo fiscal)
             sts1: 0x60,
@@ -112,6 +113,12 @@ export class MockSerialConnection {
         }
 
         const lastCommand = this._extractCommandFromFrame(this.lastWriteData);
+        if (this.responseHandler) {
+            const handled = this.responseHandler(lastCommand);
+            if (handled !== undefined) {
+                return handled;
+            }
+        }
         if (lastCommand === "S1" && this.s1Payload) {
             return FiscalProtocol.buildFrame(this.s1Payload);
         }
@@ -177,6 +184,16 @@ export class MockSerialConnection {
      */
     setResponseSequence(responses) {
         responses.forEach(r => this.setNextResponse(r));
+    }
+
+    /**
+     * Answers by command: `handler(command)` returns the bytes to read back,
+     * `null` to simulate a missing answer, or `undefined` to fall back to
+     * the queued or default response.
+     * @param {Function|null} handler
+     */
+    setResponseHandler(handler) {
+        this.responseHandler = handler;
     }
 
     /**

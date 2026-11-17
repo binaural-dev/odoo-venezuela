@@ -798,3 +798,86 @@ class TestStockPickingChangeWeight(TransactionCase):
             "location_dest_id": self.env.ref("stock.stock_location_customers").id,
         })
         self.assertFalse(picking.change_weight)
+
+
+@tagged("post_install", "-at_install", "l10n_ve_stock")
+class TestStockPickingValidateBlockWriteCommands(TransactionCase):
+    def setUp(self):
+        super().setUp()
+        warehouse = self.env["stock.warehouse"].search([], limit=1)
+        product = self.env["product.product"].create({
+            "name": "Block Commands Prod",
+            "type": "consu",
+            "is_storable": True,
+        })
+        self.picking = self.env["stock.picking"].create({
+            "picking_type_id": warehouse.out_type_id.id,
+            "location_id": warehouse.lot_stock_id.id,
+            "location_dest_id": self.env.ref("stock.stock_location_customers").id,
+            "move_ids": [Command.create({
+                "product_id": product.id,
+                "product_uom_qty": 5,
+            })],
+        })
+        group = self.env.ref("l10n_ve_stock.group_block_type_inventory_transfers_expeditions")
+        self.env.user.sudo().write({"group_ids": [(4, group.id)]})
+        self.move = self.picking.move_ids
+
+    def _validate(self, commands):
+        return self.picking.validate_block_transfers_expedition(
+            write={"move_ids": commands}, matched_key="move_ids"
+        )
+
+    def test_new_line_raises(self):
+        with self.assertRaises(UserError):
+            self._validate([(0, "virtual_1", {"product_uom_qty": 1})])
+
+    def test_update_without_values_raises(self):
+        with self.assertRaises(UserError):
+            self._validate([(1, self.move.id, {})])
+
+    def test_update_within_demand_is_allowed(self):
+        self.assertIsNone(self._validate([
+            (1, self.move.id, {"quantity": 3}),
+            (1, self.move.id + 100000, {"quantity": 3}),
+            (1, self.move.id, {"picked": True}),
+            (5, None, None),
+        ]))
+
+
+@tagged("post_install", "-at_install", "l10n_ve_stock")
+class TestStockPickingCheckStockAvailabilitySkips(TransactionCase):
+    def setUp(self):
+        super().setUp()
+        self.warehouse = self.env["stock.warehouse"].search([], limit=1)
+        self.product = self.env["product.product"].create({
+            "name": "Availability Skips Prod",
+            "type": "consu",
+            "is_storable": True,
+        })
+
+    def test_incoming_picking_is_not_checked(self):
+        picking = self.env["stock.picking"].create({
+            "picking_type_id": self.warehouse.in_type_id.id,
+            "location_id": self.env.ref("stock.stock_location_suppliers").id,
+            "location_dest_id": self.warehouse.lot_stock_id.id,
+        })
+        self.assertIsNone(picking._check_stock_availability_for_pickings())
+
+    def test_move_line_without_quantity_is_skipped(self):
+        self.env["stock.quant"]._update_available_quantity(
+            self.product, self.warehouse.lot_stock_id, 2.0
+        )
+        picking = self.env["stock.picking"].create({
+            "picking_type_id": self.warehouse.out_type_id.id,
+            "location_id": self.warehouse.lot_stock_id.id,
+            "location_dest_id": self.env.ref("stock.stock_location_customers").id,
+            "move_ids": [Command.create({
+                "product_id": self.product.id,
+                "product_uom_qty": 2,
+            })],
+        })
+        picking.action_assign()
+        picking.move_line_ids.quantity = 0
+        self.assertTrue(picking.move_line_ids)
+        self.assertIsNone(picking._check_stock_availability_for_pickings())

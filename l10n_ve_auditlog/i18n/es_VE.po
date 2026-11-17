@@ -41,6 +41,12 @@ msgid "Author"
 msgstr "Autor"
 
 #. module: l10n_ve_auditlog
+#. odoo-python
+#: code:addons/l10n_ve_auditlog/models/auditlog_log.py:0
+msgid "It is not possible to delete audit records."
+msgstr "No es posible eliminar los registros de auditoría."
+
+#. module: l10n_ve_auditlog
 #: model:ir.model,name:l10n_ve_auditlog.model_mail_tracking_value
 msgid "Mail Tracking Value"
 msgstr "Valor de seguimiento de correo"

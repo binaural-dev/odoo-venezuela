@@ -206,6 +206,12 @@ export class SerialConnection {
 
     /**
      * Lee datos del puerto serial hasta encontrar un delimitador o timeout
+     *
+     * An ACK/NAK answer is recognized by the first byte received, not only
+     * when it arrives alone in its chunk: the USB-serial adapter can deliver
+     * it together with a late byte, and waiting for an ETX that never comes
+     * turned a valid ACK into a timeout (ticket #15814).
+     *
      * @param {number} timeout - Tiempo máximo de espera en ms (default: 5000)
      * @param {string} delimiter - Carácter de fin de lectura (default: ETX 0x03)
      * @returns {Promise<Uint8Array|null>}
@@ -235,6 +241,7 @@ export class SerialConnection {
             const chunks = [];
             const decoder = new TextDecoder();
             let buffer = "";
+            let firstByte = null;
 
             this.reader = this.port.readable.getReader();
 
@@ -255,8 +262,11 @@ export class SerialConnection {
                         }
 
                         chunks.push(value);
+                        if (firstByte === null && value.length > 0) {
+                            firstByte = value[0];
+                        }
 
-                        if (value.length === 1 && (value[0] === 0x06 || value[0] === 0x15)) {
+                        if (firstByte === 0x06 || firstByte === 0x15) {
                             break;
                         }
 

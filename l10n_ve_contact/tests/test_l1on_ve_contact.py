@@ -112,6 +112,21 @@ class TestResPartner(TransactionCase):
 
         return False
 
+    def _create_user(self, login, with_group):
+        groups = [
+            self.env.ref("base.group_user").id,
+            self.env.ref("base.group_partner_manager").id,
+        ]
+        if with_group:
+            groups.append(
+                self.env.ref("l10n_ve_contact.group_edit_partner_name_immutable").id
+            )
+        return self.env["res.users"].create({
+            "name": login,
+            "login": login,
+            "group_ids": [(6, 0, groups)],
+        })
+
     def test_name_change_allowed_without_transactions(self):
         self.company.write({"validate_partner_name_immutable": True})
 
@@ -128,8 +143,9 @@ class TestResPartner(TransactionCase):
                 "(sale.order/purchase.order)."
             )
 
+        user = self._create_user("name_blocked", with_group=False)
         with self.assertRaises(ValidationError):
-            self.partner.write({"name": "Should Fail"})
+            self.partner.with_user(user).write({"name": "Should Fail"})
 
     def test_name_change_allowed_with_transactions_when_disabled(self):
         created = self._create_partner_transaction(self.partner)
@@ -143,3 +159,17 @@ class TestResPartner(TransactionCase):
         self.partner.write({"name": "Allowed Rename"})
 
         self.assertEqual(self.partner.name, "Allowed Rename")
+
+    def test_name_change_allowed_with_group_when_enabled(self):
+        self.company.write({"validate_partner_name_immutable": True})
+
+        created = self._create_partner_transaction(self.partner)
+        if not created:
+            self.skipTest(
+                "No transaction model available in this test environment "
+                "(sale.order/purchase.order)."
+            )
+
+        user = self._create_user("name_editor", with_group=True)
+        self.partner.with_user(user).write({"name": "Renamed By Group"})
+        self.assertEqual(self.partner.name, "Renamed By Group")

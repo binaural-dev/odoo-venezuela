@@ -6,33 +6,57 @@ Adapta el flujo de ventas (`sale.order`, `sale.order.line`, `sale.report`) a la 
 
 ## Requirements
 
-### Requirement: Moneda alterna y tasa por defecto en la orden
+### Requirement: Moneda alterna y tasa inicial en la orden
 
-Toda orden de venta (`sale.order`) DEBE (MUST) inicializar `foreign_currency_id` con la moneda alterna de la compañía (`foreign_currency_id` de `res.company`, de `l10n_ve_rate`) y los campos `foreign_rate` y `foreign_inverse_rate` con el resultado de `compute_rate` de `res.currency.rate` a la fecha de la orden (o la fecha actual si no hay fecha). Los defaults de tasa (`default_rate` y `default_inverse_rate`) usan la moneda alterna de la compañía y, si esta no está configurada, recurren al bolívar (`base.VEF`) como moneda de respaldo; en ese caso `foreign_currency_id` queda vacío.
+Toda orden de venta (`sale.order`) DEBE (MUST) inicializar `foreign_currency_id` con la moneda alterna de la compañía (`foreign_currency_id` de `res.company`, de `l10n_ve_rate`) y los campos `foreign_rate` y `foreign_inverse_rate` con el resultado de `compute_rate` de `res.currency.rate` a la fecha de tasa de la orden (`_l10n_ve_rate_date()`, ver el requisito de recálculo). Los campos de tasa NO TIENEN (MUST NOT) un `default=` propio: lo fija siempre `_compute_rate`, de modo que una orden creada por código con fecha pasada obedece a la configuración y no a la tasa de hoy. Ticket #16148.
 
 #### Scenario: Creación de una orden con moneda alterna configurada
 
 - **WHEN** se crea una orden de venta y la compañía tiene moneda alterna configurada
 - **THEN** `foreign_currency_id` queda en la moneda alterna de la compañía y `foreign_rate`/`foreign_inverse_rate` toman la tasa vigente devuelta por `compute_rate`
 
+#### Scenario: Creación de una orden sin tasa cargada
+
+- **WHEN** se crea una orden de venta y no existe ninguna tasa en o antes de la fecha de hoy para la moneda de la orden
+- **THEN** se lanza el `UserError` de tasa no asignada de `compute_rate` y la orden no se crea (ticket 15923)
+
 ### Requirement: Recálculo de tasa condicionado por configuración
 
-El cómputo `_compute_rate` de la orden DEBE (MUST) recalcular `foreign_rate` y `foreign_inverse_rate` (vía `compute_rate` de `l10n_ve_rate`) cuando cambian `foreign_currency_id` o `date_order`, EXCEPTO cuando: (a) la orden tiene `manually_set_rate` activo, (b) la orden proviene del sitio web (`website_id` establecido), o (c) la compañía tiene `update_sale_order_rate_using_date_order` desactivado y la tasa ya es distinta de cero. El flag `update_sale_order_rate_using_date_order` es configurable por compañía desde ajustes (related en `res.config.settings` con `readonly=False`).
+El cómputo `_compute_rate` de la orden DEBE (MUST) buscar `foreign_rate` y `foreign_inverse_rate` (vía `compute_rate` de `l10n_ve_rate`) con la fecha de `_l10n_ve_rate_date()`: la de `date_order` si la compañía tiene `update_sale_order_rate_using_date_order` activo; la de **creación** de la orden (hoy si aún no se guarda) si está desactivado. Ambas se pasan al día del usuario (`context_timestamp`, que usa la zona del contexto o la del usuario). Mientras la orden sea cotización (`draft`/`sent`) el cómputo corre cuando cambian `foreign_currency_id` o `date_order`; una orden aprobada con tasa conserva tasa y `foreign_rate_date`. NO recalcula cuando (a) la orden tiene `manually_set_rate` activo o (b) proviene del sitio web (`website_id`), siempre que ya tenga tasa: si nace sin tasa se calcula. `foreign_rate_date` guarda la fecha usada y es la que heredan las líneas y la factura. Los campos `foreign_rate` y `foreign_inverse_rate` van ocultos con `force_save` en el formulario para que el onchange de `date_order` los recalcule antes de guardar. Ticket #16148.
 
-#### Scenario: Cambio de fecha con actualización habilitada
+#### Scenario: Ajuste activo y cambio de fecha en la cotización
 
-- **WHEN** cambia `date_order` de una orden sin tasa manual y la compañía tiene `update_sale_order_rate_using_date_order` activo
-- **THEN** `foreign_rate` y `foreign_inverse_rate` se recalculan con la tasa vigente a la nueva fecha
+- **WHEN** cambia `date_order` de una cotización sin tasa manual y el ajuste está activo
+- **THEN** la tasa se recalcula con la nueva fecha y `foreign_rate_date` es esa fecha
 
-#### Scenario: Cambio de fecha con actualización deshabilitada y tasa ya fijada
+#### Scenario: Ajuste desactivado
 
-- **WHEN** cambia `date_order` y la compañía tiene `update_sale_order_rate_using_date_order` desactivado con `foreign_rate` distinto de cero
-- **THEN** la tasa de la orden no se modifica
+- **WHEN** el ajuste está desactivado y la orden se crea con una `date_order` distinta de hoy, o se cambia después
+- **THEN** la tasa es la del día de creación de la orden y no se mueve
+
+#### Scenario: Orden aprobada
+
+- **WHEN** se aprueba la orden o se intenta recalcular una orden aprobada con tasa
+- **THEN** la tasa y `foreign_rate_date` se conservan
 
 #### Scenario: Orden con tasa manual
 
 - **WHEN** la orden tiene `manually_set_rate` activo
 - **THEN** el recálculo automático no toca sus tasas
+
+#### Scenario: Tasa manual sin valor útil
+
+- **WHEN** la orden tiene `manually_set_rate` activo pero su tasa es cero, o un residuo menor a la precisión `Tasa` (6 decimales)
+- **THEN** se trata como "sin tasa" y se calcula por fecha como cualquier otra; lo mismo vale para la comprobación de orden aprobada y de orden de website
+
+### Requirement: Confirmar respeta la fecha de la orden
+
+`_prepare_confirmation_values` DEBE (MUST) conservar la `date_order` que ya tiene la orden en vez de reescribirla con la fecha de confirmación del core; `date_order` es obligatoria (nace con el instante de creación y la fecha de tasa se toma del día del usuario al leerla), por lo que no hay respaldo que asignar. Consecuencia a tener en cuenta: `sale_stock` calcula la fecha límite de entrega como `date_order + plazo`, de modo que una cotización antigua confirmada hoy genera entregas con fecha planificada en el pasado. Ticket #16148.
+
+#### Scenario: Confirmación de una orden con fecha elegida
+
+- **WHEN** se confirma una orden con `date_order` pasada
+- **THEN** `date_order` y la tasa de la orden no cambian
 
 ### Requirement: Tasa inversa al editar la tasa manualmente
 
@@ -64,17 +88,22 @@ El sistema DEBE (MUST) dejar constancia en el chatter de la orden cuando la tasa
 
 ### Requirement: Traslado de la tasa de la orden a la factura
 
-Al preparar la factura desde la orden (`_prepare_invoice`), el sistema DEBE (MUST) copiar `foreign_rate` y `foreign_inverse_rate` de la orden a la factura, y marcar la factura con `manually_set_rate` cuando la orden lo tiene activo o la compañía tiene activo `use_invoice_rate_from_sale_order` (configurable desde ajustes). El método `_update_invoices_rate` DEBE (MUST) sincronizar las tasas de las facturas de la orden solo cuando `use_invoice_rate_from_sale_order` está activo.
+Al preparar la factura desde la orden (`_prepare_invoice`), el sistema, cuando la compañía tiene activo `use_invoice_rate_from_sale_order` (configurable desde ajustes), DEBE (MUST) pasar como `invoice_date` (Rate Date) la `foreign_rate_date` de la orden. NO DEBE (MUST NOT) copiar `manually_set_rate` ni las tasas de la orden a la factura ni marcarla como manual: la tasa de la factura sale de la Rate Date. El bloqueo lo da `account.move._is_rate_date_locked`, que solo actúa en facturas de cliente (`out_invoice`) de una sola orden. Activar o desactivar el ajuste no recalcula ninguna factura existente. Con el ajuste activo la vista (que decide con el ajuste, el tipo de documento y el contador `sale_order_count` del core, es decir, con la orden realmente vinculada por las líneas) bloquea la Rate Date y muestra un aviso arriba ("This document uses the exchange rate of its sale order: the Rate Date is locked and the rate will not be recalculated when the invoice date changes"). Ticket #16148.
 
 #### Scenario: Compañía que usa la tasa de la orden
 
-- **WHEN** la compañía tiene `use_invoice_rate_from_sale_order` activo y se factura una orden
-- **THEN** la factura se crea con las tasas de la orden y con `manually_set_rate` activo, de modo que la factura no recalcula la tasa a su propia fecha
+- **WHEN** el ajuste está activo y se factura una orden
+- **THEN** la factura toma la tasa de la fecha de tasa de la orden, aunque se cambie la fecha de la factura, y el formulario muestra el aviso con la Rate Date en solo lectura
 
-#### Scenario: Sincronización con el flag desactivado
+#### Scenario: Compañía que no la usa
 
-- **WHEN** se invoca `_update_invoices_rate` y la compañía no tiene `use_invoice_rate_from_sale_order` activo
-- **THEN** las facturas de la orden no se modifican
+- **WHEN** el ajuste está desactivado
+- **THEN** la factura calcula su tasa con su propia fecha y se recalcula si esta cambia; el aviso no se muestra
+
+#### Scenario: Ajuste de compras sobre facturas de cliente
+
+- **WHEN** solo `use_invoice_rate_from_purchase_order` está activo
+- **THEN** las facturas de cliente no se ven afectadas
 
 ### Requirement: Impuesto único por línea de orden
 
@@ -161,7 +190,7 @@ La acción `action_confirm` DEBE (MUST) rechazar con error la confirmación de u
 
 ### Requirement: Confirmación requiere tasa de moneda alterna
 
-Al confirmar (`action_confirm`), si la orden tiene moneda alterna (`foreign_currency_id`), no tiene `manually_set_rate` activo, y `foreign_rate` es cero, el sistema DEBE (MUST) invocar `compute_rate` con `raise_if_not_found=True`, bloqueando la confirmación con un `UserError` en vez de dejar pasar la orden con `foreign_rate` en cero. Es el único punto del módulo donde se usa `raise_if_not_found=True`: a diferencia de los defaults y del propio `_compute_rate`, `action_confirm` es una acción explícita del usuario, no un camino automático que un error ahí pueda romper.
+Al confirmar (`action_confirm`), si la orden tiene moneda alterna (`foreign_currency_id`), no tiene `manually_set_rate` activo, y `foreign_rate` es cero, el sistema DEBE (MUST) invocar `compute_rate` con `raise_if_not_found=True`, bloqueando la confirmación con un `UserError` en vez de dejar pasar la orden con `foreign_rate` en cero. Desde el ticket 15923 `compute_rate` lanza ese error por defecto, de modo que también el `_compute_rate` de la orden falla sin tasa; aquí se mantiene el argumento explícito por claridad.
 
 #### Scenario: Confirmación sin tasa configurada
 
@@ -221,12 +250,22 @@ Al confirmar la orden, cuando la compañía tiene `limit_product_qty_out` mayor 
 
 ### Requirement: Facturación por lotes según límite de productos por factura
 
-`_get_invoiceable_lines` DEBE (MUST) truncar las líneas facturables al máximo `max_product_invoice` de la compañía (campo de `l10n_ve_invoice`), salvo que el contexto traiga `ignore_limit`; y `_create_invoices` DEBE (MUST) crear tantas facturas como haga falta, repitiendo la creación mientras queden líneas facturables, de modo que una orden que excede el límite se factura en varias facturas.
+`_get_invoiceable_lines` DEBE (MUST) truncar las líneas facturables al máximo `max_product_invoice` de la compañía (campo de `l10n_ve_invoice`), salvo que el contexto traiga `ignore_limit`; y `_create_invoices` DEBE (MUST) crear tantas facturas como haga falta, repitiendo la creación por lotes mientras queden líneas facturables, de modo que una orden que excede el límite se factura en varias facturas. Cada lote DEBE (MUST) llamar a la creación estándar una sola vez, solo con las órdenes que aún tienen líneas pendientes; las líneas de sección/nota no cuentan como pendientes, y una orden cuyas líneas pendientes no cambian tras un lote sale de la repetición.
 
 #### Scenario: Orden con más productos que el límite
 
 - **WHEN** se factura una orden con más líneas facturables que `max_product_invoice`
 - **THEN** se generan varias facturas, cada una con a lo sumo el límite de líneas, hasta cubrir toda la orden
+
+#### Scenario: Facturación consolidada de varias órdenes
+
+- **WHEN** se facturan juntas varias órdenes sin agrupar por orden, sin exceder el límite
+- **THEN** se genera una sola factura con las líneas de todas las órdenes
+
+#### Scenario: Orden cuyas líneas siguen facturables tras el lote
+
+- **WHEN** una orden mantiene las mismas líneas facturables después de un lote (p. ej. una suscripción con su factura en borrador, facturada junto a una orden normal)
+- **THEN** no se vuelve a facturar ni se repite el lote; la factura consolidada es la única creada
 
 #### Scenario: Límite ignorado por contexto
 
@@ -341,15 +380,6 @@ En el formulario de la orden, la columna `tax_ids` de las líneas DEBE (MUST) es
 - **WHEN** cualquier usuario edita una línea de producto en el formulario de la orden
 - **THEN** la celda de impuestos no es editable
 
-### Requirement: Página de moneda alterna por grupo
-
-La página "Foreign currency" del formulario de la orden (tasas y totales alternos con el widget de totales de `l10n_ve_accountant`) DEBE (MUST) mostrarse solo a los usuarios del grupo `l10n_ve_sale.group_foreign_currency_view_sales`.
-
-#### Scenario: Usuario con el grupo
-
-- **WHEN** un usuario del grupo "Foreign Currency View Sales" abre una orden
-- **THEN** ve la página con `foreign_rate` y los totales en moneda alterna
-
 ### Requirement: Grupo que fija la lista de precios como solo lectura
 
 Para los usuarios del grupo `l10n_ve_sale.pricelist_sale_order_group` ("Hide pricelist (sale)"), el campo `pricelist_id` de la orden DEBE (MUST) mostrarse en solo lectura; para el resto es editable mientras la orden está en borrador.
@@ -390,3 +420,42 @@ Para los usuarios del grupo `l10n_ve_sale.contact_filter_sale_order_group` ("Hid
 
 - **WHEN** un usuario del grupo abre una orden
 - **THEN** el selector de filtro de contacto no se muestra, aunque el filtrado por defecto (`customer`) sigue aplicándose al dominio del cliente
+
+### Requirement: Sin página "Foreign currency" ni grupo de visibilidad en la orden
+
+El formulario de `sale.order` NO DEBE (MUST NOT) incluir la página `foreign_currency` ni el widget `account-tax-foreign-totals-field`, y el grupo `l10n_ve_sale.group_foreign_currency_view_sales` NO DEBE (MUST NOT) existir (eliminados por ti-83943). La tasa alterna y los montos en moneda alterna siguen disponibles en las líneas, en las vistas de lista y pivot.
+
+#### Scenario: Formulario de orden con moneda alterna configurada
+
+- **WHEN** se obtiene el formulario de `sale.order` en una compañía con `foreign_currency_id`
+- **THEN** no existe `//page[@name='foreign_currency']` ni el widget `account-tax-foreign-totals-field`, y el grupo no existe (`test_no_foreign_currency_page`)
+
+### Requirement: La fecha de la tasa de la orden es el día del usuario
+
+La tasa de la orden (`_compute_rate`, `create`, la tasa del precio de línea y la fecha de factura generada desde la orden) DEBE (MUST) tomar la fecha del usuario: `_l10n_ve_rate_date()` convierte `date_order` o `create_date` (Datetime en UTC) con `fields.Datetime.context_timestamp`, que usa la zona del contexto o, si falta, la del usuario, nunca `date_order.date()` ni `fields.Date.today()`. El chequeo de facturas vencidas del cliente DEBE (MUST) usar también el «hoy» del usuario.
+
+#### Scenario: Orden creada a las 8:30 pm en Caracas
+
+- **WHEN** se crea una orden a las 00:30 UTC del día siguiente, con usuario en `America/Caracas` y tasa del día del usuario pero no del día UTC
+- **THEN** la orden toma la tasa del día del usuario, `foreign_rate_date` es ese día y no se lanza error de tasa
+
+#### Scenario: Confirmación sin tasa en la orden a las 8:30 pm
+
+- **WHEN** se confirma una orden sin tasa cargada en ese mismo escenario
+- **THEN** la validación de tasa usa el día del usuario y la confirmación continúa
+
+### Requirement: Segundo bloque de totales en la orden de venta
+
+El formulario de `sale.order` DEBE (MUST) mostrar, debajo del widget de totales nativo (`account-tax-totals-field`, grupo `sale_total`), el widget `account-tax-ves-totals-field` de `l10n_ve_accountant`, con el campo `foreign_currency_id` cargado en la vista para que el widget pueda formatear la moneda alterna. Si la orden está en la moneda de la compañía muestra los montos en la moneda alterna (claves `*_foreign_currency` de `tax_totals`); si está en otra moneda muestra los montos en VES. Si la orden está en la moneda de la compañía y la compañía no tiene `foreign_currency_id`, el campo se oculta (`invisible="currency_id == company_currency_id and not foreign_currency_id"`, igual que en la factura; `company_currency_id` se carga en la vista). El segundo bloque NO DEBE (MUST NOT) mostrar filas de IGTF en la orden de venta (ver `l10n_ve_igtf`). Los montos provienen de `tax_totals` y no se recalculan en la vista (ti-85450).
+
+#### Scenario: Orden en la moneda de la compañía
+
+- **GIVEN** una compañía con moneda VEF y `foreign_currency_id` USD, y una orden en VEF por 3.800
+- **WHEN** se abre el formulario de la orden
+- **THEN** debajo de los totales en VEF se ven los totales en USD (10,00 a una tasa de 380) (`test_alternate_totals_block`)
+
+#### Scenario: Orden en moneda extranjera
+
+- **GIVEN** una orden en USD por 10,00
+- **WHEN** se abre el formulario de la orden
+- **THEN** debajo de los totales en USD se ven los totales en VES (3.800,00) (`test_alternate_totals_block`)

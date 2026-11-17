@@ -378,6 +378,21 @@ msgid "Partial Reconcile"
 msgstr "Conciliación parcial"
 
 #. module: l10n_ve_exchange_difference
+#: model:ir.model.fields,help:l10n_ve_exchange_difference.field_account_bank_statement_line__l10n_ve_exchange_line_id
+#: model:ir.model.fields,help:l10n_ve_exchange_difference.field_account_move__l10n_ve_exchange_line_id
+msgid ""
+"Receivable/payable line of the source invoice (its installment) whose "
+"reconciliation originated this note. Like Odoo's native exchange difference "
+"entry, one note is issued PER installment with a residual, whichever side -- "
+"invoice or payment -- holds it: breaking a partial reverses only the notes "
+"of its installment."
+msgstr ""
+"Línea por cobrar de la factura de origen (su cuota) cuya conciliación "
+"originó esta nota. Como el asiento de diferencial nativo de Odoo, se emite "
+"una nota POR cada cuota con residual, sin importar de qué lado -- factura o "
+"pago -- quede: al romper un parcial solo se revierten las notas de su cuota."
+
+#. module: l10n_ve_exchange_difference
 #: model:ir.model.fields,help:l10n_ve_exchange_difference.field_account_bank_statement_line__l10n_ve_exchange_payment_id
 #: model:ir.model.fields,help:l10n_ve_exchange_difference.field_account_move__l10n_ve_exchange_payment_id
 msgid ""
@@ -480,6 +495,12 @@ msgstr ""
 "Se establece cuando esta nota fue creada directamente como Nota de Crédito "
 "(ganancia cambiaria), a diferencia de ser una reversión de una Nota de "
 "Débito (ver `l10n_ve_exchange_original_id`)."
+
+#. module: l10n_ve_exchange_difference
+#: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_account_bank_statement_line__l10n_ve_exchange_line_id
+#: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_account_move__l10n_ve_exchange_line_id
+msgid "Source Invoice Line (Exchange Difference)"
+msgstr "Línea de Factura de Origen (Diferencial Cambiario)"
 
 #. module: l10n_ve_exchange_difference
 #: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_account_bank_statement_line__l10n_ve_exchange_payment_id

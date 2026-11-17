@@ -162,7 +162,7 @@ Al generar las líneas del pago (`_prepare_move_line_default_vals`), un pago cre
 
 ### Requirement: Ajuste de balances en pagos del wizard sin IGTF
 
-Para un pago creado desde el wizard (`payment_from_wizard`) cuyo `igtf_amount` es cero o negativo, `_prepare_move_line_default_vals` DEBE (MUST) forzar la cuadratura contra el residual real de las facturas origen: cuando el pago trae líneas de write-off y el asiento tiene al menos tres líneas, `_fix_writeoff_balance` fija el balance de la contrapartida (`vals[1]`) en el negativo del residual firmado de las facturas origen (`-amount_residual_signed`), recalcula su `amount_currency` desde ese balance y absorbe la diferencia en la línea de write-off (`vals[2]`); cuando no hay write-off, y siempre que la diferencia entre ese residual y el balance de la línea de liquidez no supere 0,1, todas las facturas origen tengan la misma fecha de documento y esa fecha coincida con la del pago, fija los balances de las dos primeras líneas en ±`amount_residual_signed` según el `partner_type`.
+Para un pago creado desde el wizard (`payment_from_wizard`) cuyo `igtf_amount` es cero o negativo, `_prepare_move_line_default_vals` DEBE (MUST) forzar la cuadratura contra el residual real de las facturas origen: cuando el pago trae líneas de write-off y el asiento tiene al menos tres líneas, `_fix_writeoff_balance` fija el balance de la contrapartida (`vals[1]`) en el negativo del residual firmado de las facturas origen (`-amount_residual_signed`), recalcula su `amount_currency` desde ese balance y absorbe la diferencia en la línea de write-off (`vals[2]`); cuando no hay write-off, y siempre que la diferencia entre ese residual y el balance de la línea de liquidez no supere 0,1, todas las facturas origen tengan la misma fecha de documento y esa fecha coincida con la del pago, fija los balances de las dos primeras líneas en ±`amount_residual_signed` según el `payment_type` (liquidez positiva y contrapartida negativa en pagos `inbound`; al revés en `outbound`), de modo que el balance conserve el signo de `amount_currency` también al pagar notas de crédito (NC de cliente = pago `outbound`, NC de proveedor = pago `inbound`).
 
 #### Scenario: Pago con write-off sin IGTF
 
@@ -172,7 +172,17 @@ Para un pago creado desde el wizard (`payment_from_wizard`) cuyo `igtf_amount` e
 #### Scenario: Pago exacto en la fecha de la factura
 
 - **WHEN** un pago sin IGTF ni write-off cancela una única factura cuya fecha de documento es la del pago y la diferencia de conversión es menor o igual a 0,1
-- **THEN** los balances de liquidez y contrapartida se fijan en el residual de la factura con los signos correspondientes al tipo de partner
+- **THEN** los balances de liquidez y contrapartida se fijan en el residual de la factura con los signos correspondientes al tipo de pago
+
+#### Scenario: Reembolso de una nota de crédito de cliente sin IGTF
+
+- **WHEN** se paga desde el wizard, en un diario sin IGTF, una nota de crédito de cliente cuya fecha es la del pago (pago `outbound` con `partner_type` cliente)
+- **THEN** la línea de liquidez queda al haber y la contrapartida al debe, y en cada línea `balance` y `amount_currency` conservan el mismo signo, por lo que el asiento no viola `account_move_line_check_amount_currency_balance_sign`
+
+#### Scenario: Reembolso de una nota de crédito de proveedor
+
+- **WHEN** se paga desde el wizard una nota de crédito de proveedor cuya fecha es la del pago (pago `inbound` con `partner_type` proveedor)
+- **THEN** la línea de liquidez queda al debe y la contrapartida al haber, con `balance` y `amount_currency` del mismo signo
 
 ### Requirement: Base imponible del IGTF acumulada en la factura
 
@@ -414,3 +424,31 @@ El campo `keep_alter_value_vef` de los pagos DEBE (MUST) inicializarse con `reva
 
 - **WHEN** el asiento del pago tiene más de una línea sobre cuentas por cobrar/pagar o corrientes
 - **THEN** la clasificación devuelve como contrapartida solo la última de esas líneas
+
+### Requirement: Las conversiones sin fecha usan el día del usuario
+
+`l10n_ve_igtf.utils._convert_to_company_currency` y `_convert_to_external_currency` DEBEN (MUST) usar `fields.Date.context_today` cuando no reciben fecha, no `fields.Date.today()`.
+
+#### Scenario: Conversión sin fecha
+
+- **WHEN** se convierte un monto sin pasar fecha
+- **THEN** la conversión usa el día del usuario
+
+### Requirement: El segundo bloque de totales no muestra IGTF cuando el documento está en la moneda de la compañía
+
+Los montos `foreign_igtf_*` de `tax_totals` están en la moneda de la compañía (VES); no existe ningún monto IGTF en la moneda alterna. Con el documento en la moneda de la compañía el widget `account-tax-ves-totals-field` muestra la moneda alterna, por lo que sus filas de IGTF (BI IGTF, IGTF, IGTF sugerido, Total con IGTF) NO DEBEN (MUST NOT) mostrarse: repetirían en VES lo que ya muestra el bloque nativo. Con el documento en otra moneda el bloque sigue mostrándolas en VES, y el bloque nativo las muestra en la moneda del documento.
+
+#### Scenario: Factura en la moneda de la compañía
+
+- **WHEN** se abre una factura en VEF con IGTF sugerido o aplicado
+- **THEN** el segundo bloque (moneda alterna) no muestra filas de IGTF
+
+#### Scenario: Factura en otra moneda
+
+- **WHEN** se abre una factura en una moneda distinta a la de la compañía con IGTF sugerido o aplicado
+- **THEN** el bloque nativo muestra el IGTF en la moneda del documento y el segundo bloque lo muestra en VES
+
+#### Scenario: Orden de venta
+
+- **WHEN** se abre una orden de venta (`sale.order`) en cualquier moneda
+- **THEN** el segundo bloque no muestra filas de IGTF: el IGTF solo existe en facturas (`account.move`)

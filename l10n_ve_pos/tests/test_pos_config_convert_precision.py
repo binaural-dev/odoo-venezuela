@@ -43,14 +43,13 @@ Test-fixture gotcha discovered while writing this file (see
 ``@api.depends`` does NOT include ``res.currency.rate`` at all, so
 ``config.foreign_rate``/``foreign_inverse_rate`` are computed once per
 environment and silently keep returning the FIRST rate ever read, even
-after a brand new ``res.currency.rate`` row is created — a sweep over
+after the ``res.currency.rate`` row of the day changes — a sweep over
 several rates within one test method needs an explicit
 ``config.invalidate_recordset(...)`` after each new rate or it keeps
 testing the same (first) rate over and over without ever failing loudly.
 """
 
-from datetime import date, timedelta
-
+from odoo import fields
 from odoo.tests import TransactionCase, tagged
 from odoo.tools.float_utils import float_round
 
@@ -162,11 +161,10 @@ class TestPosConfigConvertPrecision(TransactionCase):
 
         Sets the PLAIN ``rate`` field rather than ``inverse_company_rate``
         (simpler: no inverse-cascade to a sibling field to reason about),
-        and always CREATES a fresh row with a new (past, monotonically
-        later) date rather than overwriting the previous one in place —
-        ``compute_rate`` (``l10n_ve_rate``) always picks the LATEST row
-        with ``name <= today`` via ``search(..., order='name DESC',
-        limit=1)``.
+        on the row dated today: ``pos.config._compute_rate`` asks for the
+        rate of ``fields.Date.today()`` and ``compute_rate``
+        (``l10n_ve_rate``) only accepts a row of that exact date. Each
+        call overwrites that row (one rate per currency and day).
 
         Then explicitly invalidates ``config``'s cache. This is the part
         that actually matters: ``pos.config._compute_rate``'s
@@ -180,21 +178,31 @@ class TestPosConfigConvertPrecision(TransactionCase):
         this invalidation, ``config.foreign_rate``/``foreign_inverse_rate``
         were provably frozen at the first iteration's value across an
         entire rate sweep.)"""
-        self._rate_seq = getattr(self, "_rate_seq", 0) + 1
         company = config.company_id
         foreign_currency = company.foreign_currency_id
         if company.currency_id == self.usd:
             rate = bs_per_usd  # VEF per 1 USD
         else:
             rate = 1.0 / bs_per_usd  # USD per 1 VEF
-        self.env["res.currency.rate"].create(
-            {
-                "name": date(2020, 1, 1) + timedelta(days=self._rate_seq),
-                "currency_id": foreign_currency.id,
-                "company_id": company.id,
-                "rate": rate,
-            }
+        today = fields.Date.today()
+        rate_of_day = self.env["res.currency.rate"].search(
+            [
+                ("name", "=", today),
+                ("currency_id", "=", foreign_currency.id),
+                ("company_id", "=", company.id),
+            ]
         )
+        if rate_of_day:
+            rate_of_day.rate = rate
+        else:
+            self.env["res.currency.rate"].create(
+                {
+                    "name": today,
+                    "currency_id": foreign_currency.id,
+                    "company_id": company.id,
+                    "rate": rate,
+                }
+            )
         config.invalidate_recordset(["foreign_rate", "foreign_inverse_rate"])
 
     # ------------------------------------------------------------------

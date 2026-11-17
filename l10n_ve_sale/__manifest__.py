@@ -7,13 +7,14 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Sales/Sales",
-    "version": "19.0.1.0.9",
+    "version": "19.0.1.0.11",
     # any module necessary for this one to work correctly
     "depends": [
         "base",
         "l10n_ve_base",
         "sale",
         "l10n_ve_rate",
+        "l10n_ve_accountant",
         "l10n_ve_contact",
         "l10n_ve_invoice",
         "l10n_ve_filter_partner",
@@ -27,6 +28,7 @@
         "report/sale_report_views.xml",
         "views/res_config_settings.xml",
         "views/sale_order.xml",
+        "views/account_move.xml",
         "views/product_pricelist_item_views.xml",
         "views/menuitems.xml",
     ],

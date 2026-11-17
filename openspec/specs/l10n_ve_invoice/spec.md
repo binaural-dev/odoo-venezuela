@@ -295,11 +295,13 @@ La validación DEBE (MUST) consultar por cada Nota de Crédito `_l10n_ve_skip_re
 
 ### Requirement: Fecha de factura no posterior a la fecha contable en compras
 
-Cuando la compañía activa `block_invoice_display_date_upper_than_date`, el sistema DEBE (MUST) impedir en documentos de compra que `invoice_date_display` sea mayor que la fecha contable `date` (constraint `_check_invoice_date_display_purchases`).
+La configuración `block_invoice_display_date_upper_than_date` (modelo `res.company`, Ajustes de facturación) DEBE (MUST) estar **encendida por defecto** (`default=True`) y en todas las compañías existentes (migración `19.0.1.0.25`). Con ella encendida, el sistema DEBE impedir en documentos de compra (facturas, notas y recibos de proveedor) que `invoice_date_display` sea mayor que la fecha contable `date`, es decir, que la fecha contable sea menor que la fecha de la factura (constraint `_check_invoice_date_display_purchases`).
 
-#### Scenario: Fecha de documento futura
+La opción de apagarla existe solo por criterio del consultor, para ajustes o casos puntuales del cliente; no es un modo de operación normal. Los documentos de venta no se ven afectados.
 
-- **WHEN** se guarda una factura de proveedor con fecha de documento posterior a la fecha contable y el bloqueo activo
+#### Scenario: Fecha contable anterior a la fecha de la factura
+
+- **WHEN** se guarda una factura de proveedor con fecha contable anterior a su fecha de factura y la configuración encendida
 - **THEN** se lanza un error "The invoice date cannot be greater than the accounting date."
 
 ### Requirement: Solo documentos contables confirmados se imprimen
@@ -318,12 +320,27 @@ Cuando la compañía activa `block_invoice_display_date_upper_than_date`, el sis
 
 ### Requirement: Registro de la fecha-hora de emisión
 
-Al crear o modificar `invoice_date_display`, el sistema DEBE (MUST) almacenar en `invoice_date_display_datetime` esa fecha combinada con la hora actual, y limpiarlo cuando la fecha se vacía.
+Al crear un documento o al cambiar su `invoice_date_display`, el sistema DEBE (MUST) almacenar en `invoice_date_display_datetime` esa fecha combinada con la hora local actual, y limpiarlo cuando la fecha se vacía. Día y hora DEBEN (MUST) salir de la misma zona horaria: la del contexto o la del usuario, la misma que usa `context_today` para el default de `invoice_date_display`. Si el documento se crea sin fecha se toma la de hoy en esa zona horaria. El valor se guarda en UTC, como todo `Datetime`, de modo que al mostrarlo en hora local el día coincide con `invoice_date_display`. Un `write()` que no cambia `invoice_date_display` NO DEBE (MUST NOT) cambiar la hora. Al instalar el módulo, el `post_init_hook` completa los documentos sin fecha-hora con el mismo cálculo, en la zona horaria de la compañía (`America/Caracas` si no tiene).
 
 #### Scenario: Establecer la fecha de factura
 
 - **WHEN** se crea una factura con `invoice_date_display`
-- **THEN** `invoice_date_display_datetime` queda con esa fecha y la hora del momento del registro
+- **THEN** `invoice_date_display_datetime` queda con esa fecha y la hora local del momento del registro
+
+#### Scenario: Registro después de las 20:00 en Venezuela
+
+- **WHEN** un usuario con zona horaria `America/Caracas` registra una factura el 14/09 a las 22:30 (15/09 02:30 UTC)
+- **THEN** `invoice_date_display_datetime` muestra 14/09 22:30 en hora local, no 13/09
+
+#### Scenario: Fecha retroactiva
+
+- **WHEN** ese mismo usuario registra una factura con fecha 10/09
+- **THEN** `invoice_date_display_datetime` muestra 10/09 22:30 en hora local
+
+#### Scenario: Registros guardados con el día anterior
+
+- **WHEN** se actualiza el módulo a `19.0.1.0.27` y hay documentos cuyo `invoice_date_display_datetime`, en la zona horaria de su compañía (`America/Caracas` si no tiene), cae en un día distinto de `invoice_date_display`
+- **THEN** se les pone el día de `invoice_date_display` conservando la hora local, y el resto de los documentos no se toca
 
 ### Requirement: Período fiscal según tipo de contribuyente
 
@@ -434,12 +451,17 @@ El campo `next_installment_date` DEBE (MUST) calcularse como el menor `date_matu
 
 ### Requirement: Dominio de los libros fiscales
 
-El wizard `wizard.accounting.reports` DEBE (MUST) seleccionar para el libro los documentos de las compañías del alcance del libro (`report_company_ids`, ver «Alcance del libro con sucursales nativas») con estado `posted` o `cancel`, `correlative` asignado (distinto de `/` y de vacío), fecha contable dentro del rango solicitado, y tipo según el libro (`out_invoice`/`out_refund` para ventas; `in_invoice`/`in_refund`/`in_debit` para compras), ordenados por correlativo en ventas y por fecha de documento en compras; cuando todas las columnas internacionales están ocultas por configuración, el libro de compras excluye los diarios internacionales.
+El wizard `wizard.accounting.reports` DEBE (MUST) seleccionar para el libro los documentos de las compañías del alcance del libro (`report_company_ids`, ver «Alcance del libro con sucursales nativas») con estado `posted` o `cancel`, `correlative` asignado (distinto de `/` y de vacío), fecha contable dentro del rango solicitado, y tipo según el libro (`out_invoice`/`out_refund` para ventas; `in_invoice`/`in_refund`/`in_debit` para compras), ordenados por fecha de documento (`invoice_date_display`); en ventas, los documentos de un mismo día se desempatan por fecha-hora de registro (`invoice_date_display_datetime`) y luego por `id`, de modo que el orden es estable entre generaciones aunque las facturas se modifiquen después de publicarse; `l10n_ve_iot_mf` usa el mismo criterio; cuando todas las columnas internacionales están ocultas por configuración, el libro de compras excluye los diarios internacionales.
 
 #### Scenario: Generación del libro de ventas
 
 - **WHEN** se genera el libro de ventas de un período
 - **THEN** solo aparecen documentos de venta publicados o anulados con número de control dentro del rango de fechas
+
+#### Scenario: Varias facturas de venta del mismo día
+
+- **WHEN** se genera el libro de ventas y hay varias facturas con la misma fecha de documento, algunas modificadas después de publicarse (pago, digitalización)
+- **THEN** salen ordenadas por la fecha-hora en que se registraron y luego por `id`, y el orden se repite igual en cada generación
 
 ### Requirement: Alcance del libro con sucursales nativas
 
@@ -577,8 +599,8 @@ Las rutas `/web/download_sales_book` y `/web/download_purchase_book` DEBEN (MUST
 
 #### Scenario: Wizard ajeno
 
-- **WHEN** se invoca la ruta con un `company_id` distinto del de la compañía activa
-- **THEN** el libro se genera para la compañía indicada en el parámetro, sin control de acceso adicional por parte del controlador
+- **WHEN** se invoca la ruta con el `wizard_id` de un wizard creado por otro usuario
+- **THEN** el controlador responde con un error de acceso y no genera el libro
 
 ### Requirement: Ajuste de descuento fijo en el desglose por línea en moneda de la compañía
 

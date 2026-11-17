@@ -341,6 +341,8 @@ class TestIgtfNoteDebitAdvancePayment(IGTFTestCommon):
             debit_note.origin_payment_to_pay_igtf,
             "Tras la reversión, la ND ya no debe seguir vinculada al pago original.",
         )
+        self.assertFalse(partial_reconcile.exists(), "El parcial debe haberse desconciliado")
+        self.assertEqual(self.env["account.move"].browse(invoice.id).payment_state, "not_paid")
 
     def test_usd_payment_direct_cancel_also_reverses_debit_note(self):
         """Cancelar el pago DIRECTO (botón 'Cancelar' del pago, sin pasar

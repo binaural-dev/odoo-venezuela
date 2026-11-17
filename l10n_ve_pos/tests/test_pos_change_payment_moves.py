@@ -26,6 +26,10 @@ class TestPosChangePaymentMoves(TestPosSessionAccountingBase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        # La factura y el asiento de diferencial llevan fecha de hoy. A 1 Bs
+        # por $: la factura sale en USD y se cobra en VEF, y el core convierte
+        # los pagos con esta tasa, como la conversión 1:1 de cuando no había.
+        cls._create_rate_of_day(1.0)
         other_cash_journal = cls.env["account.journal"].create(
             {
                 "name": "C Other Cash Journal",

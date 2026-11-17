@@ -287,3 +287,8 @@ msgid ""
 msgstr ""
 "<span class=\"o_text-muted\">Cuando está habilitado, se bloquean los cambios de nombre de los contactos "
 "si existen ventas, compras, facturas o asientos contables relacionados.</span>"
+
+#. module: l10n_ve_contact
+#: model:res.groups,name:l10n_ve_contact.group_edit_partner_name_immutable
+msgid "Edit contact name with transactions"
+msgstr "Editar el nombre de contactos con transacciones"

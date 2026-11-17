@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_partner_form_inherit_transport_fleet" model="ir.ui.view">
+        <field name="name">res.partner.form.inherit.l10n_ve_stock_account_fleet</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='function' and not(ancestor::field)]" position="after">
+                <field name="driver_license_type" invisible="is_company"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -20,6 +20,7 @@ class TestAccountMoveInternational(TransactionCase):
         move_intl = self.env['account.move'].create({
             'move_type': 'in_invoice',
             'journal_id': self.journal_intl.id,
+            'invoice_date_display': '2023-01-01',
             'date': '2023-01-01',
         })
         self.assertTrue(move_intl.is_purchase_international, "Move should be international when journal is international")
@@ -27,6 +28,7 @@ class TestAccountMoveInternational(TransactionCase):
         move_local = self.env['account.move'].create({
             'move_type': 'in_invoice',
             'journal_id': self.journal_local.id,
+            'invoice_date_display': '2023-01-01',
             'date': '2023-01-01',
         })
         self.assertFalse(move_local.is_purchase_international, "Move should not be international when journal is not")

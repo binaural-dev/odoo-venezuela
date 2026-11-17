@@ -209,7 +209,7 @@ class AccountMoveLine(models.Model):
     def _compute_foreign_subtotal(self):
         for line in self:
             line_discount_price_unit = line.foreign_price * (
-                1 - (line.discount / 100.0)
+                1 - (line._get_effective_discount_percent() / 100.0)
             )
             foreign_subtotal = line_discount_price_unit * line.quantity
 
@@ -268,7 +268,16 @@ class AccountMoveLine(models.Model):
         # cambia `move_currency_to_company_currency_rate` -- esa escritura
         # dispara `_inverse_foreign_balance`, que fija foreign_debit/credit.
         # Ya no hace falta re-derivar el valor aca con `_convert()`.
-        if self.display_type in ("payment_term", "tax"):
+        #
+        # Excepcion: el asiento de base efectivo (IMBEF) que genera el core al
+        # conciliar copia el display_type 'tax' de la factura, pero sus lineas
+        # nacen con foreign_balance = 0. Devolverlo dejaba el monto alterno del
+        # impuesto en 0 (ticket 10703 en v17). Esas lineas se valoran por la
+        # ruta de asiento no-factura (amount_currency / tasa).
+        if (
+            self.display_type in ("payment_term", "tax")
+            and not self.move_id.tax_cash_basis_origin_move_id
+        ):
             return self.foreign_balance
 
         # 2 — Section / Subsection / Note: zero. `line_subsection` is the
@@ -462,6 +471,13 @@ class AccountMoveLine(models.Model):
                 else:
                     line.balance = rounded_balance
 
+    def _get_effective_discount_percent(self):
+        """Discount % that really applies to the line, used where the line
+        amounts are rebuilt by hand instead of through the tax computation.
+        Modules that discount through a field of their own extend it."""
+        self.ensure_one()
+        return self.discount or 0.0
+
     def _price_included_split(self):
         """Returns (base_currency, base_company, included_currency,
         included_company) of a product line whose taxes are all flat
@@ -481,7 +497,7 @@ class AccountMoveLine(models.Model):
             return None
         raw_included = (
             self.price_unit * self.quantity
-            * (1 - (self.discount or 0.0) / 100.0) * move.direction_sign
+            * (1 - self._get_effective_discount_percent() / 100.0) * move.direction_sign
         )
         raw_excluded = raw_included / (1 + total_rate)
         currency = self.currency_id
@@ -523,9 +539,9 @@ class AccountMoveLine(models.Model):
         the raw exchange rate. This method distributes that difference across
         product lines proportionally so the entry remains balanced.
 
-        The expected total is computed via ``_convert`` (the raw rate from
-        ``res.currency.rate``), not from ``line.currency_rate`` (which is
-        derived from an already-rounded balance and amplifies the error).
+        The expected total uses the document's stored ``invoice_currency_rate``,
+        not ``line.currency_rate`` (derived from an already-rounded balance) nor
+        the rate of the date, which may have been edited after posting.
         """
         for move in lines.move_id:
             if not move.is_invoice(include_receipts=True):
@@ -548,9 +564,13 @@ class AccountMoveLine(models.Model):
 
             total_currency = sum(product_lines.mapped('amount_currency'))
             rate_date = move.invoice_date or move.date or fields.Date.context_today(move)
-            expected = cc.round(move.currency_id._convert(
-                total_currency, cc, move.company_id, rate_date
-            ))
+            move_rate = move.invoice_currency_rate
+            if move_rate:
+                expected = cc.round(total_currency / move_rate)
+            else:
+                expected = cc.round(move.currency_id._convert(
+                    total_currency, cc, move.company_id, rate_date
+                ))
             actual = sum(product_lines.mapped('balance'))
             diff = cc.round(expected - actual)
 
@@ -679,10 +699,8 @@ class AccountMoveLine(models.Model):
         if not debit_line or not credit_line or not (res or {}).get('partial_values'):
             return res
 
-        # Reuse core's own exchange-move date, or `max(debit, credit)` if
-        # it built none -- never "today" (wrong rate for past partials).
         # Ver openspec: design-notes.md § _prepare_reconciliation_single_partial
-        exchange_date = exchange_values.get('move_values', {}).get('date') or max(debit_line.date, credit_line.date)
+        exchange_date = self._get_alt_exchange_date(debit_line, credit_line, exchange_values)
 
         # Prefer the invoice side as rate source (core's own convention);
         # fall back to the earlier-dated side when neither is an invoice.
@@ -727,6 +745,27 @@ class AccountMoveLine(models.Model):
 
         self._queue_standalone_foreign_exchange_difference(rate_source, counterpart, alt_diff, exchange_date)
         return res
+
+    def _get_alt_exchange_date(self, debit_line, credit_line, exchange_values):
+        """Date for the alternate-currency exchange difference entry.
+
+        Reuses core's own exchange-move date. If it built none, applies the
+        SAME rule core uses for its own entry (`journal.accounting_date`,
+        which keeps the exchange journal's sequence/lock dates coherent) over
+        `max(debit, credit)` -- never "today" (wrong rate for past partials)
+        and never the raw date, or this standalone entry would be dated
+        differently from the native one in the same reconciliation. Without
+        an exchange journal there is no rule to apply: the raw date is kept.
+        Ver openspec: design-notes.md § _prepare_reconciliation_single_partial
+        """
+        exchange_date = (exchange_values.get('move_values') or {}).get('date')
+        if exchange_date:
+            return exchange_date
+        exchange_date = max(debit_line.date, credit_line.date)
+        exchange_journal = self._get_exchange_journal(debit_line.company_id)
+        if not exchange_journal:
+            return exchange_date
+        return exchange_journal.with_context(move_date=exchange_date).accounting_date
 
     def _get_settled_company_amount(self, debit_line, new_residual, initial_residual):
         """Signed company-currency amount settled in this partial, from the

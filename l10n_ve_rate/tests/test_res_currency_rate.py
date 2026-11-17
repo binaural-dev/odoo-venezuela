@@ -1,7 +1,10 @@
 from datetime import date
 
+from psycopg2 import IntegrityError
+
 from odoo.exceptions import UserError, ValidationError
 from odoo.tests import TransactionCase, tagged
+from odoo.tools import mute_logger
 
 
 @tagged("post_install", "-at_install", "l10n_ve_rate")
@@ -12,6 +15,11 @@ class TestComputeRateFallback(TransactionCase):
         self.company.currency_id = self.env.ref("base.VEF")
         self.foreign_currency = self.env.ref("base.USD")
         self.Rate = self.env["res.currency.rate"]
+        # the database may already ship USD rates: start without any
+        self.Rate.search([
+            ("currency_id", "=", self.foreign_currency.id),
+            ("company_id", "=", self.company.id),
+        ]).unlink()
 
     def _create_rate(self, day, rate_value):
         return self.Rate.create({
@@ -21,54 +29,64 @@ class TestComputeRateFallback(TransactionCase):
             "rate": rate_value,
         })
 
-    def test_compute_rate_returns_empty_by_default_when_date_predates_all_rates(self):
-        """By default (raise_if_not_found=False), if rate_date is older than
-        every recorded rate for this currency/company, compute_rate returns
-        {} instead of raising - this is the path taken by automatic callers
-        (record defaults, create()-time comparisons, and the ORM re-triggering
-        a compute simply because something read the field), none of which can
-        meaningfully react to a hard error.
-        """
+    def test_compute_rate_uses_rate_of_the_exact_date(self):
+        """Con tasa para la fecha exacta se usa esa, no otra."""
         self._create_rate(date(2023, 1, 1), 40.0)
-        self._create_rate(date(2023, 6, 1), 45.0)
-
-        result = self.Rate.compute_rate(self.foreign_currency.id, date(2020, 1, 1))
-
-        self.assertEqual(result, {})
-
-    def test_compute_rate_raises_when_explicitly_requested_and_date_predates_all_rates(self):
-        """With raise_if_not_found=True, the same case above must raise
-        UserError instead - reserved for a future call site built
-        specifically to let the user act on the error in place.
-        """
-        self._create_rate(date(2023, 1, 1), 40.0)
-        self._create_rate(date(2023, 6, 1), 45.0)
-
-        with self.assertRaises(UserError):
-            self.Rate.compute_rate(
-                self.foreign_currency.id, date(2020, 1, 1), raise_if_not_found=True,
-            )
-
-    def test_compute_rate_uses_closest_earlier_rate_ignoring_later_ones(self):
-        """With no rate for rate_date itself but rates both before and after
-        it, compute_rate must use the closest one *before* it - rates dated
-        after rate_date are excluded by the domain and must never be picked,
-        no matter how close they are.
-        """
-        self._create_rate(date(2023, 1, 1), 40.0)
-        closest_before = self._create_rate(date(2023, 6, 1), 45.0)
+        exact = self._create_rate(date(2023, 6, 1), 45.0)
         self._create_rate(date(2023, 12, 1), 50.0)
 
-        result = self.Rate.compute_rate(self.foreign_currency.id, date(2023, 8, 1))
+        result = self.Rate.compute_rate(self.foreign_currency.id, date(2023, 6, 1))
 
-        self.assertEqual(result["foreign_rate"], closest_before.inverse_company_rate)
+        self.assertEqual(result["foreign_rate"], exact.inverse_company_rate)
+        self.assertEqual(result["foreign_inverse_rate"], exact.company_rate)
 
-    def test_compute_rate_returns_empty_by_default_when_no_rate_exists_at_all(self):
-        """With no rate at all for this currency/company, there is nothing
-        at or before rate_date to use; by default compute_rate returns {}.
+    def test_rate_of_zero_cannot_be_stored(self):
+        """Evidencia: Odoo 19 (`CHECK (rate>0)`) impide guardar una tasa en 0,
+        asi que una tasa existente nunca produce un asiento con tasa 0,00; la
+        unica falla posible es la ausencia del registro (ver
+        test_compute_rate_raises_when_no_rate_for_exact_date).
         """
-        result = self.Rate.compute_rate(self.foreign_currency.id, date(2023, 1, 1))
+        with self.assertRaises(IntegrityError), mute_logger("odoo.sql_db"), self.env.cr.savepoint():
+            self._create_rate(date(2023, 6, 1), 0.0)
+
+    def test_compute_rate_raises_when_no_rate_for_exact_date(self):
+        """No se usa la tasa más cercana: ni la anterior ni la posterior."""
+        self._create_rate(date(2023, 1, 1), 40.0)
+        self._create_rate(date(2023, 12, 1), 50.0)
+
+        for day in (date(2020, 1, 1), date(2023, 6, 1), date(2030, 1, 1)):
+            with self.subTest(day=day), self.assertRaisesRegex(UserError, "no rate assigned"):
+                self.Rate.compute_rate(self.foreign_currency.id, day)
+
+    def test_compute_rate_returns_empty_when_raise_is_disabled(self):
+        """raise_if_not_found=False keeps the silent behaviour: {} (sin ninguna tasa)."""
+        result = self.Rate.compute_rate(
+            self.foreign_currency.id, date(2020, 1, 1), raise_if_not_found=False,
+        )
+
         self.assertEqual(result, {})
+
+    def test_compute_rate_of_company_currency_without_rate_is_one(self):
+        """The company currency against itself is 1 even with no recorded rate."""
+        self.Rate.search([("currency_id", "=", self.company.currency_id.id)]).unlink()
+        self.assertEqual(
+            self.Rate.compute_rate(self.company.currency_id.id, date(2023, 1, 1)),
+            {"foreign_rate": 1.0, "foreign_inverse_rate": 1.0},
+        )
+
+    def test_compute_rate_without_foreign_currency_returns_empty(self):
+        """No foreign currency means nothing to look up: not a missing rate."""
+        self.assertEqual(self.Rate.compute_rate(False, date(2023, 1, 1)), {})
+
+    def test_compute_rate_raises_by_default_when_no_rate_exists_at_all(self):
+        """With no rate at all for this currency/company compute_rate raises."""
+        with self.assertRaisesRegex(UserError, "no rate assigned"):
+            self.Rate.compute_rate(self.foreign_currency.id, date(2023, 1, 1))
+
+    def test_compute_inverse_rate_raises_without_rate(self):
+        for rate in (0, 0.0, False, None):
+            with self.subTest(rate=rate), self.assertRaisesRegex(UserError, "no rate assigned"):
+                self.Rate.compute_inverse_rate(rate)
 
 
 @tagged("post_install", "-at_install", "l10n_ve_rate")
@@ -115,31 +133,39 @@ class TestRateBranchInheritance(TransactionCase):
         self.assertEqual(result["foreign_inverse_rate"], parent_rate.company_rate)
         self.assertNotEqual(result["foreign_rate"], 0.0)
 
-    def test_branch_without_any_rate_in_hierarchy_returns_empty(self):
-        """Sin tasas en sucursal ni matriz se mantiene el comportamiento previo."""
+    def test_branch_without_any_rate_in_hierarchy_raises(self):
+        """Sin tasas en sucursal ni matriz se lanza el error de tasa no asignada."""
+        with self.assertRaisesRegex(UserError, "no rate assigned"):
+            self.Rate.with_company(self.branch).compute_rate(
+                self.usd.id, date(2023, 6, 1),
+            )
+
+    def test_branch_without_rate_returns_empty_when_raise_is_disabled(self):
         result = self.Rate.with_company(self.branch).compute_rate(
-            self.usd.id, date(2023, 6, 1),
+            self.usd.id, date(2023, 6, 1), raise_if_not_found=False,
         )
         self.assertEqual(result, {})
 
-    def test_branch_without_rate_raises_when_requested(self):
-        with self.assertRaises(UserError):
-            self.Rate.with_company(self.branch).compute_rate(
-                self.usd.id, date(2023, 6, 1), raise_if_not_found=True,
-            )
-
-    def test_branch_uses_closest_earlier_rate_across_hierarchy(self):
-        """Se toma la tasa más reciente <= fecha dentro de la jerarquía,
-        sin considerar tasas posteriores."""
+    def test_branch_uses_exact_date_rate_of_parent(self):
+        """La sucursal usa la tasa de la matriz con la fecha exacta."""
         self._create_rate(self.parent, date(2023, 1, 1), 0.020)
-        closest = self._create_rate(self.parent, date(2023, 6, 1), 0.025)
+        exact = self._create_rate(self.parent, date(2023, 6, 1), 0.025)
         self._create_rate(self.parent, date(2023, 12, 1), 0.030)
 
         result = self.Rate.with_company(self.branch).compute_rate(
-            self.usd.id, date(2023, 8, 1),
+            self.usd.id, date(2023, 6, 1),
         )
 
-        self.assertEqual(result["foreign_rate"], closest.inverse_company_rate)
+        self.assertEqual(result["foreign_rate"], exact.inverse_company_rate)
+
+    def test_branch_raises_when_parent_has_no_rate_for_exact_date(self):
+        """Sin tasa de la matriz para esa fecha exacta la sucursal también falla."""
+        self._create_rate(self.parent, date(2023, 6, 1), 0.025)
+
+        with self.assertRaisesRegex(UserError, "no rate assigned"):
+            self.Rate.with_company(self.branch).compute_rate(
+                self.usd.id, date(2023, 6, 2),
+            )
 
     def test_branch_does_not_use_unrelated_company_rates(self):
         """Tasas de una compañía fuera de la jerarquía no deben usarse."""
@@ -149,11 +175,10 @@ class TestRateBranchInheritance(TransactionCase):
         })
         self._create_rate(other, date(2023, 6, 1), 0.050)
 
-        result = self.Rate.with_company(self.branch).compute_rate(
-            self.usd.id, date(2023, 6, 1),
-        )
-
-        self.assertEqual(result, {})
+        with self.assertRaisesRegex(UserError, "no rate assigned"):
+            self.Rate.with_company(self.branch).compute_rate(
+                self.usd.id, date(2023, 6, 1),
+            )
 
     def test_parent_company_still_resolves_own_rate(self):
         """Regresión: la matriz sigue resolviendo su propia tasa."""

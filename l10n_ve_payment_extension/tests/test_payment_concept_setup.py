@@ -2,6 +2,7 @@ from odoo.tests import tagged
 from odoo import fields, Command
 from odoo.exceptions import UserError, ValidationError
 from datetime import date, timedelta
+from .rate_helper import seed_foreign_rates_between
 from .test_withholding_common_VEF import RetentionTestCommon
 import logging
 
@@ -318,6 +319,10 @@ class TestAccountingReportsExtraBranches(RetentionTestCommon):
         # the invoice date back too: this test only cares that a retention
         # dated outside the wizard's report window is excluded, not about the
         # accounting-date-vs-invoice-date relationship.
+        today = fields.Date.today()
+        seed_foreign_rates_between(
+            self.env, fields.Date.subtract(today, days=95), fields.Date.subtract(today, days=1)
+        )
         inv.invoice_date_display = fields.Date.subtract(fields.Date.today(), days=90)
         retention.write({"date_accounting": fields.Date.subtract(fields.Date.today(), days=60)})
         values = wizard.get_retention_iva_values(inv.id)
@@ -343,7 +348,7 @@ class TestAccountMoveThirdParty(RetentionTestCommon):
             "is_third_party_retention": True,
             "date": fields.Date.today(),
             "date_accounting": fields.Date.today(),
-            "retention_line_ids": [Command.create({
+            "retention_line_ids": [Command.create({"aliquot": 16.0,
                 "move_id": invoice.id,
                 "name": "Third Party IVA",
                 "invoice_total": 232.0,
@@ -394,7 +399,7 @@ class TestAccountMoveThirdParty(RetentionTestCommon):
             "is_third_party_retention": True,
             "date": fields.Date.today(),
             "date_accounting": fields.Date.today(),
-            "retention_line_ids": [Command.create({
+            "retention_line_ids": [Command.create({"aliquot": 16.0,
                 "move_id": invoice.id,
                 "name": "Third Party IVA",
                 "invoice_total": 232.0,
@@ -456,7 +461,7 @@ class TestAccountRetentionLineExtras(RetentionTestCommon):
             "partner_id": self.partner_pnr_75.id,
             "date": fields.Date.today(),
             "date_accounting": fields.Date.today(),
-            "retention_line_ids": [Command.create({
+            "retention_line_ids": [Command.create({"aliquot": 16.0,
                 "move_id": invoice.id,
             })],
         })
@@ -505,7 +510,7 @@ class TestAccountRetentionLineExtras(RetentionTestCommon):
             "partner_id": self.partner_pnr_75.id,
             "date": fields.Date.today(),
             "date_accounting": fields.Date.today(),
-            "retention_line_ids": [Command.create({
+            "retention_line_ids": [Command.create({"aliquot": 16.0,
                 "move_id": invoice.id,
                 "name": "IVA Line",
                 "invoice_total": 232.0,

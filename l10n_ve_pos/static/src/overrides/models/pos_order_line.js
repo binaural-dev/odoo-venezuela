@@ -246,6 +246,17 @@ patch(PosOrderline.prototype, {
       return this._conv(this.priceExclNoDiscount);
     },
 
+    // Monto foráneo que se MUESTRA en la línea: el `displayPrice` del core
+    // (con o sin impuestos según iface_tax_included) convertido una sola vez.
+    // En la línea padre de un combo, displayPrice es la suma de sus líneas
+    // hijas: el padre no tiene precio propio (el core reparte el precio del
+    // combo entre las hijas), así que su get_foreign_price_* vale 0 (ticket
+    // 15725). Solo es para mostrar: los totales de la orden suman
+    // get_foreign_price_* de todas las líneas y contarían el combo dos veces.
+    get_foreign_display_price() {
+      return this._conv(this.displayPrice);
+    },
+
     get_all_foreign_prices() {
       // Mirrors the shape older callers expected but sourced entirely from
       // local-priced core getters + a single conversion each. No double

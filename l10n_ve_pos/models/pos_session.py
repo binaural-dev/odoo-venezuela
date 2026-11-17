@@ -22,8 +22,16 @@ class PosSession(models.Model):
         IMPORTANT: Odoo 19 load_data response must contain only model keys.
         Adding ad-hoc top-level keys (e.g. ``prefix_vats``) breaks RecordStore
         parsing with "Index 'id' not defined for model ..." in POS bootstrap.
+
+        With ``pos_show_just_products_with_available_qty`` the products come
+        back whole on every load (new session, opening from the backend), not
+        only the ones modified since the browser cache, so the PoS gets the
+        current stock. Costs like the first load. See ``pos.load.mixin``.
         """
-        return super().load_data(models_to_load)
+        session = self
+        if self.config_id.pos_show_just_products_with_available_qty:
+            session = self.with_context(pos_reload_stock_dependent_data=True)
+        return super(PosSession, session).load_data(models_to_load)
 
     def get_pos_ui_product_pricelist_item_by_product(
         self, product_tmpl_ids, product_ids, config_id

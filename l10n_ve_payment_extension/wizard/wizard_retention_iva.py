@@ -1,5 +1,5 @@
 from dateutil.relativedelta import relativedelta
-from odoo import fields, models, _
+from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 from datetime import date
 
@@ -8,8 +8,25 @@ class TxtWizard(models.TransientModel):
     _name = "wizard.retention.iva"
     _description = "File IVA taxes with the SENIAT"
 
-    date_start = fields.Date(default=date.today().replace(day=1))
-    date_end = fields.Date(default=date.today().replace(day=1) + relativedelta(months=1, days=-1))
+    date_start = fields.Date(default=lambda self: fields.Date.context_today(self).replace(day=1))
+    date_end = fields.Date(default=lambda self: fields.Date.context_today(self).replace(day=1) + relativedelta(months=1, days=-1))
+
+    @api.model
+    def _get_retention_iva_domain(self, date_start, date_end, company_id):
+        """Dominio único de los comprobantes de IVA del TXT del SENIAT.
+
+        Lo usan el asistente (validación) y el controlador (descarga) para que
+        el conteo y el archivo no difieran. Incluye facturas y notas de crédito
+        de proveedor.
+        """
+        return [
+            ("date", ">=", date_start),
+            ("date", "<=", date_end),
+            ("state", "=", "emitted"),
+            ("type_retention", "=", "iva"),
+            ("type", "in", ("in_invoice", "in_refund")),
+            ("company_id", "=", company_id),
+        ]
 
     def generate_txt(self):
         company_id = self.env.company.id
@@ -18,14 +35,7 @@ class TxtWizard(models.TransientModel):
         if not self.env.company.vat:
             raise UserError(_("No VAT number for company %s" % self.env.company.name))
         retention_count = self.env["account.retention"].search_count(
-            [
-                ("date", ">=", self.date_start),
-                ("date", "<=", self.date_end),
-                ("state", "=", "emitted"),
-                ("type_retention", "=", "iva"),
-                ("type", "=", "in_invoice"),
-                ("company_id", "=", company_id),
-            ]
+            self._get_retention_iva_domain(self.date_start, self.date_end, company_id)
         )
         if retention_count == 0:
             raise UserError(_("No retentions found for the selected period"))
@@ -66,8 +76,7 @@ class TxtWizard(models.TransientModel):
                 line.retention_id.partner_id.prefix_vat + line.retention_id.partner_id.vat
             )
             line_data["Número de documento"] = line.move_id.name
-            line_data["Número de control"] = line.move_id.correlative
-            line_data["Número del documento afectado"] = line.move_id.debit_origin_id.name if line.move_id.journal_id.is_debit  else line.move_id.reversed_entry_id.name or "0" 
+            line_data["Número de control"] = line.move_id.correlative or ""
             line_data["Número de comprobante de retención"] = (
                 int(line.retention_id.number) if line.retention_id.number else 0
             )

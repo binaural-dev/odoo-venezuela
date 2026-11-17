@@ -1,15 +1,15 @@
 from odoo.exceptions import UserError
 from odoo.tests import Form, tagged
 
-from .test_exchange_note_reversal import TestExchangeNoteReversal
+from .common import ExchangeNoteCommon
 
 
 @tagged("l10n_ve_exchange_difference", "-at_install", "post_install")
-class TestExchangeNoteForeignAndDraft(TestExchangeNoteReversal):
+class TestExchangeNoteForeignAndDraft(ExchangeNoteCommon):
     """Las ND/NC por diferencial cambiario trabajan como el asiento de
     diferencial nativo: sin montos en moneda alterna y sin poder volver a
-    borrador. Reutiliza el fixture de `TestExchangeNoteReversal` (mismo
-    costo de re-ejecución que `TestExchangeNoteMixedFlow`)."""
+    borrador. Reutiliza el fixture compartido `ExchangeNoteCommon`
+    (`common.py`)."""
 
     def _settle_and_get_note(self):
         invoice = self._create_invoice("2026-01-01")

@@ -31,7 +31,7 @@ class MoveActionCancelAdvancePayment(models.TransientModel):
                
                     
                 move.line_ids.remove_move_reconcile()
-                move.button_draft()
+                move.with_context(move_action_cancel_advance_payment=True).button_draft()
                 move.write({'origin_payment_advanced_payment_id': False})
                 move.with_context(
                     move_action_cancel_advance_payment=True

@@ -1,0 +1,5 @@
+- [x] `_get_book_order()`: ventas por fecha, fecha-hora de registro e `id`; compras sin cambios
+- [x] `search_moves()` de `l10n_ve_invoice` y de `l10n_ve_iot_mf` usan `_get_book_order()`
+- [x] Tests (facturas modificadas después de publicar, orden por fecha-hora, compras sin cambios)
+- [x] Bump de versión `l10n_ve_invoice` `19.0.1.0.28` y `l10n_ve_iot_mf` `19.0.1.0.4`
+- [x] Spec `openspec/specs/l10n_ve_invoice/spec.md`

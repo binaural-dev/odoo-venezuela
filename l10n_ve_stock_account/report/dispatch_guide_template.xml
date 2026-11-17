@@ -270,8 +270,15 @@
                         <tbody>
                             <tr>
                                 <td class="text-start" style="border-bottom: none; vertical-align: top;">
-                                    <strong>Nombre:</strong> <br /> C.I: <br /> Marca vehículo: <br />
-                                    Placa batea: <br /> Placa chasis: <br />
+                                    <strong>Nombre:</strong> <span t-out="o.transport_driver_name or ''"/><br />
+                                    C.I: <span t-out="o.transport_driver_vat or ''"/><br />
+                                    Licencia: <span t-field="o.transport_driver_license_type"/><br />
+                                    Contacto: <span t-out="o.transport_driver_contact or ''"/><br />
+                                    Tipo vehículo: <span t-out="o.transport_vehicle_type or ''"/><br />
+                                    Marca vehículo: <span t-out="' '.join(filter(None, [o.transport_vehicle_brand, o.transport_vehicle_model]))"/><br />
+                                    Nro. transporte: <span t-out="o.transport_vehicle_number or ''"/><br />
+                                    Placa batea: <span t-out="o.transport_trailer_plate or ''"/><br />
+                                    Placa chasis: <span t-out="o.transport_vehicle_plate or ''"/><br />
                                 </td>
                                 <td class="text-start" style="border-bottom: none; vertical-align: top;">
                                     <strong>Nombre:</strong> <br /> C.I: <br /> Fecha: <br />

@@ -1,0 +1,8 @@
+- [x] `_get_invoice_date_display_datetime` con `context_today` y `context_timestamp`
+- [x] `create()` (vals y bucle de `moves`) y `write()` usan el método
+- [x] `write()` no pisa la hora si `invoice_date_display` no cambia
+- [x] `post_init_hook` con el mismo método y la zona horaria de la compañía
+- [x] Migración `19.0.1.0.27` que corrige el día de los documentos existentes
+- [x] Tests con la hora congelada a las 02:30 UTC (con tz, sin tz, retroactiva)
+- [x] Bump de versión `19.0.1.0.27`
+- [x] Spec `openspec/specs/l10n_ve_invoice/spec.md`

@@ -31,3 +31,6 @@ class ResConfigSettings(models.TransientModel):
     sell_kit_from_another_store = fields.Boolean(
         related="pos_config_id.sell_kit_from_another_store", readonly=False
     )
+    allow_product_creation_in_pos = fields.Boolean(
+        related="pos_config_id.allow_product_creation_in_pos", readonly=False
+    )

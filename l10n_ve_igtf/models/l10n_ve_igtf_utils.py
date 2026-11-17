@@ -60,14 +60,14 @@ class IGTFUtils(models.AbstractModel):
         if from_currency == company_currency and invoice_currency == company_currency:
             return amount
         elif from_currency == company_currency and invoice_currency and invoice_currency != company_currency:
-            return invoice_currency._convert(amount, company_currency, company, date or fields.Date.today())
+            return invoice_currency._convert(amount, company_currency, company, date or fields.Date.context_today(self))
         else:
-            return from_currency._convert(amount, company_currency, company, date or fields.Date.today())
+            return from_currency._convert(amount, company_currency, company, date or fields.Date.context_today(self))
 
     @api.model
     def _convert_to_external_currency(self, from_currency, amount, date, company):
         company_currency = company.currency_id
-        return company_currency._convert(amount, from_currency, company, date or fields.Date.today())
+        return company_currency._convert(amount, from_currency, company, date or fields.Date.context_today(self))
 
     @api.model
     def get_moves_from_context(self):

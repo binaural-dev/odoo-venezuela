@@ -260,3 +260,18 @@ msgstr ""
 #: model:ir.model,name:l10n_ve_dispatch_guide_digital.model_stock_picking
 msgid "Transfer"
 msgstr "Transferir "
+
+#. module: l10n_ve_dispatch_guide_digital
+#. odoo-python
+#: code:addons/l10n_ve_dispatch_guide_digital/services/tfhka_dispatch_guide_service.py:0
+msgid "The dispatch guide is missing transport data: %s"
+msgstr "A la guía de despacho le faltan datos de transporte: %s"
+
+#. module: l10n_ve_dispatch_guide_digital
+#: model_terms:ir.ui.view,arch_db:l10n_ve_dispatch_guide_digital.view_res_config_settings_inherit_tfhka_transport
+msgid ""
+"Outgoing dispatch guides need driver, driver ID number and vehicle plate to "
+"be validated."
+msgstr ""
+"Las guías de despacho de salida necesitan conductor, cédula del conductor y "
+"placa del vehículo para poder validarse."

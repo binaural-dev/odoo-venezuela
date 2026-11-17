@@ -86,6 +86,29 @@ class ResCompany(models.Model):
         ),
     )
 
+    use_parent_retention_sequence = fields.Boolean(
+        string="Use the parent company retention sequence",
+        default=False,
+        help=(
+            "Only for branches (companies with a parent company). When"
+            " enabled, the IVA, ISLR and municipal retention voucher numbers"
+            " of this branch are taken from the parent company sequences"
+            " instead of creating independent ones, so every branch sharing"
+            " the same tax ID uses a single correlative. Ignored if the tax"
+            " ID (VAT) differs from the parent company's. Disabled by"
+            " default: each branch keeps its own sequence."
+        ),
+    )
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        # The core only copies res.company fields to new branches, not the fiscal
+        # fields stored on the partner, so they are propagated here.
+        companies = super().create(vals_list)
+        roots = companies.filtered("parent_id").root_id
+        roots.partner_id._l10n_ve_propagate_fiscal_fields_to_branches()
+        return companies
+
     def write(self, vals):
         if "condition_withholding_id" in vals:
             for company in self:

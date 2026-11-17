@@ -322,8 +322,10 @@ retenciones confundiría cualquier otro llamador legítimo con una retención.
 - **THEN** la reconciliación entra con el contexto
   `l10n_ve_exchange_is_retention_reconcile=True`
 - **AND** el sistema NO genera ninguna ND/NC de este módulo para ese pago
-- **AND** el diferencial cambiario de esa conciliación, si lo hay, sigue el
-  comportamiento nativo de Odoo (asiento genérico)
+- **AND** esa conciliación NO genera asiento de diferencial cambiario (se
+  concilia con `no_exchange_difference`); la única diferencia que se registra
+  es la de precisión entre monedas, como `write_off` del propio pago de
+  retención (ver `l10n_ve_payment_extension`)
 
 ### Requirement: Un flujo mixto permite decidir por cliente si se emite ND/NC o el asiento nativo
 
@@ -635,14 +637,14 @@ Se logra con:
 - **AND** lanza `UserError` explícito ANTES de stashear None
 - **AND** la reconciliación falla ruidoso, no silenciosamente
 
-### Requirement: La ND/NC de diferencial no se bloquea por la fecha futura de un pago
+### Requirement: Un pago con fecha futura se rechaza antes de la conciliación
 
-La ND/NC de diferencial toma como fecha (`invoice_date`, `invoice_date_display`, `date`) la fecha del pago. Al confirmarla, el sistema DEBE (MUST) pasar el contexto `l10n_ve_skip_future_date_check=True` a `action_post()`, de modo que el guard de `l10n_ve_invoice` que impide confirmar documentos con fecha futura no se aplique a esta nota. Un pago con fecha futura NO DEBE (MUST NOT) fallar dentro de la conciliación con un error de fecha de documento que el usuario no puede relacionar con el pago.
+Un pago (`account.payment`) o un asistente de registrar pago con fecha posterior a hoy NO PUEDE (MUST NOT) guardarse (ver `l10n_ve_accountant`, ticket #15682), por lo que nunca llega a la conciliación ni genera ND/NC de diferencial con fecha futura. La exención `l10n_ve_skip_future_date_check` de `action_post()` sigue vigente para las notas de diferencial: su fecha es la del pago, que ya no puede ser futura.
 
 #### Scenario: Pago con fecha futura sobre factura en divisa
 
-- **WHEN** se registra un pago con fecha posterior a hoy sobre una factura en divisa y se genera la ND/NC de diferencial
-- **THEN** la nota se confirma con la fecha del pago, sin el error de fecha futura
+- **WHEN** se intenta registrar un pago con fecha posterior a hoy sobre una factura en divisa
+- **THEN** se lanza un error de validación en el asistente, no se crea el pago y no se genera ninguna ND/NC de diferencial
 
 #### Scenario: Tests de aislamiento de tasas
 

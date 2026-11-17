@@ -220,6 +220,8 @@ class AccountMove(models.Model):
     # Unreconciled Payments
     @api.depends('move_type', 'line_ids.amount_residual')
     def _compute_payments_widget_to_reconcile_info(self):
+        """Cada fila lleva `rate`: la tasa sin redondear (moneda del pago -> moneda de la factura)
+        con la que se calculó `amount`, para que el cruce use exactamente la misma conversión."""
         super()._compute_payments_widget_to_reconcile_info()
 
         for move in self:
@@ -314,7 +316,10 @@ class AccountMove(models.Model):
                         "payment_date": fields.Date.to_string(line.date),
                         "currency_id": move.currency_id.id,
                         "amount_residual_currency":abs(line.amount_residual_currency),
-                        "date_to_convert": date_to_convert
+                        "date_to_convert": date_to_convert,
+                        "rate": line.currency_id._get_conversion_rate(
+                            line.currency_id, move.currency_id, move.company_id, date_to_convert,
+                        ),
                     })
 
 
@@ -673,8 +678,10 @@ class AccountMove(models.Model):
         return True
     
     def js_assign_outstanding_line(self, line_id):
-       
-
+        """Asigna un crédito pendiente; si el pago y la factura difieren de moneda, fija
+        `l10n_ve_widget_rates` ({línea: moneda de la contraparte por unidad de la suya}) para
+        aplicar el monto del widget. Excluye retenciones y la ND de IGTF, que conservan la tasa
+        del pago."""
         self.ensure_one()
 
         outstanding_line = self.env["account.move.line"].browse(line_id)
@@ -700,7 +707,23 @@ class AccountMove(models.Model):
 
             return
 
-        
+        if (
+            outstanding_line.currency_id != self.currency_id
+            and not self.env.context.get('l10n_ve_exchange_is_retention_reconcile')
+            and not getattr(self, 'l10n_ve_igtf_note_debit_origin', False)
+        ):
+            widget = self.invoice_outstanding_credits_debits_widget or {}
+            entry = next((c for c in widget.get('content', []) if c['id'] == line_id), None)
+            if entry and entry.get('rate'):
+                rates = {line_id: entry['rate']}
+                if self.currency_id == self.company_currency_id:
+                    rates = {
+                        line.id: 1.0 / entry['rate']
+                        for line in self.line_ids.filtered(
+                            lambda l: l.account_id == outstanding_line.account_id and not l.reconciled
+                        )
+                    }
+                self = self.with_context(l10n_ve_widget_rates=rates)
         return super().js_assign_outstanding_line(line_id)
 
     def js_remove_outstanding_partial(self, partial_id):
@@ -757,6 +780,7 @@ class AccountMove(models.Model):
         if not partial_reconcile:
             raise UserError(_("The partial reconciliation record is mandatory for cancellation."))        
         
+        partial_reconcile = partial_reconcile.with_context(move_action_cancel_advance_payment=True)
         partial_reconcile.line_ids.remove_move_reconcile()
         partial_reconcile.button_draft()
         partial_reconcile.button_cancel()
@@ -765,6 +789,7 @@ class AccountMove(models.Model):
 
     @api.depends('amount_residual')
     def compute_bi_igtf(self):
+        """Base imponible de IGTF; busca los parciales de cada pago contra TODAS las cuotas de la factura."""
         for rec in self:
             rec.igtf_top_aply = 0.0
             rec.alter_bi_igtf = 0.0
@@ -817,7 +842,7 @@ class AccountMove(models.Model):
                     amount_base_payment = 0.0
                     if bank_line and partner_line:
 
-                        factura_line = rec.line_ids.filtered(lambda l: l.account_id.id == target_account.id)
+                        factura_lines = rec.line_ids.filtered(lambda l: l.account_id.id == target_account.id)
 
                         # factura_line can hold more than one line (an invoice with
                         # several due dates leaves several entries on the receivable/
@@ -825,8 +850,8 @@ class AccountMove(models.Model):
                         # With .ids and 'in' the single-line case behaves the same.
                         partial = self.env['account.partial.reconcile'].search([
                             '|',
-                            '&', ('debit_move_id', 'in', factura_line.ids), ('credit_move_id', 'in', partner_line.ids),
-                            '&', ('debit_move_id', 'in', partner_line.ids), ('credit_move_id', 'in', factura_line.ids)
+                            '&', ('debit_move_id', 'in', factura_lines.ids), ('credit_move_id', 'in', partner_line.ids),
+                            '&', ('debit_move_id', 'in', partner_line.ids), ('credit_move_id', 'in', factura_lines.ids),
                         ])
                         bank_amount = abs(bank_line[0].amount_currency)
                         bank_amount_balance = abs(bank_line[0].balance)
@@ -910,6 +935,9 @@ class AccountMove(models.Model):
         openspec), ahora con la tasa real del cruce en vez de la tasa de
         fecha de factura. Preservar la línea aquí rompería esa regeneración
         y reintroduciría el IGTF con tasa vieja.
+
+        Sin línea de IGTF (asientos en VEF, diarios sin IGTF, modo `debit_note`) no hace nada y
+        devuelve False: `button_draft` desconcilia TODO el asiento, no solo el parcial pedido.
         """
 
         partial_reconcile = self.env['account.partial.reconcile'].with_company(self.company_id).sudo().browse(partial_id).exists()
@@ -941,15 +969,18 @@ class AccountMove(models.Model):
         if not payment_move:
             return False
         vef = self.env.ref("base.VEF", raise_if_not_found=False) or self.env["res.currency"]
-        if payment_move.currency_id == vef and not payment_move.origin_payment_advanced_payment_id:
+        if payment_move.currency_id == vef and not payment_move.origin_payment_advanced_payment_id and not payment_move._is_advance_cross():
             return 
-        
 
-    
+        igtf_line = payment_move.line_ids.filtered(lambda line: line.account_id.id in igtf_account_ids)
+        if not igtf_line and not payment_move.origin_payment_advanced_payment_id and not payment_move._is_advance_cross():
+            return False
+
         try:
-            payment_move.button_draft()
-            
+            payment_move.with_context(move_action_cancel_advance_payment=True).button_draft()
+
         except Exception:
+            _logger.warning("Could not reset move %s to draft to remove its IGTF", payment_move.display_name, exc_info=True)
             return False
         
         
@@ -1033,18 +1064,56 @@ class AccountMove(models.Model):
             
         try:
 
-            if payment_move.origin_payment_advanced_payment_id:
-                payment_move.origin_payment_advanced_payment_id.write({'advanced_move_ids': [(3, payment_move.id)]})
-                payment_move.button_cancel()
+            if payment_move._is_advance_cross():
+                # Un cruce sin pago origen (pago borrado o dato histórico) también se cancela: ya no
+                # tiene función y `_post` no lo deja volver a publicarse.
+                if payment_move.origin_payment_advanced_payment_id:
+                    payment_move.origin_payment_advanced_payment_id.write({'advanced_move_ids': [(3, payment_move.id)]})
+                payment_move.with_context(move_action_cancel_advance_payment=True).button_cancel()
             else:
                 payment_move.action_post()
         except Exception:
+            _logger.warning("Could not settle move %s after removing its IGTF", payment_move.display_name, exc_info=True)
             return False
             
         return True
     
 
+    def _is_advance_cross(self):
+        """Asiento de cruce de anticipo: lo marca `is_advance_move` al crearse y no se borra al cancelarlo (a
+        diferencia de `origin_payment_advanced_payment_id`). La reversión de un cruce no es un cruce."""
+        self.ensure_one()
+        return bool(self.is_advance_move and not self.reversed_entry_id)
+
+    def _check_advance_cross_lifecycle(self):
+        """Un cruce de anticipo solo cambia de estado por los caminos que lo gestionan (desconciliar desde la
+        factura, o pasar a borrador/cancelar el pago origen), que lo declaran con el contexto
+        `move_action_cancel_advance_payment`. Sus botones propios no deben deshacerlo por separado."""
+        if self.env.context.get('move_action_cancel_advance_payment'):
+            return
+        crosses = self.filtered(lambda m: m._is_advance_cross())
+        if crosses:
+            raise UserError(_(
+                "The advance payment cross entry %s cannot be reset to draft or cancelled by itself. "
+                "Unreconcile it from the invoice, or reset to draft or cancel its origin payment.",
+                ', '.join(crosses.mapped('display_name')),
+            ))
+
+    def _post(self, soft=True):
+        orphans = self.filtered(lambda m: m._is_advance_cross() and not m.origin_payment_advanced_payment_id)
+        if orphans:
+            raise UserError(_(
+                "The advance payment cross entry %s has no origin payment, so it cannot be posted.",
+                ', '.join(orphans.mapped('display_name')),
+            ))
+        return super()._post(soft=soft)
+
+    def button_cancel(self):
+        self._check_advance_cross_lifecycle()
+        return super().button_cancel()
+
     def button_draft(self):
+        self._check_advance_cross_lifecycle()
         self._check_draftable()
         self.line_ids.analytic_line_ids.with_context(skip_analytic_sync=True).unlink()
         self.mapped('line_ids').remove_move_reconcile()

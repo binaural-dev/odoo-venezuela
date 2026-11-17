@@ -63,6 +63,11 @@ class ResPartner(models.Model):
         if not self.env.company.validate_partner_name_immutable:
             return
 
+        if self.env.user.has_group(
+            "l10n_ve_contact.group_edit_partner_name_immutable"
+        ):
+            return
+
         model_checks = {
             "sale.order": [("partner_id", "=", "id")],
             "purchase.order": [("partner_id", "=", "id")],

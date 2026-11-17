@@ -81,8 +81,7 @@
                             <div class="o_setting_right_pane">
                                 <label for="pos_show_just_products_with_available_qty" />
                                 <p class="text-muted">
-                                    Deletes automatically products without free qty on
-                                    POS
+                                    Hide storable products without stock on hand in the PoS source location
                                 </p>
                             </div>
                         </div>
@@ -114,6 +113,18 @@
                                         Activate product entry with barcode in
                                         strict mode
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6 o_setting_box"
+                            id="l10n_ve_pos_div_allow_product_creation_in_pos">
+                            <div class="o_setting_left_pane">
+                                <field name="allow_product_creation_in_pos" />
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="allow_product_creation_in_pos" />
+                                <div class="text-muted">
+                                    Allow creating products from the PoS screen
                                 </div>
                             </div>
                         </div>

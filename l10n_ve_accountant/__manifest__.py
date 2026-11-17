@@ -57,6 +57,7 @@
     "images": ["static/description/icon.png"],
     "assets": {
         "web.assets_backend": ["l10n_ve_accountant/static/src/components/**/*"],
+        "web.assets_unit_tests": ["l10n_ve_accountant/static/tests/unit/**/*.js"],
     },
     "application": True,
     "pre_init_hook": "pre_init_hook",

@@ -47,6 +47,12 @@ class TestPosSessionAccountingMoveCreation(TestPosSessionAccountingBase):
     for the next batch).
     """
 
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        # The bank payments of the closing are dated today.
+        cls._create_rate_of_day(40.0)
+
     # ==================================================================
     # C2.1 — ``_create_split_account_payment`` (HIGH RISK)
     # ------------------------------------------------------------------

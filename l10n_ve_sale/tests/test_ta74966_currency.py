@@ -98,13 +98,12 @@ class TestTa74966Currency(TransactionCase):
     def test_01_foreign_rate_date_always_has_a_value(self):
         """foreign_rate_date nunca queda vacio.
 
-        Al crear la orden el ORM aplica los defaults y NO ejecuta
-        _compute_rate (foreign_rate tiene su propio default), asi que el campo
-        depende de tener default propio.
+        Al crear la orden _compute_rate fija la tasa y su fecha (foreign_rate
+        ya no tiene un default propio que se salte la configuracion).
 
-        REVERSION: sin el default el campo nace vacio y todo lo que cuelga de
-        el -- la conversion de las lineas y la fecha que hereda la factura --
-        cae al respaldo de date_order.
+        REVERSION: si el compute no fija la fecha el campo nace vacio y todo lo
+        que cuelga de el -- la conversion de las lineas y la fecha que hereda la
+        factura -- cae al respaldo de date_order.
         """
         self.company.update_sale_order_rate_using_date_order = False
         order = self._create_order()
@@ -118,24 +117,24 @@ class TestTa74966Currency(TransactionCase):
         """La tasa que muestra la orden y la que aplican sus lineas deben ser
         la misma.
 
-        Es el descuadre de fondo: al crear la orden, foreign_rate sale de su
-        default (calculado con la fecha de HOY) mientras que la linea convertia
-        con date_order. Con una orden fechada en el pasado, la cabecera decia
-        una tasa y las lineas usaban otra.
+        Es el descuadre de fondo: la cabecera y las lineas deben salir de la
+        misma fecha. Con una orden fechada en el pasado, la cabecera decia una
+        tasa (la de hoy) y las lineas usaban otra (la de date_order).
 
         REVERSION: si la linea vuelve a convertir con date_order en vez de
         foreign_rate_date, este test falla con 40.0 != 20.0.
         """
+        self.company.update_sale_order_rate_using_date_order = True
         order = self._create_order(
             date_order=fields.Datetime.now() - timedelta(days=30)
         )
-        # La cabecera toma la tasa de hoy (50) por su default
-        self.assertAlmostEqual(order.foreign_rate, 50.0, places=2)
-        # y la linea debe usar esa misma tasa: 1000 / 50 = 20 USD
+        # La cabecera toma la tasa de la fecha de la orden (25), no la de hoy
+        self.assertAlmostEqual(order.foreign_rate, 25.0, places=2)
+        # y la linea debe usar esa misma tasa: 1000 / 25 = 40 USD
         self.assertAlmostEqual(
-            order.order_line.foreign_price, 20.0, places=2,
+            order.order_line.foreign_price, 40.0, places=2,
             msg=f"La linea uso otra tasa que la cabecera: "
-                f"{order.order_line.foreign_price} (esperado 20.0 = 1000/50)"
+                f"{order.order_line.foreign_price} (esperado 40.0 = 1000/25)"
         )
         self.assertAlmostEqual(
             order.order_line.foreign_price,
@@ -167,8 +166,8 @@ class TestTa74966Currency(TransactionCase):
         order.action_confirm()
 
         self.assertEqual(
-            order.date_order.date(), self.today,
-            "El core debe haber movido date_order a la fecha de confirmacion"
+            order.date_order.date(), self.past,
+            "Confirmar debe respetar la date_order que ya tenia la orden"
         )
         self.assertEqual(
             order.foreign_rate_date, rate_date_before,
@@ -199,8 +198,8 @@ class TestTa74966Currency(TransactionCase):
         # Se simula una orden creada hace 30 dias: su tasa se sello aquel dia.
         # El campo es readonly=False, asi que admite el valor y el compute no
         # lo pisa mientras la tasa siga congelada.
-        order.foreign_rate_date = self.past
-        rate_date = order.foreign_rate_date
+        rate_date = self.past + timedelta(days=3)
+        order.foreign_rate_date = rate_date
 
         order.action_confirm()
 

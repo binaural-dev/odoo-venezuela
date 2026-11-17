@@ -1,0 +1,7 @@
+- [x] `block_invoice_display_date_upper_than_date` con `default=True`
+- [x] Migración `19.0.1.0.25` que la enciende en compañías existentes
+- [x] Quitar `_logger.warning` de la constraint
+- [x] Tests (default, apagada no bloquea, NC de proveedor, edición posterior, ventas no afectadas)
+- [x] Bump de versión `19.0.1.0.25`
+- [x] Spec `openspec/specs/l10n_ve_invoice/spec.md`
+- [x] La fecha contable de compras tampoco puede ser mayor a `context_today` (misma constraint y misma configuración)

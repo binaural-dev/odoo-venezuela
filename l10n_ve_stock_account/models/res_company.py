@@ -61,3 +61,18 @@ class ResCompany(models.Model):
     )
 
     group_dispatch_note_print = fields.Boolean(string="Print Dispatch Note")
+
+    transport_data_source = fields.Selection(
+        [("manual", "Manual")],
+        string="Transport Data Source",
+        default="manual",
+        required=True,
+        help="Where the driver and vehicle data of the dispatch guide come from. "
+        "'Fleet' is only available when the Fleet app is installed.",
+    )
+    transport_data_required = fields.Boolean(
+        string="Require Transport Data",
+        default=False,
+        help="If enabled, an outgoing dispatch guide cannot be validated without "
+        "driver name, driver ID number and vehicle plate.",
+    )

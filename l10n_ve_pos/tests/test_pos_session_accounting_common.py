@@ -11,7 +11,7 @@ Spec: ``openspec/changes/l10n-ve-pos-migration-plan/specs/pos-odoo19-session-acc
 Doc:   ``.../specs/pos-odoo19-session-accounting/key-map.md``
 """
 
-from odoo import Command
+from odoo import Command, fields
 from odoo.tests import TransactionCase
 
 
@@ -375,6 +375,24 @@ class TestPosSessionAccountingBase(TransactionCase):
     # ------------------------------------------------------------------
     # Helpers
     # ------------------------------------------------------------------
+    @classmethod
+    def _create_rate_of_day(cls, rate):
+        """VEF rate dated today, the date of the moves these tests create.
+
+        ``l10n_ve_rate`` only accepts the rate of the move's exact date, so a
+        test that creates moves without one stops on "There is no rate
+        assigned". Pass a value different from the sale rate, so the moves
+        that keep the order's rate are still told apart from the day's one.
+        """
+        cls.env["res.currency.rate"].create(
+            {
+                "name": fields.Date.today(),
+                "currency_id": cls.foreign_currency.id,
+                "company_id": cls.company.id,
+                "rate": rate,
+            }
+        )
+
     @classmethod
     def _create_paid_order(
         cls,

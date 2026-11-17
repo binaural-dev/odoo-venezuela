@@ -1,6 +1,6 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError
-from odoo.tools import float_compare
+from odoo.tools import float_compare, float_is_zero
 import logging
 _logger = logging.getLogger(__name__)
 
@@ -156,7 +156,9 @@ class AccountRetentionLine(models.Model):
         the invoice (one real tax rate/aliquot).
         """
         self.ensure_one()
-        retention_amount = abs(tax_group["tax_amount"] * (withholding_amount / 100))
+        retention_amount = self.env["account.retention"].compute_iva_retention_amount(
+            tax_group["tax_amount"], withholding_amount
+        )
         self.name = _("Iva Retention")
         self.invoice_type = invoice_id.move_type
         self.aliquot = tax.amount
@@ -232,6 +234,8 @@ class AccountRetentionLine(models.Model):
             tax_groups_and_taxes = record._get_iva_tax_groups_and_taxes(invoice_id)
 
             if not tax_groups_and_taxes:
+                # There is no IVA to retain: a line without aliquot is not created.
+                record.move_id = False
                 return {
                     "warning": {
                         "title": _("Atención"),
@@ -288,6 +292,16 @@ class AccountRetentionLine(models.Model):
                 None,
             )
             if not match:
+                if float_is_zero(record.aliquot, precision_digits=2):
+                    # There is no IVA retention at a 0% rate: go back to the
+                    # aliquot proposed for the invoice instead of keeping it.
+                    record._onchange_move_id()
+                    return {
+                        "warning": {
+                            "title": _("Atención"),
+                            "message": _("An IVA retention line cannot have a 0% aliquot."),
+                        }
+                    }
                 continue
 
             tax_group, tax = match
@@ -518,7 +532,7 @@ class AccountRetentionLine(models.Model):
                                 record.foreign_invoice_amount = concept_foreign_base
 
                     else:
-                        invoice_date = record.move_id.invoice_date_display or fields.Date.today()
+                        invoice_date = record.move_id.invoice_date_display or fields.Date.context_today(self)
 
                         fiscalyear_last_day = int(record.company_id.fiscalyear_last_day)
                         fiscalyear_last_month = int(record.company_id.fiscalyear_last_month)
@@ -569,19 +583,7 @@ class AccountRetentionLine(models.Model):
 
                         total_taxable_base = total_taxable_base * (line.percentage_tax_base / 100.0)
 
-                        rates = sorted(line.tariff_id.accumulated_rate_ids, key=lambda r: r.start)
-
-                        selected_rate = None
-                        for rate in rates:
-                            is_infinity_tier = (rate.stop == 0)
-                            if not is_infinity_tier:
-                                if rate.start <= total_taxable_base <= rate.stop:
-                                    selected_rate = rate
-                                    break 
-                            else:
-                                if total_taxable_base >= rate.start:
-                                    selected_rate = rate
-                                    break
+                        selected_rate = line.tariff_id.get_accumulated_rate(total_taxable_base)
 
                         if selected_rate:
                             record.invoice_total = record.move_id.tax_totals["total_amount"]
@@ -858,18 +860,24 @@ class AccountRetentionLine(models.Model):
         for record in self:
             is_vef_the_base_currency = record.env.company.currency_id.is_venezuelan_bolivar()
             is_client_retention = record.retention_id and record.retention_id.type == "out_invoice"
-            if (
+            if not (
                 is_vef_the_base_currency
                 and is_client_retention
                 and record.move_id.payment_state not in ("in_payment", "paid")
                 and abs(record.retention_amount) > abs(record.move_id.amount_residual_signed)
             ):
-                raise ValidationError(
-                    _(
-                        "The total amount of the retention is greater than the residual amount of"
-                        " the invoice."
-                    )
+                continue
+            # Same criterion as `AccountRetention.action_post`: rounding is no excess.
+            if record.move_id._retention_excess_within_currency_precision(
+                abs(record.retention_amount)
+            ) is not None:
+                continue
+            raise ValidationError(
+                _(
+                    "The total amount of the retention is greater than the residual amount of"
+                    " the invoice."
                 )
+            )
 
     def write(self, vals):
         res = super().write(vals)

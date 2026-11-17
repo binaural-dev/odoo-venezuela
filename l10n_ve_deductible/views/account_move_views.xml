@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_move_form_l10n_ve_deductible" model="ir.ui.view">
+        <field name="name">account.move.form.l10n.ve.deductible</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="l10n_ve_invoice.view_account_move_form_l10n_ve_invoice"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//page[@name='invoice_tab']//field[@name='narration']" position="attributes">
+                <attribute name="colspan">2</attribute>
+            </xpath>
+            <xpath expr="//page[@name='invoice_tab']//field[@name='narration']" position="after">
+                <field name="deductible_allowed" invisible="1"/>
+                <field name="is_deductible"
+                    invisible="(not deductible_allowed and not is_deductible)"
+                    readonly="state != 'draft' or move_type in ('in_refund', 'out_refund')"/>
+                <field name="global_deductible_type" widget="radio" options="{'horizontal': true}"
+                    invisible="not is_deductible"
+                    readonly="state != 'draft'"
+                    required="is_deductible"/>
+                <field name="global_deductible_percent"
+                    invisible="not is_deductible or global_deductible_type != 'percent'"
+                    readonly="state != 'draft'"
+                    required="is_deductible and global_deductible_type == 'percent'"/>
+                <field name="global_deductible_amount"
+                    invisible="not is_deductible or global_deductible_type != 'amount'"
+                    readonly="state != 'draft'"
+                    required="is_deductible and global_deductible_type == 'amount'"/>
+                <field name="global_deductible_reference_amount"
+                    invisible="not is_deductible or global_deductible_type != 'percent'"/>
+            </xpath>
+
+            <xpath expr="//field[@name='invoice_line_ids']//list//field[@name='discount']" position="attributes">
+                <attribute name="column_invisible" add="parent.is_deductible" separator=" or "/>
+                <attribute name="invisible" add="parent.is_deductible" separator=" or "/>
+                <attribute name="readonly" add="parent.is_deductible" separator=" or "/>
+            </xpath>
+            <xpath expr="//field[@name='invoice_line_ids']//list//field[@name='discount']" position="after">
+                <field name="global_deductible_line_amount" string="Deducted"
+                    readonly="parent.state != 'draft'"
+                    column_invisible="not parent.is_deductible or parent.global_deductible_type != 'amount'"/>
+                <field name="global_deductible_manual" column_invisible="True"/>
+                <field name="global_deductible_discount_percent" string="Deducted (%)" readonly="1"
+                    column_invisible="not parent.is_deductible or parent.global_deductible_type != 'percent'"/>
+            </xpath>
+            <xpath expr="//field[@name='invoice_line_ids']//list//field[@name='discount_fixed']" position="attributes">
+                <attribute name="column_invisible" add="parent.is_deductible" separator=" or "/>
+                <attribute name="invisible" add="parent.is_deductible" separator=" or "/>
+                <attribute name="readonly" add="parent.is_deductible" separator=" or "/>
+            </xpath>
+            <xpath expr="//field[@name='invoice_line_ids']//form//field[@name='discount']" position="attributes">
+                <attribute name="invisible" add="parent.is_deductible" separator=" or "/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
