@@ -7,9 +7,12 @@ What: marks as "to remove" the modules of _common.MODULES_WITHOUT_SUCCESSOR that
     groups, which the uninstall deletes; their fields were already backed up by the conversion
     of the operativa line (migrations/_common.py).
 
-Why: these modules only existed in integra-addons 17.0 and nothing replaces them in 19. Left
-    installed, Odoo keeps applying their views once their code is gone and the forms they
+Why: these modules only existed in integra-addons 16.0/17.0 and nothing replaces them in 19.
+    Left installed, Odoo keeps applying their views once their code is gone and the forms they
     extend fail.
+    - binaural_base: a binaural flag on the modules list and the binauralbot_url parameter, from
+      the v16 operativa line. Left 'to upgrade' without code, every update logged it as a module
+      with inconsistent states (castic_19_operativo).
     - binaural_fiscal: the fiscal / non-fiscal flag of the journals. binaural_operative
       translates it from the binaural_v17_journal_fiscal copy, which the conversion takes.
     - binaural_fiscal_inspector, _delivery, _pos: the fiscal inspector. It has not been ported

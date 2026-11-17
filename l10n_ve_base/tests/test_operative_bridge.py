@@ -192,3 +192,42 @@ class TestOperativeBridge(TransactionCase):
         self.assertFalse(_common.register_base_module(self.env.cr))
 
         self.assertEqual(self._module(_common.BASE_MODULE), before)
+
+    def _create_journal_snapshot(self):
+        self.env.cr.execute(
+            "CREATE TABLE %s (journal_id integer, fiscal boolean)"
+            % _common.JOURNAL_FISCAL_SNAPSHOT
+        )
+
+    def _install_operative(self, module):
+        self.env.flush_all()
+        lines = _common.install_operative_module(self.env, module=module)
+        self.env.invalidate_all()
+        return lines
+
+    def test_operative_module_is_marked_to_install(self):
+        self._create_journal_snapshot()
+        self._create_module("x_operative", state="uninstalled", version=None)
+
+        lines = self._install_operative("x_operative")
+
+        self.assertEqual(self._module("x_operative")[0], "to install")
+        self.assertTrue(lines)
+
+    def test_operative_module_is_left_alone_without_snapshot(self):
+        self.env.cr.execute("SELECT to_regclass(%s)", [_common.JOURNAL_FISCAL_SNAPSHOT])
+        if self.env.cr.fetchone()[0]:
+            self.skipTest("this database already has the journal fiscal snapshot")
+        self._create_module("x_operative", state="uninstalled", version=None)
+
+        self.assertEqual(self._install_operative("x_operative"), [])
+
+        self.assertEqual(self._module("x_operative")[0], "uninstalled")
+
+    def test_missing_operative_module_is_reported(self):
+        self._create_journal_snapshot()
+
+        lines = self._install_operative("x_operative_not_in_addons_path")
+
+        self.assertEqual(len(lines), 1)
+        self.assertIn("not in the addons path", lines[0])

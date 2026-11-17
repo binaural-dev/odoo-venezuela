@@ -30,8 +30,24 @@ How to revert: restore the database. The backed up fields are in
 Task: https://binaural.odoo.com/odoo/action-1963/4199/action-345/82849
 """
 
+import logging
+
 from odoo.addons.l10n_ve_base.migrations import _common
+
+_logger = logging.getLogger(__name__)
 
 
 def migrate(cr, version):
-    _common.convert(cr)
+    if not _common.convert(cr):
+        return
+    # The Odoo upgrade service hands the database over with every module 'to upgrade'. On -u all,
+    # Odoo marks the new dependencies of 19 to be installed (account_invoice_pricelist for
+    # l10n_ve_accountant, l10n_ve_purchase for binaural_purchase...) through button_upgrade on
+    # base, which only walks the 'installed' modules: the ones already 'to upgrade' never get them,
+    # and every module that needs them is skipped. Leave them 'installed', as Odoo itself does
+    # after a failed update, so that button_upgrade, which runs right after this script, marks
+    # them again together with their new dependencies.
+    cr.execute(
+        "UPDATE ir_module_module SET state = 'installed' WHERE state = 'to upgrade' AND name != 'base'"
+    )
+    _logger.info("%s modules 'to upgrade' left 'installed' for button_upgrade", cr.rowcount)

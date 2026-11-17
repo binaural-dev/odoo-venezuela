@@ -28,7 +28,9 @@ What it does, in order:
   that its own migrations/ run too.
 
 The modules of the operativa line that have no successor are retired by
-migrations/19.0.1.0.3/end-10, once every module is loaded.
+migrations/19.0.1.0.3/end-10, once every module is loaded. binaural_operative, which turns the
+fiscal flag into is_operative, is marked to be installed by migrations/19.0.1.0.4/post-10
+(install_operative_module), once the module list is updated.
 
 It is meant to run from a pre-upgrade script (upgrade_scripts/pre-10-operative_to_homologated.py,
 through --pre-upgrade-scripts), before Odoo loads any module. The pre-init hook of this module
@@ -74,6 +76,7 @@ RENAMED_MODULES = (
 )
 
 MODULES_WITHOUT_SUCCESSOR = (
+    "binaural_base",
     "binaural_fiscal",
     "binaural_fiscal_inspector",
     "binaural_fiscal_inspector_delivery",
@@ -524,3 +527,51 @@ def convert(cr, renamed_modules=RENAMED_MODULES, xmlid_renames=None):
         return lines
     util.add_to_migration_reports(message, category="Binaural · General")
     return lines
+
+
+OPERATIVE_MODULE = "binaural_operative"
+JOURNAL_FISCAL_SNAPSHOT = SNAPSHOTS[0][0]
+
+
+def install_operative_module(env, module=OPERATIVE_MODULE):
+    """Mark binaural_operative to be installed on a database of the operativa line. Returns the report lines.
+
+    The v16/v17 fiscal / non-fiscal split of the journals (binaural_fiscal) is binaural_operative
+    in 19, but nothing installs it: it is not auto_install and no module of the operativa line
+    depends on it. convert() only copies the flag to JOURNAL_FISCAL_SNAPSHOT, which is what
+    binaural_operative translates into is_operative from its pre-init hook. Marking it here, with
+    button_install so that its dependencies and its auto_install bridges come along, makes Odoo
+    install it later in the same update, once every installed module is loaded.
+
+    Only a database that had binaural_fiscal has the snapshot, so nothing happens on a database of
+    the homologated line or one born in 19. Neither if the module is not in the addons path (a
+    project without integra-addons): then the report says so.
+    """
+    cr = env.cr
+    if not table_exists(cr, JOURNAL_FISCAL_SNAPSHOT):
+        return []
+    record = env["ir.module.module"].search([("name", "=", module)])
+    if not record:
+        return [
+            "%s is not in the addons path: the v16/v17 fiscal flag of the journals stays in %s "
+            "until it is installed." % (module, JOURNAL_FISCAL_SNAPSHOT)
+        ]
+    if record.state != "uninstalled":
+        return []
+    from odoo.exceptions import UserError
+
+    try:
+        record.button_install()
+    except UserError as error:
+        return [
+            "%s could not be marked to be installed, install it by hand to translate the "
+            "v16/v17 fiscal flag of the journals: %s" % (module, error)
+        ]
+    cr.execute(
+        "SELECT name FROM ir_module_module WHERE state = 'to install' ORDER BY name"
+    )
+    names = [name for (name,) in cr.fetchall()]
+    return [
+        "%s marked to be installed in this update, to turn the v16/v17 fiscal flag of the "
+        "journals into is_operative: %s." % (module, ", ".join(names))
+    ]
