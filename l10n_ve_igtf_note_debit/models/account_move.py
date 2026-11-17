@@ -234,7 +234,7 @@ class AccountMove(models.Model):
         is_igtf_journal = (
             payment.journal_id.is_igtf
             if (
-                self.partner_id._check_igtf_apply_improved(self.move_type)
+                self.partner_id._check_igtf_apply_improved(self.move_type, self.company_id)
                 and not self.journal_id.is_purchase_international
             )
             else False
@@ -364,7 +364,7 @@ class AccountMove(models.Model):
         is_igtf_journal = (
             payment.journal_id.is_igtf
             if (
-                self.partner_id._check_igtf_apply_improved(self.move_type)
+                self.partner_id._check_igtf_apply_improved(self.move_type, self.company_id)
                 and not self.journal_id.is_purchase_international
             )
             else False
@@ -386,9 +386,8 @@ class AccountMove(models.Model):
         ])
         advance_line = advance_line.account_id[:1]
         if not advance_line:
-            advance_line = (
-                self.partner_id.default_advance_customer_account_id if is_customer
-                else self.partner_id.default_advance_supplier_account_id
+            advance_line = self.partner_id._get_advance_account(
+                "customer" if is_customer else "supplier", self.company_id
             )
 
         if is_customer:

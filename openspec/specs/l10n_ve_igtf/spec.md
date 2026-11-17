@@ -22,12 +22,17 @@ Una cuenta contable con `is_advance_account` activo DEBE (MUST) ser de tipo `ass
 
 ### Requirement: Cuenta destino de los pagos anticipados
 
-Cuando un pago tiene `is_advance_payment` activo, `_compute_destination_account_id` DEBE (MUST) asignar como cuenta destino la cuenta de anticipo por defecto del partner: `default_advance_customer_account_id` para clientes y `default_advance_supplier_account_id` para proveedores (campos de `res.partner` inicializados desde las cuentas por defecto de la compañía).
+Cuando un pago tiene `is_advance_payment` activo, `_compute_destination_account_id` DEBE (MUST) asignar como cuenta destino la cuenta de anticipo que devuelve `res.partner._get_advance_account`: la cuenta por defecto del partner (`default_advance_customer_account_id` para clientes y `default_advance_supplier_account_id` para proveedores) o, si el partner no la tiene, la cuenta de anticipo de la compañía del pago (`advance_customer_account_id` / `advance_supplier_account_id`). La misma regla DEBE (MUST) usarse en todos los puntos que necesitan la cuenta de anticipo del partner (excedente del pago, IGTF del pago, cruces de anticipo).
 
 #### Scenario: Anticipo de cliente
 
 - **WHEN** se marca un pago de cliente como anticipo y el partner tiene cuenta de anticipo de cliente
 - **THEN** la cuenta destino del pago es esa cuenta de anticipo
+
+#### Scenario: Partner sin cuenta de anticipo
+
+- **WHEN** se marca un pago de cliente como anticipo y el partner no tiene cuenta de anticipo de cliente
+- **THEN** la cuenta destino del pago es la cuenta de anticipo de cliente de la compañía
 
 ### Requirement: Validación de la cuenta destino según el tipo de pago
 
@@ -64,12 +69,17 @@ Un diario con `is_igtf` activo DEBE (MUST) tener moneda asignada y distinta de V
 
 ### Requirement: Aplicabilidad del IGTF según tipo de contribuyente
 
-`_check_igtf_apply_improved` de `res.partner` DEBE (MUST) determinar si aplica IGTF: en documentos de venta (`out_invoice`/`out_refund`) aplica cuando la compañía es contribuyente `special` o `formal` y el partner tiene cuenta de anticipo de cliente; en documentos de compra (`in_invoice`/`in_refund`) aplica cuando el `taxpayer_type` del proveedor es `special` o `formal` y el partner tiene cuenta de anticipo de proveedor; en cualquier otro caso no aplica.
+`_check_igtf_apply_improved(invoice_type, company=None)` de `res.partner` DEBE (MUST) determinar si aplica IGTF según el tipo de contribuyente: en documentos de venta (`out_invoice`/`out_refund`) aplica cuando la compañía del documento es contribuyente `special` o `formal`; en documentos de compra (`in_invoice`/`in_refund`) aplica cuando el `taxpayer_type` del proveedor es `special` o `formal`; en cualquier otro caso no aplica. La compañía DEBE (MUST) ser la del documento cuando se pasa; si no, la del partner o, en su defecto, la compañía activa. El resultado NO DEBE (MUST NOT) depender de que el partner tenga cuentas de anticipo configuradas: esas cuentas solo se usan para el excedente del pago, con la cuenta de la compañía como respaldo.
 
 #### Scenario: Venta de compañía contribuyente especial
 
-- **WHEN** se evalúa una factura de cliente y la compañía es contribuyente especial
-- **THEN** el método devuelve verdadero si el partner tiene cuenta de anticipo de cliente
+- **WHEN** se evalúa una factura de cliente y la compañía del documento es contribuyente especial
+- **THEN** el método devuelve verdadero, tenga o no el partner cuenta de anticipo de cliente
+
+#### Scenario: Compañía activa distinta a la del documento
+
+- **WHEN** se evalúa una factura de una compañía contribuyente especial mientras la compañía activa es ordinaria
+- **THEN** el método devuelve verdadero, porque decide la compañía del documento
 
 #### Scenario: Compra a proveedor ordinario
 

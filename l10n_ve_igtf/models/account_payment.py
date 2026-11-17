@@ -87,8 +87,8 @@ class AccountPaymentAndIgtf(models.Model):
 
         for payment in self:
             if payment.partner_id:
-                customer_account = payment.partner_id.default_advance_customer_account_id.id
-                supplier_account = payment.partner_id.default_advance_supplier_account_id.id
+                customer_account = payment.partner_id._get_advance_account("customer", payment.company_id).id
+                supplier_account = payment.partner_id._get_advance_account("supplier", payment.company_id).id
 
                 if payment.is_advance_payment:
                     if payment.partner_type == "customer" and customer_account:
@@ -211,15 +211,13 @@ class AccountPaymentAndIgtf(models.Model):
         
     def _create_igtf_moves_in_payments(self, vals, write_off_line_vals = False):
         
-        igtf_account = (
-            self.partner_id.default_advance_customer_account_id.id
-            if self.partner_type == "customer"
-            else  self.partner_id.default_advance_supplier_account_id.id
-        )
         if self.env.context.get("from_pos", False):
             return
 
         for payment in self:
+            igtf_account = payment.partner_id._get_advance_account(
+                "customer" if payment.partner_type == "customer" else "supplier", payment.company_id
+            ).id
             if payment.igtf_amount > 0.0:
                 if payment.payment_type == "inbound":
                     vals_igtf = [x for x in vals if x["account_id"] == igtf_account]
