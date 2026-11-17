@@ -7,10 +7,9 @@
 | Change ID | `ta-86967-donation-received-documents` |
 | Tarea | [Migración HIGEA v19 (86967)](https://binaural.odoo.com/odoo/project.task/86967) |
 | Tipo | REF / FEAT |
-| Estado | Listo para revisión: 7 commits apilados sobre la rama 86967 (4 de implementación, correcciones, traducción y documentación), sin push ni PR |
+| Estado | Implementado |
 | Módulo destino | `l10n_ve_donation` |
-| Rama | `19.0_feat-ta_86967_donation_received_documents` (apilada sobre `19.0_feat-ta_86967_donation_module_1440_port`) |
-| Origen | `higea_donation` 17 (tickets 15445, 15672, 86707), plan en `~/.claude/plans/` |
+| Origen | `higea_donation` 17 (tickets 15445, 15672, 86707) |
 
 ## Contexto
 
@@ -41,15 +40,15 @@ propio del cliente.
   (`donation_certificate_legal`, `donation_certificate_extra`).
 - Recepción de mercancía: donante obligatorio, configuración contable con
   `valuation_account_id` y guarda en las entregas.
-- Monto en bolívares primero y tasa según la moneda de la compañía (commit aparte en la
-  rama 86967).
+- Monto en bolívares primero y tasa según la moneda de la compañía (change
+  `ta-86967-donation-module-1440-port`).
 - Beneficiario (cabecera) de las donaciones otorgadas en dinero y guardas de impresión.
 - Texto fuente en inglés con `es_VE.po`, como el resto de los `l10n_ve_*`.
 
 ## Fuera de alcance
 
 Forma de pago/banco/referencia, pestaña Paciente/Médico, texto legal del Voluntariado,
-el port de `higea_donation` a 19 (plan aparte en el repo de Higea).
+el port de `higea_donation` a 19.
 
 ## Riesgos
 
