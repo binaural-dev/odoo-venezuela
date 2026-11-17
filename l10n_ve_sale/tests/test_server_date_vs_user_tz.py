@@ -21,6 +21,9 @@ class TestSaleOrderServerDateVsUserTz(TzBoundaryMixin, TransactionCase):
     def setUp(self):
         super().setUp()
         self._setup_tz_boundary()
+        # La tasa sigue a date_order (con el ajuste apagado sale de la fecha de creacion, que la
+        # base pone con la hora real y no con la congelada del test).
+        self.env.company.update_sale_order_rate_using_date_order = True
         self.partner = self.env["res.partner"].create({"name": "TZ Sale Partner"})
 
     def _assert_caracas_day_rate(self, order):
