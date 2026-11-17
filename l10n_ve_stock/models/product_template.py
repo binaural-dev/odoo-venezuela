@@ -1,6 +1,7 @@
 import logging
 import re
 from odoo import _, api, fields, models
+from odoo.tools import float_round
 from odoo.exceptions import AccessError, ValidationError
 from collections import defaultdict
 
@@ -458,9 +459,17 @@ class ProductTemplate(models.Model):
                     qty_by_location.get(location_id, 0.0) + quant.available_quantity
                 )
 
+        rounding = self.uom_id.rounding
         for location_id, qty in qty_by_location.items():
             alter_lines_list.append(
-                (0, 0, {"location_id": location_id, "available_qty": qty})
+                (
+                    0,
+                    0,
+                    {
+                        "location_id": location_id,
+                        "available_qty": float_round(qty, precision_rounding=rounding),
+                    },
+                )
             )
 
         return alter_lines_list

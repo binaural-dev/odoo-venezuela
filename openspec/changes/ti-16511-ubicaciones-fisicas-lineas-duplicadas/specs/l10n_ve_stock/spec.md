@@ -21,7 +21,7 @@
 
 ### Requirement: Líneas iniciales agrupadas por ubicación
 
-`product.template._get_quants_for_alter_lines` DEBE (MUST) devolver como máximo una línea por ubicación, con la suma de `available_quantity` de los quants del producto en esa ubicación que tengan cantidad disponible positiva (los quants en cero o negativos se ignoran, como antes).
+`product.template._get_quants_for_alter_lines` DEBE (MUST) devolver como máximo una línea por ubicación, con la suma de `available_quantity` de los quants del producto en esa ubicación que tengan cantidad disponible positiva (los quants en cero o negativos se ignoran, como antes), redondeada con el redondeo de la unidad de medida del producto.
 
 #### Scenario: Varios quants en la misma ubicación
 
@@ -30,12 +30,17 @@
 
 ### Requirement: Fusión de líneas duplicadas existentes al actualizar
 
-Al actualizar `l10n_ve_stock` a 19.0.1.0.13, la migración `pre-migrate` DEBE (MUST) fusionar, antes de que se cree la restricción de unicidad, cada grupo de líneas con el mismo `(stock_alter_location_id, location_id)`: conserva la línea de menor `id`, le asigna la suma de `available_qty` del grupo y elimina las demás. La fusión NO DEBE (MUST NOT) cambiar `pick_quantity`, `total_alter_quantity` ni `total_quantity` del registro, que ya se calculaban sumando las líneas. Las líneas sin `stock_alter_location_id` o sin `location_id` no se tocan.
+Al actualizar `l10n_ve_stock` a 19.0.1.0.13, la migración `pre-migrate` DEBE (MUST) fusionar, antes de que se cree la restricción de unicidad, cada grupo de líneas con el mismo `(stock_alter_location_id, location_id)`: conserva la línea de menor `id`, le asigna la suma de `available_qty` del grupo y elimina las demás. La fusión NO DEBE (MUST NOT) cambiar `pick_quantity`, `total_alter_quantity` ni `total_quantity` del registro, que ya se calculaban sumando las líneas. Las líneas sin `stock_alter_location_id` o sin `location_id` no se tocan. Los identificadores externos (`ir_model_data`) de las líneas eliminadas se borran con ellas. Si la tabla `stock_picking_alter_location_line` no existe, la migración no hace nada. El `post-migrate` DEBE (MUST) dejar en el chatter de cada registro fusionado una nota, en el idioma del administrador, con la ubicación, las cantidades originales y la suma.
 
 #### Scenario: Registro con la ubicación física repetida
 
 - **WHEN** un registro tiene dos líneas para su ubicación física con 4 y 6 unidades y se actualiza el módulo
-- **THEN** queda una sola línea para esa ubicación con 10 unidades, y la cantidad en ubicación física del registro sigue siendo 10
+- **THEN** queda una sola línea para esa ubicación con 10 unidades, la cantidad en ubicación física del registro sigue siendo 10 y el chatter del registro tiene una nota con las cantidades 4 y 6 y la suma 10
+
+#### Scenario: Base con l10n_ve_stock anterior a 19.0.1.0.6
+
+- **WHEN** se actualiza una base donde la tabla de líneas todavía no existe
+- **THEN** la migración termina sin error y el ORM crea la tabla con la restricción
 
 #### Scenario: Base sin duplicados
 

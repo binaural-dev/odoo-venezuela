@@ -17,14 +17,23 @@ from odoo.tools import file_path, mute_logger
 
 CONSTRAINT_NAME = "stock_picking_alter_location_line_location_uniq"
 MIGRATION_LOGGER = "l10n_ve_stock_pre_migrate_19_0_1_0_13"
+CONSTRAINT_MESSAGE_ES = "Esta ubicación ya está en las otras ubicaciones del producto."
 
 
-def _load_pre_migrate():
-    path = file_path("l10n_ve_stock/migrations/19.0.1.0.13/pre-migrate.py")
-    spec = importlib.util.spec_from_file_location(MIGRATION_LOGGER, path)
+def _load_migration(script, module_name):
+    path = file_path(f"l10n_ve_stock/migrations/19.0.1.0.13/{script}")
+    spec = importlib.util.spec_from_file_location(module_name, path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+def _load_pre_migrate():
+    return _load_migration("pre-migrate.py", MIGRATION_LOGGER)
+
+
+def _load_post_migrate():
+    return _load_migration("post-migrate.py", "l10n_ve_stock_post_migrate_19_0_1_0_13")
 
 
 class AlterLocationUniqueCommon(TransactionCase):
@@ -80,6 +89,11 @@ class AlterLocationUniqueCommon(TransactionCase):
         return self.env["product.template"].create(
             {"name": name, "type": "consu", "is_storable": True}
         )
+
+    @classmethod
+    def _activate_es_ve(cls):
+        cls.env["res.lang"]._activate_lang("es_VE")
+        cls.env["ir.module.module"]._load_module_terms(["l10n_ve_stock"], ["es_VE"], overwrite=True)
 
     def _qty_by_location(self, alter):
         return {line.location_id: line.available_qty for line in alter.stock_alter_location_lines}
@@ -166,6 +180,19 @@ class TestAlterLocationLineConstraint(AlterLocationUniqueCommon):
         self.assertTrue(any(m["type"] == "error" for m in result["messages"]))
         self.assertEqual(self._qty_by_location(alter), {self.shelf: 4.0})
 
+    def test_import_error_shows_translated_message(self):
+        # What a Spanish-speaking user sees, and the proof that the es_VE.po
+        # entry reaches the constraint.
+        self._activate_es_ve()
+        alter = self._create_alter(self.product, [(self.shelf, 4.0)])
+        with mute_logger("odoo.sql_db"):
+            result = self.Line.with_context(lang="es_VE").load(
+                ["stock_alter_location_id/.id", "location_id/.id", "available_qty"],
+                [[str(alter.id), str(self.shelf.id), "6"]],
+            )
+        self.assertFalse(result["ids"])
+        self.assertIn(CONSTRAINT_MESSAGE_ES, " ".join(m["message"] for m in result["messages"]))
+
     def test_same_location_in_other_record_is_allowed(self):
         alter = self._create_alter(self.product, [(self.shelf, 4.0)])
         other_alter = self._create_alter(self.other_product, [(self.shelf, 6.0)])
@@ -218,6 +245,18 @@ class TestAlterLinesFromQuants(AlterLocationUniqueCommon):
         self.assertEqual(
             self._lines(template, self.stock_location, self.warehouse),
             {self.shelf.id: 10.0, self.stock_location.id: 2.0},
+        )
+
+    def test_summed_quantity_is_rounded_to_the_unit_of_measure(self):
+        # 0.1 + 0.2 is 0.30000000000000004 in floating point.
+        template = self._create_template()
+        variant = template.product_variant_id
+        for qty, name in ((0.1, "AUW-ROUND-1"), (0.2, "AUW-ROUND-2")):
+            package = self.env["stock.package"].create({"name": name})
+            self.Quant._update_available_quantity(variant, self.shelf, qty, package_id=package)
+
+        self.assertEqual(
+            self._lines(template, self.stock_location, self.warehouse), {self.shelf.id: 0.3}
         )
 
     def test_quants_of_same_location_by_lot_are_summed(self):
@@ -449,9 +488,8 @@ class TestPickingWithPackagesRegression(AlterLocationUniqueCommon):
         self.assertEqual(self._qty_by_location(alter), {self.stock_location: 5.0})
 
 
-@tagged("post_install", "-at_install", "l10n_ve_stock", "l10n_ve_stock_alter_location_unique")
-class TestMergeDuplicatedLinesMigration(AlterLocationUniqueCommon):
-    """pre-migrate 19.0.1.0.13: merge the duplicates before the constraint."""
+class MergeMigrationCommon(AlterLocationUniqueCommon):
+    """Database as pre-migrate finds it: duplicated lines, no constraint."""
 
     def setUp(self):
         super().setUp()
@@ -490,6 +528,12 @@ class TestMergeDuplicatedLinesMigration(AlterLocationUniqueCommon):
             (alter.id,),
         )
         return self.cr.fetchall()
+
+
+
+@tagged("post_install", "-at_install", "l10n_ve_stock", "l10n_ve_stock_alter_location_unique")
+class TestMergeDuplicatedLinesMigration(MergeMigrationCommon):
+    """pre-migrate 19.0.1.0.13: merge the duplicates before the constraint."""
 
     def test_duplicates_merged_by_summing_without_changing_totals(self):
         alter = self._create_alter(self.product, [(self.shelf, 1.0), (self.output_location, 2.0)])
@@ -627,3 +671,138 @@ class TestMergeDuplicatedLinesMigration(AlterLocationUniqueCommon):
         self.env.invalidate_all()
 
         self.assertEqual(sorted(alter.get_line(self.stock_location).ids), sorted(line_ids))
+
+    def test_upgrade_from_version_without_the_table_does_nothing(self):
+        # Databases installed before 19.0.1.0.6 have no line table when
+        # pre-migrate runs.
+        self.env.flush_all()
+        self.cr.execute(
+            "ALTER TABLE stock_picking_alter_location_line RENAME TO tmp_alter_line_backup"
+        )
+        try:
+            with self.assertNoLogs(MIGRATION_LOGGER, level="INFO"):
+                self.migration.migrate(self.cr, "19.0.1.0.5")
+        finally:
+            self.cr.execute(
+                "ALTER TABLE tmp_alter_line_backup RENAME TO stock_picking_alter_location_line"
+            )
+
+    def test_external_ids_of_removed_lines_are_deleted(self):
+        alter = self._create_alter(self.product, [])
+        self._drop_constraint()
+        kept_id, removed_id = self._insert_lines(alter.id, self.stock_location.id, [4.0, 6.0])
+        for line_id, name in ((kept_id, "kept_line"), (removed_id, "removed_line")):
+            self.env["ir.model.data"].create(
+                {
+                    "module": "__import__",
+                    "name": name,
+                    "model": "stock.picking.alter.location.line",
+                    "res_id": line_id,
+                }
+            )
+
+        self._merge()
+
+        self.assertTrue(self.env.ref("__import__.kept_line", raise_if_not_found=False))
+        self.assertFalse(self.env.ref("__import__.removed_line", raise_if_not_found=False))
+
+    def test_kept_line_write_date_is_updated(self):
+        alter = self._create_alter(self.product, [])
+        self._drop_constraint()
+        kept_id, _removed_id = self._insert_lines(alter.id, self.stock_location.id, [4.0, 6.0])
+        self.cr.execute(
+            "UPDATE stock_picking_alter_location_line SET write_date = '2020-01-01' WHERE id = %s",
+            (kept_id,),
+        )
+
+        self._merge()
+
+        self.cr.execute(
+            "SELECT write_date > '2020-01-01' FROM stock_picking_alter_location_line WHERE id = %s",
+            (kept_id,),
+        )
+        self.assertTrue(self.cr.fetchone()[0])
+
+
+@tagged("post_install", "-at_install", "l10n_ve_stock", "l10n_ve_stock_alter_location_unique")
+class TestMergedLinesChatterMigration(MergeMigrationCommon):
+    """post-migrate 19.0.1.0.13: the merge is left in each record's chatter."""
+
+    def setUp(self):
+        super().setUp()
+        self.post_migration = _load_post_migrate()
+
+    def _merge_messages(self, alter):
+        return alter.message_ids.filtered(
+            lambda message: "were merged into one" in (message.body or "")
+            or "se fusionaron" in (message.body or "")
+        )
+
+    def _table_exists(self, name):
+        self.cr.execute("SELECT to_regclass(%s) IS NOT NULL", (name,))
+        return self.cr.fetchone()[0]
+
+    def test_merge_is_posted_in_the_chatter_of_each_record(self):
+        alter = self._create_alter(self.product, [])
+        other_alter = self._create_alter(self.other_product, [])
+        untouched = self._create_alter(self._create_product("Alter Unique Untouched"), [(self.shelf, 1.0)])
+        self._drop_constraint()
+        self._insert_lines(alter.id, self.stock_location.id, [4.0, 6.5])
+        self._insert_lines(other_alter.id, self.shelf.id, [1.0, 2.0])
+        self._merge()
+
+        self.post_migration.migrate(self.cr, "19.0.1.0.12")
+
+        message = self._merge_messages(alter)
+        self.assertEqual(len(message), 1)
+        self.assertIn(self.stock_location.display_name, message.body)
+        self.assertIn("4, 6.5", message.body)
+        self.assertIn("10.5", message.body)
+        self.assertEqual(len(self._merge_messages(other_alter)), 1)
+        self.assertFalse(self._merge_messages(untouched))
+        self.assertFalse(self._table_exists(self.migration.MERGE_LOG_TABLE))
+
+    def test_message_uses_the_admin_language(self):
+        self._activate_es_ve()
+        self.env.ref("base.user_admin").lang = "es_VE"
+        alter = self._create_alter(self.product, [])
+        self._drop_constraint()
+        self._insert_lines(alter.id, self.stock_location.id, [4.0, 6.0])
+        self._merge()
+
+        self.post_migration.migrate(self.cr, "19.0.1.0.12")
+
+        message = self._merge_messages(alter)
+        self.assertEqual(len(message), 1)
+        self.assertIn("se fusionaron en una sola con 10", message.body)
+
+    def test_deleted_record_is_skipped(self):
+        alter = self._create_alter(self.product, [])
+        self._drop_constraint()
+        self._insert_lines(alter.id, self.stock_location.id, [4.0, 6.0])
+        self._merge()
+        alter.unlink()
+
+        self.post_migration.migrate(self.cr, "19.0.1.0.12")
+
+        self.assertFalse(self._table_exists(self.migration.MERGE_LOG_TABLE))
+
+    def test_without_merges_nothing_is_posted(self):
+        alter = self._create_alter(self.product, [(self.stock_location, 5.0)])
+        self._merge()
+        messages_before = alter.message_ids
+
+        self.post_migration.migrate(self.cr, "19.0.1.0.12")
+
+        self.assertEqual(alter.message_ids, messages_before)
+
+    def test_fresh_install_does_nothing(self):
+        alter = self._create_alter(self.product, [])
+        self._drop_constraint()
+        self._insert_lines(alter.id, self.stock_location.id, [4.0, 6.0])
+        self._merge()
+
+        self.post_migration.migrate(self.cr, None)
+
+        self.assertFalse(self._merge_messages(alter))
+        self.assertTrue(self._table_exists(self.migration.MERGE_LOG_TABLE))
