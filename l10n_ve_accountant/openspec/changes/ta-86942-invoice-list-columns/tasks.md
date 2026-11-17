@@ -14,7 +14,9 @@
       impuestos, total)
 - [x] 2.2 Mover `amount_tax_signed` justo después del total sin impuestos (Bs.)
 - [x] 2.3 `sum="Total"` y `optional="show"` en las cuatro columnas propias
-- [x] 2.4 `width="180px"` solo en columnas de montos (`Número` queda con el ancho nativo)
+- [x] 2.4 `width="180px"` en columnas de montos y `330px` en
+      `invoice_partner_display_name`
+      (`Número` queda con el ancho nativo)
 - [x] 2.5 Bump de manifest `19.0.1.0.44` → `19.0.1.0.45`
 
 ## 3. Tests

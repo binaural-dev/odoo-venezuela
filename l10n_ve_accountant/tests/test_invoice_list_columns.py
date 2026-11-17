@@ -56,3 +56,19 @@ class TestInvoiceListColumns(TransactionCase):
                         fields_by_name[name].get("width"),
                         f"{name} debe tener ancho predeterminado",
                     )
+
+    def test_partner_column_has_width_and_name_is_native(self):
+        for xmlid in self.VIEWS:
+            with self.subTest(view=xmlid):
+                view = self.env.ref(xmlid)
+                arch = self.env["account.move"].get_view(view.id, "list")["arch"]
+                root = etree.fromstring(arch)
+                partner_cols = [
+                    f for f in root.iter("field")
+                    if f.get("name") == "invoice_partner_display_name"
+                ]
+                self.assertTrue(partner_cols)
+                for col in partner_cols:
+                    self.assertEqual(col.get("width"), "330px")
+                name_col = next(f for f in root.iter("field") if f.get("name") == "name")
+                self.assertFalse(name_col.get("width"), "Número conserva el ancho nativo")
