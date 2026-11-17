@@ -112,7 +112,10 @@ class L10nVePosMfSelfOrderController(PosSelfOrderController):
                 "name": order.name,
                 "pos_reference": order.pos_reference,
                 "state": order.state,
-                "is_invoiced": order.is_invoiced,
+                # Odoo 20 split ``is_invoiced`` into ``is_singly_invoiced`` and
+                # ``is_globally_invoiced``; the panel keeps the 19 meaning: the
+                # order has an invoice.
+                "is_invoiced": bool(order.account_move),
             }
             for order in orders
         ]
