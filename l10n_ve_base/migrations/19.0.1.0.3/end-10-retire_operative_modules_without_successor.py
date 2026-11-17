@@ -5,11 +5,17 @@ What: marks as "to remove" the modules of _common.MODULES_WITHOUT_SUCCESSOR that
     the -u (step 5 of load_modules), and their records go with them. Same pattern as 19.0.1.0.2
     end-10. Before that it copies to l10n_ve_base_migration_v17_backup the members of their
     groups, which the uninstall deletes; their fields were already backed up by the conversion
-    of the operativa line (migrations/_common.py).
+    of the operativa line (migrations/_common.py). The modules of _common.MODULES_RETIRED_ALONE
+    are retired without that cascade, and only when no other installed module depends on them;
+    otherwise they are kept and the report says which modules hold them.
 
-Why: these modules only existed in integra-addons 17.0 and nothing replaces them in 19. Left
-    installed, Odoo keeps applying their views once their code is gone and the forms they
+Why: these modules only existed in integra-addons 16.0/17.0 and nothing replaces them in 19.
+    Left installed, Odoo keeps applying their views once their code is gone and the forms they
     extend fail.
+    - binaural_base (retired alone): a binaural flag on the modules list and the binauralbot_url
+      parameter, from the v16 operativa line. Left 'to upgrade' without code, every update logged
+      it as a module with inconsistent states (castic_19_operativo). It is the root of the
+      operativa line, so a cascade could reach modules that are only out of the addons path.
     - binaural_fiscal: the fiscal / non-fiscal flag of the journals. binaural_operative
       translates it from the binaural_v17_journal_fiscal copy, which the conversion takes.
     - binaural_fiscal_inspector, _delivery, _pos: the fiscal inspector. It has not been ported
@@ -94,6 +100,36 @@ def migrate(cr, version):
         [list(_common.MODULES_WITHOUT_SUCCESSOR), RETIRED_STATES],
     )
     names = sorted(name for (name,) in cr.fetchall())
+
+    # Modules retired alone: never in cascade, and only when nothing else installed depends on
+    # them (a dependent left out of the addons path would otherwise lose its tables).
+    cr.execute(
+        """
+        SELECT m.name,
+               (SELECT string_agg(dependant.name, ', ' ORDER BY dependant.name)
+                  FROM ir_module_module_dependency d
+                  JOIN ir_module_module dependant ON dependant.id = d.module_id
+                 WHERE d.name = m.name
+                   AND dependant.state IN %s
+                   AND NOT dependant.name = ANY(%s::varchar[]))
+          FROM ir_module_module m
+         WHERE m.name = ANY(%s::varchar[]) AND m.state IN %s
+        """,
+        [RETIRED_STATES, names, list(_common.MODULES_RETIRED_ALONE), RETIRED_STATES],
+    )
+    kept = []
+    for name, dependants_left in cr.fetchall():
+        if dependants_left:
+            kept.append("%s (needed by %s)" % (name, dependants_left))
+        else:
+            names.append(name)
+    names.sort()
+    if kept:
+        util.add_to_migration_reports(
+            "Modules of the operativa line without a successor kept, because installed modules "
+            "still depend on them; retire them by hand once those are gone: %s." % ", ".join(kept),
+            category="Binaural · General",
+        )
     if not names:
         return
 
@@ -102,7 +138,9 @@ def migrate(cr, version):
     cr.execute("UPDATE ir_module_module SET state = 'to remove' WHERE name IN %s", [tuple(names)])
     _logger.info("Marked to be uninstalled at the end of the update: %s", ", ".join(names))
 
-    dependants = sorted(set(names) - set(_common.MODULES_WITHOUT_SUCCESSOR))
+    dependants = sorted(
+        set(names) - set(_common.MODULES_WITHOUT_SUCCESSOR) - set(_common.MODULES_RETIRED_ALONE)
+    )
     message = (
         "Modules of the v17 operativa line without a successor in 19, uninstalled: %s."
         % ", ".join(names)

@@ -1,6 +1,23 @@
+import importlib.util
+import os
+from unittest.mock import patch
+
 from odoo.tests import TransactionCase, tagged
 
 from ..migrations import _common
+
+_RETIRE_SCRIPT = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "migrations", "19.0.1.0.3", "end-10-retire_operative_modules_without_successor.py",
+)
+
+
+def _load_retire_script():
+    """The migrations/<version>/ folders are not packages: load the script from its path."""
+    spec = importlib.util.spec_from_file_location("l10n_ve_base_end_10_retire", _RETIRE_SCRIPT)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 @tagged("post_install", "-at_install", "l10n_ve_base")
@@ -77,6 +94,14 @@ class TestOperativeBridge(TransactionCase):
         self.assertFalse(self._xmlid_record("base", "module_x_legacy_rate"))
         self.assertTrue(self._xmlid_record("base", "module_x_new_rate"))
         self.assertTrue(any("x_legacy_rate -> x_new_rate (renamed)" in line for line in lines))
+
+    def test_v16_successor_is_registered_as_v17(self):
+        """The successor migrations only act from 17, so a v16 module is registered as one."""
+        self._create_module("x_legacy_rate", version="16.0.4.17.19")
+
+        self._convert((("x_legacy_rate", "x_new_rate"),))
+
+        self.assertEqual(self._module("x_new_rate"), ("to upgrade", _common.BASE_V17_VERSION))
 
     def test_placeholder_of_the_successor_is_replaced(self):
         self._create_module("x_legacy_rate")
@@ -192,3 +217,114 @@ class TestOperativeBridge(TransactionCase):
         self.assertFalse(_common.register_base_module(self.env.cr))
 
         self.assertEqual(self._module(_common.BASE_MODULE), before)
+
+    def _create_journal_snapshot(self):
+        self.env.cr.execute("SELECT to_regclass(%s)", [_common.JOURNAL_FISCAL_SNAPSHOT])
+        if self.env.cr.fetchone()[0]:
+            self.skipTest("this database already has the journal fiscal snapshot")
+        self.env.cr.execute(
+            "CREATE TABLE %s (journal_id integer, fiscal boolean)"
+            % _common.JOURNAL_FISCAL_SNAPSHOT
+        )
+
+    def _depends(self, module_id, name):
+        self.env.cr.execute(
+            "INSERT INTO ir_module_module_dependency (module_id, name) VALUES (%s, %s)",
+            [module_id, name],
+        )
+
+    def _install_operative(self, module):
+        self.env.flush_all()
+        lines = _common.install_operative_module(self.env, module=module)
+        self.env.invalidate_all()
+        return lines
+
+    def test_operative_module_is_marked_to_install(self):
+        self._create_journal_snapshot()
+        self._create_module("x_operative", state="uninstalled", version=None)
+
+        lines = self._install_operative("x_operative")
+
+        self.assertEqual(self._module("x_operative")[0], "to install")
+        self.assertTrue(lines)
+
+    def test_operative_module_is_left_alone_without_snapshot(self):
+        self.env.cr.execute("SELECT to_regclass(%s)", [_common.JOURNAL_FISCAL_SNAPSHOT])
+        if self.env.cr.fetchone()[0]:
+            self.skipTest("this database already has the journal fiscal snapshot")
+        self._create_module("x_operative", state="uninstalled", version=None)
+
+        self.assertEqual(self._install_operative("x_operative"), [])
+
+        self.assertEqual(self._module("x_operative")[0], "uninstalled")
+
+    def test_missing_operative_module_is_reported(self):
+        self._create_journal_snapshot()
+
+        lines = self._install_operative("x_operative_not_in_addons_path")
+
+        self.assertEqual(len(lines), 1)
+        self.assertIn("not in the addons path", lines[0])
+
+    def test_operative_module_install_failure_marks_nothing(self):
+        """button_install marks the dependencies before it raises: the savepoint undoes them."""
+        self._create_journal_snapshot()
+        operative = self._create_module("x_operative", state="uninstalled", version=None)
+        self._create_module("x_operative_dep", state="uninstalled", version=None)
+        self._depends(operative, "x_operative_dep")
+        self._create_module("x_conflict", state="installed")
+        self.env.cr.execute(
+            "INSERT INTO ir_module_module_exclusion (module_id, name) VALUES (%s, 'x_conflict')",
+            [operative],
+        )
+
+        lines = self._install_operative("x_operative")
+
+        self.assertEqual(self._module("x_operative")[0], "uninstalled")
+        self.assertEqual(self._module("x_operative_dep")[0], "uninstalled")
+        self.assertIn("could not be marked", lines[0])
+
+    def test_operative_module_report_names_only_its_modules(self):
+        self._create_journal_snapshot()
+        self._create_module("x_already_to_install", state="to install", version=None)
+        self._create_module("x_operative", state="uninstalled", version=None)
+
+        lines = self._install_operative("x_operative")
+
+        self.assertIn("x_operative", lines[0])
+        self.assertNotIn("x_already_to_install", lines[0])
+
+    def test_upgrade_states_are_reset_but_base(self):
+        self._create_module("x_from_upgrade_service", state="to upgrade")
+        self.env.cr.execute("SELECT state FROM ir_module_module WHERE name = 'base'")
+        (base_state,) = self.env.cr.fetchone()
+
+        _common.reset_upgrade_states(self.env.cr)
+
+        self.assertEqual(self._module("x_from_upgrade_service")[0], "installed")
+        self.assertEqual(self._module("base")[0], base_state)
+
+    def _retire(self, alone):
+        self.env.flush_all()
+        with patch.object(_common, "MODULES_RETIRED_ALONE", alone), \
+                patch.object(_common, "MODULES_WITHOUT_SUCCESSOR", ()):
+            _load_retire_script().migrate(self.env.cr, "17.0.0.0.0")
+        self.env.invalidate_all()
+
+    def test_module_retired_alone_without_dependants(self):
+        self._create_module("x_root", state="to upgrade", version="16.0.0.0.4")
+
+        self._retire(("x_root",))
+
+        self.assertEqual(self._module("x_root")[0], "to remove")
+
+    def test_module_retired_alone_is_kept_while_something_depends_on_it(self):
+        """No cascade: a dependant out of the addons path would lose its tables."""
+        self._create_module("x_root", state="to upgrade", version="16.0.0.0.4")
+        child = self._create_module("x_child", state="installed")
+        self._depends(child, "x_root")
+
+        self._retire(("x_root",))
+
+        self.assertEqual(self._module("x_root")[0], "to upgrade")
+        self.assertEqual(self._module("x_child")[0], "installed")
