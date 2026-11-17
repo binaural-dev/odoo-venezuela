@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_account_asset_form_publish_date" model="ir.ui.view">
+        <field name="name">account.asset.form.publish.date</field>
+        <field name="model">account.asset</field>
+        <field name="inherit_id" ref="account_asset.view_account_asset_form"/>
+        <field name="arch" type="xml">
+            <!-- Las cuotas futuras se guardan con date = hoy: la fecha que le importa al usuario
+                 es la de publicación (auto_post_custom_date). -->
+            <xpath expr="//field[@name='depreciation_move_ids']/list/field[@name='date']" position="attributes">
+                <attribute name="column_invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='depreciation_move_ids']/list/field[@name='date']" position="after">
+                <field name="auto_post_custom_publish_date" readonly="1"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
