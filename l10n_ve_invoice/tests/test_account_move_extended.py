@@ -4,9 +4,11 @@ from odoo import fields
 from odoo.exceptions import UserError, ValidationError
 from odoo.tests import TransactionCase, tagged
 
+from .common import ForeignRateFixture
+
 
 @tagged("post_install", "-at_install", "l10n_ve_invoice")
-class TestAccountMoveExtended(TransactionCase):
+class TestAccountMoveExtended(ForeignRateFixture, TransactionCase):
     def setUp(self):
         super().setUp()
         self.company = self.env.ref("base.main_company")
@@ -139,6 +141,8 @@ class TestAccountMoveExtended(TransactionCase):
         )
 
     # --- _check_price_in_zero ---
+
+        self._set_foreign_rates([fields.Date.today() - timedelta(days=5)])
 
     def test_price_in_zero(self):
         self.company.max_product_invoice = 10

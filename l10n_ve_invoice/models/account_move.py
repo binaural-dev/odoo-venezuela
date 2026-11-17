@@ -625,6 +625,20 @@ class AccountMove(models.Model):
                         )
                     )
 
+    def _is_debit_note(self):
+        """True si el documento es una nota de débito.
+
+        La ND nativa de Odoo (`account.debit.note`) se crea en el mismo diario
+        que su factura de origen, que normalmente no tiene `is_debit`; lo que la
+        identifica es `debit_origin_id`. El diario `is_debit` sigue valiendo
+        (NDs de cliente en diarios dedicados, sin factura de origen).
+        Una nota de crédito nunca es nota de débito.
+        """
+        self.ensure_one()
+        if self.move_type in ("out_refund", "in_refund"):
+            return False
+        return bool(self.debit_origin_id) or bool(self.journal_id.is_debit)
+
     @api.depends("journal_id")
     def _compute_is_debit_journal(self):
         for move in self:

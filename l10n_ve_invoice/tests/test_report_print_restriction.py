@@ -1,11 +1,13 @@
 from odoo.tests import TransactionCase, tagged
+
+from .common import ForeignRateFixture
 from odoo import fields, Command
 from odoo.exceptions import UserError
 from unittest.mock import patch
 
 
 @tagged("post_install", "-at_install", "l10n_ve_invoice")
-class TestReportPrintRestriction(TransactionCase):
+class TestReportPrintRestriction(ForeignRateFixture, TransactionCase):
 
     def setUp(self):
         super().setUp()
@@ -42,6 +44,8 @@ class TestReportPrintRestriction(TransactionCase):
         })
 
         self.report_invoice = 'account.account_invoices'
+
+        self._set_foreign_rates()
 
     def _create_invoice(self, move_type='out_invoice', state='draft'):
         inv = self.env['account.move'].with_context(check_move_validity=False).create({

@@ -960,3 +960,8 @@ msgstr ""
 msgid "Free Form"
 msgstr "Forma Libre"
 
+
+#. module: l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_invoice_document_debit_note_title
+msgid "Vendor Debit Note"
+msgstr "Nota de débito de proveedor"

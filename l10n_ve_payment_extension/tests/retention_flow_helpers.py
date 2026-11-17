@@ -79,13 +79,19 @@ class RetentionFlowHelpers:
         document.write({"date": self.doc_date, "invoice_date_display": self.doc_date})
         return document
 
-    def _document(self, doc_type, retention_type, amount=AMOUNT):
+    def _document(self, doc_type, retention_type, amount=AMOUNT, auto_iva=False):
         """Documento publicado en `doc_date`. En esta rama no existe un
         `move_type` de nota de debito: es una factura (`out_invoice` /
         `in_invoice`) con `debit_origin_id`, que se crea con el asistente
-        nativo `account.debit.note` a partir de una factura publicada."""
+        nativo `account.debit.note` a partir de una factura publicada.
+
+        `auto_iva`: marca `generate_iva_retention` en el documento (la nota de
+        debito, no su origen) antes de publicarlo, para que la retencion se
+        cree sola al publicar."""
+        auto = {"generate_iva_retention": True} if auto_iva else {}
         if not doc_type.endswith("_debit"):
             document = self._form_document(doc_type, retention_type, amount)
+            document.write(auto)
             document.with_context(move_action_post_alert=True).action_post()
             return document
 
@@ -111,6 +117,7 @@ class RetentionFlowHelpers:
         debit = form_debit.save()
         self.assertEqual(debit.debit_origin_id, origin)
         self.assertEqual(debit.invoice_date, self.doc_date)
+        debit.write(auto)
         debit.with_context(move_action_post_alert=True).action_post()
         return debit
 

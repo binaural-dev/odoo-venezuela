@@ -3,7 +3,7 @@
     "summary": """
         Módulo de Facturación Venezuela
     """,
-    "version": "19.0.1.0.28",
+    "version": "19.0.1.0.29",
     "license": "LGPL-3",
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
@@ -24,6 +24,7 @@
         "data/invoice_free_form_paperformat.xml",
         "report/report_ir_actions_report.xml",
         "report/report_invoice_free_form.xml",
+        "report/report_invoice_debit_note_title.xml",
         "views/account_move.xml",
         "views/account_journal_views.xml",
         "views/res_config_settings.xml",

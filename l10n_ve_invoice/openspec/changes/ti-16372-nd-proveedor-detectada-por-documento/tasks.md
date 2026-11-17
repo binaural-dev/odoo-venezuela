@@ -1,0 +1,9 @@
+- [x] `account.move._is_debit_note()` (debit_origin_id o diario is_debit; nunca una NC)
+- [x] Comprobante de retención de IVA, TXT de retenciones, libros y formato libre usan `_is_debit_note()`
+- [x] Título "Nota de débito de proveedor" en el PDF estándar + traducción es_VE
+- [x] Tests (manual con Form, automática al publicar, líneas intercaladas, is_debit, cliente, TXT, libro, PDF)
+- [x] Fixture de tasas para las pruebas de l10n_ve_invoice y l10n_ve_invoice_digital que fallaban por falta de tasa
+- [x] `l10n_ve_igtf`: xpath de alertas por condición y no por posición (el aviso de l10n_ve_sale se perdía)
+- [x] Prueba en l10n_ve_igtf que inserta un alert-info de un tercero y verifica que sobrevive y que las 4 variantes quedan en su sitio (falla con el xpath posicional)
+- [x] Bump de versión `l10n_ve_invoice` `19.0.1.0.29`, `l10n_ve_payment_extension` `19.0.2.2.9`, `l10n_ve_igtf` `19.0.1.2.23` y `l10n_ve_invoice_digital` `19.0.1.4.9`
+- [ ] Confirmar con el cliente las dos fechas del ticket (ND A798 y ND de cliente 00092780)
