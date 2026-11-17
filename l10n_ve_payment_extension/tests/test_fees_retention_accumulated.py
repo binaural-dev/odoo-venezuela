@@ -1,3 +1,4 @@
+from odoo import fields
 from odoo.exceptions import ValidationError
 from odoo.tests import TransactionCase, tagged
 
@@ -9,7 +10,9 @@ class TestFeesRetentionAccumulated(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        tax_unit = cls.env["tax.unit"].create({"name": "UT test", "value": 0.43, "status": True})
+        tax_unit = cls.env["tax.unit"].create(
+            {"name": "UT test", "value": 0.43, "status": True, "available_date": fields.Date.today()}
+        )
         # Same limits as the shipped data (start 2001 / 3001 leave a gap with `start`)
         cls.tariff = cls.env["fees.retention"].create(
             {

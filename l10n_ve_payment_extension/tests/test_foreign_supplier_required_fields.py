@@ -28,7 +28,7 @@ class TestForeignSupplierRequiredFields(TransactionCase):
             (cls.country_ve, cls.state_ve),
             (cls.country_us, cls.state_us),
         ):
-            city = cls.env["res.country.city"].create(
+            city = cls.env["res.city"].create(
                 {"name": "Test City %s" % country.code,
                  "country_id": country.id, "state_id": state.id}
             )
