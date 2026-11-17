@@ -25,22 +25,28 @@ class AccountMove(models.Model):
     _inherit = "account.move"
 
     auto_post = fields.Selection(
-        selection_add=[("custom", "Personalizado")],
+        selection_add=[("custom", "Custom")],
         ondelete={"custom": "set default"},
     )
     auto_post_custom_date = fields.Date(
-        string="Fecha de publicación",
+        string="Custom Publication Date",
         copy=False,
         tracking=True,
-        help="Día en que el documento se publicará automáticamente. Mientras tanto "
-        "queda en borrador con la fecha de hoy. Nota: se tomará la tasa de ese día.",
+        help="Day on which the document will be posted automatically. Meanwhile it stays "
+        "in draft with today's date. Note: the rate of that day will be used.",
     )
     auto_post_custom_last_attempt = fields.Date(
-        string="Último intento de publicación personalizada",
+        string="Last Custom Posting Attempt",
         copy=False,
         readonly=True,
-        help="Día del último intento fallido de publicación automática. Evita que el "
-        "cron reintente el mismo documento más de una vez al día.",
+        help="Day of the last failed automatic posting attempt. Prevents the cron from "
+        "retrying the same document more than once a day.",
+    )
+
+    auto_post_custom_publish_date = fields.Date(
+        string="Publication Date",
+        compute="_compute_auto_post_custom_publish_date",
+        help="Scheduled posting date of the entry; if it is not custom, its date.",
     )
 
     # ------------------------------------------------------------------
@@ -84,6 +90,11 @@ class AccountMove(models.Model):
                         created=format_date(self.env, created_on),
                     )
                 )
+
+    @api.depends("auto_post_custom_date", "date")
+    def _compute_auto_post_custom_publish_date(self):
+        for move in self:
+            move.auto_post_custom_publish_date = move.auto_post_custom_date or move.date
 
     def _is_fiscal_printer_document(self):
         """True si la compania imprime sus facturas por impresora fiscal.
