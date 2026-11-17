@@ -44,6 +44,11 @@ El cómputo `_compute_rate` de la orden DEBE (MUST) buscar `foreign_rate` y `for
 - **WHEN** la orden tiene `manually_set_rate` activo
 - **THEN** el recálculo automático no toca sus tasas
 
+#### Scenario: Tasa manual sin valor útil
+
+- **WHEN** la orden tiene `manually_set_rate` activo pero su tasa es cero, o un residuo menor a la precisión `Tasa` (6 decimales)
+- **THEN** se trata como "sin tasa" y se calcula por fecha como cualquier otra; lo mismo vale para la comprobación de orden aprobada y de orden de website
+
 ### Requirement: Confirmar respeta la fecha de la orden
 
 `_prepare_confirmation_values` DEBE (MUST) conservar la `date_order` que ya tiene la orden en vez de reescribirla con la fecha de confirmación del core; `date_order` es obligatoria (nace con el instante de creación y la fecha de tasa se toma del día del usuario al leerla), por lo que no hay respaldo que asignar. Consecuencia a tener en cuenta: `sale_stock` calcula la fecha límite de entrega como `date_order + plazo`, de modo que una cotización antigua confirmada hoy genera entregas con fecha planificada en el pasado. Ticket #16148.

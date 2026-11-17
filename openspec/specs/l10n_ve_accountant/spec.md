@@ -39,11 +39,6 @@ El sistema DEBE (MUST) calcular `foreign_rate` y `foreign_inverse_rate` de cada 
 - **WHEN** se edita `date` en un asiento (`entry`), o en un documento sin `invoice_date`, sin tasa manual
 - **THEN** `foreign_rate` y `foreign_inverse_rate` se recalculan con la tasa vigente a la nueva `date`
 
-#### Scenario: Asiento sin fecha de tasa con solo la fecha contable editada
-
-- **WHEN** se edita `date` en un documento sin `invoice_date` (por ejemplo un asiento), sin tasa manual
-- **THEN** `foreign_rate` y `foreign_inverse_rate` se recalculan con la tasa vigente a la nueva `date`
-
 #### Scenario: Factura de proveedor o de cliente creada con fecha pasada
 
 - **WHEN** se crea un documento `in_invoice` u `out_invoice` (por código o desde el formulario) con `invoice_date` pasada y sin tasa manual
@@ -53,6 +48,11 @@ El sistema DEBE (MUST) calcular `foreign_rate` y `foreign_inverse_rate` de cada 
 
 - **WHEN** un documento tiene `manually_set_rate` en verdadero
 - **THEN** el recálculo automático no modifica su tasa
+
+#### Scenario: Tasa manual sin valor útil
+
+- **WHEN** un documento tiene `manually_set_rate` en verdadero pero su `foreign_rate` es cero, o un residuo menor a la precisión `Tasa` (6 decimales)
+- **THEN** se trata como "sin tasa" y se calcula por la Rate Date; la comparación contra la tasa vigente para avisar un cambio manual usa esa misma precisión
 
 #### Scenario: Documento con fecha sin tasa cargada
 
@@ -1039,7 +1039,6 @@ La fecha tasa (`invoice_date`, "Rate Date") es la única que determina la tasa d
 
 - **WHEN** se activa o desactiva el ajuste de la compañía
 - **THEN** ninguna factura existente (borrador o publicada) cambia su tasa
-
 ### Requirement: Segundo bloque de totales con la moneda alterna cuando el documento está en la moneda de la compañía
 
 El widget `account-tax-ves-totals-field` (segundo bloque de totales de la pestaña principal, debajo del nativo) DEBE (MUST) mostrar los montos de `tax_totals` según la moneda del documento: si `currency_id` es distinta de la moneda de la compañía muestra los montos en VES (`*_currency_ves`); si `currency_id` es la moneda de la compañía muestra los montos en la moneda alterna (`foreign_currency_id`: claves `*_foreign_currency` de subtotal, Total G de cada grupo de impuestos, impuesto y total), formateados con esa moneda. Si el documento está en la moneda de la compañía y la compañía no tiene `foreign_currency_id`, el bloque NO DEBE (MUST NOT) mostrarse. En la vista de factura el grupo contenedor (`o_ve_invoice_totals`) solo se oculta con `currency_id == company_currency_id and not foreign_currency_id`. El widget solo presenta los montos que `_get_tax_totals_summary` ya calcula; no los recalcula (ti-85450). El bloque alterno NO DEBE (MUST NOT) mostrar ningún monto adeudado: el formulario no incluye `amount_residual_company` ("residual amount" / "Importe adeudado" en la moneda de la compañía), con el documento en cualquier moneda. El único monto adeudado visible es el nativo (`amount_residual`). Motivo: `amount_residual_company` está en la moneda de la compañía (VEF) y no corresponde a los montos alternos que calcula `tax_totals` (moneda de referencia), ni necesariamente a la moneda del documento; por ejemplo, con un documento en EUR el bloque alterno está en USD, `amount_residual_company` en VEF y `amount_residual` en EUR, tres monedas distintas, por lo que no se usa en este bloque.
