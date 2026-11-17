@@ -379,10 +379,38 @@ class AccountMove(models.Model):
         self.ensure_one()
         return False
 
+    def _l10n_ve_is_international_purchase(self):
+        """True for a purchase document of an international purchase
+        (import) journal."""
+        self.ensure_one()
+        return bool(
+            self.is_purchase_document(include_receipts=True)
+            and self.journal_id.is_purchase_international
+        )
+
+    def _l10n_ve_check_international_purchase_rates(self):
+        """Importaciones: la Rate Date puede ser posterior a la Invoice Date,
+        pero la moneda alterna y la del documento deben tener tasa exacta en
+        ambas fechas (`compute_rate` lanza UserError si falta alguna)."""
+        self.ensure_one()
+        currencies = (self.foreign_currency_id | self.currency_id).filtered(
+            lambda c: c != self.company_id.currency_id
+        )
+        rate_model = self.env["res.currency.rate"]
+        for rate_date in (self.invoice_date_display, self.invoice_date):
+            if not rate_date:
+                continue
+            for currency in currencies:
+                rate_model.compute_rate(currency.id, rate_date)
+
     def _check_dates_not_in_future(self):
         """Block posting if the invoice date is after today (or, for notes, before
         the origin's date) or the rate date
-        is after the invoice date. Accounting date is not validated."""
+        is after the invoice date. Accounting date is not validated.
+
+        Purchases of an international purchase (import) journal may have a rate
+        date after the invoice date: only the existence of the rate on both
+        dates is validated."""
         skip_requested = self.env.context.get("l10n_ve_skip_future_date_check")
         today = fields.Date.context_today(self)
         labels = {
@@ -433,6 +461,11 @@ class AccountMove(models.Model):
                     )
             limit = display_date or today
             if move.invoice_date and move.invoice_date > limit:
+                if move._l10n_ve_is_international_purchase():
+                    # Importacion: la tasa puede ser posterior a la fecha de la
+                    # factura; solo se exige que exista para ambas fechas.
+                    move._l10n_ve_check_international_purchase_rates()
+                    continue
                 raise ValidationError(
                     _(
                         "%(document)s: %(field)s (%(value)s) cannot be later than "
