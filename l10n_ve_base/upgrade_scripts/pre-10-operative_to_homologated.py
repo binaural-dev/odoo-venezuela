@@ -30,8 +30,22 @@ How to revert: restore the database. The backed up fields are in
 Task: https://binaural.odoo.com/odoo/action-1963/4199/action-345/82849
 """
 
+from odoo.exceptions import UserError
+from odoo.tools import config
+
 from odoo.addons.l10n_ve_base.migrations import _common
 
 
 def migrate(cr, version):
+    if not _common.legacy_modules(cr):
+        return
+    # -u all is stored as {'base': True}: only an update of base walks every installed module,
+    # which is what the reset below relies on. With -u <module> the converted successors would be
+    # loaded without being upgraded, on their v16/v17 schema; stop before converting anything.
+    if "base" not in config["update"]:
+        raise UserError(
+            "This database comes from the operativa line: run this script with -u all "
+            "(or -u base), not with a list of modules."
+        )
     _common.convert(cr)
+    _common.reset_upgrade_states(cr)

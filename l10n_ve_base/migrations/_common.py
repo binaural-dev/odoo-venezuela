@@ -28,7 +28,9 @@ What it does, in order:
   that its own migrations/ run too.
 
 The modules of the operativa line that have no successor are retired by
-migrations/19.0.1.0.3/end-10, once every module is loaded.
+migrations/19.0.1.0.3/end-10, once every module is loaded. binaural_operative, which turns the
+fiscal flag into is_operative, is marked to be installed by migrations/19.0.1.0.4/post-10
+(install_operative_module), once the module list is updated.
 
 It is meant to run from a pre-upgrade script (upgrade_scripts/pre-10-operative_to_homologated.py,
 through --pre-upgrade-scripts), before Odoo loads any module. The pre-init hook of this module
@@ -71,6 +73,14 @@ RENAMED_MODULES = (
     ("binaural_pos", "l10n_ve_pos"),
     ("binaural_pos_mf", "l10n_ve_pos_mf"),
     ("binaural_pos_igtf", "l10n_ve_pos_igtf"),
+)
+
+MODULES_RETIRED_ALONE = (
+    # The root of the operativa line: many modules depend on it (binaural_margin, binaural_mrp,
+    # binaural_sitef_base...), some may be absent from the addons path during the update and keep
+    # their old dependency. Retiring it in cascade would uninstall them and drop their tables, so
+    # it is only retired when nothing installed depends on it.
+    "binaural_base",
 )
 
 MODULES_WITHOUT_SUCCESSOR = (
@@ -370,8 +380,18 @@ def _adopt_module(cr, old, new):
             [successor[0]],
         )
         return "merged"
+    # The migrations of the l10n_ve_* successors only act when they come from 17
+    # (version.startswith("17.")): a module of the v16 operativa line would skip them all and,
+    # for instance, get invoice_date_display filled with the day of the update. It is registered
+    # as installed in 17, as register_base_module does with l10n_ve_base.
     cr.execute(
-        "UPDATE ir_module_module SET name = %s, state = 'to upgrade' WHERE id = %s", [new, old_id]
+        """
+        UPDATE ir_module_module
+           SET name = %s, state = 'to upgrade',
+               latest_version = CASE WHEN latest_version LIKE '16.%%' THEN %s ELSE latest_version END
+         WHERE id = %s
+        """,
+        [new, BASE_V17_VERSION, old_id],
     )
     cr.execute(
         """
@@ -524,3 +544,75 @@ def convert(cr, renamed_modules=RENAMED_MODULES, xmlid_renames=None):
         return lines
     util.add_to_migration_reports(message, category="Binaural · General")
     return lines
+
+
+def reset_upgrade_states(cr):
+    """Leave 'installed' the modules the Odoo upgrade service hands over 'to upgrade'. Returns how many.
+
+    On -u all, Odoo marks the new dependencies of 19 to be installed (account_invoice_pricelist
+    for l10n_ve_accountant, l10n_ve_purchase for binaural_purchase...) through button_upgrade on
+    base, which only walks the 'installed' modules: the ones already 'to upgrade' never get them,
+    and every module that needs them is skipped. Leaving them 'installed', as Odoo itself does
+    after a failed update, lets button_upgrade, which runs right after the pre-upgrade scripts,
+    mark them again together with their new dependencies. Only valid when base is updated (-u
+    all): the pre-upgrade script checks it before calling this.
+    """
+    cr.execute(
+        "UPDATE ir_module_module SET state = 'installed' WHERE state = 'to upgrade' AND name != 'base'"
+    )
+    _logger.info("%s modules 'to upgrade' left 'installed' for button_upgrade", cr.rowcount)
+    return cr.rowcount
+
+
+OPERATIVE_MODULE = "binaural_operative"
+JOURNAL_FISCAL_SNAPSHOT = SNAPSHOTS[0][0]
+
+
+def install_operative_module(env, module=OPERATIVE_MODULE):
+    """Mark binaural_operative to be installed on a database of the operativa line. Returns the report lines.
+
+    The v16/v17 fiscal / non-fiscal split of the journals (binaural_fiscal) is binaural_operative
+    in 19, but nothing installs it: it is not auto_install and no module of the operativa line
+    depends on it. convert() only copies the flag to JOURNAL_FISCAL_SNAPSHOT, which is what
+    binaural_operative translates into is_operative from its pre-init hook. Marking it here, with
+    button_install so that its dependencies and its auto_install bridges come along, makes Odoo
+    install it later in the same update, once every installed module is loaded.
+
+    Only a database that had binaural_fiscal has the snapshot, so nothing happens on a database of
+    the homologated line or one born in 19. Neither if the module is not in the addons path (a
+    project without integra-addons): then the report says so.
+    """
+    cr = env.cr
+    if not table_exists(cr, JOURNAL_FISCAL_SNAPSHOT):
+        return []
+    record = env["ir.module.module"].search([("name", "=", module)])
+    if not record:
+        return [
+            "%s is not in the addons path: the v16/v17 fiscal flag of the journals stays in %s "
+            "until it is installed." % (module, JOURNAL_FISCAL_SNAPSHOT)
+        ]
+    if record.state != "uninstalled":
+        return []
+    from odoo.exceptions import UserError
+
+    cr.execute("SELECT name FROM ir_module_module WHERE state = 'to install'")
+    already = {name for (name,) in cr.fetchall()}
+    # button_install marks the dependencies before it checks exclusions and may raise halfway:
+    # without the savepoint, the modules marked so far would be installed anyway.
+    env.flush_all()
+    try:
+        with cr.savepoint():
+            record.button_install()
+            env.flush_all()
+    except UserError as error:
+        env.invalidate_all()
+        return [
+            "%s could not be marked to be installed, install it by hand to translate the "
+            "v16/v17 fiscal flag of the journals: %s" % (module, error)
+        ]
+    cr.execute("SELECT name FROM ir_module_module WHERE state = 'to install' ORDER BY name")
+    names = [name for (name,) in cr.fetchall() if name not in already]
+    return [
+        "%s marked to be installed in this update, to turn the v16/v17 fiscal flag of the "
+        "journals into is_operative: %s." % (module, ", ".join(names))
+    ]
