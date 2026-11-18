@@ -138,3 +138,20 @@ export function toBackendValues(response) {
         },
     };
 }
+
+/**
+ * Datos de S1 (TfhkaDriver._parseS1Data) que usa el backend para atribuir
+ * el número de un documento impreso sin datos fiscales (ticket 16293).
+ *
+ * @param {Object} s1 - S1 interpretado por el driver
+ * @returns {Object}
+ */
+export function toS1Values(s1) {
+    return {
+        last_invoice_number: s1?.lastInvoiceNumber ?? null,
+        last_nc_number: s1?.lastNCNumber ?? null,
+        last_debit_note_number: s1?.lastDebtNoteNumber ?? null,
+        serial: s1?.registeredMachineNumber || "",
+        daily_closure_counter: s1?.dailyClosureCounter ?? null,
+    };
+}

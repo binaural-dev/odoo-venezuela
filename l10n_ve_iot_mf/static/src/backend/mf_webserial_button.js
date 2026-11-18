@@ -9,6 +9,7 @@ import {
     ensurePaired,
     toDriverOrder,
     toBackendValues,
+    toS1Values,
 } from "./mf_webserial_service";
 import { MfFiscalizadorDialog } from "./mf_fiscalizador_dialog";
 
@@ -21,6 +22,8 @@ import { MfFiscalizadorDialog } from "./mf_fiscalizador_dialog";
  * - print_out_refund: Nota de crédito fiscal
  * - print_debit_note: Nota de débito fiscal
  * - reprint_document: Reimpresión del documento actual
+ * - sync_fiscal_data: Recupera número/serial/Z de un documento que salió
+ *   impreso sin poder leer S1 (ticket 16293)
  * - fiscalizador: Herramienta técnica (modo debug)
  */
 export class MfWebSerialButtonComponent extends Component {
@@ -40,6 +43,7 @@ export class MfWebSerialButtonComponent extends Component {
             print_out_refund: _t("Imprimir NC (MF)"),
             print_debit_note: _t("Imprimir ND (MF)"),
             reprint_document: _t("Reimprimir (MF)"),
+            sync_fiscal_data: _t("Recuperar datos fiscales (MF)"),
             fiscalizador: _t("Fiscalizador MF"),
         };
 
@@ -114,6 +118,9 @@ export class MfWebSerialButtonComponent extends Component {
                 case "reprint_document":
                     await this.reprintDocument();
                     break;
+                case "sync_fiscal_data":
+                    await this.syncFiscalData();
+                    break;
                 default:
                     this.notifyError(_t("Acción de máquina fiscal desconocida: ") + this.props.action);
             }
@@ -129,11 +136,12 @@ export class MfWebSerialButtonComponent extends Component {
      * Deja constancia en el chatter del documento de un intento fallido
      * de impresión fiscal (sin conexión, error del driver, etc.).
      */
-    async logPrintFailure(reason) {
+    async logPrintFailure(reason, kind = false) {
         try {
             await this.orm.call("account.move", "log_mf_print_failure", [this.moveId], {
                 action: this.props.action,
                 reason: reason || false,
+                kind: kind || false,
             });
         } catch (error) {
             // No bloquear el flujo por un fallo al escribir en el chatter
@@ -161,7 +169,7 @@ export class MfWebSerialButtonComponent extends Component {
         const paired = await ensurePaired(driver);
         if (!paired) {
             this.notifyError(_t("No se pudo conectar con la máquina fiscal. Verifica el cable y el puerto."));
-            await this.logPrintFailure(_t("Sin conexión con la máquina fiscal"));
+            await this.logPrintFailure(_t("Sin conexión con la máquina fiscal"), "no_connection");
             return;
         }
 
@@ -171,11 +179,35 @@ export class MfWebSerialButtonComponent extends Component {
         this.notifyInfo(_t("Comunicando con la máquina fiscal, por favor espere..."));
         const order = toDriverOrder(payload);
         let response;
+        let before = null;
         try {
-            response = await driver.withConnection(() => driver[driverMethod](order));
+            response = await driver.withConnection(async () => {
+                // Foto de S1 antes de imprimir: si luego no se puede leer S1,
+                // permite saber qué número le asignó la máquina (ticket 16293).
+                // Si falla, se imprime igual: es solo un respaldo.
+                const s1Before = await driver.readFiscalState();
+                before = s1Before.success ? toS1Values(s1Before.data) : null;
+                return driver[driverMethod](order);
+            });
         } catch (error) {
             this.notifyError(this.errorMessage(error));
-            await this.logPrintFailure(error?.message || String(error));
+            const kind = error?.name === "FiscalPrinterBusyError" ? "no_connection" : false;
+            await this.logPrintFailure(error?.message || String(error), kind);
+            return;
+        }
+        if (!response.success && response.printed) {
+            // La máquina aceptó el cierre: el documento salió impreso, solo
+            // faltan sus datos. Reimprimir lo duplicaría.
+            await this.orm.call("account.move", "mf_mark_pending_sync", [this.moveId], {
+                action: this.props.action,
+                reason: response.error || false,
+                before,
+            });
+            this.notification.add(
+                _t("El documento se imprimió, pero no se pudieron leer sus datos fiscales. NO lo vuelva a imprimir: use \"Recuperar datos fiscales (MF)\"."),
+                { title: _t("Máquina Fiscal"), type: "warning", sticky: true }
+            );
+            await this.reloadRecord();
             return;
         }
         if (!response.success) {
@@ -190,6 +222,52 @@ export class MfWebSerialButtonComponent extends Component {
 
         this.notifySuccess(_t("Documento fiscal impreso correctamente. Nro: ") + values.data.sequence);
         window.location.reload();
+    }
+
+    async reloadRecord() {
+        try {
+            await this.props.record.model.load();
+        } catch (error) {
+            window.location.reload();
+        }
+    }
+
+    /**
+     * Recupera los datos fiscales de un documento que salió impreso sin
+     * poder leer S1: lee S1 y el backend decide si el número se puede
+     * atribuir sin ambigüedad (ver account.move.mf_sync_fiscal_data).
+     */
+    async syncFiscalData() {
+        const driver = getBackendFiscalPrinter();
+
+        await this.orm.call("account.move", "check_mf_sync", [this.moveId]);
+
+        const paired = await ensurePaired(driver);
+        if (!paired) {
+            this.notifyError(_t("No se pudo conectar con la máquina fiscal. Verifica el cable y el puerto."));
+            return;
+        }
+
+        this.notifyInfo(_t("Leyendo los datos de la máquina fiscal, por favor espere..."));
+        let s1Result;
+        try {
+            s1Result = await driver.withConnection(() => driver.readFiscalState());
+        } catch (error) {
+            this.notifyError(this.errorMessage(error));
+            return;
+        }
+        if (!s1Result.success) {
+            this.notifyError(
+                _t("No se pudieron leer los datos de la máquina fiscal: ") + (s1Result.error || "")
+            );
+            return;
+        }
+
+        const result = await this.orm.call("account.move", "mf_sync_fiscal_data", [this.moveId], {
+            s1: toS1Values(s1Result.data),
+        });
+        this.notifySuccess(_t("Datos fiscales recuperados. Nro: ") + result.sequence);
+        await this.reloadRecord();
     }
 
     /**
@@ -207,7 +285,7 @@ export class MfWebSerialButtonComponent extends Component {
         const paired = await ensurePaired(driver);
         if (!paired) {
             this.notifyError(_t("No se pudo conectar con la máquina fiscal. Verifica el cable y el puerto."));
-            await this.logPrintFailure(_t("Sin conexión con la máquina fiscal"));
+            await this.logPrintFailure(_t("Sin conexión con la máquina fiscal"), "no_connection");
             return;
         }
 

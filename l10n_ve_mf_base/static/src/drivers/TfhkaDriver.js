@@ -40,11 +40,30 @@ import { FiscalProtocol } from "../core/FiscalProtocol";
  * Megasoft VposUniversal, lo tiene abierto en ese instante).
  */
 export class FiscalPrinterBusyError extends Error {
-    constructor(message = "La máquina fiscal está en uso, intente de nuevo en unos segundos.") {
+    constructor(message = "La máquina fiscal está en uso, intente de nuevo en unos segundos.", reason = "busy") {
         super(message);
         this.name = "FiscalPrinterBusyError";
+        // "not_paired" | "open_failed" | "no_response" | "busy"
+        this.reason = reason;
     }
 }
+
+/**
+ * Mensaje para el usuario según por qué no se pudo abrir la conexión.
+ * Antes todo fallo de conexión se informaba como "máquina en uso", aunque la
+ * causa fuera un permiso del sistema operativo o una máquina apagada.
+ */
+const CONNECT_FAILURE_MESSAGES = {
+    not_paired:
+        "No hay una máquina fiscal autorizada en este navegador. Pulse de nuevo el botón y elija el puerto de la máquina.",
+    open_failed:
+        "No se pudo abrir el puerto de la máquina fiscal: otro programa o pestaña lo tiene abierto, " +
+        "o el sistema operativo no da permiso de acceso al puerto. Cierre las otras pestañas de Odoo que usen " +
+        "la máquina e intente de nuevo; si persiste, revise los permisos del puerto.",
+    no_response:
+        "El puerto de la máquina fiscal se abrió, pero la máquina no responde. Verifique que esté encendida, " +
+        "con papel, con la tapa cerrada y bien conectada.",
+};
 
 export class TfhkaDriver {
 
@@ -79,6 +98,13 @@ export class TfhkaDriver {
         // via onActivityChange, que pos_app.js asigna al crear el driver.
         this.activity = "idle";
         this.onActivityChange = null;
+        // Motivo del último connect() fallido (ver CONNECT_FAILURE_MESSAGES)
+        this.lastConnectFailure = null;
+        // Reintentos de la lectura de S1 (ticket 16293): tras el cierre de un
+        // documento la impresora puede seguir imprimiendo (matricial) y
+        // devolver bytes que no forman una trama válida.
+        this.s1ReadAttempts = 4;
+        this.s1RetryDelay = 1000; // ms
     }
 
     _setActivity(activity) {
@@ -138,9 +164,11 @@ export class TfhkaDriver {
      * @returns {Promise<boolean>}
      */
     async connect({ requestPermission = false } = {}) {
+        this.lastConnectFailure = null;
         try {
             // Intentar reconexión automática primero
             let connected = await this.connection.autoConnect();
+            const autoConnectError = this.connection.lastError;
             
             // Solo solicitar permiso si se indica explícitamente
             // (requestPort() requiere un gesto del usuario)
@@ -155,12 +183,19 @@ export class TfhkaDriver {
                 // Verificar que la impresora responda
                 const status = await this.getStatus();
                 this.isConnected = status !== null;
+                if (!this.isConnected) {
+                    this.lastConnectFailure = "no_response";
+                    // Liberar el puerto: quedó abierto aunque la máquina no responda
+                    await this.connection.disconnect();
+                }
                 return this.isConnected;
             }
             
+            this.lastConnectFailure = autoConnectError || "open_failed";
             return false;
         } catch (error) {
             console.error("TfhkaDriver:: Error al conectar", error);
+            this.lastConnectFailure = "open_failed";
             return false;
         }
     }
@@ -232,7 +267,9 @@ export class TfhkaDriver {
                 await new Promise((resolve) => setTimeout(resolve, delayMs));
             }
         }
-        throw new FiscalPrinterBusyError();
+        const reason = this.lastConnectFailure || "busy";
+        const message = CONNECT_FAILURE_MESSAGES[reason];
+        throw message ? new FiscalPrinterBusyError(message, reason) : new FiscalPrinterBusyError();
     }
 
     /**
@@ -683,22 +720,67 @@ export class TfhkaDriver {
         return parsed;
     }
 
-    async _readS1Data() {
-        const response = await this.sendCommand("S1", 5000, false);
-        if (!response.success) {
-            return { success: false, data: null, error: response.error || "No se pudo leer S1" };
+    /**
+     * Lee el estado S1 (último número de factura/NC/ND, Z, serial).
+     *
+     * Reintenta cuando la respuesta no es una trama válida (no empieza con
+     * STX, sin ETX, LRC inválido) o no se puede interpretar (ticket 16293):
+     * justo después del cierre de un documento la impresora puede seguir
+     * imprimiendo y dejar bytes en el puerto. sendCommand() solo reintenta
+     * ante NAK o falta de respuesta, por eso el reintento va aquí. Cada
+     * intento limpia el buffer antes de enviar S1 (sendCommand lo hace).
+     * S1 es una consulta: reenviarla no emite ni altera ningún documento.
+     *
+     * @param {Object} [options]
+     * @param {number} [options.attempts] - Intentos (por defecto this.s1ReadAttempts)
+     * @param {number} [options.retryDelay] - Espera entre intentos en ms
+     * @returns {Promise<{success: boolean, data: Object|null, error: string}>}
+     */
+    async _readS1Data({ attempts = null, retryDelay = null } = {}) {
+        const maxAttempts = Math.max(1, attempts ?? this.s1ReadAttempts ?? 1);
+        const delay = retryDelay ?? this.s1RetryDelay ?? 0;
+        let lastError = "No se pudo leer S1";
+
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            if (attempt > 1) {
+                console.warn(`TfhkaDriver:: S1 inválido (${lastError}), reintento ${attempt}/${maxAttempts}`);
+                await new Promise((resolve) => setTimeout(resolve, delay));
+            }
+
+            const response = await this.sendCommand("S1", 5000, false);
+            if (!response.success) {
+                lastError = response.error || "No se pudo leer S1";
+                if (!this.isConnected || response.error === "Máximo de reintentos alcanzado") {
+                    // Sin conexión, o sin respuesta tras los reintentos que
+                    // ya hizo sendCommand: reintentar solo alarga la espera.
+                    break;
+                }
+                continue;
+            }
+
+            const data = this._parseS1Data(response.data);
+            if (!data) {
+                lastError = "No se pudo parsear la respuesta S1 de la impresora";
+                continue;
+            }
+
+            return { success: true, data, error: "" };
         }
 
-        const data = this._parseS1Data(response.data);
-        if (!data) {
-            return {
-                success: false,
-                data: null,
-                error: "No se pudo parsear la respuesta S1 de la impresora",
-            };
-        }
+        return { success: false, data: null, error: lastError };
+    }
 
-        return { success: true, data, error: "" };
+    /**
+     * Lectura pública del estado S1, para tomar la foto previa a la
+     * impresión y para recuperar los datos fiscales de un documento que se
+     * imprimió sin poder leer S1 (ticket 16293).
+     * @returns {Promise<{success: boolean, data: Object|null, error: string}>}
+     */
+    async readFiscalState() {
+        if (!this.isConnected) {
+            return { success: false, data: null, error: "Impresora no conectada" };
+        }
+        return this._readS1Data();
     }
 
     _decodeImplicit2Decimals(rawValue) {
@@ -1433,6 +1515,7 @@ export class TfhkaDriver {
                     success: false,
                     data: "",
                     error: `Factura impresa, pero no se pudo leer S1: ${s1Result.error}`,
+                    printed: true,
                 };
             }
 
@@ -1442,6 +1525,7 @@ export class TfhkaDriver {
                     success: false,
                     data: "",
                     error: "Factura impresa, pero S1 no devolvió número de factura",
+                    printed: true,
                 };
             }
 
@@ -1644,6 +1728,7 @@ export class TfhkaDriver {
                     success: false,
                     data: "",
                     error: `Nota de crédito impresa, pero no se pudo leer S1: ${s1Result.error}`,
+                    printed: true,
                 };
             }
 
@@ -1653,6 +1738,7 @@ export class TfhkaDriver {
                     success: false,
                     data: "",
                     error: "Nota de crédito impresa, pero S1 no devolvió número de NC",
+                    printed: true,
                 };
             }
 
@@ -1838,6 +1924,7 @@ export class TfhkaDriver {
                     success: false,
                     data: "",
                     error: `Nota de débito impresa, pero no se pudo leer S1: ${s1Result.error}`,
+                    printed: true,
                 };
             }
 
@@ -1847,6 +1934,7 @@ export class TfhkaDriver {
                     success: false,
                     data: "",
                     error: "Nota de débito impresa, pero S1 no devolvió número de ND",
+                    printed: true,
                 };
             }
 

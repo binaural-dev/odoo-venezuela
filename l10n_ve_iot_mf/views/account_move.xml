@@ -8,19 +8,23 @@
             <xpath expr="//form/header" position="inside">
                 <field name='print_type' invisible="1" readonly="1"/>
                 <field name='mf_invoice_number' invisible="1"/>
-                <widget name="mf-webserial-button" action="print_out_invoice" invisible="state != 'posted' or move_type != 'out_invoice' or mf_invoice_number != False or is_debit_journal != False or print_type != 'fiscal' or correlative != False"/>
+                <field name='mf_pending_sync' invisible="1"/>
+                <widget name="mf-webserial-button" action="print_out_invoice" invisible="mf_pending_sync or state != 'posted' or move_type != 'out_invoice' or mf_invoice_number != False or is_debit_journal != False or print_type != 'fiscal' or correlative != False"/>
                 <widget name="mf-webserial-button" action="reprint_document" invisible="mf_invoice_number == False or print_type != 'fiscal' or correlative != False"/>
-                <widget name="mf-webserial-button" action="print_out_refund" invisible="state != 'posted' or move_type != 'out_refund' or mf_invoice_number or print_type != 'fiscal' or correlative != False"/>
-                <widget name="mf-webserial-button" action="print_debit_note" invisible="state != 'posted' or move_type != 'out_invoice' or mf_invoice_number != False or is_debit_journal != True or print_type != 'fiscal' or correlative != False"/>
+                <widget name="mf-webserial-button" action="print_out_refund" invisible="mf_pending_sync or state != 'posted' or move_type != 'out_refund' or mf_invoice_number or print_type != 'fiscal' or correlative != False"/>
+                <widget name="mf-webserial-button" action="print_debit_note" invisible="mf_pending_sync or state != 'posted' or move_type != 'out_invoice' or mf_invoice_number != False or is_debit_journal != True or print_type != 'fiscal' or correlative != False"/>
+                <widget name="mf-webserial-button" action="sync_fiscal_data" invisible="not mf_pending_sync"/>
             </xpath>
             <xpath expr="//field[@name='ref']" position="after">
                 <field name='iot_mf' readonly="1"/>
             </xpath>
             <xpath expr="//group[@name='accounting_info_group']" position="after">
                 <group string="Fiscal Machine">
-                    <field name='mf_invoice_number' readonly="1"/>
-                    <field name='mf_serial' readonly="1"/>
-                    <field name="mf_reportz" readonly="1"/>
+                    <!-- Editables solo mientras faltan los datos de un documento ya impreso (ticket 16293) -->
+                    <field name='mf_pending_sync' invisible="not mf_pending_sync"/>
+                    <field name='mf_invoice_number' readonly="not mf_pending_sync"/>
+                    <field name='mf_serial' readonly="not mf_pending_sync"/>
+                    <field name="mf_reportz" readonly="not mf_pending_sync"/>
                 </group>
             </xpath>
         </field>

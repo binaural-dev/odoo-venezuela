@@ -21,6 +21,12 @@ export class SerialConnection {
         this.readLock = false;
         this.writeLock = false;
         this.isConnected = false;
+        // Motivo del último fallo de autoConnect(): "not_paired" (no hay
+        // puerto autorizado en este navegador) u "open_failed" (el puerto
+        // existe pero no se pudo abrir: otro programa lo tiene abierto o el
+        // sistema operativo no da permiso). Lo usa TfhkaDriver para decir la
+        // causa real en vez de "máquina en uso" para todo.
+        this.lastError = null;
         
         // Configuración por defecto para TFHKA (RS232: 9600 8E1)
         // IMPORTANTE: TFHKA usa paridad PAR (even), no none
@@ -70,6 +76,7 @@ export class SerialConnection {
                 return false;
             }
 
+            this.lastError = null;
             const ports = await navigator.serial.getPorts();
             if (ports.length > 0) {
                 this.port = ports[0];
@@ -77,9 +84,11 @@ export class SerialConnection {
                 this.isConnected = true;
                 return true;
             }
+            this.lastError = "not_paired";
             return false;
         } catch (error) {
             console.error("SerialConnection:: Error en reconexión automática", error);
+            this.lastError = "open_failed";
             return false;
         }
     }

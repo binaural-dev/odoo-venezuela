@@ -35,6 +35,17 @@ class AccountMoveInh(models.Model):
         string="Sequence number", default=False, copy=False, tracking=True
     )
     mf_reportz = fields.Char(string="Report number Z", default=False, copy=False, tracking=True)
+    # Ticket 16293: el documento salió impreso (cierre aceptado por la
+    # máquina) pero no se pudo leer S1, así que no hay número/serial/Z.
+    # Mientras esté marcado no se puede volver a imprimir (se duplicaría el
+    # documento fiscal) y se ofrece recuperar los datos leyendo S1.
+    mf_pending_sync = fields.Boolean(
+        string="Datos fiscales por recuperar", default=False, copy=False, readonly=True, tracking=True
+    )
+    # Foto de S1 tomada justo antes de imprimir: {doc_type, number_before,
+    # serial, z_before}. Permite atribuir sin ambigüedad el número que la
+    # máquina asignó a este documento.
+    mf_pending_sync_data = fields.Json(copy=False, readonly=True)
     
     def _default_print_type(self):
         return self.env.company.invoice_print_type
@@ -208,29 +219,245 @@ class AccountMoveInh(models.Model):
             )
         return vals
 
-    def log_mf_print_failure(self, action=None, reason=None):
-        """Deja constancia en el chatter de un intento fallido de impresión fiscal.
-
-        Llamado desde el frontend Web Serial cuando no hay conexión con la
-        máquina fiscal o el driver reporta un error.
-        """
+    def _mf_action_label(self, action):
         action_labels = {
             "print_out_invoice": _("Factura"),
             "print_out_refund": _("Nota de crédito"),
             "print_debit_note": _("Nota de débito"),
             "reprint_document": _("Reimpresión"),
+            "sync_fiscal_data": _("Recuperación de datos fiscales"),
         }
-        label = action_labels.get(action, action or _("Documento fiscal"))
-        body = _(
-            "No se ha impreso en máquina fiscal (%(label)s) porque no hay "
-            "máquina fiscal conectada.",
-            label=label,
-        )
+        return action_labels.get(action, action or _("Documento fiscal"))
+
+    def log_mf_print_failure(self, action=None, reason=None, kind=None):
+        """Deja constancia en el chatter de un intento fallido de impresión fiscal.
+
+        Llamado desde el frontend Web Serial cuando no hay conexión con la
+        máquina fiscal o el driver reporta un error.
+
+        :param kind: "no_connection" cuando no se pudo hablar con la máquina.
+            Cualquier otro valor (o None) es un error durante la operación: el
+            mensaje ya no afirma que "no hay máquina fiscal conectada", porque
+            eso era falso cuando el error ocurría con la máquina respondiendo
+            (ticket 16293).
+        """
+        label = self._mf_action_label(action)
+        if kind == "no_connection":
+            body = _(
+                "No se ha impreso en máquina fiscal (%(label)s) porque no hay "
+                "conexión con la máquina fiscal.",
+                label=label,
+            )
+        else:
+            body = _(
+                "No se ha impreso en máquina fiscal (%(label)s): la máquina fiscal reportó un error.",
+                label=label,
+            )
         if reason:
             body += _(" Detalle: %(reason)s", reason=reason)
         for move in self:
             move.message_post(body=body)
         return True
+
+    # ------------------------------------------------------------------
+    # Ticket 16293: documento impreso sin datos fiscales (S1 ilegible)
+    # ------------------------------------------------------------------
+
+    _MF_S1_NUMBER_KEYS = {
+        "invoice": "last_invoice_number",
+        "credit_note": "last_nc_number",
+        "debit_note": "last_debit_note_number",
+    }
+
+    def _mf_doc_type(self):
+        self.ensure_one()
+        if self.move_type == "out_refund":
+            return "credit_note"
+        if self.is_debit_journal:
+            return "debit_note"
+        return "invoice"
+
+    @staticmethod
+    def _mf_to_int(value):
+        if value in (None, False, ""):
+            return None
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return None
+
+    def _mf_check_not_pending(self):
+        for move in self:
+            if move.mf_pending_sync:
+                raise ValidationError(
+                    _(
+                        "Este documento ya se imprimió en la máquina fiscal, pero faltan sus datos "
+                        "fiscales. No lo vuelva a imprimir: use \"Recuperar datos fiscales (MF)\"."
+                    )
+                )
+
+    def mf_mark_pending_sync(self, action=None, reason=None, before=None):
+        """Marca el documento como impreso sin datos fiscales.
+
+        Lo llama el botón Web Serial cuando el driver informa que la máquina
+        aceptó el cierre del documento (salió impreso) pero no pudo leer S1.
+
+        :param before: foto de S1 tomada antes de imprimir, con las claves
+            last_invoice_number, last_nc_number, last_debit_note_number,
+            serial y daily_closure_counter. Puede venir vacía si esa lectura
+            también falló.
+        """
+        self.ensure_one()
+        before = before or {}
+        doc_type = self._mf_doc_type()
+        data = {
+            "doc_type": doc_type,
+            "number_before": self._mf_to_int(before.get(self._MF_S1_NUMBER_KEYS[doc_type])),
+            "serial": before.get("serial") or False,
+            "z_before": self._mf_to_int(before.get("daily_closure_counter")),
+        }
+        self.write({"mf_pending_sync": True, "mf_pending_sync_data": data})
+
+        body = _(
+            "%(label)s impresa en la máquina fiscal, pero no se pudieron leer sus datos fiscales "
+            "(número, serial y reporte Z). No la vuelva a imprimir: use \"Recuperar datos "
+            "fiscales (MF)\" con la máquina conectada.",
+            label=self._mf_action_label(action),
+        )
+        if reason:
+            body += _(" Detalle: %(reason)s", reason=reason)
+        self.message_post(body=body)
+        return True
+
+    def write(self, vals):
+        res = super().write(vals)
+        if vals.get("mf_invoice_number"):
+            # Carga manual de los datos fiscales de un documento pendiente
+            # (casos que mf_sync_fiscal_data no puede atribuir solo).
+            synced = self.filtered(lambda m: m.mf_pending_sync and m.mf_invoice_number)
+            if synced:
+                synced.write({"mf_pending_sync": False, "mf_pending_sync_data": False})
+        return res
+
+    def check_mf_sync(self):
+        """Valida que se puedan recuperar los datos fiscales del documento."""
+        self.ensure_one()
+        if not self.mf_pending_sync:
+            raise ValidationError(_("Este documento no tiene datos fiscales pendientes por recuperar."))
+        if self.mf_invoice_number:
+            raise ValidationError(_("El documento ya tiene número fiscal."))
+        return {"valid": True, "doc_type": (self.mf_pending_sync_data or {}).get("doc_type")}
+
+    def mf_sync_fiscal_data(self, s1):
+        """Asigna los datos fiscales de un documento impreso sin ellos.
+
+        Compara S1 actual con la foto tomada antes de imprimir. Solo asigna
+        el número cuando el contador avanzó exactamente uno: si avanzó más,
+        se imprimieron otros documentos en el medio y el número no se puede
+        atribuir con certeza; si no avanzó, los datos se contradicen con el
+        cierre aceptado. En ambos casos se pide revisión manual en vez de
+        adivinar, porque un número equivocado deja el libro de ventas mal.
+
+        :param s1: S1 actual, mismas claves que ``before`` en
+            :meth:`mf_mark_pending_sync`.
+        :returns: dict con el número, serial y Z asignados.
+        """
+        self.ensure_one()
+        self.check_mf_sync()
+        s1 = s1 or {}
+        pending = self.mf_pending_sync_data or {}
+        doc_type = pending.get("doc_type") or self._mf_doc_type()
+
+        serial = s1.get("serial") or False
+        if not serial:
+            raise UserError(_("La máquina fiscal no devolvió su serial. Intente de nuevo."))
+        if pending.get("serial") and pending["serial"] != serial:
+            raise UserError(
+                _(
+                    "La máquina conectada (serial %(now)s) no es la que imprimió el documento "
+                    "(serial %(before)s). Conecte la máquina correcta.",
+                    now=serial,
+                    before=pending["serial"],
+                )
+            )
+
+        number_now = self._mf_to_int(s1.get(self._MF_S1_NUMBER_KEYS[doc_type]))
+        if number_now is None:
+            raise UserError(_("La máquina fiscal no devolvió el último número del documento. Intente de nuevo."))
+
+        number_before = pending.get("number_before")
+        if number_before is None:
+            raise UserError(
+                _(
+                    "No hay una lectura de la máquina previa a la impresión, así que no se puede "
+                    "saber con certeza qué número le asignó. El último número de la máquina es "
+                    "%(number)s: verifíquelo contra el documento impreso y cárguelo manualmente en la sección Máquina Fiscal.",
+                    number=number_now,
+                )
+            )
+        if number_now == number_before:
+            raise UserError(
+                _(
+                    "La máquina aceptó el cierre del documento, pero su contador no avanzó "
+                    "(sigue en %(number)s). Revise el documento impreso antes de continuar.",
+                    number=number_now,
+                )
+            )
+        if number_now != number_before + 1:
+            raise UserError(
+                _(
+                    "Después de este documento se imprimieron otros en la máquina (el contador "
+                    "pasó de %(before)s a %(now)s). El número de este documento debería ser "
+                    "%(expected)s: verifíquelo contra el documento impreso y cárguelo manualmente en la sección Máquina Fiscal.",
+                    before=number_before,
+                    now=number_now,
+                    expected=number_before + 1,
+                )
+            )
+
+        sequence = str(number_now)
+        duplicate = self.search(
+            [
+                ("id", "!=", self.id),
+                ("company_id", "=", self.company_id.id),
+                ("mf_serial", "=", serial),
+                ("mf_invoice_number", "=", sequence),
+                ("move_type", "=", self.move_type),
+                ("is_debit_journal", "=", self.is_debit_journal),
+            ],
+            limit=1,
+        )
+        if duplicate:
+            raise UserError(
+                _(
+                    "El número fiscal %(number)s ya está asignado a %(move)s.",
+                    number=sequence,
+                    move=duplicate.display_name,
+                )
+            )
+
+        # El Z del documento es el abierto cuando se imprimió (el de la foto),
+        # aunque se haya cerrado un Z entre la impresión y la recuperación.
+        z_counter = pending.get("z_before")
+        if z_counter is None:
+            z_counter = self._mf_to_int(s1.get("daily_closure_counter"))
+        mf_reportz = str(z_counter + 1) if z_counter is not None else False
+
+        vals = self._mf_persist_vals(
+            {"sequence": sequence, "serial_machine": serial, "mf_reportz": mf_reportz}
+        )
+        vals.update({"mf_pending_sync": False, "mf_pending_sync_data": False})
+        self.write(vals)
+        self.message_post(
+            body=_(
+                "Datos fiscales recuperados de la máquina: número %(number)s, serial %(serial)s, "
+                "reporte Z %(z)s.",
+                number=sequence,
+                serial=serial,
+                z=mf_reportz or "-",
+            )
+        )
+        return {"sequence": sequence, "serial_machine": serial, "mf_reportz": mf_reportz}
 
     def _get_mf_flag21(self):
         """Flag 21 (formato numérico TFHKA) para impresión Web Serial.
@@ -274,6 +501,7 @@ class AccountMoveInh(models.Model):
     def check_print_out_invoice(self):
         # if not self.journal_id.fiscal:
         #     raise ValidationError(_("You cannot print an invoice with a non-fiscal journal"))
+        self._mf_check_not_pending()
         try:
             if self.mf_invoice_number:
                 raise ValidationError(_("The invoice has already been printed"))
@@ -383,6 +611,7 @@ class AccountMoveInh(models.Model):
         """
         Print out refund in fiscal machine
         """
+        self._mf_check_not_pending()
         try:
             if self.mf_invoice_number:
                 raise ValidationError(_("The invoice has already been printed"))
@@ -518,6 +747,7 @@ class AccountMoveInh(models.Model):
         """
         Print debit note in fiscal machine
         """
+        self._mf_check_not_pending()
         try:
             if self.mf_invoice_number:
                 raise ValidationError(_("The invoice has already been printed"))
