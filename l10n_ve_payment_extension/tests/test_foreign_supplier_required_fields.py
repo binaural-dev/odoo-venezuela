@@ -58,11 +58,15 @@ class TestForeignSupplierRequiredFields(TransactionCase):
         )
 
     def _fill_form(self, supplier=True, country=None, taxpayer_type=None,
-                   withholding=False, type_person=None):
+                   withholding=False, type_person=None, customer=False):
         """Fill the fields that the installed views require, with unique data."""
         number = next(_counter)
         country = country or self.country_ve
-        context = {"default_supplier_rank": 1} if supplier else {}
+        context = {}
+        if supplier:
+            context["default_supplier_rank"] = 1
+        if customer:
+            context["default_customer_rank"] = 1
         form = Form(self.env["res.partner"].with_context(**context))
         form.name = "Foreign Supplier Test %s" % number
         form.prefix_vat = "J"
@@ -96,7 +100,9 @@ class TestForeignSupplierRequiredFields(TransactionCase):
 
     def test_venezuelan_ordinary_and_formal_have_no_withholding(self):
         for taxpayer_type in ("ordinary", "formal"):
-            form = self._fill_form(supplier=False, taxpayer_type=taxpayer_type)
+            form = self._fill_form(
+                supplier=False, customer=True, taxpayer_type=taxpayer_type
+            )
             # The field is invisible, so the form refuses to write it.
             with self.assertRaisesRegex(AssertionError, "invisible field"):
                 form.withholding_type_id = self.withholding_100
@@ -133,10 +139,25 @@ class TestForeignSupplierRequiredFields(TransactionCase):
             form.save()
 
     def test_special_to_ordinary_clears_the_withholding(self):
-        form = self._fill_form(supplier=False, taxpayer_type="special")
+        form = self._fill_form(
+            supplier=False, customer=True, taxpayer_type="special"
+        )
         self.assertEqual(form.withholding_type_id, self.withholding_75)
         form.taxpayer_type = "ordinary"
         self.assertFalse(form.withholding_type_id)
+
+    def test_new_contact_without_rank_keeps_the_withholding_type_field(self):
+        # A supplier created from the contacts app, a purchase order or a vendor
+        # bill has no supplier_rank yet (it is only raised when its first invoice
+        # is posted): the field must stay visible and keep its value, otherwise the
+        # IVA retention of that first invoice fails with no way to fix it.
+        for taxpayer_type in ("ordinary", "formal"):
+            form = self._fill_form(supplier=False, taxpayer_type=taxpayer_type)
+            form.withholding_type_id = self.withholding_100
+            # Changing the taxpayer type must not clear it either.
+            form.taxpayer_type = "formal" if taxpayer_type == "ordinary" else "ordinary"
+            self.assertEqual(form.withholding_type_id, self.withholding_100)
+            self.assertEqual(form.save().withholding_type_id, self.withholding_100)
 
     def test_resident_person_types(self):
         ref = self.env.ref
