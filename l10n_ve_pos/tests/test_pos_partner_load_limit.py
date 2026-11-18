@@ -16,13 +16,16 @@ class TestPosPartnerLoadLimit(TransactionCase):
         self.env["pos.config"]._l10n_ve_set_default_pos_partner_load_limit()
         return param_model.get_param(PARAM)
 
-    def test_module_data_raises_odoo_default(self):
+    def test_module_install_raises_odoo_default(self):
         # After installing the module, the parameter is no longer Odoo's 100.
         value = self.env["ir.config_parameter"].sudo().get_param(PARAM)
         self.assertGreaterEqual(int(value), L10N_VE_LIMIT_LOAD_PARTNER)
 
     def test_raises_odoo_default(self):
         self.assertEqual(self._run_with(100), str(L10N_VE_LIMIT_LOAD_PARTNER))
+
+    def test_raises_value_between_default_and_limit(self):
+        self.assertEqual(self._run_with(1000), str(L10N_VE_LIMIT_LOAD_PARTNER))
 
     def test_sets_missing_parameter(self):
         # set_param(False) deletes the parameter.
@@ -39,7 +42,12 @@ class TestPosPartnerLoadLimit(TransactionCase):
             self._run_with(L10N_VE_LIMIT_LOAD_PARTNER), str(L10N_VE_LIMIT_LOAD_PARTNER)
         )
 
-    def test_pos_uses_raised_limit(self):
+    def test_pos_loads_more_than_odoo_default(self):
+        # What the cashier sees: with Odoo's 100 the PoS would stop at 100 customers.
+        self.env["res.partner"].create(
+            [{"name": f"Cliente PoS {i}", "company_id": False} for i in range(150)]
+        )
         self._run_with(100)
         config = self.env["pos.config"].create({"name": "Caja límite clientes"})
-        self.assertEqual(config._get_limited_partner_count(), L10N_VE_LIMIT_LOAD_PARTNER)
+        loaded = config.get_limited_partners_loading()
+        self.assertGreater(len(loaded), 100)

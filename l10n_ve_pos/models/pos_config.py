@@ -458,9 +458,11 @@ class PosConfig(models.Model):
         parameter was raised by hand does not go down. A missing or non-numeric value is
         treated as 0, as Odoo would fall back to 100 for it.
 
-        Called from data/ir_config_parameter_data.xml on every install and update of the module.
+        Runs once per database: on install (data/ir_config_parameter_data.xml, noupdate) or on
+        the upgrade to 19.0.1.31.0 (migrations/19.0.1.31.0). After that, the parameter is the
+        administrator's: updates of the module do not touch it again.
         """
-        param_model = self.env["ir.config_parameter"].sudo()
+        param_model = self.env["ir.config_parameter"]
         current = param_model.get_param("point_of_sale.limited_customer_count")
         try:
             current = int(current)
