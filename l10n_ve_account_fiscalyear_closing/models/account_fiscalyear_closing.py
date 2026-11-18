@@ -90,7 +90,7 @@ class AccountFiscalyearClosingConfig(models.Model):
         dest_totals = {}
         # Add balance/unreconciled move lines
         # for account_map in self.mapping_ids:
-        rate = 1
+        rate = 1.0
 
         dest = account_map.dest_account_id
         dest_totals.setdefault(dest, 0)
@@ -288,7 +288,7 @@ class AccountFiscalyearClosingMapping(models.Model):
         precision = self.env["decimal.precision"].precision_get("Account")
         description = self.name or account.name
         date = self.fyc_config_id.fyc_id.date_end
-        rate = 1
+        rate = 1.0
         bsd_id = self.env.ref("base.VEF").id
         if self.fyc_config_id.move_type == "opening":
             date = self.fyc_config_id.fyc_id.date_opening
