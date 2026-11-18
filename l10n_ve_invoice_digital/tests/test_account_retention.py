@@ -10,6 +10,12 @@ from .common import make_compute_rate_tolerant, seed_today_vef_rate
 
 _logger = logging.getLogger(__name__)
 
+RETENTION_FORM_VIEWS = {
+    "iva": "l10n_ve_payment_extension.view_retention_iva_form_l10n_ve_payment_extension",
+    "islr": "l10n_ve_payment_extension.view_retention_islr_form_l10n_ve_payment_extension",
+    "municipal": "l10n_ve_payment_extension.view_retention_municipal_form_l10n_ve_payment_extension",
+}
+
 @tagged("post_install", "-at_install", "l10n_ve_invoice_digital", "retention_digital") 
 class TestAccumulatedRate(TransactionCase):
     def setUp(self):
@@ -307,16 +313,26 @@ class TestAccumulatedRate(TransactionCase):
         # own account_retention.py documents and avoids elsewhere.
         today = fields.Date.context_today(self)
 
-        with Form(self.env["account.retention"].with_context(default_type="in_invoice", default_type_retention=type_retention)) as retention_form:
+        # The form of the retention type, as the menu opens it: without it Form takes
+        # the default view of account.retention, which does not save the IVA aliquot.
+        view = RETENTION_FORM_VIEWS[type_retention]
+        with Form(self.env["account.retention"].with_context(default_type="in_invoice", default_type_retention=type_retention), view=view) as retention_form:
             retention_form.partner_id = self.partner_a
             retention_form.date_accounting = today
 
         retention = retention_form.save()
 
-        with Form(retention) as retention_form_edit:
+        # An IVA retention already loads a line per invoice with taxes when the
+        # partner is set (onchange_partner_id), as on screen: adding the invoice
+        # again would duplicate it at the same aliquot, which cannot be posted.
+        if invoice in retention.retention_line_ids.move_id:
+            return retention
+
+        with Form(retention, view=view) as retention_form_edit:
             with retention_form_edit.retention_line_ids.new() as line:
                 line.move_id = invoice
-                line.payment_concept_id = self.payment_concept
+                if type_retention == "islr":
+                    line.payment_concept_id = self.payment_concept
 
         retention = retention_form_edit.save()
 
