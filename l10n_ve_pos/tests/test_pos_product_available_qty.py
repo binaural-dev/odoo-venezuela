@@ -161,7 +161,7 @@ class TestPosProductAvailableQty(TransactionCase):
     def test_load_data_flags_the_context_by_the_setting(self):
         contexts = []
 
-        def core_load_data(session, local_data={}):
+        def core_load_data(session, local_data=None):
             contexts.append(session.env.context.get("pos_reload_stock_dependent_data"))
             return {}
 

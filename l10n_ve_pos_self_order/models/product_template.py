@@ -23,7 +23,7 @@ class ProductTemplate(models.Model):
         return ["|", ("is_storable", "=", False), ("product_variant_ids", "in", in_stock)]
 
     @api.model
-    def _load_pos_self_metadata(self, data, search_params={}):
+    def _load_pos_self_metadata(self, data, search_params=None):
         """El autopedido no pasa por el ``canBeDisplayed`` de la caja: arma la
         cuadrícula, el buscador de "solo escaneo / búsqueda" y el escaneo con
         todo lo que carga, así que con el ajuste el almacenable sin stock se
@@ -38,6 +38,8 @@ class ProductTemplate(models.Model):
         queda se conservan: llegan con ``self_order_available = False``
         (``_load_pos_self_data_read``).
         """
+        if search_params is None:
+            search_params = {}
         data = super()._load_pos_self_metadata(data, search_params)
         config = data["pos.config"]["records"]
         if not config.pos_show_just_products_with_available_qty:

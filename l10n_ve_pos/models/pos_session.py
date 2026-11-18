@@ -21,7 +21,7 @@ class PosSession(models.Model):
     def _load_pos_data_models(self, config):
         return super()._load_pos_data_models(config) + ["pos.payment.method.currency"]
 
-    def load_data(self, local_data={}):
+    def load_data(self, local_data=None):
         """Odoo 20 ``load_data`` (replaces ``load_pos_data``).
 
         IMPORTANT: the ``load_data`` response must contain only model keys.
@@ -33,6 +33,8 @@ class PosSession(models.Model):
         only the ones modified since the browser cache, so the PoS gets the
         current stock. Costs like the first load. See ``pos.load.mixin``.
         """
+        if local_data is None:
+            local_data = {}
         session = self
         if self.config_id.pos_show_just_products_with_available_qty:
             session = self.with_context(pos_reload_stock_dependent_data=True)
@@ -853,11 +855,13 @@ class PosSession(models.Model):
         self.closing_notes = notes or False
         return True
 
-    def _handle_cash_statement_entries(self, payment_method_closing={}):
+    def _handle_cash_statement_entries(self, payment_method_closing=None):
         """At closing, post the cash details message Odoo 19 posted in the
         chatter of the session: the closing difference, the expected and the
         counted cash of the register, with the closing note. Odoo 20 posts
         only the opening one."""
+        if payment_method_closing is None:
+            payment_method_closing = {}
         cash_method = self.config_id._get_cash_payment_method()
         is_closing = bool(cash_method and self.bank_statement_id)
         if is_closing:
@@ -892,11 +896,13 @@ class PosSession(models.Model):
             email_from=self.env.user.email or "admin@example.com",
         )
 
-    def close_session_from_ui(self, payment_method_closing={}):
+    def close_session_from_ui(self, payment_method_closing=None):
         """Create the cross moves and round the orders once the session is
         closed. Odoo 20 closes from the UI and from the backend button through
         this single entry point (Odoo 19 went through ``action_pos_session_close``).
         """
+        if payment_method_closing is None:
+            payment_method_closing = {}
         res = super().close_session_from_ui(payment_method_closing)
         if not res.get("status"):
             return res
