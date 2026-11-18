@@ -1,3 +1,4 @@
+from odoo import Command
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 from odoo.exceptions import ValidationError
@@ -80,19 +81,16 @@ class TestAccountFiscalyearClosing(TransactionCase):
             self.fyc.draft_moves_check()
 
     def test_calculate(self):
-        move = self.env["account.move"].create({
+        # Odoo 20 neither creates a move already posted nor an unbalanced one: a
+        # balanced draft move is enough for what is checked here.
+        self.env["account.move"].create({
             "company_id": self.company.id,
-            "state": "posted",
             "date": "2025-06-01",
             "journal_id": self.journal.id,
-        })
-        self.env["account.move.line"].create({
-            "move_id": move.id,
-            "account_id": self.account_income.id,
-            "debit": 100,
-            "credit": 0,
-            "company_id": self.company.id,
-            "date": "2025-06-01",
+            "line_ids": [
+                Command.create({"account_id": self.account_income.id, "debit": 100, "credit": 0}),
+                Command.create({"account_id": self.account_equity.id, "debit": 0, "credit": 100}),
+            ],
         })
         self.fyc.move_config_ids = [(6, 0, [self.config.id])]
         self.fyc.check_draft_moves = False
@@ -101,23 +99,18 @@ class TestAccountFiscalyearClosing(TransactionCase):
 
     def test_move_line_prepare(self):
         # Simula líneas de cuenta
+        # Odoo 20 neither creates a move already posted nor an unbalanced one: a
+        # balanced draft move is enough for what is checked here.
         move = self.env["account.move"].create({
             "company_id": self.company.id,
-            "state": "posted",
             "date": "2025-06-01",
             "journal_id": self.journal.id,
+            "line_ids": [
+                Command.create({"account_id": self.account_income.id, "debit": 100, "credit": 0}),
+                Command.create({"account_id": self.account_equity.id, "debit": 0, "credit": 100}),
+            ],
         })
-        line = self.env["account.move.line"].create({
-            "move_id": move.id,
-            "account_id": self.account_income.id,
-            "debit": 100,
-            "credit": 0,
-            "company_id": self.company.id,
-            "date": "2025-06-01",
-            "foreign_debit": 0,
-            "foreign_credit": 0,
-            "foreign_currency_id": self.env.ref("base.VEF").id,
-        })
+        line = move.line_ids.filtered(lambda l: l.account_id == self.account_income)
         balance, move_line, rate = self.mapping.move_line_prepare(self.account_income, self.env["account.move.line"].browse([line.id]))
         self.assertIsInstance(move_line, dict)
         self.assertIsInstance(balance, (int, float))
