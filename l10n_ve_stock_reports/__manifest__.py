@@ -8,7 +8,7 @@
     "website": "https://www.binauraldev.com",
     "category": "Stock / Inventory",
     "version": "20.0.1.0.0",
-    "depends": ["stock", "account","sale_stock"],
+    "depends": ["stock", "account", "sale_stock", "l10n_ve_stock_account"],
     "data": [
         "wizard/stock_book_report.xml",
         'security/ir.access.csv',
