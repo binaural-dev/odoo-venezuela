@@ -34,6 +34,41 @@ patch(OrderPaymentValidation.prototype, {
     return super.shouldDownloadInvoice(...arguments);
   },
 
+  /**
+   * Un pago con código fiscal de divisa (20-24) sin IGTF haría que la
+   * máquina anule la factura: se frena aquí, antes de imprimir, y el cajero
+   * sigue en la pantalla de pago para cobrar con otro método. En
+   * finalizeValidation ya es tarde: el core navega al recibo aunque devuelva
+   * false. get_data_invoice repite el chequeo para "Imprimir pedido
+   * pendiente". #85447
+   */
+  async isOrderValid(isForceValidate) {
+    if (!(await super.isOrderValid(...arguments))) {
+      return false;
+    }
+    const pos = this.pos;
+    if (!pos._mfOrderGoesToFiscalPrinter(this.order)) {
+      return true;
+    }
+    const payment = pos._mfFindForeignCodeWithoutIgtfPayment(this.order);
+    if (!payment) {
+      return true;
+    }
+    const method = payment.payment_method_id;
+    pos.dialog.add(AlertDialog, {
+      title: _t("Fiscal printer error"),
+      body: _t(
+        "The payment method “%(method)s” has a foreign currency fiscal code (%(code)s) " +
+          "without IGTF, so the fiscal printer would void the invoice. Charge it with " +
+          "another payment method and ask the administrator to fix this one (local " +
+          "currency code 01-19 or “Apply IGTF”): it can only be changed with the register " +
+          "sessions closed.",
+        { method: method.name, code: method.code_fiscal_printer }
+      ),
+    });
+    return false;
+  },
+
   async finalizeValidation() {
     const order = this.order;
     const pos = this.pos;
@@ -53,7 +88,7 @@ patch(OrderPaymentValidation.prototype, {
     }
 
     // 2. Imprimir en máquina fiscal (offline - no requiere internet)
-    if (pos.useFiscalMachine() && !order.mf_invoice_number) {
+    if (pos._mfOrderGoesToFiscalPrinter(order)) {
       console.info("MF:: Iniciando impresión fiscal");
       try {
         const response = await pos.pushToMF(order);

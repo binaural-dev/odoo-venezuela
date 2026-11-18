@@ -183,14 +183,144 @@ class PosOrderInherit(models.Model):
             return False
         if not order.mf_print_verification:
             return True
-        if resolved["printed"] and not order.mf_invoice_number:
-            order.write_mf_invoice_data(
-                number,
-                resolved.get("serial") or False,
-                resolved.get("reportZ") or False,
-            )
+        serial = resolved.get("serial") or False
+        reportz = resolved.get("reportZ") or False
+        kept_number = order.mf_invoice_number
+        if resolved["printed"] and not kept_number:
+            order.write_mf_invoice_data(number, serial, reportz)
+        order._mf_log_print_verification(
+            order.mf_print_verification,
+            resolved["printed"],
+            number,
+            serial,
+            reportz,
+            kept_number=kept_number,
+        )
         order.mf_print_verification = False
         return True
+
+    def _mf_log_print_verification(
+        self,
+        verification,
+        printed,
+        number=False,
+        serial=False,
+        reportz=False,
+        manual=False,
+        kept_number=False,
+    ):
+        """Deja en el chatter quién resolvió un pedido por verificar, cómo y
+        con qué foto de la máquina: la foto se pierde al quitar la marca, y
+        "no emitido" es justo lo que habilita volver a imprimir. Tarea 85447.
+
+        :param kept_number: número fiscal que el pedido ya tenía y conserva
+        """
+        self.ensure_one()
+        before = (verification or {}).get("before") or {}
+        if kept_number and printed and self._mf_same_fiscal_number(kept_number, number):
+            kept_number = False
+        if kept_number and printed:
+            result = _(
+                "the fiscal printer reported number %(number)s, but the order already had the "
+                "fiscal number %(kept)s and keeps it",
+                number=number,
+                kept=kept_number,
+            )
+        elif kept_number:
+            result = _(
+                "the fiscal printer did not print it, and the order keeps the fiscal number "
+                "%(kept)s it already had",
+                kept=kept_number,
+            )
+        elif printed:
+            result = _(
+                "the fiscal printer printed it as number %(number)s (fiscal printer %(serial)s, "
+                "Z report %(reportz)s)",
+                number=number,
+                serial=serial or "-",
+                reportz=reportz or "-",
+            )
+        else:
+            result = _("the fiscal printer did not print it, so the order is pending to invoice")
+        if manual:
+            body = _(
+                "Fiscal print resolved manually: %(result)s. Reading of the fiscal printer "
+                "before the print: last number %(number)s, fiscal printer %(serial)s, Z counter "
+                "%(closures)s.",
+                result=result,
+                number=before.get("number", "-"),
+                serial=before.get("serial") or "-",
+                closures=before.get("dailyClosureCounter", "-"),
+            )
+        else:
+            body = _(
+                "Fiscal print verified by the PoS with the fiscal printer: %(result)s. Reading of "
+                "the fiscal printer before the print: last number %(number)s, fiscal printer "
+                "%(serial)s, Z counter %(closures)s.",
+                result=result,
+                number=before.get("number", "-"),
+                serial=before.get("serial") or "-",
+                closures=before.get("dailyClosureCounter", "-"),
+            )
+        # sudo: el cajero escribe el pedido con sus permisos, pero publicar
+        # en el chatter lee la compañía (alias de correo). Autor: quien resolvió.
+        self.sudo().message_post(body=body, author_id=self.env.user.partner_id.id)
+
+    @api.model
+    def _mf_same_fiscal_number(self, first, second):
+        """Mismo número fiscal por su valor: "00000505" es el 505."""
+        first, second = str(first or "").strip(), str(second or "").strip()
+        if first.isascii() and first.isdigit() and second.isascii() and second.isdigit():
+            return int(first) == int(second)
+        return first == second
+
+    def _mf_fiscal_document_type(self):
+        """Tipo de documento fiscal del pedido: la máquina numera aparte las
+        facturas y las notas de crédito. Tarea 85447."""
+        self.ensure_one()
+        is_refund = self.amount_total < 0 or any(self.lines.mapped("refunded_orderline_id"))
+        return "credit_note" if is_refund else "invoice"
+
+    def _mf_fiscal_number_owner(self, number, serial, doc_type):
+        """Otro pedido o factura que ya tiene ese número fiscal en esa máquina,
+        para el mismo tipo de documento (facturas, notas de crédito y de débito
+        llevan contadores separados). Compara el valor del número: "00000101"
+        es el 101. Tarea 85447.
+
+        :return: el nombre del documento, o False si el número está libre
+        """
+        self.ensure_one()
+        value = int(number)
+        pattern = f"%{value}"
+        # sudo: el número es único por máquina en toda la base, y el gerente
+        # puede no ver los pedidos ni los asientos de otras cajas.
+
+        def same_number(other):
+            other = (other or "").strip()
+            return other.isascii() and other.isdigit() and int(other) == value
+
+        orders = self.sudo().search(
+            [
+                ("id", "!=", self.id),
+                ("fiscal_machine", "=", serial),
+                ("mf_invoice_number", "=like", pattern),
+            ]
+        )
+        for other in orders:
+            if same_number(other.mf_invoice_number) and other._mf_fiscal_document_type() == doc_type:
+                return other.display_name
+        moves = self.env["account.move"].sudo().search(
+            [
+                ("id", "not in", self.account_move.ids),
+                ("move_type", "in", ("out_invoice", "out_refund")),
+                ("mf_serial", "=", serial),
+                ("mf_invoice_number", "=like", pattern),
+            ]
+        )
+        for move in moves:
+            if same_number(move.mf_invoice_number) and move._mf_fiscal_document_type() == doc_type:
+                return move.display_name
+        return False
 
     def action_mf_resolve_print_verification(self):
         """Abre el asistente para resolver a mano un pedido por verificar."""

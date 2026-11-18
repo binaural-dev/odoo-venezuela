@@ -24,6 +24,17 @@ class AccountMoveInh(models.Model):
         string="Report number Z", default=False, copy=False, tracking=True
     )
 
+    def _mf_fiscal_document_type(self):
+        """Tipo de documento fiscal: la máquina numera aparte facturas, notas
+        de crédito y notas de débito. Tarea 85447."""
+        self.ensure_one()
+        if self.move_type == "out_refund":
+            return "credit_note"
+        is_debit = ("is_debit_journal" in self._fields and self.is_debit_journal) or (
+            "debit_origin_id" in self._fields and self.debit_origin_id
+        )
+        return "debit_note" if is_debit else "invoice"
+
     @api.depends("sales_book_type")
     def _compute_sales_book_type(self):
         for record in self:

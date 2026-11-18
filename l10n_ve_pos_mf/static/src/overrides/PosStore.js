@@ -97,6 +97,15 @@ patch(PosStore.prototype, {
     return Boolean(fiscalPrinter && fiscalPrinter.isConnected);
   },
 
+  /**
+   * Si la orden va a la máquina fiscal al validar el pago. Gancho para los
+   * módulos que sacan órdenes de la impresión fiscal (por ejemplo, las
+   * órdenes operativas de binaural_operative_pos_mf). #85447
+   */
+  _mfOrderGoesToFiscalPrinter(order) {
+    return this.useFiscalMachine() && !order.mf_invoice_number;
+  },
+
   _sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
   },
@@ -709,6 +718,8 @@ patch(PosStore.prototype, {
   },
 
   async _mfResolvePrintVerificationQueue() {
+    // Por qué se frenó la última impresión (ver _mfVerificationBlockedMessage).
+    this._mfVerificationBlockReason = null;
     const fiscalPrinter = this.getFiscalPrinter();
     const entries = PrintVerificationQueue.getAll();
     if (!entries.length || !fiscalPrinter?.isConnected || !fiscalPrinter.verifyDocument) {
@@ -730,7 +741,10 @@ patch(PosStore.prototype, {
           result = { printed: null, reason: "unattributable" };
         }
         if (result?.printed !== true && result?.printed !== false) {
-          if (result?.reason === "no_response") {
+          // Sin respuesta, o con una NC/ND abierta que el "7" no cerró: la
+          // máquina tampoco podría imprimir el documento nuevo.
+          if (result?.reason === "no_response" || result?.reason === "document_open") {
+            this._mfVerificationBlockReason = result.reason;
             return false;
           }
           if (result?.reason === "other_printer") {
@@ -760,6 +774,35 @@ patch(PosStore.prototype, {
       }
     }
     return true;
+  },
+
+  /**
+   * Aviso cuando la verificación de un pedido anterior frena la impresión:
+   * con un documento abierto hay que reiniciar la máquina, no revisar el
+   * cable. #85447
+   * @param {boolean} [retry] - Botón de pedidos pendientes: se reintenta a mano
+   */
+  _mfVerificationBlockedMessage(retry = false) {
+    if (this._mfVerificationBlockReason === "document_open") {
+      return retry
+        ? _t(
+            "The fiscal printer has a document open that it could not close while verifying " +
+              "a previous order. Restart the fiscal printer and try again."
+          )
+        : _t(
+            "The fiscal printer has a document open that it could not close while verifying " +
+              "a previous order. Restart the fiscal printer. This order was not printed and " +
+              "stays pending."
+          );
+    }
+    return retry
+      ? _t(
+          "The fiscal printer did not respond while verifying a previous order. Try again when it responds."
+        )
+      : _t(
+          "The fiscal printer did not respond while verifying a previous order. " +
+            "This order was not printed and stays pending."
+        );
   },
 
   _mfOrderLabel(uuid) {
@@ -832,10 +875,7 @@ patch(PosStore.prototype, {
       if (!canPrint) {
         throw {
           valid: false,
-          message: _t(
-            "The fiscal printer did not respond while verifying a previous order. " +
-              "This order was not printed and stays pending."
-          ),
+          message: this._mfVerificationBlockedMessage(),
           printer_connection: true,
         };
       }
@@ -914,14 +954,24 @@ patch(PosStore.prototype, {
     } catch (err) {
       console.error("MF error: ", err);
 
-      if (err.valid === false) {
+      if (err?.valid === false) {
         this._mfShowError(
           _t("Error de Máquina Fiscal"),
           _t(err.message || "Error interno de la máquina fiscal")
         );
+        return err;
       }
 
-      return err;
+      // Un error inesperado (por ejemplo, al armar los datos de la factura)
+      // también se avisa: la venta sigue y queda pendiente por facturar, y
+      // el cajero tiene que saberlo antes del cierre. #85447
+      const message = _t(
+        "Unexpected error while printing on the fiscal printer. The order stays pending " +
+          "to invoice. Detail: %(error)s",
+        { error: err?.message || String(err) }
+      );
+      this._mfShowError(_t("Error de Máquina Fiscal"), message);
+      return { valid: false, message, printer_connection: true };
     }
   },
 
