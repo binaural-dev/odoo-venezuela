@@ -725,9 +725,16 @@ class AccountMove(models.Model):
                 rate_date = move.date or fields.Date.context_today(move)
             else:
                 rate_date = move.invoice_date or move.date or fields.Date.context_today(move)
-            rate_values = Rate.compute_rate(move.foreign_currency_id.id, rate_date)
+            # A move with a manually set rate keeps it (e.g. the depreciation moves of an
+            # asset, dated at future month ends that have no rate yet): the lookup is only
+            # to compare and post a message, so a date without a rate must not stop it.
+            rate_values = Rate.compute_rate(
+                move.foreign_currency_id.id,
+                rate_date,
+                raise_if_not_found=not move.manually_set_rate,
+            )
             last_foreign_rate = rate_values.get("foreign_rate", 0)
-            if move.manually_set_rate and float_compare(
+            if move.manually_set_rate and rate_values and float_compare(
                 move.foreign_rate, last_foreign_rate, precision_digits=precision
             ):
                 move.message_post(
