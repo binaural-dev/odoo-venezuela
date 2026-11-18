@@ -105,10 +105,14 @@ class ResPartner(models.Model):
         """Keeps the withholding type coherent with the taxpayer type (ticket 16339):
 
         - A special taxpayer gets the 75% withholding type by default.
-        - Any other taxpayer type has no withholding type.
-        The withholding type is only handled for partners that are not suppliers:
-        the IVA retentions of a supplier read it whatever its taxpayer type is, so
-        it is neither defaulted nor cleared for them.
+        - Any other taxpayer type has no withholding type, but it is only cleared
+          for a partner that is a customer and not a supplier.
+        The IVA retentions of a supplier read the withholding type whatever its
+        taxpayer type is, so it is never defaulted nor cleared for them. A partner
+        that is neither a customer nor a supplier yet (a new contact created from
+        the contacts app, a purchase order or a vendor bill: ``supplier_rank`` is
+        only raised when its first invoice is posted) keeps the field as it is, so
+        a supplier is never left without a way to fill it.
         The partner of a company is left as it is: its withholding type comes from
         the company configuration.
         """
@@ -124,5 +128,5 @@ class ResPartner(models.Model):
             if partner.taxpayer_type == "special":
                 if not partner.withholding_type_id and withholding_75:
                     partner.withholding_type_id = withholding_75
-            else:
+            elif partner.customer_rank > 0:
                 partner.withholding_type_id = False
