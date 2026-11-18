@@ -18,8 +18,15 @@ class AccountMoveLine(models.Model):
         return company.foreign_currency_id.round((self.debit - self.credit) / rate)
 
     def _get_depreciation_manual_rate(self):
-        """Tasa (Bs por divisa alterna) manual de la cuota de depreciación a la que
-        pertenece la línea, o 0.0 si debe usarse la tasa del día."""
+        """Tasa manual de la cuota de depreciación a la que pertenece la línea, o 0.0 si
+        debe usarse la tasa del día.
+
+        ``foreign_rate`` es siempre unidades de la moneda de la compañía por unidad de la
+        alterna (``compute_rate`` usa el ``inverse_company_rate`` de la alterna), sea esta
+        USD o VEF, así que el valor alterno es siempre ``balance / foreign_rate``. No se usa
+        ``foreign_inverse_rate`` (truncado a 6 decimales en el activo) ni se infiere la
+        orientación con ``max()``, que solo acertaba con alterna USD.
+        """
         move = self.move_id
         seen = set()
         while move.reversed_entry_id and move.id not in seen:
@@ -31,4 +38,4 @@ class AccountMoveLine(models.Model):
             and move.manually_set_rate
         ):
             return 0.0
-        return max(abs(move.foreign_rate), abs(move.foreign_inverse_rate))
+        return abs(move.foreign_rate or 0.0)
