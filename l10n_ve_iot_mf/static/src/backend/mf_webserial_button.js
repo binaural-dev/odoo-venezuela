@@ -74,6 +74,38 @@ export class MfWebSerialButtonComponent extends Component {
     }
 
     /**
+     * Ejecuta `fn` avisando en pantalla cada reintento de lectura de S1
+     * (la espera crece: 1 s, 5 s, 10 s, 15 s). Mantiene un solo aviso
+     * visible a la vez y lo cierra al terminar.
+     */
+    async withS1RetryNotice(driver, fn) {
+        let closeNotice = null;
+        const previous = driver.onS1Retry;
+        driver.onS1Retry = ({ attempt, attempts, delayMs }) => {
+            if (closeNotice) {
+                closeNotice();
+            }
+            const seconds = Math.round(delayMs / 1000);
+            closeNotice = this.notification.add(
+                _t("La máquina fiscal aún no entrega los datos del documento. Reintentando en %(seconds)s s (intento %(attempt)s de %(attempts)s)...", {
+                    seconds,
+                    attempt,
+                    attempts,
+                }),
+                { title: _t("Máquina Fiscal"), type: "warning", sticky: true }
+            );
+        };
+        try {
+            return await fn();
+        } finally {
+            driver.onS1Retry = previous;
+            if (closeNotice) {
+                closeNotice();
+            }
+        }
+    }
+
+    /**
      * Extrae un mensaje legible de un error RPC/JS.
      */
     errorMessage(error) {
@@ -181,14 +213,14 @@ export class MfWebSerialButtonComponent extends Component {
         let response;
         let before = null;
         try {
-            response = await driver.withConnection(async () => {
+            response = await this.withS1RetryNotice(driver, () => driver.withConnection(async () => {
                 // Foto de S1 antes de imprimir: si luego no se puede leer S1,
                 // permite saber qué número le asignó la máquina (ticket 16293).
                 // Si falla, se imprime igual: es solo un respaldo.
                 const s1Before = await driver.readFiscalState();
                 before = s1Before.success ? toS1Values(s1Before.data) : null;
                 return driver[driverMethod](order);
-            });
+            }));
         } catch (error) {
             this.notifyError(this.errorMessage(error));
             const kind = error?.name === "FiscalPrinterBusyError" ? "no_connection" : false;
@@ -251,7 +283,9 @@ export class MfWebSerialButtonComponent extends Component {
         this.notifyInfo(_t("Leyendo los datos de la máquina fiscal, por favor espere..."));
         let s1Result;
         try {
-            s1Result = await driver.withConnection(() => driver.readFiscalState());
+            s1Result = await this.withS1RetryNotice(driver, () =>
+                driver.withConnection(() => driver.readFiscalState())
+            );
         } catch (error) {
             this.notifyError(this.errorMessage(error));
             return;

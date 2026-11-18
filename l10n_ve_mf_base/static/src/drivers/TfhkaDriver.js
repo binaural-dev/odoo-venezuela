@@ -102,9 +102,14 @@ export class TfhkaDriver {
         this.lastConnectFailure = null;
         // Reintentos de la lectura de S1 (ticket 16293): tras el cierre de un
         // documento la impresora puede seguir imprimiendo (matricial) y
-        // devolver bytes que no forman una trama válida.
-        this.s1ReadAttempts = 4;
-        this.s1RetryDelay = 1000; // ms
+        // devolver bytes que no forman una trama válida. La espera crece en
+        // cada reintento para darle tiempo a terminar: 1 s, 5 s, 10 s, 15 s
+        // (5 intentos en total).
+        this.s1RetryDelays = [1000, 5000, 10000, 15000]; // ms
+        // Aviso opcional de cada reintento de S1, para que la interfaz
+        // informe al usuario mientras espera:
+        // ({ attempt, attempts, delayMs, error }) => void
+        this.onS1Retry = null;
     }
 
     _setActivity(activity) {
@@ -732,19 +737,30 @@ export class TfhkaDriver {
      * S1 es una consulta: reenviarla no emite ni altera ningún documento.
      *
      * @param {Object} [options]
-     * @param {number} [options.attempts] - Intentos (por defecto this.s1ReadAttempts)
-     * @param {number} [options.retryDelay] - Espera entre intentos en ms
+     * @param {number[]} [options.retryDelays] - Espera antes de cada
+     *   reintento, en ms (por defecto this.s1RetryDelays). Intentos totales:
+     *   retryDelays.length + 1.
      * @returns {Promise<{success: boolean, data: Object|null, error: string}>}
      */
-    async _readS1Data({ attempts = null, retryDelay = null } = {}) {
-        const maxAttempts = Math.max(1, attempts ?? this.s1ReadAttempts ?? 1);
-        const delay = retryDelay ?? this.s1RetryDelay ?? 0;
+    async _readS1Data({ retryDelays = null } = {}) {
+        const delays = retryDelays ?? this.s1RetryDelays ?? [];
+        const maxAttempts = delays.length + 1;
         let lastError = "No se pudo leer S1";
 
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
             if (attempt > 1) {
-                console.warn(`TfhkaDriver:: S1 inválido (${lastError}), reintento ${attempt}/${maxAttempts}`);
-                await new Promise((resolve) => setTimeout(resolve, delay));
+                const delayMs = delays[attempt - 2] || 0;
+                console.warn(
+                    `TfhkaDriver:: S1 inválido (${lastError}), reintento ${attempt}/${maxAttempts} en ${delayMs} ms`
+                );
+                if (typeof this.onS1Retry === "function") {
+                    try {
+                        this.onS1Retry({ attempt, attempts: maxAttempts, delayMs, error: lastError });
+                    } catch (error) {
+                        console.warn("TfhkaDriver:: onS1Retry falló", error);
+                    }
+                }
+                await new Promise((resolve) => setTimeout(resolve, delayMs));
             }
 
             const response = await this.sendCommand("S1", 5000, false);
