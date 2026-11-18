@@ -181,6 +181,22 @@ class TfhkaApiClient(models.AbstractModel):
             self._log_call(company, endpoint_key, payload, origin, None, str(e), False)
             raise UserError(_("Error connecting to the API: %(error)s", error=e))
 
+    def authenticate(self, company, payload):
+        """POST /Autenticacion. Único punto de salida HTTP para el login de
+        company -- antes vivía directamente en
+        ``res.company.generate_token_tfhka`` con su propio ``requests.post``,
+        sin pasar por este cliente. Transporte puro: devuelve la
+        ``Response`` cruda, la interpretación de negocio (guardar el token,
+        loguear el intento) sigue en ``res.company`` porque usa
+        ``_log_tfhka_auth_call``."""
+        url = f"{self._base_url(company)}/Autenticacion"
+        try:
+            return requests.post(url, json=payload, timeout=TFHKA_TIMEOUT)
+        except requests.exceptions.RequestException as e:
+            _logger.error("Error connecting to the TFHKA API: %s", e)
+            company._log_tfhka_auth_call(payload, None, str(e), False)
+            raise ValidationError(_("Error connecting to the TFHKA API: %s", e)) from e
+
     # ------------------------------------------------------------------
     # Endpoints
     # ------------------------------------------------------------------

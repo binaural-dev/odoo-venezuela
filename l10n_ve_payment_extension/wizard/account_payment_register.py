@@ -59,11 +59,28 @@ class AccountPaymentRegister(models.TransientModel):
             self.group_payment = False
         self.journal_id = self.env.company.iva_customer_retention_journal_id.id
         self.edit_retention_fields = False
-        move_ids = self._context.get("active_ids", [])
-        invoices = self.env["account.move"].browse(move_ids)
+        invoices = self._get_context_invoices()
 
         lines = self._load_iva_retention_lines(invoices)
         return lines
+
+    def _get_context_invoices(self):
+        """
+        Resolve the invoices to load the retention lines from.
+
+        Reuses the wizard's own line_ids (already filtered by the base wizard's
+        _get_batches to posted invoices/receipts with an open receivable/payable line),
+        so the retention lines are only loaded for the invoices that are actually being
+        paid, regardless of what else was selected alongside them.
+
+        Returns
+        -------
+        recordset of account.move
+            The invoices linked to the wizard's line_ids.
+        """
+        return self.line_ids._origin.move_id.filtered(
+            lambda m: m.is_invoice(include_receipts=True)
+        )
 
     def _load_iva_retention_lines(self, invoices):
         """

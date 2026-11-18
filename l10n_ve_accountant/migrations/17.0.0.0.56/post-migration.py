@@ -71,10 +71,10 @@ def _do_sql_rounding(cr, company, precision, state_filter, excluded_move_ids=())
         SET foreign_price = ROUND(l.foreign_price, %(prec)s),
             foreign_subtotal = ROUND(l.foreign_subtotal, %(prec)s),
             foreign_price_total = ROUND(l.foreign_price_total, %(prec)s),
-            foreign_debit = ROUND(l.foreign_debit, %(prec)s),
-            foreign_credit = ROUND(l.foreign_credit, %(prec)s),
-            foreign_balance = ROUND(l.foreign_debit, %(prec)s)
-                            - ROUND(l.foreign_credit, %(prec)s),
+            foreign_debit = ROUND(COALESCE(l.foreign_debit, 0.0), %(prec)s),
+            foreign_credit = ROUND(COALESCE(l.foreign_credit, 0.0), %(prec)s),
+            foreign_balance = ROUND(COALESCE(l.foreign_debit, 0.0), %(prec)s)
+                            - ROUND(COALESCE(l.foreign_credit, 0.0), %(prec)s),
             foreign_debit_adjustment = ROUND(l.foreign_debit_adjustment, %(prec)s),
             foreign_credit_adjustment = ROUND(l.foreign_credit_adjustment, %(prec)s),
             foreign_amount_residual = ROUND(l.foreign_amount_residual, %(prec)s),
@@ -207,7 +207,8 @@ def _check_and_fix_balance(cr, company, precision, state_filter, excluded_move_i
         # keep foreign_balance consistent with the adjusted debit/credit
         cr.execute("""
             UPDATE account_move_line l
-            SET foreign_balance = ROUND(l.foreign_debit - l.foreign_credit, %(prec)s)
+            SET foreign_balance = ROUND(COALESCE(l.foreign_debit, 0.0)
+                                        - COALESCE(l.foreign_credit, 0.0), %(prec)s)
             WHERE l.move_id = %(move_id)s
         """, row_params)
         _logger.info("    Repaired move %s (delta=%.2f)", name, delta)
@@ -246,10 +247,10 @@ def _round_reconciled_lines(cr, company, fc_precision, move_ids):
         SET foreign_price = ROUND(l.foreign_price, %(prec)s),
             foreign_subtotal = ROUND(l.foreign_subtotal, %(prec)s),
             foreign_price_total = ROUND(l.foreign_price_total, %(prec)s),
-            foreign_debit = ROUND(l.foreign_debit, %(prec)s),
-            foreign_credit = ROUND(l.foreign_credit, %(prec)s),
-            foreign_balance = ROUND(l.foreign_debit, %(prec)s)
-                            - ROUND(l.foreign_credit, %(prec)s),
+            foreign_debit = ROUND(COALESCE(l.foreign_debit, 0.0), %(prec)s),
+            foreign_credit = ROUND(COALESCE(l.foreign_credit, 0.0), %(prec)s),
+            foreign_balance = ROUND(COALESCE(l.foreign_debit, 0.0), %(prec)s)
+                            - ROUND(COALESCE(l.foreign_credit, 0.0), %(prec)s),
             foreign_debit_adjustment = ROUND(l.foreign_debit_adjustment, %(prec)s),
             foreign_credit_adjustment = ROUND(l.foreign_credit_adjustment, %(prec)s)
         FROM account_move m
