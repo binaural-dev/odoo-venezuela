@@ -699,9 +699,6 @@ class AccountMoveLine(models.Model):
         if not debit_line or not credit_line or not (res or {}).get('partial_values'):
             return res
 
-        # Ver openspec: design-notes.md § _prepare_reconciliation_single_partial
-        exchange_date = self._get_alt_exchange_date(debit_line, credit_line, exchange_values)
-
         # Prefer the invoice side as rate source (core's own convention);
         # fall back to the earlier-dated side when neither is an invoice.
         # Ver openspec: design-notes.md § _prepare_reconciliation_single_partial
@@ -743,6 +740,10 @@ class AccountMoveLine(models.Model):
         if not alt_diff:
             return res
 
+        # Only now that there is an entry to make: dating it asks for the
+        # exchange journal, which a module may require for this pair.
+        # Ver openspec: design-notes.md § _prepare_reconciliation_single_partial
+        exchange_date = self._get_alt_exchange_date(debit_line, credit_line, exchange_values)
         self._queue_standalone_foreign_exchange_difference(rate_source, counterpart, alt_diff, exchange_date)
         return res
 
