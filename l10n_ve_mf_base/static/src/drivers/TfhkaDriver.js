@@ -1662,7 +1662,9 @@ export class TfhkaDriver {
      *     `reason`: "no_response" (la máquina no respondió el estado o S1:
      *     se puede reintentar), "other_printer" (S1 es de otra máquina) o
      *     "unattributable" (se emitió algo más, los contadores no cuadran o
-     *     S1 vino sin el contador del documento: solo se resuelve a mano).
+     *     S1 vino sin el contador del documento: solo se resuelve a mano) o
+     *     "document_open" (una NC o ND sigue abierta después del "7": se
+     *     reintenta como "no_response").
      */
     async _printWithOutcome(docType, print, decorate = (response) => response) {
         const snapshot = this.isConnected ? await this._readDocumentSnapshot(docType) : null;
@@ -1697,6 +1699,21 @@ export class TfhkaDriver {
      * @returns {Promise<Object>} Igual que `_printWithOutcome`
      */
     async verifyDocument(verification) {
+        if (
+            !verification?.before ||
+            typeof verification.paymentSent !== "boolean" ||
+            typeof verification.closeAcked !== "boolean" ||
+            !(verification.docType in TfhkaDriver.DOCUMENT_NUMBER_FIELDS)
+        ) {
+            // Datos dañados: sin `paymentSent` o `closeAcked` la comparación
+            // podría concluir "no impreso", y eso habilita reimprimir. Va a
+            // revisión manual.
+            return this._outcomeResponse({ printed: null, reason: "unattributable" }, verification || {}, {
+                success: false,
+                data: "",
+                error: "",
+            });
+        }
         if (!this.isConnected) {
             return {
                 success: false,
@@ -1779,7 +1796,15 @@ export class TfhkaDriver {
         if (this._isTransactionState(status.raw?.sts1)) {
             // Quedó abierto: "7" lo anula si no hubo pagos y lo termina como
             // válido si los hubo. Lo que haya pasado se mide con S1.
-            await this.abortTransaction();
+            const closed = await this.abortTransaction();
+            if (!closed && verification.docType !== "invoice") {
+                // Sigue abierto. Que S1 ya cuente el documento abierto está
+                // medido solo para facturas: con una NC o ND, "mismo número"
+                // no prueba que no se emitió. Se reintenta antes de la
+                // siguiente impresión, que tampoco podría salir con el
+                // documento abierto (el PdV lo trata como `no_response`).
+                return { printed: null, reason: "document_open", s1: null };
+            }
         }
         const s1 = await this._readS1Data();
         if (!s1.success) {
