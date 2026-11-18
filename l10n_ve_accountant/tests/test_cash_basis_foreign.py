@@ -166,11 +166,13 @@ class TestCashBasisForeign(TransactionCase):
     # ------------------------------------------------------------------
     def _make_invoice(self):
         """Factura creada como la crearia un usuario: con Form."""
+        # En 20 el formulario oculta el diario en cuanto hay contacto: va por contexto.
         form = Form(
-            self.env["account.move"].with_context(default_move_type="out_invoice")
+            self.env["account.move"].with_context(
+                default_move_type="out_invoice", default_journal_id=self.sale_journal.id
+            )
         )
         form.partner_id = self.partner
-        form.journal_id = self.sale_journal
         form.currency_id = self.usd
         form.invoice_date = self.today
         with form.invoice_line_ids.new() as line:
@@ -365,11 +367,13 @@ class TestCashBasisForeign(TransactionCase):
         self.partner.property_account_position_id = government_fp
         self.product.taxes_id = immediate_tax
 
+        # En 20 el formulario oculta el diario en cuanto hay contacto: va por contexto.
         form = Form(
-            self.env["account.move"].with_context(default_move_type="out_invoice")
+            self.env["account.move"].with_context(
+                default_move_type="out_invoice", default_journal_id=self.sale_journal.id
+            )
         )
         form.partner_id = self.partner
-        form.journal_id = self.sale_journal
         form.currency_id = self.usd
         form.invoice_date = self.today
         with form.invoice_line_ids.new() as line:

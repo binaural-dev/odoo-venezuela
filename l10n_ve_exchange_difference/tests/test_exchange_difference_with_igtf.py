@@ -2,6 +2,7 @@ from odoo import Command, fields
 from odoo.exceptions import ValidationError
 from odoo.tests import Form, tagged
 from odoo.tests.common import TransactionCase
+from odoo.addons.l10n_ve_rate.tests.common import ensure_daily_rates
 
 
 @tagged("l10n_ve_exchange_difference", "-at_install", "post_install")
@@ -58,6 +59,15 @@ class TestExchangeDifferenceWithIGTF(TransactionCase):
                 }),
             ],
         })
+        # La tasa de mañana, para que el pago con fecha futura se rechace por la fecha
+        # (lo que verifica la prueba) y no antes por falta de tasa. Solo ese día: otras
+        # pruebas crean sus propias tasas (2014 a 2016).
+        ensure_daily_rates(
+            self.env,
+            self.currency_usd,
+            self.company,
+            dates=[fields.Date.add(fields.Date.context_today(self.env.user), days=1)],
+        )
 
         self.company.write({
             "currency_id": self.currency_vef.id,
