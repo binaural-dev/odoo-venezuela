@@ -131,3 +131,9 @@ msgid ""
 "The move could not be posted for the following reason: %(error_message)s"
 msgstr ""
 "El asiento no se puede publicar debido al siguiente motivo: %(error_message)s"
+
+#. module: l10n_ve_accountant_asset
+#. odoo-python
+#: code:addons/l10n_ve_accountant_asset/models/account_asset.py:0
+msgid "The remaining value on the last depreciation line must be 0"
+msgstr "El valor restante en la última línea de depreciación debe ser 0"
