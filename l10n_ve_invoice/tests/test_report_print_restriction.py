@@ -2,6 +2,7 @@ from odoo.tests import TransactionCase, tagged
 from odoo import fields, Command
 from odoo.exceptions import UserError
 from unittest.mock import patch
+from odoo.addons.l10n_ve_rate.tests.common import ensure_daily_rates
 
 
 @tagged("post_install", "-at_install", "l10n_ve_invoice")
@@ -12,6 +13,7 @@ class TestReportPrintRestriction(TransactionCase):
         self.company = self.env.user.company_id
         self.company.currency_id = self.env.ref('base.VEF')
         self.company.foreign_currency_id = self.env.ref('base.USD')
+        ensure_daily_rates(self.env, self.env.ref("base.USD"), self.company)
 
         self.account_receivable = self.env['account.account'].create({
             'name': 'Receivable', 'code': '1111111',
