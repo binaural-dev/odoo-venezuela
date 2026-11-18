@@ -1780,10 +1780,12 @@ class TestExchangeNoteReversal(ExchangeNoteCommon):
         supplier.property_product_pricelist = False
 
         self.company.quick_edit_mode = "in_invoices"
-        with Form(self.env["account.move"].with_context(default_move_type="in_invoice")) as bill_form:
+        # En 20 el formulario oculta el diario en cuanto hay contacto: va por contexto.
+        with Form(self.env["account.move"].with_context(
+            default_move_type="in_invoice", default_journal_id=self.purchase_journal.id
+        )) as bill_form:
             bill_form.partner_id = supplier
             bill_form.invoice_date = "2026-01-01"
-            bill_form.journal_id = self.purchase_journal
             bill_form.name = "BILL-GUARD-0001"
             bill_form.correlative = "00-00000002"
             with bill_form.invoice_line_ids.new() as line:
@@ -1793,10 +1795,11 @@ class TestExchangeNoteReversal(ExchangeNoteCommon):
         bill = bill_form.save()
         bill.with_context(move_action_post_alert=True).action_post()
 
-        with Form(self.env["account.move"].with_context(default_move_type="in_refund")) as cn_form:
+        with Form(self.env["account.move"].with_context(
+            default_move_type="in_refund", default_journal_id=self.purchase_journal.id
+        )) as cn_form:
             cn_form.partner_id = supplier
             cn_form.invoice_date = "2026-01-15"
-            cn_form.journal_id = self.purchase_journal
             cn_form.name = "BILLCN-GUARD-0001"
             cn_form.correlative = "00-00000003"
             with cn_form.invoice_line_ids.new() as line:
@@ -2446,10 +2449,12 @@ class TestExchangeNoteReversal(ExchangeNoteCommon):
         # valor de contexto) -- hay que activarlo a nivel de compañía para
         # las facturas de proveedor.
         self.company.quick_edit_mode = "in_invoices"
-        with Form(self.env["account.move"].with_context(default_move_type="in_invoice")) as bill_form:
+        # En 20 el formulario oculta el diario en cuanto hay contacto: va por contexto.
+        with Form(self.env["account.move"].with_context(
+            default_move_type="in_invoice", default_journal_id=self.purchase_journal.id
+        )) as bill_form:
             bill_form.partner_id = supplier
             bill_form.invoice_date = "2026-01-01"
-            bill_form.journal_id = self.purchase_journal
             bill_form.currency_id = self.usd
             # Referencia del proveedor y correlativo fiscal -- ambos
             # requeridos para facturas de proveedor (a diferencia de las
