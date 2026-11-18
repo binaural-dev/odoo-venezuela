@@ -5,6 +5,7 @@ from odoo import fields, Command
 from odoo.exceptions import UserError, ValidationError
 from typing import Callable, Any
 import functools
+from odoo.addons.l10n_ve_rate.tests.common import ensure_daily_rates
 
 _logger = logging.getLogger(__name__)
 
@@ -23,6 +24,7 @@ class TestAccountMove(TransactionCase):
                 "foreign_currency_id": self.currency_vef.id,
             }
         )
+        ensure_daily_rates(self.env, self.currency_vef, self.company)
 
 
 
