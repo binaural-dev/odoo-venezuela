@@ -1,6 +1,9 @@
-from odoo import Command
+from datetime import date
+
+from odoo import Command, fields
 from odoo.tests import Form
 from odoo.tests.common import TransactionCase
+from odoo.addons.l10n_ve_rate.tests.common import ensure_daily_rates
 
 
 class ExchangeNoteCommon(TransactionCase):
@@ -66,6 +69,19 @@ class ExchangeNoteCommon(TransactionCase):
                 }),
             ],
         })
+        # La localización pide la tasa de la fecha exacta: hoy (el formulario arranca
+        # en hoy), la nota de crédito del 2026-01-15 y 2006 (entradas sin factura de
+        # TestExchangeNoteReversal). Con el valor que el núcleo usaría igual; no se dan
+        # otros días porque varias pruebas crean sus propias tasas (2000, 2007, 2026).
+        ensure_daily_rates(
+            cls.env,
+            cls.usd,
+            cls.company,
+            dates=[fields.Date.context_today(cls.env.user), "2026-01-15"],
+        )
+        ensure_daily_rates(
+            cls.env, cls.usd, cls.company, date_from=date(2006, 1, 1), date_to=date(2006, 12, 31)
+        )
 
         cls.partner = cls.env["res.partner"].create({"name": "Cliente Prueba Reversal"})
         cls.partner.property_product_pricelist = False
