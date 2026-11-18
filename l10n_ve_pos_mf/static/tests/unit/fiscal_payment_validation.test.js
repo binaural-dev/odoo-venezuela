@@ -55,8 +55,9 @@ function makeStore({
     const synced = [];
     const store = withOwn(PosStore.prototype, {
         company: { name: "Test VE" },
-        currency: { name: "VEF", decimal_places: 2, rounding: 0.01 },
-        config: { flag_21: "00", traditional_line: false, has_cashbox: false },
+        currency: { name: "VEF", decimal_places: 2, rounding: 0.01, isZero: (value) => value === 0 },
+        config: { flag_21: "00", traditional_line: false, has_cashbox: false, seller_required: false },
+        numberBuffer: { capture: () => {} },
         models: { "pos.order": { getBy: (field, value) => orders.find((o) => o[field] === value) } },
         data: {
             localUnsyncedPaidOrderUuids: new Set(),
@@ -339,6 +340,25 @@ describe("l10n_ve_pos_mf cola de verificación", () => {
         expect(previous.mf_print_verification).toEqual(VERIFICATION);
     });
 
+    test("con una NC abierta que no se pudo cerrar, la venta queda pendiente y se pide reiniciar", async () => {
+        allowTranslations();
+        const previous = queuePrevious();
+        const { store, printed, dialogs, synced } = makeStore({
+            verifyResponse: { success: false, printed: null, reason: "document_open" },
+            orders: [previous],
+        });
+        const order = makeOrder([[BS_CASH, 100]]);
+
+        await makeValidation(store, order).finalizeValidation();
+
+        expect(printed).toEqual([]);
+        expect(synced.length).toBe(1);
+        expect(dialogs.length).toBe(1);
+        expect(dialogs[0]).toInclude("Restart the fiscal printer");
+        expect(PrintVerificationQueue.getAll().map((entry) => entry.uuid)).toEqual(["prev"]);
+        expect(previous.mf_print_verification).toEqual(VERIFICATION);
+    });
+
     test("con otra máquina conectada el pedido sigue en la cola y la venta se imprime", async () => {
         allowTranslations();
         const previous = queuePrevious();
@@ -515,5 +535,124 @@ describe("l10n_ve_pos_mf código fiscal de divisa sin IGTF", () => {
                 store._mfIsForeignCodeWithoutIgtf({ code_fiscal_printer: code, apply_igtf: true })
             ).toBe(false);
         }
+    });
+});
+
+describe("l10n_ve_pos_mf divisa sin IGTF en la pantalla de pago", () => {
+    // Pedido que pasa los chequeos de isOrderValid del core (y de otros
+    // módulos que lo extienden, como el vendedor de binaural_pos_seller).
+    function makeValidOrder(payments) {
+        return makeOrder(payments, {
+            seller_id: { id: 7 },
+            priceIncl: 100,
+            amountPaid: 100,
+            appliedRounding: 0,
+            presetRequirementsFilled: true,
+            getOrderlines() {
+                return this.lines;
+            },
+            isRefundInProcess: () => false,
+            isToInvoice: () => false,
+            getShippingDate: () => false,
+            isPaid: () => true,
+            _isValidEmptyOrder: () => true,
+        });
+    }
+
+    function makeCoreValidation(store, order, own = {}) {
+        return withOwn(OrderPaymentValidation.prototype, {
+            pos: store,
+            order,
+            invoicing: false,
+            payment_methods_from_config: [],
+            isInvoiceRequired: () => false,
+            ...own,
+        });
+    }
+
+    test("un pago 20 sin IGTF deja al cajero en la pantalla de pago", async () => {
+        allowTranslations();
+        const { store, dialogs, printed } = makeStore();
+        const order = makeValidOrder([
+            [USD_NO_IGTF, 40],
+            [BS_CASH, 60],
+        ]);
+
+        expect(await makeCoreValidation(store, order).isOrderValid()).toBe(false);
+
+        expect(dialogs.length).toBe(1);
+        expect(dialogs[0]).toInclude("EFECTIVO USD");
+        expect(printed).toEqual([]);
+    });
+
+    test("validateOrder no llega a imprimir ni a sincronizar", async () => {
+        allowTranslations();
+        const { store, dialogs } = makeStore();
+        const order = makeValidOrder([[USD_NO_IGTF, 100]]);
+        const reached = [];
+        const validation = makeCoreValidation(store, order, {
+            askBeforeValidation: async () => true,
+            checkCashRoundingHasBeenWellApplied: () => true,
+            shouldHideValidationBehindFeedbackScreen: async () => reached.push("navigate"),
+            finalizeValidation: async () => reached.push("finalize"),
+        });
+
+        await validation.validateOrder(false);
+
+        // No llega a finalizeValidation (imprime y sincroniza) ni navega.
+        expect(reached).toEqual([]);
+        expect(dialogs.length).toBe(1);
+    });
+
+    test("una orden que no va a la máquina (gancho) no se bloquea ni se imprime", async () => {
+        allowTranslations();
+        const { store, dialogs, printed, synced } = makeStore();
+        // Como hace binaural_operative_pos_mf con las órdenes operativas.
+        store._mfOrderGoesToFiscalPrinter = () => false;
+        const order = makeValidOrder([[USD_NO_IGTF, 100]]);
+
+        expect(await makeCoreValidation(store, order).isOrderValid()).toBe(true);
+        await makeValidation(store, order).finalizeValidation();
+
+        expect(dialogs).toEqual([]);
+        expect(printed).toEqual([]);
+        expect(synced.length).toBe(1);
+    });
+
+    test("con IGTF activo, o sin máquina fiscal conectada, la validación sigue", async () => {
+        allowTranslations();
+        const { store, dialogs } = makeStore();
+        expect(await makeCoreValidation(store, makeValidOrder([[USD_IGTF, 100]])).isOrderValid()).toBe(
+            true
+        );
+
+        // Sin máquina no se imprime: la orden queda pendiente y el bloqueo de
+        // get_data_invoice la frena al imprimirla después.
+        const offline = makeStore({ connected: false });
+        expect(
+            await makeCoreValidation(offline.store, makeValidOrder([[USD_NO_IGTF, 100]])).isOrderValid()
+        ).toBe(true);
+
+        expect(dialogs).toEqual([]);
+        expect(offline.dialogs).toEqual([]);
+    });
+});
+
+describe("l10n_ve_pos_mf error inesperado al imprimir", () => {
+    test("se avisa al cajero y la orden queda pendiente", async () => {
+        allowTranslations();
+        const { store, dialogs, synced, printed } = makeStore();
+        store._convertOrderForDriver = () => {
+            throw new TypeError("payload roto");
+        };
+        const order = makeOrder([[BS_CASH, 100]]);
+
+        await makeValidation(store, order).finalizeValidation();
+
+        expect(dialogs.length).toBe(1);
+        expect(dialogs[0]).toInclude("payload roto");
+        expect(printed).toEqual([]);
+        expect(synced.length).toBe(1);
+        expect(order.mf_invoice_number).toBe(undefined);
     });
 });

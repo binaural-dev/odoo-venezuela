@@ -140,6 +140,12 @@ export class MockSerialConnection {
     }
 
     /**
+     * El driver persiste la identidad USB del puerto al conectar
+     * (`SerialConnection._saveDeviceInfo`); el mock no tiene puerto real.
+     */
+    _saveDeviceInfo() {}
+
+    /**
      * Simula desconexión
      */
     async disconnect() {
