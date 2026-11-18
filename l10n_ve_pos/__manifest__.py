@@ -23,6 +23,7 @@
     "data": [
         "security/ir.model.access.csv",
         "data/res_group.xml",
+        "data/ir_config_parameter_data.xml",
         "views/pos_payment_method.xml",
         "views/pos_order.xml",
         "views/res_config_settings.xml",

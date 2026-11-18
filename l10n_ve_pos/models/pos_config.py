@@ -3,6 +3,10 @@ from odoo.exceptions import ValidationError
 
 # Integra 16 tiene varios campos con readonly=True, revisar para migrar
 
+# Customers the PoS loads up front (point_of_sale.limited_customer_count). Odoo ships 100,
+# which leaves out most of the customers of a store with a real customer base.
+L10N_VE_LIMIT_LOAD_PARTNER = 5000
+
 
 class PosConfig(models.Model):
     _inherit = "pos.config"
@@ -442,3 +446,27 @@ class PosConfig(models.Model):
             for product in products
             if product.uom_id.compare(qty_by_product[product.id], product.qty_available) > 0
         ]
+
+    @api.model
+    def _l10n_ve_set_default_pos_partner_load_limit(self):
+        """Raise point_of_sale.limited_customer_count to L10N_VE_LIMIT_LOAD_PARTNER.
+
+        Odoo sets the parameter to 100 when point_of_sale is installed
+        (pos.config._set_default_pos_load_limit) and the PoS only loads that many customers,
+        ordered by number of orders: the rest cannot be picked at the register until they are
+        searched for. A value already at or above the limit is kept, so an instance where the
+        parameter was raised by hand does not go down. A missing or non-numeric value is
+        treated as 0, as Odoo would fall back to 100 for it.
+
+        Called from data/ir_config_parameter_data.xml on every install and update of the module.
+        """
+        param_model = self.env["ir.config_parameter"].sudo()
+        current = param_model.get_param("point_of_sale.limited_customer_count")
+        try:
+            current = int(current)
+        except (TypeError, ValueError, OverflowError):
+            current = 0
+        if current < L10N_VE_LIMIT_LOAD_PARTNER:
+            param_model.set_param(
+                "point_of_sale.limited_customer_count", L10N_VE_LIMIT_LOAD_PARTNER
+            )

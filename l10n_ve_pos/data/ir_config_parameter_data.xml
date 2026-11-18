@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Not noupdate: runs on install and on every update, so instances that already have the
+         module also get the limit. The function never lowers a higher value. -->
+    <data>
+        <function model="pos.config" name="_l10n_ve_set_default_pos_partner_load_limit"/>
+    </data>
+</odoo>
