@@ -101,8 +101,6 @@ def migrate(cr, version):
     )
     names = sorted(name for (name,) in cr.fetchall())
 
-    # Modules retired alone: never in cascade, and only when nothing else installed depends on
-    # them (a dependent left out of the addons path would otherwise lose its tables).
     cr.execute(
         """
         SELECT m.name,

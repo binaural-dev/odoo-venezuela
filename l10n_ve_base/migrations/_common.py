@@ -32,6 +32,12 @@ migrations/19.0.1.0.3/end-10, once every module is loaded. binaural_operative, w
 fiscal flag into is_operative, is marked to be installed by migrations/19.0.1.0.4/post-10
 (install_operative_module), once the module list is updated.
 
+MODULES_RETIRED_ALONE are retired by that same end-10 only when nothing installed depends on them,
+never in cascade. binaural_base is the root of the operativa line: many modules depend on it
+(binaural_margin, binaural_mrp, binaural_sitef_base...), some may be absent from the addons path
+during the update and keep their old dependency, and retiring it in cascade would uninstall them
+and drop their tables.
+
 It is meant to run from a pre-upgrade script (upgrade_scripts/pre-10-operative_to_homologated.py,
 through --pre-upgrade-scripts), before Odoo loads any module. The pre-init hook of this module
 is the fallback: there the graph is already built, so it converts the database and asks for the
@@ -75,13 +81,7 @@ RENAMED_MODULES = (
     ("binaural_pos_igtf", "l10n_ve_pos_igtf"),
 )
 
-MODULES_RETIRED_ALONE = (
-    # The root of the operativa line: many modules depend on it (binaural_margin, binaural_mrp,
-    # binaural_sitef_base...), some may be absent from the addons path during the update and keep
-    # their old dependency. Retiring it in cascade would uninstall them and drop their tables, so
-    # it is only retired when nothing installed depends on it.
-    "binaural_base",
-)
+MODULES_RETIRED_ALONE = ("binaural_base",)
 
 MODULES_WITHOUT_SUCCESSOR = (
     "binaural_fiscal",
@@ -363,6 +363,11 @@ def _move_records(cr, old, new):
 def _adopt_module(cr, old, new):
     """Rename the legacy module to its successor, or merge it when the successor is installed.
 
+    A module of the v16 operativa line is registered as installed in 17, as register_base_module
+    does with l10n_ve_base: the migrations of the l10n_ve_* successors only act when they come
+    from 17 (version.startswith("17.")), so a v16 one would skip them all and, for instance, get
+    invoice_date_display filled with the day of the update.
+
     Returns "renamed" or "merged".
     """
     cr.execute("SELECT id, state FROM ir_module_module WHERE name = %s", [new])
@@ -380,10 +385,6 @@ def _adopt_module(cr, old, new):
             [successor[0]],
         )
         return "merged"
-    # The migrations of the l10n_ve_* successors only act when they come from 17
-    # (version.startswith("17.")): a module of the v16 operativa line would skip them all and,
-    # for instance, get invoice_date_display filled with the day of the update. It is registered
-    # as installed in 17, as register_base_module does with l10n_ve_base.
     cr.execute(
         """
         UPDATE ir_module_module
@@ -581,6 +582,9 @@ def install_operative_module(env, module=OPERATIVE_MODULE):
     Only a database that had binaural_fiscal has the snapshot, so nothing happens on a database of
     the homologated line or one born in 19. Neither if the module is not in the addons path (a
     project without integra-addons): then the report says so.
+
+    button_install marks the dependencies before it checks exclusions and may raise halfway, so
+    it runs inside a savepoint: without it, the modules marked so far would be installed anyway.
     """
     cr = env.cr
     if not table_exists(cr, JOURNAL_FISCAL_SNAPSHOT):
@@ -597,8 +601,6 @@ def install_operative_module(env, module=OPERATIVE_MODULE):
 
     cr.execute("SELECT name FROM ir_module_module WHERE state = 'to install'")
     already = {name for (name,) in cr.fetchall()}
-    # button_install marks the dependencies before it checks exclusions and may raise halfway:
-    # without the savepoint, the modules marked so far would be installed anyway.
     env.flush_all()
     try:
         with cr.savepoint():

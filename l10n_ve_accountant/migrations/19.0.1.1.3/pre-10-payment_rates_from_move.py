@@ -56,8 +56,11 @@ COLUMNS = {
 
 
 def migrate(cr, version):
-    # The two rates share _compute_rate: if only one is missing, the ORM would create it and
-    # recompute both, so each missing column is created and filled on its own.
+    """Create and fill each missing payment column on its own.
+
+    The two rates share _compute_rate: if only one is missing, the ORM would create it and
+    recompute both.
+    """
     missing = [name for name in COLUMNS if not util.column_exists(cr, "account_payment", name)]
     if not missing:
         return

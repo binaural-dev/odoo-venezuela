@@ -37,11 +37,15 @@ from odoo.addons.l10n_ve_base.migrations import _common
 
 
 def migrate(cr, version):
+    """Convert a database of the operativa line, only on an update of base.
+
+    -u all is stored as {'base': True}: only an update of base walks every installed module,
+    which is what reset_upgrade_states relies on. With -u <module> the converted successors
+    would be loaded without being upgraded, on their v16/v17 schema, so it stops before
+    converting anything.
+    """
     if not _common.legacy_modules(cr):
         return
-    # -u all is stored as {'base': True}: only an update of base walks every installed module,
-    # which is what the reset below relies on. With -u <module> the converted successors would be
-    # loaded without being upgraded, on their v16/v17 schema; stop before converting anything.
     if "base" not in config["update"]:
         raise UserError(
             "This database comes from the operativa line: run this script with -u all "
