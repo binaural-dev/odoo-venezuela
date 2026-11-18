@@ -3,6 +3,8 @@ from unittest.mock import patch
 from odoo.tests import tagged, TransactionCase
 from odoo.exceptions import UserError
 from odoo import Command, fields
+from odoo.addons.l10n_ve_rate.tests.common import ensure_daily_rates
+from odoo.addons.l10n_ve_accountant.tests.common_rates import set_rate
 
 
 @tagged("post_install", "-at_install")
@@ -22,6 +24,10 @@ class TestIgtfNoteDebitUnit(TransactionCase):
             "foreign_currency_id": cls.env.ref("base.USD").id,
             "country_id": cls.company.country_id.id or cls.env.ref("base.ve").id,
         })
+        ensure_daily_rates(
+            cls.env, cls.env.ref("base.USD"), cls.company,
+            dates=[fields.Date.context_today(cls.env.user)],
+        )
         cls.partner = cls.env["res.partner"].create({"name": "Cliente IGTF Unit Test"})
 
         cls.exempt_sale_tax = cls.env["account.tax"].create({
@@ -125,10 +131,9 @@ class TestIgtfNoteDebitUnit(TransactionCase):
         """Diario de banco en USD: la ND de IGTF siempre es en VEF (moneda de la
         compañía), así que un pago en USD obliga a cruzar monedas distintas."""
         usd = self.env.ref("base.USD")
-        usd.write({
-            "active": True,
-            "rate_ids": [Command.create({"name": fields.Date.today(), "company_rate": 1 / 40.0})],
-        })
+        usd.active = True
+        # setUpClass already gives today a rate (ensure_daily_rates): update it to 40.
+        set_rate(self.env, usd, fields.Date.today(), self.company, 40.0)
         account = self.env["account.account"].create({
             "name": "Banco USD (unit test ND IGTF)", "code": "BUSDNDI01",
             "account_type": "asset_cash", "currency_id": usd.id,
