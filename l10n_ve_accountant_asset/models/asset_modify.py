@@ -9,8 +9,9 @@ class AssetModify(models.TransientModel):
         Deja pasar las cuotas futuras (``auto_post='custom'``) por el chequeo de enterprise
         "unposted depreciations prior to the selected operation date".
 
-        Esas cuotas tienen date = hoy, así que el chequeo (borrador y ``date <= self.date``)
-        bloquearía toda modificación fechada hoy o después. Las que tienen su fecha real
+        Esas cuotas tienen como date la fecha de adquisición del activo, así que el chequeo
+        (borrador y ``date <= self.date``) bloquearía toda modificación fechada desde la
+        adquisición. Las que tienen su fecha real
         (``auto_post_custom_date``) posterior a la de la operación recuperan esa fecha: son
         periodos futuros pendientes, igual que un borrador futuro normal. El flujo de
         enterprise luego borra todos los borradores y recalcula el plan. Las de fecha real
