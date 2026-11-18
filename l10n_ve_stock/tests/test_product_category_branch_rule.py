@@ -3,52 +3,78 @@ from odoo.tests import TransactionCase, tagged
 
 @tagged("post_install", "-at_install", "l10n_ve_stock")
 class TestProductCategoryBranchRule(TransactionCase):
-    """La regla de categorias de producto deja ver las de la compania padre desde una sucursal."""
+    """Requirement "Categorías de producto multi-compañía": una compañía ve las categorías
+    propias, las de sus ancestros y las que no tienen compañía; nada más.
+
+    Se crean siempre las compañías del escenario (padre, dos sucursales, una sub-sucursal y
+    una persona jurídica aparte) para que la prueba no dependa de los datos de la base.
+    """
 
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
         Company = cls.env["res.company"]
-        # una base con sucursal real se reutiliza: crear una compania ahi depende de su plan contable
-        branch = Company.search([("parent_id", "!=", False)], limit=1)
-        if branch:
-            cls.parent, cls.branch = branch.parent_id, branch
-        else:
-            cls.parent = cls.env.company
-            cls.branch = Company.create({"name": "Sucursal de prueba", "parent_id": cls.parent.id})
-        cls.other = Company.search(
-            [("parent_id", "=", False), ("id", "not in", (cls.parent | cls.branch).ids)], limit=1
-        ) or Company.create({"name": "Otra persona juridica"})
+        cls.parent = Company.create({"name": "Padre (test categorias)"})
+        cls.branch = Company.create({"name": "Sucursal 1 (test categorias)", "parent_id": cls.parent.id})
+        cls.sister = Company.create({"name": "Sucursal 2 (test categorias)", "parent_id": cls.parent.id})
+        cls.grandchild = Company.create({"name": "Sub-sucursal 1.1 (test categorias)", "parent_id": cls.branch.id})
+        cls.other = Company.create({"name": "Otra persona juridica (test categorias)"})
+        companies = cls.parent | cls.branch | cls.sister | cls.grandchild | cls.other
         Category = cls.env["product.category"]
-        cls.cat_parent = Category.create({"name": "Cat padre", "company_id": cls.parent.id})
-        cls.cat_branch = Category.create({"name": "Cat sucursal", "company_id": cls.branch.id})
-        cls.cat_other = Category.create({"name": "Cat otra empresa", "company_id": cls.other.id})
-        cls.cat_shared = Category.create({"name": "Cat compartida", "company_id": False})
-        cls.cats = cls.cat_parent | cls.cat_branch | cls.cat_other | cls.cat_shared
+        cls.category_of = {company: Category.create({"name": f"Cat {company.name}", "company_id": company.id}) for company in companies}
+        cls.shared = Category.create({"name": "Cat compartida (test categorias)", "company_id": False})
+        cls.all_categories = Category.browse([c.id for c in cls.category_of.values()] + [cls.shared.id])
         cls.user = cls.env["res.users"].create(
             {
-                "name": "Usuario sucursal",
-                "login": "usuario_sucursal_categoria",
+                "name": "Usuario categorias",
+                "login": "usuario_categorias_sucursal",
                 "company_id": cls.branch.id,
-                "company_ids": [(6, 0, (cls.parent | cls.branch | cls.other).ids)],
+                "company_ids": [(6, 0, companies.ids)],
                 "group_ids": [(6, 0, [cls.env.ref("base.group_user").id])],
             }
         )
 
-    def _visible(self, company_ids):
-        env = self.env(user=self.user, context=dict(self.env.context, allowed_company_ids=company_ids))
-        return env["product.category"].search([("id", "in", self.cats.ids)])
+    def _visible_companies(self, active_companies):
+        """Compañías cuyas categorías ve el usuario con solo `active_companies` activas
+        (más 'shared' si ve la categoría sin compañía)."""
+        env = self.env(user=self.user, context=dict(self.env.context, allowed_company_ids=active_companies.ids))
+        visible = env["product.category"].search([("id", "in", self.all_categories.ids)])
+        names = {company.name for company, category in self.category_of.items() if category in visible}
+        if self.shared in visible:
+            names.add("shared")
+        return names
 
-    def test_branch_sees_parent_categories(self):
-        # Scenario: con solo la sucursal activa se ven las categorias de la padre, las propias y las compartidas
-        visible = self._visible([self.branch.id])
-        self.assertEqual(visible, self.cat_parent | self.cat_branch | self.cat_shared)
+    def _expected(self, *companies):
+        return {company.name for company in companies} | {"shared"}
 
-    def test_branch_does_not_see_other_company_group(self):
-        # Scenario: las categorias de otra compania raiz (otro RIF) siguen sin verse
-        self.assertNotIn(self.cat_other, self._visible([self.branch.id]))
+    def test_branch_sees_parent_own_and_shared(self):
+        # Scenario: La sucursal ve las categorías de su compañía padre
+        self.assertEqual(self._visible_companies(self.branch), self._expected(self.parent, self.branch))
+
+    def test_grandchild_sees_all_its_ancestors(self):
+        # Scenario: Una sub-sucursal ve las de todos sus ancestros
+        self.assertEqual(
+            self._visible_companies(self.grandchild),
+            self._expected(self.parent, self.branch, self.grandchild),
+        )
+
+    def test_sister_branches_do_not_see_each_other(self):
+        # Scenario: Una sucursal hermana no ve las categorías de la otra
+        self.assertEqual(self._visible_companies(self.sister), self._expected(self.parent, self.sister))
+        self.assertNotIn(self.branch.name, self._visible_companies(self.sister))
 
     def test_parent_does_not_see_branch_categories(self):
-        # Scenario: la regla es unidireccional: la padre no ve las categorias de la sucursal
-        visible = self._visible([self.parent.id])
-        self.assertEqual(visible, self.cat_parent | self.cat_shared)
+        # Scenario: La compañía padre no ve las categorías de sus sucursales
+        self.assertEqual(self._visible_companies(self.parent), self._expected(self.parent))
+
+    def test_other_company_group_is_isolated(self):
+        # Scenario: Una categoría de otra compañía raíz no aparece
+        self.assertEqual(self._visible_companies(self.other), self._expected(self.other))
+        self.assertNotIn(self.other.name, self._visible_companies(self.branch))
+
+    def test_several_active_companies_add_up(self):
+        # Scenario: Con varias compañías activas se suman sus ámbitos
+        self.assertEqual(
+            self._visible_companies(self.branch | self.sister),
+            self._expected(self.parent, self.branch, self.sister),
+        )
