@@ -7,7 +7,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Technical",
-    "version": "19.0.1.0.3",
+    "version": "19.0.1.0.4",
     "depends": ["base", "web"],
     "auto_install": False,
     "pre_init_hook": "pre_init_hook",
