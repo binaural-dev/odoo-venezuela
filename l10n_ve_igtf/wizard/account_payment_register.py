@@ -519,37 +519,37 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         )
 
         reconcile = payment.move_id.line_ids.filtered(lambda line: line.account_id.id == partner_account_id)
-     
-        amount_currency = abs(reconcile.amount_residual_currency)
-        amount_bs = abs(reconcile.amount_residual)
-        currency = payment.currency_id
-       
 
-        
-        if abs(amount_currency) != 0.0:
+        # Residual con signo de la linea por cobrar/pagar del pago: negativo en un cobro de
+        # cliente (credito), positivo en un pago a proveedor (debito). El asiento lo cierra
+        # en la cuenta del contacto y lleva el mismo importe a la cuenta de anticipo: al
+        # haber en clientes (pasivo) y al debe en proveedores (activo).
+        amount_currency = sum(reconcile.mapped("amount_residual_currency"))
+        amount_bs = sum(reconcile.mapped("amount_residual"))
+        currency = payment.currency_id
+
+        if not currency.is_zero(amount_currency):
             payment_line_ids = [
                 Command.create(
                     {
                         "account_id": advance_account_id,
-                        "amount_currency": -amount_currency,
+                        "amount_currency": amount_currency,
+                        "balance": amount_bs,
                         "payment_id_advance": payment.id,
-                        "currency_id":currency.id,
-                        "debit": amount_bs if amount_bs < 0 else 0.0,
-                        "credit": abs(amount_bs) if amount_bs > 0 else 0.0,
+                        "currency_id": currency.id,
                     },
                 ),
                 Command.create(
                     {
                         "account_id": partner_account_id,
-                        "amount_currency": amount_currency,
+                        "amount_currency": -amount_currency,
+                        "balance": -amount_bs,
                         "payment_id_advance": payment.id,
-                        "currency_id":currency.id,
-                        "debit": amount_bs if amount_bs > 0 else 0.0,
-                        "credit": abs(amount_bs) if amount_bs < 0 else 0.0,
+                        "currency_id": currency.id,
                     },
                 ),
             ]
-                
+
             move_to_reconcile_with_payment_difference = self.env["account.move"].create(
                 {
                     "journal_id": self.env.company.advance_payment_igtf_journal_id.id,
@@ -557,6 +557,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                     "partner_id": payment.partner_id.id,
                     "vat": payment.partner_id.vat,
                     "ref": "RESTANTE DE PAGO EN DIVISA" + "(" + payment.name + ")",
+                    "move_type": "entry",
                     "is_advance_move": True,
                     "line_ids": payment_line_ids,
                     "origin_payment_advanced_payment_id": payment.id

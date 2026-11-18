@@ -342,7 +342,7 @@ class TestIGTFNEW(IGTFTestCommon):
         
         residual_advance = self.env['account.move'].search([('l10n_ve_exchange_foreign_diff_entry', '=', False)], order='id desc', limit=1)
         outstanding_line = residual_advance.line_ids.filtered(
-            lambda l: l.account_id == self.advance_supp_acc and l.credit > 0
+            lambda l: l.account_id == self.advance_supp_acc and l.debit > 0
         )
 
         invoice = self.env['account.move'].browse(invoice.id)
@@ -356,8 +356,8 @@ class TestIGTFNEW(IGTFTestCommon):
         
 
         expected_lines = [
-            {'account': self.advance_supp_acc, 'amount_currency': -470},
-            {'account': self.acc_payable,  'amount_currency': 470 },
+            {'account': self.advance_supp_acc, 'amount_currency': 470},
+            {'account': self.acc_payable,  'amount_currency': -470 },
             
         ]
         self._assert_move_lines_equal(residual_advance, expected_lines)
@@ -409,7 +409,7 @@ class TestIGTFNEW(IGTFTestCommon):
         
         residual_advance = self.env['account.move'].search([('l10n_ve_exchange_foreign_diff_entry', '=', False)], order='id desc', limit=1)
         outstanding_line = residual_advance.line_ids.filtered(
-            lambda l: l.account_id == self.advance_supp_acc and l.credit > 0
+            lambda l: l.account_id == self.advance_supp_acc and l.debit > 0
         )
 
         invoice = self.env['account.move'].browse(invoice.id)
@@ -423,8 +423,8 @@ class TestIGTFNEW(IGTFTestCommon):
         
 
         expected_lines = [
-            {'account': self.advance_supp_acc, 'amount_currency': -470},
-            {'account': self.acc_payable,  'amount_currency': 470 },
+            {'account': self.advance_supp_acc, 'amount_currency': 470},
+            {'account': self.acc_payable,  'amount_currency': -470 },
             
         ]
         self._assert_move_lines_equal(residual_advance, expected_lines)
@@ -612,19 +612,23 @@ class TestIGTFNEW(IGTFTestCommon):
         residual_advance = payment.advanced_move_ids[0]
 
         expected_lines = [
-            {'account': self.advance_supp_acc, 'amount_currency': -680.49},
-            {'account': self.acc_payable, 'amount_currency': 680.49},
+            {'account': self.advance_supp_acc, 'amount_currency': 680.49},
+            {'account': self.acc_payable, 'amount_currency': -680.49},
         ]
         self._assert_move_lines_equal(residual_advance, expected_lines)
 
 
         outstanding_line = residual_advance.line_ids.filtered(
-            lambda l: l.account_id == self.advance_supp_acc and l.credit > 0
+            lambda l: l.account_id == self.advance_supp_acc and l.debit > 0
         )
 
         invoice2.with_context({}).js_assign_outstanding_line(outstanding_line.id)
 
-        cross_move = self.env['account.move'].search([], order='id desc', limit=2)
+        # El cruce concilia el anticipo y Odoo puede generar un asiento de diferencia en
+        # cambio despues: se excluye para tomar el cruce.
+        cross_move = self.env['account.move'].search(
+            [('journal_id', '!=', self.company.currency_exchange_journal_id.id)], order='id desc', limit=2
+        )
 
         expected_lines = [
             {'account': self.advance_supp_acc, 'amount_currency': -680.49},
