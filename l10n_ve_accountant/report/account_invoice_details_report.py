@@ -203,7 +203,7 @@ class AccountInvoiceDetailsReport(models.AbstractModel):
         taxes_amount = totals["taxes_amount"] + (
             invoice.detailed_amounts["taxes_amount"] * multiply
         )
-        total_amount = totals["total_amount"] + (invoice.tax_totals["amount_total"] * multiply)
+        total_amount = totals["total_amount"] + (invoice.tax_totals.get("total_amount_currency", 0) * multiply)
         total_items = totals["total_items"] + 1
 
         return {

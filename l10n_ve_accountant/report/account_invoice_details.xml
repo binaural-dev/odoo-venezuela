@@ -110,7 +110,7 @@
                                             <p t-out="invoice.detailed_amounts['formatted_taxes_amount']"/>
                                         </div>
                                         <div class="col-2 text-center">
-                                            <p t-out="invoice.tax_totals['formatted_amount_total']"></p>
+                                            <p t-out="invoice.tax_totals.get('total_amount_currency', 0)" t-options="{'widget': 'monetary', 'display_currency': invoice.currency_id}"/>
                                         </div>
                                     </div>
                                 </t>
