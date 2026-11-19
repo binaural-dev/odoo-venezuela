@@ -90,7 +90,6 @@
         <field name="model">stock.picking</field>
         <field name="report_type">qweb-pdf</field>
         <field name="report_name">l10n_ve_stock.packaging_picking</field>
-        <field name="report_file">l10n_ve_stock.packaging_picking</field>
         <field name="print_report_name">'Packaging tags - %s' % (object.name)</field>
         <field name="binding_model_id" ref="stock.model_stock_picking" />
         <field name="paperformat_id" ref="l10n_ve_stock.paperformat_packaging_picking" />
