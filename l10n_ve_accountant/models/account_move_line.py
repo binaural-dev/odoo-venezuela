@@ -358,34 +358,37 @@ class AccountMoveLine(models.Model):
 
 
     def _prepare_analytic_distribution_line(
-        self, distribution, account_id, distribution_on_each_plan
+        self, distribution, account_ids, distribution_on_each_plan
     ):
         """
         This method adds the foreign_amount in the foreign currency to the analytical account line
         """
         self.ensure_one()
         res = super()._prepare_analytic_distribution_line(
-            distribution, account_id, distribution_on_each_plan
+            distribution, account_ids, distribution_on_each_plan
         )
-        account_id = int(account_id)
-        account = self.env["account.analytic.account"].browse(account_id)
-        distribution_plan = (
-            distribution_on_each_plan.get(account.root_plan_id, 0) + distribution
-        )
-        decimal_precision = self.env["decimal.precision"].precision_get(
-            "Percentage Analytic"
-        )
-        if (
-            float_compare(distribution_plan, 100, precision_digits=decimal_precision)
-            == 0
-        ):
-            foreign_amount = (
-                -self.foreign_balance
-                * (100 - distribution_on_each_plan.get(account.root_plan_id, 0))
-                / 100.0
+        account_ids = self.env['account.analytic.account']\
+                          .browse(map(int, account_ids.split(",")))\
+                          .exists()
+        foreign_amount = 0
+        for account_id in account_ids:
+            distribution_plan = (
+                distribution_on_each_plan.get(account_id.root_plan_id, 0) + distribution
             )
-        else:
-            foreign_amount = -self.foreign_balance * distribution / 100.0
+            decimal_precision = self.env["decimal.precision"].precision_get(
+                "Percentage Analytic"
+            )
+            if (
+                float_compare(distribution_plan, 100, precision_digits=decimal_precision)
+                == 0
+            ):
+                foreign_amount = (
+                    -self.foreign_balance
+                    * (100 - distribution_on_each_plan.get(account_id.root_plan_id, 0))
+                    / 100.0
+                )
+            else:
+                foreign_amount = -self.foreign_balance * distribution / 100.0
 
         res["foreign_amount"] = foreign_amount
         return res
