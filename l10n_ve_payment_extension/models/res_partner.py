@@ -187,30 +187,22 @@ class ResPartner(models.Model):
                 partner.type_person_id = False
 
     def _apply_default_withholding_type(self):
-        """Ticket 86944 (sheet "Matriz de retenciones"): the withholding type of
-        a PN Residente is 100% for an ordinary or formal taxpayer and none for a
-        special one; any other resident type has 75% for a special taxpayer and
-        none otherwise. A non resident one never has it. The partner of a company
-        is left as it is: its withholding type comes from the company
-        configuration."""
-        withholding_100 = self.env.ref(
-            "l10n_ve_payment_extension.account_withholding_type_100",
-            raise_if_not_found=False,
-        )
-        withholding_75 = self.env.ref(
-            "l10n_ve_payment_extension.account_withholding_type_75",
-            raise_if_not_found=False,
-        )
+        """Ticket 86944 (IVA retention table): no IVA is withheld from a formal
+        taxpayer; a non resident or a PN Residente is withheld 100% and any other
+        resident 75%. The partner of a company is left as it is: its withholding
+        type comes from the company configuration."""
         for partner in self:
             if partner._is_company_partner():
                 continue
-            special = partner.taxpayer_type == "special"
-            if partner.is_non_resident_person:
-                partner.withholding_type_id = False
-            elif partner.is_natural_resident_person:
-                partner.withholding_type_id = False if special else withholding_100
+            if partner.taxpayer_type == "formal":
+                xmlid = False
+            elif partner.is_non_resident_person or partner.is_natural_resident_person:
+                xmlid = "account_withholding_type_100"
             else:
-                partner.withholding_type_id = withholding_75 if special else False
+                xmlid = "account_withholding_type_75"
+            partner.withholding_type_id = xmlid and self.env.ref(
+                "l10n_ve_payment_extension." + xmlid
+            )
 
     @api.onchange("type_person_id")
     def _onchange_type_person_taxpayer_withholding(self):
