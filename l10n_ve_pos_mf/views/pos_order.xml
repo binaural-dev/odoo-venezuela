@@ -21,4 +21,17 @@
             </xpath>
         </field>
     </record>
+
+    <record id="view_pos_order_filter_mf" model="ir.ui.view">
+        <field name="name">pos.order.list.select.mf</field>
+        <field name="model">pos.order</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_order_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='invoiced']" position="before">
+                <filter string="Fiscal print to verify" name="mf_print_verification"
+                        domain="[('mf_print_verification', '!=', False)]"/>
+                <separator/>
+            </xpath>
+        </field>
+    </record>
 </odoo>

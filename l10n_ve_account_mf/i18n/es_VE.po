@@ -1,0 +1,22 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* l10n_ve_account_mf
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-11-18 00:00+0000\n"
+"PO-Revision-Date: 2026-11-18 00:00+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: l10n_ve_account_mf
+#. odoo-python
+#: code:addons/l10n_ve_account_mf/models/account_move.py:0
+msgid "This document comes from the PoS order %(order)s, and it is not known whether the fiscal printer printed it. It cannot be printed until it is verified: the PoS verifies it before its next print, or a PoS manager resolves it from the order."
+msgstr "Este documento viene del pedido del PdV %(order)s, y no se sabe si la máquina fiscal lo emitió. No se puede imprimir hasta verificarlo: el PdV lo verifica antes de su próxima impresión, o un gerente del PdV lo resuelve desde el pedido."

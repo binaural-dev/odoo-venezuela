@@ -8,7 +8,7 @@
             </t>
             <t t-elif="props.order?.mf_print_verification">
                 <i class="fa fa-question-circle"></i>
-                <span>Verificar impresión</span>
+                <span>Verify print</span>
             </t>
             <t t-else="">
                 <i class="fa fa-print"></i>

@@ -84,12 +84,7 @@ export class PrintPendingOrderButton extends Component {
                 return;
             }
             if (!canPrint) {
-                this._alert(
-                    _t("Fiscal print to verify"),
-                    _t(
-                        "The fiscal printer did not respond while verifying a previous order. Try again when it responds."
-                    )
-                );
+                this._alert(_t("Fiscal print to verify"), this.pos._mfVerificationBlockedMessage(true));
                 return;
             }
 
