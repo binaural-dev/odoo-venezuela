@@ -17,6 +17,12 @@ class PosOrderInherit(models.Model):
     mf_invoice_number = fields.Char(
         string="Sequencia en maquina fiscal", default=False, copy=False, readonly=True
     )
+    # Datos para verificar con la máquina una impresión que no confirmó si
+    # emitió el documento (TfhkaDriver: `printed: null`). Con valor, el pedido
+    # está "por verificar" y no se debe volver a imprimir hasta resolverlo.
+    mf_print_verification = fields.Json(
+        string="Fiscal print to verify", copy=False, readonly=True
+    )
 
     def get_order_by_uid(self, uid):
         orders = self.env["pos.order"].search([("pos_reference", "ilike", uid)])
@@ -53,7 +59,7 @@ class PosOrderInherit(models.Model):
         # no hace falta agregar nada.
         if not fields_list:
             return fields_list
-        extra_fields = ["fiscal_machine", "mf_invoice_number", "mf_reportz"]
+        extra_fields = ["fiscal_machine", "mf_invoice_number", "mf_reportz", "mf_print_verification"]
         for field_name in extra_fields:
             if field_name not in fields_list:
                 fields_list.append(field_name)
@@ -130,6 +136,202 @@ class PosOrderInherit(models.Model):
         return {
             "success": True,
             "account_move_updated": account_move_updated,
+        }
+
+    @api.model
+    def mf_set_print_verification(self, uuid, verification):
+        """Marca como "por verificar" un pedido ya sincronizado cuya
+        impresión (desde "Imprimir pedido pendiente") no confirmó si la
+        máquina emitió el documento. Escribe con los permisos del usuario
+        del PdV, que puede modificar sus pedidos.
+
+        :param verification: el `verification` del driver
+            ({"docType", "before": {...}, "paymentSent", "closeAcked"})
+        :return: True si se marcó el pedido
+        """
+        if not isinstance(verification, dict) or not isinstance(verification.get("before"), dict):
+            raise UserError(_("Invalid fiscal print verification data."))
+        order = self.search([("uuid", "=", uuid)], limit=1)
+        if not order or order.mf_invoice_number:
+            return False
+        order.mf_print_verification = verification
+        return True
+
+    @api.model
+    def mf_resolve_print_verification(self, uuid, resolved):
+        """Aplica lo que la máquina respondió al verificar un pedido "por
+        verificar" (TfhkaDriver.verifyDocument). El PdV lo llama antes de
+        imprimir el siguiente documento. Solo cambia pedidos marcados: no
+        sirve para poner un número fiscal en cualquier pedido.
+
+        :param resolved: {"printed": bool, "invoiceNumber", "serial", "reportZ"}
+        :return: True si ya no queda nada por aplicar (también si el pedido
+            no estaba marcado, por ejemplo porque se resolvió desde el
+            backend); False si el pedido todavía no está en el servidor (el
+            PdV lo reintenta después de sincronizar)
+        """
+        if not isinstance(resolved, dict) or not isinstance(resolved.get("printed"), bool):
+            raise UserError(_("Invalid fiscal print verification result."))
+        # El número viene del driver (texto o entero): solo se aceptan dígitos.
+        number = resolved.get("invoiceNumber")
+        valid_type = isinstance(number, (str, int)) and not isinstance(number, bool)
+        number = str(number).strip() if valid_type else ""
+        if resolved["printed"] and not (number.isascii() and number.isdigit()):
+            raise UserError(_("A printed fiscal document needs its fiscal number."))
+        order = self.search([("uuid", "=", uuid)], limit=1)
+        if not order:
+            return False
+        if not order.mf_print_verification:
+            return True
+        serial = resolved.get("serial") or False
+        reportz = resolved.get("reportZ") or False
+        kept_number = order.mf_invoice_number
+        if resolved["printed"] and not kept_number:
+            order.write_mf_invoice_data(number, serial, reportz)
+        order._mf_log_print_verification(
+            order.mf_print_verification,
+            resolved["printed"],
+            number,
+            serial,
+            reportz,
+            kept_number=kept_number,
+        )
+        order.mf_print_verification = False
+        return True
+
+    def _mf_log_print_verification(
+        self,
+        verification,
+        printed,
+        number=False,
+        serial=False,
+        reportz=False,
+        manual=False,
+        kept_number=False,
+    ):
+        """Deja en el chatter quién resolvió un pedido por verificar, cómo y
+        con qué foto de la máquina: la foto se pierde al quitar la marca, y
+        "no emitido" es justo lo que habilita volver a imprimir. Tarea 85447.
+
+        :param kept_number: número fiscal que el pedido ya tenía y conserva
+        """
+        self.ensure_one()
+        before = (verification or {}).get("before") or {}
+        if kept_number and printed and self._mf_same_fiscal_number(kept_number, number):
+            kept_number = False
+        if kept_number and printed:
+            result = _(
+                "the fiscal printer reported number %(number)s, but the order already had the "
+                "fiscal number %(kept)s and keeps it",
+                number=number,
+                kept=kept_number,
+            )
+        elif kept_number:
+            result = _(
+                "the fiscal printer did not print it, and the order keeps the fiscal number "
+                "%(kept)s it already had",
+                kept=kept_number,
+            )
+        elif printed:
+            result = _(
+                "the fiscal printer printed it as number %(number)s (fiscal printer %(serial)s, "
+                "Z report %(reportz)s)",
+                number=number,
+                serial=serial or "-",
+                reportz=reportz or "-",
+            )
+        else:
+            result = _("the fiscal printer did not print it, so the order is pending to invoice")
+        if manual:
+            body = _(
+                "Fiscal print resolved manually: %(result)s. Reading of the fiscal printer "
+                "before the print: last number %(number)s, fiscal printer %(serial)s, Z counter "
+                "%(closures)s.",
+                result=result,
+                number=before.get("number", "-"),
+                serial=before.get("serial") or "-",
+                closures=before.get("dailyClosureCounter", "-"),
+            )
+        else:
+            body = _(
+                "Fiscal print verified by the PoS with the fiscal printer: %(result)s. Reading of "
+                "the fiscal printer before the print: last number %(number)s, fiscal printer "
+                "%(serial)s, Z counter %(closures)s.",
+                result=result,
+                number=before.get("number", "-"),
+                serial=before.get("serial") or "-",
+                closures=before.get("dailyClosureCounter", "-"),
+            )
+        # sudo: el cajero escribe el pedido con sus permisos, pero publicar
+        # en el chatter lee la compañía (alias de correo). Autor: quien resolvió.
+        self.sudo().message_post(body=body, author_id=self.env.user.partner_id.id)
+
+    @api.model
+    def _mf_same_fiscal_number(self, first, second):
+        """Mismo número fiscal por su valor: "00000505" es el 505."""
+        first, second = str(first or "").strip(), str(second or "").strip()
+        if first.isascii() and first.isdigit() and second.isascii() and second.isdigit():
+            return int(first) == int(second)
+        return first == second
+
+    def _mf_fiscal_document_type(self):
+        """Tipo de documento fiscal del pedido: la máquina numera aparte las
+        facturas y las notas de crédito. Tarea 85447."""
+        self.ensure_one()
+        is_refund = self.amount_total < 0 or any(self.lines.mapped("refunded_orderline_id"))
+        return "credit_note" if is_refund else "invoice"
+
+    def _mf_fiscal_number_owner(self, number, serial, doc_type):
+        """Otro pedido o factura que ya tiene ese número fiscal en esa máquina,
+        para el mismo tipo de documento (facturas, notas de crédito y de débito
+        llevan contadores separados). Compara el valor del número: "00000101"
+        es el 101. Tarea 85447.
+
+        :return: el nombre del documento, o False si el número está libre
+        """
+        self.ensure_one()
+        value = int(number)
+        pattern = f"%{value}"
+        # sudo: el número es único por máquina en toda la base, y el gerente
+        # puede no ver los pedidos ni los asientos de otras cajas.
+
+        def same_number(other):
+            other = (other or "").strip()
+            return other.isascii() and other.isdigit() and int(other) == value
+
+        orders = self.sudo().search(
+            [
+                ("id", "!=", self.id),
+                ("fiscal_machine", "=", serial),
+                ("mf_invoice_number", "=like", pattern),
+            ]
+        )
+        for other in orders:
+            if same_number(other.mf_invoice_number) and other._mf_fiscal_document_type() == doc_type:
+                return other.display_name
+        moves = self.env["account.move"].sudo().search(
+            [
+                ("id", "not in", self.account_move.ids),
+                ("move_type", "in", ("out_invoice", "out_refund")),
+                ("mf_serial", "=", serial),
+                ("mf_invoice_number", "=like", pattern),
+            ]
+        )
+        for move in moves:
+            if same_number(move.mf_invoice_number) and move._mf_fiscal_document_type() == doc_type:
+                return move.display_name
+        return False
+
+    def action_mf_resolve_print_verification(self):
+        """Abre el asistente para resolver a mano un pedido por verificar."""
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Resolve fiscal print"),
+            "res_model": "pos.order.mf.verification.wizard",
+            "view_mode": "form",
+            "target": "new",
+            "context": {"default_order_id": self.id},
         }
 
     @api.model
