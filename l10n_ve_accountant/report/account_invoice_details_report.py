@@ -39,8 +39,9 @@ class AccountInvoiceDetailsReport(models.AbstractModel):
         ]
 
     def _get_domain_search_payment(self, wizard):
+        # En 19 un pago confirmado queda "in_process" o "paid" (ya no existe "posted")
         return [
-            ("state", "=", "posted"),
+            ("state", "in", ("in_process", "paid")),
             ("company_id", "=", wizard.company_id.id),
             ("date", ">=", wizard.date_from),
             ("date", "<=", wizard.date_to),
