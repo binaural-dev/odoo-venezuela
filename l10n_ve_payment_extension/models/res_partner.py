@@ -43,9 +43,12 @@ class ResPartner(models.Model):
         """Fiscal fields that branches inherit from their root company partner."""
         return ["type_person_id", "withholding_type_id", "taxpayer_type"]
 
-    def _l10n_ve_propagate_fiscal_fields_to_branches(self):
-        """Copy the synced fiscal fields of a root company partner to its branches."""
-        fnames = self._l10n_ve_branch_synced_fields()
+    def _l10n_ve_propagate_fiscal_fields_to_branches(self, fnames=None):
+        """Copy the synced fiscal fields of a root company partner to its branches.
+
+        :param fnames: fields to copy, all the synced fields by default.
+        """
+        fnames = fnames or self._l10n_ve_branch_synced_fields()
         Company = self.env["res.company"].sudo().with_context(active_test=False)
         for root in Company.search([("partner_id", "in", self.ids), ("parent_id", "=", False)]):
             branches = Company.search([("id", "child_of", root.id), ("id", "!=", root.id)])
@@ -62,6 +65,10 @@ class ResPartner(models.Model):
     @api.constrains(lambda self: self._l10n_ve_branch_synced_fields())
     def _l10n_ve_check_branch_fiscal_fields(self):
         """Branch partners must keep the fiscal values of their root company partner."""
+        if self.env.context.get("l10n_ve_skip_branch_fiscal_check"):
+            # Only the migration sets it: it leaves the branch values that the root cannot
+            # replace (empty on the root) and must still be able to write the other fields.
+            return
         branches = self.env["res.company"].sudo().with_context(active_test=False).search(
             [("partner_id", "in", self.ids), ("parent_id", "!=", False)]
         )
