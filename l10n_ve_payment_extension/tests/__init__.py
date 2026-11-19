@@ -56,3 +56,4 @@ from . import test_foreign_supplier_required_fields
 from . import test_retention_cash_basis_foreign
 from . import test_branch_fiscal_propagation
 from . import test_retention_iva_partner_withholding_default
+from . import test_sql_constraints

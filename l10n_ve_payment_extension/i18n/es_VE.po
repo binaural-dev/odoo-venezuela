@@ -3980,3 +3980,33 @@ msgstr ""
 #: code:addons/l10n_ve_payment_extension/models/res_partner.py:0
 msgid "A non resident partner cannot be a special taxpayer."
 msgstr "Un contacto no residente no puede ser contribuyente especial."
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.constraint,message:l10n_ve_payment_extension.constraint_account_withholding_type_unique_name
+msgid "You cannot add withholdings with the same name"
+msgstr "No puede agregar retenciones con el mismo nombre"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.constraint,message:l10n_ve_payment_extension.constraint_account_withholding_type_unique_value
+msgid "You can not add withholdings with the same Value"
+msgstr "No puede agregar retenciones con el mismo valor"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.constraint,message:l10n_ve_payment_extension.constraint_economic_activity_code_uniq
+msgid "There cannot be two records with the same code for the selected municipality."
+msgstr "No puede haber dos registros con el mismo código para el municipio seleccionado."
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.constraint,message:l10n_ve_payment_extension.constraint_economic_activity_aliquot_mayor_cero
+msgid "The aliquot must be greater than zero"
+msgstr "La alícuota debe ser mayor que cero"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.constraint,message:l10n_ve_payment_extension.constraint_economic_branch_name_uniq
+msgid "You may not register an economic sector with the same name."
+msgstr "No puede registrar un sector económico con el mismo nombre."
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.constraint,message:l10n_ve_payment_extension.constraint_payment_concept_line_unique_code
+msgid "The concept code already exists"
+msgstr "El código del concepto ya existe"
