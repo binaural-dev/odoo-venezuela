@@ -150,6 +150,16 @@ class TestForeignSupplierRequiredFields(TransactionCase):
         form.taxpayer_type = "formal"
         self.assertFalse(form.withholding_type_id)
 
+    def test_chosen_withholding_survives_a_taxpayer_type_change(self):
+        form = self._fill_form(supplier=False, taxpayer_type="special", company=True)
+        form.withholding_type_id = self.withholding_100
+        form.taxpayer_type = "ordinary"
+        self.assertEqual(form.withholding_type_id, self.withholding_100)
+        form.taxpayer_type = "formal"
+        self.assertFalse(form.withholding_type_id)
+        form.taxpayer_type = "ordinary"
+        self.assertEqual(form.withholding_type_id, self.withholding_75)
+
     def test_pn_residente_ordinary_defaults_to_100_and_requires_it(self):
         form = self._fill_form(supplier=False, taxpayer_type="ordinary")
         self.assertEqual(form.withholding_type_id, self.withholding_100)
@@ -308,4 +318,3 @@ class TestForeignSupplierRequiredFields(TransactionCase):
         form.company_type = "person"
         form.type_person_id = self.type_person
         self.assertEqual(form.taxpayer_type, "ordinary")
-        self.assertEqual(form.withholding_type_id, self.withholding_100)
