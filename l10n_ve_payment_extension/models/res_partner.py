@@ -229,10 +229,11 @@ class ResPartner(models.Model):
         """Ticket 86944 (IVA retention table): no IVA is withheld from a formal
         taxpayer; a non resident or a PN Residente is withheld 100% and any other
         resident 75%. A value already chosen (75% or 100%) is kept, except for a
-        non resident one, which is always 100%. The partner of a company is left
-        as it is: its withholding type comes from the company configuration."""
+        non resident one, which is always 100%. Nothing is set until the person
+        type is chosen. The partner of a company is left as it is: its withholding
+        type comes from the company configuration."""
         for partner in self:
-            if partner._is_company_partner():
+            if partner._is_company_partner() or not partner.type_person_id:
                 continue
             if (
                 partner.withholding_type_id
