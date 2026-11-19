@@ -675,10 +675,11 @@ class TestMultiCurrencyRounding(TransactionCase):
             )
 
     def _create_invoice_with_precision(self, currency, lines_data):
-        """Like `_create_invoice`, forcing "Product Price" precision to 6 decimals and VEF rounding to 0.01, so the scenario is deterministic."""
-        dp_price = self.env['decimal.precision'].search([('name', '=', 'Product Price')], limit=1)
-        if dp_price:
-            dp_price.digits = 6
+        """Like `_create_invoice`, forcing "Product Price" and "Foreign Product Price" precisions to 6 decimals and VEF rounding to 0.01, so the scenario is deterministic."""
+        dp_prices = self.env['decimal.precision'].search(
+            [('name', 'in', ('Product Price', 'Foreign Product Price'))]
+        )
+        dp_prices.digits = 6
         self.currency_vef.rounding = 0.01
         return self._create_invoice(currency, None, lines_data)
 
