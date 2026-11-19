@@ -11,8 +11,8 @@ _counter = itertools.count(1)
 class TestForeignSupplierRequiredFields(TransactionCase):
     """Ticket 16153: taxpayer type and withholding type are not required for
     foreign suppliers (country different from Venezuela).
-    Ticket 16339: the withholding type depends on the taxpayer type, but only for
-    partners that are not suppliers."""
+    Ticket 16339 and 86944: the withholding type depends on the person type and
+    the taxpayer type (75% or 100%, none for a formal taxpayer)."""
 
     @classmethod
     def setUpClass(cls):
@@ -66,11 +66,7 @@ class TestForeignSupplierRequiredFields(TransactionCase):
         """Fill the fields that the installed views require, with unique data."""
         number = next(_counter)
         country = country or self.country_ve
-        context = {}
-        if supplier:
-            context["default_supplier_rank"] = 1
-        if customer:
-            context["default_customer_rank"] = 1
+        context = {"default_supplier_rank": 1} if supplier else {}
         form = Form(self.env["res.partner"].with_context(**context))
         form.name = "Foreign Supplier Test %s" % number
         form.prefix_vat = "J"
@@ -99,26 +95,23 @@ class TestForeignSupplierRequiredFields(TransactionCase):
             form.withholding_type_id = withholding
         return form
 
-    def test_foreign_supplier_saves_without_taxpayer_nor_withholding(self):
+    def test_foreign_supplier_saves_with_100_withholding(self):
         form = self._fill_form(
             country=self.country_us, type_person=self.type_person_non_resident
         )
         partner = form.save()
         self.assertTrue(partner.is_foreign_partner)
         self.assertEqual(partner.taxpayer_type, "ordinary")
-        self.assertFalse(partner.withholding_type_id)
+        self.assertEqual(partner.withholding_type_id, self.withholding_100)
 
-    def test_pj_domiciliada_ordinary_and_formal_have_no_withholding(self):
-        for taxpayer_type in ("ordinary", "formal"):
-            form = self._fill_form(
-                supplier=False, taxpayer_type=taxpayer_type, company=True
-            )
-            # The field is invisible, so the form refuses to write it.
-            with self.assertRaisesRegex(AssertionError, "invisible field"):
-                form.withholding_type_id = self.withholding_100
-            partner = form.save()
-            self.assertTrue(partner.is_resident_person)
-            self.assertFalse(partner.withholding_type_id)
+    def test_pj_domiciliada_ordinary_defaults_to_75_and_formal_has_none(self):
+        form = self._fill_form(supplier=False, taxpayer_type="ordinary", company=True)
+        self.assertEqual(form.save().withholding_type_id, self.withholding_75)
+        form = self._fill_form(supplier=False, taxpayer_type="formal", company=True)
+        # A formal taxpayer does not charge IVA: the field is invisible.
+        with self.assertRaisesRegex(AssertionError, "invisible field"):
+            form.withholding_type_id = self.withholding_100
+        self.assertFalse(form.save().withholding_type_id)
 
     def test_pj_domiciliada_special_defaults_withholding_to_75(self):
         partner = self._fill_form(
@@ -149,33 +142,30 @@ class TestForeignSupplierRequiredFields(TransactionCase):
         with self.assertRaisesRegex(AssertionError, "withholding_type_id"):
             form.save()
 
-    def test_pj_domiciliada_special_to_ordinary_clears_the_withholding(self):
+    def test_pj_domiciliada_special_to_formal_clears_the_withholding(self):
         form = self._fill_form(supplier=False, taxpayer_type="special", company=True)
         self.assertEqual(form.withholding_type_id, self.withholding_75)
         form.taxpayer_type = "ordinary"
+        self.assertEqual(form.withholding_type_id, self.withholding_75)
+        form.taxpayer_type = "formal"
         self.assertFalse(form.withholding_type_id)
 
-    def test_pn_residente_ordinary_and_formal_default_to_100_and_require_it(self):
-        for taxpayer_type in ("ordinary", "formal"):
-            form = self._fill_form(supplier=False, taxpayer_type=taxpayer_type)
-            self.assertEqual(form.withholding_type_id, self.withholding_100)
-            self.assertEqual(form.save().withholding_type_id, self.withholding_100)
+    def test_pn_residente_ordinary_defaults_to_100_and_requires_it(self):
+        form = self._fill_form(supplier=False, taxpayer_type="ordinary")
+        self.assertEqual(form.withholding_type_id, self.withholding_100)
+        self.assertEqual(form.save().withholding_type_id, self.withholding_100)
         form = self._fill_form(supplier=False, taxpayer_type="ordinary")
         form.withholding_type_id = self.env["account.withholding.type"]
         with self.assertRaisesRegex(AssertionError, "withholding_type_id"):
             form.save()
 
-    def test_pn_residente_special_has_no_withholding(self):
-        # Sheet "Matriz de retenciones", row 18: N/A and not required.
-        form = self._fill_form(supplier=False, taxpayer_type="ordinary")
-        self.assertEqual(form.withholding_type_id, self.withholding_100)
-        form.taxpayer_type = "special"
+    def test_pn_residente_formal_has_no_withholding(self):
+        form = self._fill_form(supplier=False, taxpayer_type="formal")
         self.assertFalse(form.withholding_type_id)
         with self.assertRaisesRegex(AssertionError, "invisible field"):
-            form.withholding_type_id = self.withholding_75
+            form.withholding_type_id = self.withholding_100
         self.assertFalse(form.save().withholding_type_id)
-        form = self._fill_form(supplier=False, taxpayer_type="special")
-        form.taxpayer_type = "formal"
+        form.taxpayer_type = "ordinary"
         self.assertEqual(form.withholding_type_id, self.withholding_100)
 
     def test_resident_person_types(self):
@@ -282,16 +272,14 @@ class TestForeignSupplierRequiredFields(TransactionCase):
         form.company_type = "company"
         self.assertFalse(form.type_person_id)
 
-    def test_non_resident_hides_and_clears_taxpayer_and_withholding(self):
+    def test_non_resident_hides_taxpayer_and_defaults_withholding_to_100(self):
         form = self._fill_form(supplier=False, taxpayer_type="special", company=True)
         self.assertEqual(form.withholding_type_id, self.withholding_75)
         form.type_person_id = self.type_person_non_resident
         self.assertEqual(form.taxpayer_type, "ordinary")
-        self.assertFalse(form.withholding_type_id)
+        self.assertEqual(form.withholding_type_id, self.withholding_100)
         with self.assertRaisesRegex(AssertionError, "invisible field"):
             form.taxpayer_type = "special"
-        with self.assertRaisesRegex(AssertionError, "invisible field"):
-            form.withholding_type_id = self.withholding_75
 
     def test_non_resident_cannot_be_special(self):
         partner = self.env["res.partner"].create(
