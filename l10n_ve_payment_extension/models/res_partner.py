@@ -228,10 +228,17 @@ class ResPartner(models.Model):
     def _apply_default_withholding_type(self):
         """Ticket 86944 (IVA retention table): no IVA is withheld from a formal
         taxpayer; a non resident or a PN Residente is withheld 100% and any other
-        resident 75%. The partner of a company is left as it is: its withholding
-        type comes from the company configuration."""
+        resident 75%. A value already chosen (75% or 100%) is kept, except for a
+        non resident one, which is always 100%. The partner of a company is left
+        as it is: its withholding type comes from the company configuration."""
         for partner in self:
             if partner._is_company_partner():
+                continue
+            if (
+                partner.withholding_type_id
+                and partner.taxpayer_type != "formal"
+                and not partner.is_non_resident_person
+            ):
                 continue
             if partner.taxpayer_type == "formal":
                 xmlid = False
