@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="view_decimal_precision_form_l10n_ve_pos_mf" model="ir.ui.view">
+        <field name="name">decimal.precision.form.l10n_ve_pos_mf</field>
+        <field name="model">decimal.precision</field>
+        <field name="inherit_id" ref="base.view_decimal_precision_form" />
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="after">
+                <chatter />
+            </xpath>
+        </field>
+    </record>
+</odoo>
