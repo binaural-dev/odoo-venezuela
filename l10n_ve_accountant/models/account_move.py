@@ -783,6 +783,13 @@ class AccountMove(models.Model):
             if move.move_type in ["out_refund", "in_refund"] and move.reversed_entry_id:
                 move.foreign_rate = move.reversed_entry_id.foreign_rate
                 move.foreign_inverse_rate = move.reversed_entry_id.foreign_inverse_rate
+            if not move.manually_set_rate:
+                continue
+            # Con tasa manual la tasa del dia solo sirve para el mensaje de abajo. Una
+            # factura o asiento con tasa manual en una fecha sin tasa YA NO falla al
+            # crearse (antes lanzaba aunque la tasa del dia no se usara): afecta al cierre
+            # de ejercicio, al POS y a las facturas con tasa manual. Se busca sin lanzar y,
+            # si no hay tasa de referencia, no se publica el mensaje.
             Rate = self.env["res.currency.rate"]
             # La tasa de un asiento (entry) es la de su fecha contable (`date`), como en
             # _compute_rate_for_documents; invoice_date no es su fecha de tasa y trae el "hoy"
@@ -792,9 +799,16 @@ class AccountMove(models.Model):
                 rate_date = move.date or fields.Date.context_today(move)
             else:
                 rate_date = move.invoice_date or move.date or fields.Date.context_today(move)
-            rate_values = Rate.compute_rate(move.foreign_currency_id.id, rate_date)
+            rate_values = Rate.with_company(move.company_id).compute_rate(
+                move.foreign_currency_id.id,
+                rate_date,
+                raise_if_not_found=False,
+                use_last_rate=not move._is_exact_rate_required(),
+            )
+            if not rate_values:
+                continue
             last_foreign_rate = rate_values.get("foreign_rate", 0)
-            if move.manually_set_rate and float_compare(
+            if float_compare(
                 move.foreign_rate, last_foreign_rate, precision_digits=precision
             ):
                 move.message_post(
@@ -1192,6 +1206,22 @@ class AccountMove(models.Model):
         self.ensure_one()
         return False
 
+    def _is_exact_rate_required(self):
+        """Hook: True si el documento exige tasa de la fecha exacta; False si puede usar la
+        ultima tasa anterior a su fecha cuando esa fecha no tiene tasa (fin de semana,
+        feriado o fecha futura).
+
+        Exigen tasa exacta las facturas, notas de credito/debito y recibos, y los asientos
+        de pago (`origin_payment_id`). El resto de asientos usa la ultima tasa anterior, que
+        queda fija desde que se guarda.
+
+        Los asientos de diferencia cambiaria (`l10n_ve_exchange_foreign_diff_entry`) NO estan
+        en el grupo exacto a proposito: sus lineas no usan la tasa de cabecera
+        (`_skip_foreign_compute`), asi que un reverso o una conciliacion en un dia sin tasa
+        no debe fallar por ello."""
+        self.ensure_one()
+        return bool(self.is_invoice(include_receipts=True) or self.origin_payment_id)
+
     def _get_rate_date(self):
         """Fecha con la que se busca la tasa: la Rate Date en facturas (la fecha contable de
         respaldo) y la fecha contable en asientos, cuyo invoice_date solo trae el "hoy"."""
@@ -1227,7 +1257,15 @@ class AccountMove(models.Model):
                 move.foreign_rate = origin.foreign_rate
                 move.foreign_inverse_rate = origin.foreign_inverse_rate
                 continue
-            rate_values = Rate.compute_rate(move.foreign_currency_id.id, rate_date)
+            # Solo los documentos sin exigencia de tasa exacta (asientos) caen a la ultima
+            # tasa anterior; falla unicamente si no existe NINGUNA tasa anterior.
+            required = move._is_exact_rate_required()
+            rate_values = Rate.with_company(move.company_id).compute_rate(
+                move.foreign_currency_id.id,
+                rate_date,
+                raise_if_not_found=True,
+                use_last_rate=not required,
+            )
             move.foreign_rate = rate_values.get("foreign_rate", 0)
             move.foreign_inverse_rate = rate_values.get("foreign_inverse_rate", 0)
 
