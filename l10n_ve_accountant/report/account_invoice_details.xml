@@ -110,7 +110,7 @@
                                             <p t-out="invoice.detailed_amounts['formatted_taxes_amount']"/>
                                         </div>
                                         <div class="col-2 text-center">
-                                            <p t-out="invoice.tax_totals['formatted_amount_total']"></p>
+                                            <p t-out="invoice.tax_totals['formatted_total_amount_currency']"></p>
                                         </div>
                                     </div>
                                 </t>

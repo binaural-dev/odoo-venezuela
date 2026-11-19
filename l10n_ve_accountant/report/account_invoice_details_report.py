@@ -40,7 +40,7 @@ class AccountInvoiceDetailsReport(models.AbstractModel):
 
     def _get_domain_search_payment(self, wizard):
         return [
-            ("state", "=", "posted"),
+            ("state", "in", ["in_process", "paid"]),
             ("company_id", "=", wizard.company_id.id),
             ("date", ">=", wizard.date_from),
             ("date", "<=", wizard.date_to),
@@ -181,30 +181,41 @@ class AccountInvoiceDetailsReport(models.AbstractModel):
         return formatLang(self.env, amount, currency_obj=self.env.ref(currency))
 
     def p_get_new_values(self, totals, payment):
-        multiply = 1 if payment.payment_type == "inbound" else -1
-        amount = totals["amount"] + (payment.amount * multiply)
+        # Totales en moneda de la compania: los pagos pueden estar en cualquier moneda.
+        amount = totals["amount"] + payment.amount_company_currency_signed
         return {
             "amount": amount,
-            "formatted_amount": formatLang(self.env, amount, currency_obj=payment.currency_id),
+            "formatted_amount": formatLang(
+                self.env, amount, currency_obj=payment.company_id.currency_id
+            ),
         }
 
     def get_new_values(self, totals, invoice):
+        """Acumula los totales en moneda de la compania.
+
+        Las facturas pueden estar en cualquier moneda; `tax_totals` ya trae el total y
+        los impuestos en moneda de la compania (con la tasa de la propia factura). Bruto
+        y descuento se llevan a esa moneda con el mismo factor.
+        """
         multiply = 1 if invoice.move_type == "out_invoice" else -1
-        gross_amount = totals["gross_amount"] + (
-            invoice.detailed_amounts["gross_amount"] * multiply
-        )
-        discount_amount = totals["discount_amount"] + (
-            invoice.detailed_amounts["discount_amount"] * multiply
+        company_currency = invoice.company_id.currency_id
+        tax_totals = invoice.tax_totals
+        doc_total = tax_totals["total_amount_currency"]
+        factor = tax_totals["total_amount"] / doc_total if doc_total else 1
+        detailed = invoice.detailed_amounts
+        gross_amount = totals["gross_amount"] + detailed["gross_amount"] * factor * multiply
+        discount_amount = (
+            totals["discount_amount"] + detailed["discount_amount"] * factor * multiply
         )
         gross_discount_amount = totals["gross_discount_amount"] + (
-            (invoice.detailed_amounts["gross_amount"] - invoice.detailed_amounts["discount_amount"])
-            * multiply
+            (detailed["gross_amount"] - detailed["discount_amount"]) * factor * multiply
         )
-        taxes_amount = totals["taxes_amount"] + (
-            invoice.detailed_amounts["taxes_amount"] * multiply
-        )
-        total_amount = totals["total_amount"] + (invoice.tax_totals["amount_total"] * multiply)
+        taxes_amount = totals["taxes_amount"] + tax_totals["tax_amount"] * multiply
+        total_amount = totals["total_amount"] + tax_totals["total_amount"] * multiply
         total_items = totals["total_items"] + 1
+
+        def fmt(amount):
+            return formatLang(self.env, amount, currency_obj=company_currency)
 
         return {
             "gross_amount": gross_amount,
@@ -212,21 +223,11 @@ class AccountInvoiceDetailsReport(models.AbstractModel):
             "total_amount": total_amount,
             "gross_discount_amount": gross_discount_amount,
             "taxes_amount": taxes_amount,
-            "formatted_gross_amount": formatLang(
-                self.env, gross_amount, currency_obj=invoice.currency_id
-            ),
-            "formatted_taxes_amount": formatLang(
-                self.env, taxes_amount, currency_obj=invoice.currency_id
-            ),
-            "formatted_gross_discount_amount": formatLang(
-                self.env, gross_discount_amount, currency_obj=invoice.currency_id
-            ),
-            "formatted_discount_amount": formatLang(
-                self.env, discount_amount, currency_obj=invoice.currency_id
-            ),
-            "formatted_total_amount": formatLang(
-                self.env, total_amount, currency_obj=invoice.currency_id
-            ),
+            "formatted_gross_amount": fmt(gross_amount),
+            "formatted_taxes_amount": fmt(taxes_amount),
+            "formatted_gross_discount_amount": fmt(gross_discount_amount),
+            "formatted_discount_amount": fmt(discount_amount),
+            "formatted_total_amount": fmt(total_amount),
             "total_items": total_items,
         }
 
