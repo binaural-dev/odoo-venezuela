@@ -459,7 +459,7 @@ class PosConfig(models.Model):
         treated as 0, as Odoo would fall back to 100 for it.
 
         Runs once per database: on install (data/ir_config_parameter_data.xml, noupdate) or on
-        the upgrade to 19.0.1.31.0 (migrations/19.0.1.31.0). After that, the parameter is the
+        the upgrade to 19.0.1.32.0 (migrations/19.0.1.32.0). After that, the parameter is the
         administrator's: updates of the module do not touch it again.
         """
         param_model = self.env["ir.config_parameter"]
