@@ -26,7 +26,9 @@ esos datos no deben configurarse por separado en cada sucursal.
     `taxpayer_type`).
   - `_l10n_ve_propagate_fiscal_fields_to_branches()`: copia esos campos del
     contacto de una compañía raíz a los contactos de todas sus sucursales
-    (`child_of`, incluidas las archivadas).
+    (`child_of`, incluidas las archivadas). Acepta `fnames` opcional (por
+    defecto todos) que usa la migración para copiar solo los campos con
+    valor en la raíz.
   - `_fields_sync()`: al escribir alguno de esos campos en el contacto de
     la compañía raíz, llama a la propagación (único gancho del core que
     recibe solo los campos cambiados; el sync comercial del core va por el
@@ -39,8 +41,10 @@ esos datos no deben configurarse por separado en cada sucursal.
     valores de la raíz (el core solo copia campos de `res.company`).
 - `l10n_ve_payment_extension/migrations/19.0.2.2.9/`: iguala los contactos
   de las sucursales existentes a los de su raíz, sobrescribiendo lo que
-  tuvieran. Por cada valor de sucursal que se pierde se deja un `warning`
-  en el log de la migración.
+  tuvieran, pero solo los campos que tienen valor en la raíz: un campo
+  vacío en la raíz no se toca en las sucursales. Se deja un `warning` por
+  cada valor de sucursal que se sobrescribe y por cada valor que se
+  conserva por tener la raíz el campo vacío.
 - `l10n_ve_payment_extension/tests/test_branch_fiscal_propagation.py`
   (nuevo): propagación (incluye sucursal de sucursal), bloqueo, sucursal
   nueva, migración (sobrescritura y warning) y tipo de persona de la
@@ -68,9 +72,13 @@ esos datos no deben configurarse por separado en cada sucursal.
   `test_a_root_edit_propagates_to_descendants` fija el comportamiento ante
   cambios entre versiones.
 - La migración sobrescribe los valores de las sucursales con los de su
-  raíz, incluso si la raíz tiene un campo vacío. Antes de aplicarla en una
-  base con sucursales configuradas a mano conviene revisar los warnings de
-  la migración y confirmar con el cliente que no hay valores que perder.
+  raíz solo si la raíz tiene valor; si la raíz tiene el campo vacío, la
+  sucursal conserva el suyo (con un `warning`). Esa sucursal queda distinta
+  a su raíz hasta que se configure la matriz, y la constraint rechazará
+  escrituras de ese campo en la sucursal (su mensaje indica dónde editarlo).
+  La migración escribe con el contexto `l10n_ve_skip_branch_fiscal_check`,
+  que la constraint respeta, para poder propagar los demás campos.
+  Conviene revisar los warnings y configurar la matriz después de migrar.
 - Caso abierto: `condition_withholding_id` sigue editable en el formulario
   de compañía de una sucursal; el cambio se rechaza con el mensaje del
   contacto.

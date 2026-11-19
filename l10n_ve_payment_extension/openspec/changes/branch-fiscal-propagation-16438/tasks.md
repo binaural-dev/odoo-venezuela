@@ -17,13 +17,18 @@
 - [x] 2.1 Propagación raíz → sucursales (`_fields_sync` + helper)
 - [x] 2.2 Constraint para contactos de sucursales
 - [x] 2.3 `res.company.create` aplica los valores a la sucursal nueva
-- [x] 2.4 Migración 19.0.2.2.9
+- [x] 2.4 Migración 19.0.2.2.9 (solo propaga los campos con valor en la raíz;
+      conserva los de la sucursal si la raíz está vacía y deja un warning)
 
 ## 3. Pruebas
 
 - [x] 3.1 Tests nuevos `branch_fiscal_propagation`
+- [x] 3.1b Tests de los flujos ISLR de cliente (automático y manual) con la
+      sucursal activa (`test_branch_islr_customer_flows.py`)
 - [ ] 3.2 Correr la suite en CI sobre la rama del PR
 - [ ] 3.3 Validar en el staging de Daiko con SUCURSAL CARACAS y VALENCIA
+      (pendiente: requiere el versionado antes de pasar a implementación;
+      solo se adelanta si un gerente lo propone como excepción explícita)
 
 ## 4. Fuera de alcance
 
