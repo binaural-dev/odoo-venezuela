@@ -514,7 +514,7 @@ En líneas municipales, al asignar la actividad económica el sistema DEBE (MUST
 
 ### Requirement: Catálogo de actividades económicas válido
 
-El modelo `economic.activity` DEBE (MUST) exigir alícuota mayor que cero y unicidad del código por municipio (constraints SQL `aliquot_mayor_cero` y `code_uniq`); el ramo económico (`economic.branch`) DEBE (MUST) tener nombre único.
+El modelo `economic.activity` DEBE (MUST) exigir alícuota mayor que cero y unicidad del código por municipio (`models.Constraint` `_aliquot_mayor_cero` y `_code_uniq`; en Odoo 19 `_sql_constraints` ya no se lee); el ramo económico (`economic.branch`) DEBE (MUST) tener nombre único.
 
 #### Scenario: Actividad duplicada en el municipio
 
@@ -523,7 +523,7 @@ El modelo `economic.activity` DEBE (MUST) exigir alícuota mayor que cero y unic
 
 ### Requirement: Código de concepto de pago único
 
-Cada línea de concepto de pago (`payment.concept.line`) DEBE (MUST) tener un código único a nivel de sistema (constraint SQL `unique_code` sobre `code`, campo obligatorio), y exige tipo de persona (limitado a los activos) y concepto de pago asociado (limitado a los de estado activo, con `ondelete="cascade"`). Un porcentaje de base imponible mayor a 100 no se rechaza con error: un aviso de onchange lo devuelve a 0.
+Cada línea de concepto de pago (`payment.concept.line`) DEBE (MUST) tener un código único a nivel de sistema (`models.Constraint` `_unique_code` sobre `code`, campo obligatorio), y exige tipo de persona (limitado a los activos) y concepto de pago asociado (limitado a los de estado activo, con `ondelete="cascade"`). Un porcentaje de base imponible mayor a 100 no se rechaza con error: un aviso de onchange lo devuelve a 0.
 
 #### Scenario: Código repetido
 
