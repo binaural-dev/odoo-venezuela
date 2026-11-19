@@ -177,6 +177,37 @@ class TestInvoiceDetailsReport(TransactionCase):
         self.assertIn("Bs", totals["formatted_total_amount"])
         self.assertNotIn("$", totals["formatted_total_amount"])
 
+    def test_report_subtotals_by_currency(self):
+        """Cada grupo de moneda lleva su subtotal en esa moneda, sin convertir."""
+        self._mixed_invoices()
+        invoices = self._report_values()["invoices"]
+        journal = str(self.journal.id)
+        by_currency = invoices[journal]["totals_out_invoice"]
+        self.assertEqual(set(by_currency), {self.ves.id, self.usd.id})
+        usd, ves = by_currency[self.usd.id], by_currency[self.ves.id]
+        self.assertAlmostEqual(usd["gross_amount"], 270.0, places=2)
+        self.assertAlmostEqual(usd["discount_amount"], 15.0, places=2)
+        self.assertAlmostEqual(usd["taxes_amount"], 40.8, places=2)
+        self.assertAlmostEqual(usd["total_amount"], 295.8, places=2)
+        self.assertEqual(usd["total_items"], 2)
+        self.assertIn("$", usd["formatted_total_amount"])
+        self.assertAlmostEqual(ves["gross_amount"], 7000.0, places=2)
+        self.assertAlmostEqual(ves["total_amount"], 7830.0, places=2)
+        self.assertIn("Bs", ves["formatted_total_amount"])
+
+    def test_report_html_groups_by_currency_and_ends_in_company_currency(self):
+        self._mixed_invoices()
+        self._payment(self.usd, 100.0)
+        html = self.env["ir.actions.report"]._render_qweb_html(
+            self.REPORT, self._wizard().ids
+        )[0].decode()
+        self.assertIn("Total Sales (VEF)", html)
+        self.assertIn("Total Payments (VEF)", html)
+        self.assertIn("$\xa0295.80", html)  # subtotal del grupo USD
+        self.assertIn("7,830.00\xa0Bs", html)  # subtotal del grupo VEF
+        # El total general en VEF va despues de los subtotales por moneda.
+        self.assertGreater(html.index("Total Sales (VEF)"), html.index("$\xa0295.80"))
+
     def test_report_credit_note_subtracts(self):
         invoice = self._invoice(self.usd, 100.0)
         self._invoice(self.usd, 40.0, move_type="out_refund")
@@ -206,14 +237,19 @@ class TestInvoiceDetailsReport(TransactionCase):
     # ------------------------------------------------------------------
     # pagos
     # ------------------------------------------------------------------
-    def test_report_includes_payments_and_totals_in_company_currency(self):
-        """Los pagos publicados en Odoo 19 (in_process/paid) aparecen y se suman en VEF."""
+    def test_report_includes_payments_and_totals(self):
+        """Los pagos publicados en Odoo 19 (in_process/paid) aparecen; se subtotalizan por
+        moneda y el total general va en moneda de la compania."""
         payments = self._payment(self.ves, 2320.0) | self._payment(self.usd, 100.0)
         payments |= self._payment(self.usd, 30.0)
         values = self._report_values()
-        shown = values["payments"][str(self.bank.id)]
-        self.assertEqual(set(shown.ids), set(payments.ids))
-        total = values["payments"]["totals_" + str(self.bank.id)]
+        journal = str(self.bank.id)
+        self.assertEqual(set(values["payments"][journal].ids), set(payments.ids))
+        by_currency = values["payments"]["totals_" + journal]
+        self.assertAlmostEqual(by_currency[self.usd.id]["amount"], 130.0, places=2)
+        self.assertAlmostEqual(by_currency[self.ves.id]["amount"], 2320.0, places=2)
+        self.assertIn("$", by_currency[self.usd.id]["formatted_amount"])
+        total = values["payments"]["totals"]
         self.assertAlmostEqual(total["amount"], 2320.0 + 130.0 * self.USD_RATE, places=2)
         self.assertIn("Bs", total["formatted_amount"])
 
