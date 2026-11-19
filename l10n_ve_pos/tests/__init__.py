@@ -20,3 +20,4 @@ from . import test_pos_config_product_creation
 from . import test_pos_product_available_qty
 from . import test_pos_tender_currency
 from . import test_pos_session_opening_rate
+from . import test_pos_partner_load_limit
