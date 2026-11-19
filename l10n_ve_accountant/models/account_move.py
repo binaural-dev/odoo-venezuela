@@ -677,9 +677,7 @@ class AccountMove(models.Model):
             if not record.tax_totals:
                 record.detailed_amounts = dict()
                 return
-            amount_taxed = record.tax_totals.get(
-                "amount_total", 0
-            ) - record.tax_totals.get("amount_untaxed", 0)
+            amount_taxed = record.tax_totals.get("tax_amount_currency", 0)
             total = 0
 
             for line in record.invoice_line_ids:
@@ -692,19 +690,19 @@ class AccountMove(models.Model):
                 {
                     "gross_amount": total,
                     "formatted_gross_amount": formatLang(
-                        self.env, total, currency_obj=self.currency_id
+                        self.env, total, currency_obj=record.currency_id
                     ),
                     "discount_amount": discount_amount,
                     "formatted_discount_amount": formatLang(
-                        self.env, discount_amount, currency_obj=self.currency_id
+                        self.env, discount_amount, currency_obj=record.currency_id
                     ),
-                    "gross_discount_amount": total,
+                    "gross_discount_amount": total - discount_amount,
                     "formatted_gross_discount_amount": formatLang(
-                        self.env, total - discount_amount, currency_obj=self.currency_id
+                        self.env, total - discount_amount, currency_obj=record.currency_id
                     ),
                     "taxes_amount": amount_taxed,
                     "formatted_taxes_amount": formatLang(
-                        self.env, amount_taxed, currency_obj=self.currency_id
+                        self.env, amount_taxed, currency_obj=record.currency_id
                     ),
                 }
             )
