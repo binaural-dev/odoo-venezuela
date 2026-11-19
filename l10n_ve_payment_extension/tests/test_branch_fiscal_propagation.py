@@ -99,17 +99,52 @@ class TestBranchFiscalPropagation(TransactionCase):
         for company in (self.branch, self.grandchild):
             self.assertEqual(company.partner_id.type_person_id, self.person_a)
 
+    def _set_branch_person_without_constraint(self, person):
+        """Simulate legacy data: a value configured by hand on the branches."""
+        partners = (self.branch | self.grandchild).partner_id
+        self.env.cr.execute(
+            "UPDATE res_partner SET type_person_id = %s WHERE id IN %s",
+            (person.id, tuple(partners.ids)),
+        )
+        self.env.invalidate_all()
+
     def test_e_migration_overwrites_branch_values_and_warns(self):
         self._set_root_values(self.person_a, self.wh_a, "special")
-        self._write_on_root_without_propagation({"type_person_id": False})
-        self.assertEqual(self.branch.partner_id.type_person_id, self.person_a)
+        self._set_branch_person_without_constraint(self.person_b)
         migration = self._load_migration()
         with self.assertLogs(migration._logger, level="WARNING") as logs:
             migration.migrate(self.env.cr, "19.0.2.2.8")
         self.env.invalidate_all()
         for company in (self.branch, self.grandchild):
-            self.assertFalse(company.partner_id.type_person_id)
+            self.assertEqual(company.partner_id.type_person_id, self.person_a)
         self.assertTrue(any("type_person_id" in message for message in logs.output))
+        self.assertTrue(any("overwritten" in message for message in logs.output))
+
+    def test_g_migration_keeps_branch_value_when_root_is_empty(self):
+        self._set_root_values(self.person_a, self.wh_a, "special")
+        self.root.partner_id.write({"type_person_id": False})
+        self._set_branch_person_without_constraint(self.person_b)
+        self._write_on_root_without_propagation({"withholding_type_id": self.wh_b.id})
+        migration = self._load_migration()
+        with self.assertLogs(migration._logger, level="WARNING") as logs:
+            migration.migrate(self.env.cr, "19.0.2.2.8")
+        self.env.invalidate_all()
+        for company in (self.branch, self.grandchild):
+            self.assertEqual(
+                company.partner_id.type_person_id,
+                self.person_b,
+                "A field empty on the root must not be touched on the branches.",
+            )
+            self.assertEqual(
+                company.partner_id.withholding_type_id,
+                self.wh_b,
+                "The fields with a value on the root are still propagated.",
+            )
+        kept = [
+            m for m in logs.output
+            if "type_person_id" in m and "kept" in m and self.root.name in m
+        ]
+        self.assertEqual(len(kept), 2, logs.output)
 
     def test_f_customer_islr_type_person_from_branch(self):
         self._set_root_values(self.person_a, self.wh_a, "special")

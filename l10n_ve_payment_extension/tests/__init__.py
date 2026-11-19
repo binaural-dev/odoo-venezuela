@@ -55,3 +55,4 @@ from . import test_retention_payment_foreign_amount_rate_date
 from . import test_foreign_supplier_required_fields
 from . import test_retention_cash_basis_foreign
 from . import test_branch_fiscal_propagation
+from . import test_branch_islr_customer_flows
