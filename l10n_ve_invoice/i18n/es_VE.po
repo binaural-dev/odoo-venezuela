@@ -969,3 +969,19 @@ msgstr "Forma Libre"
 #: model:ir.model,name:l10n_ve_invoice.model_l10n_ve_discount_line_mixin
 msgid "Line fixed amount discount"
 msgstr "Descuento de importe fijo de línea"
+
+#. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/models/ir_sequence.py:0
+msgid ""
+"There is already an active invoice correlative sequence for the company %s. "
+"Only one is allowed."
+msgstr ""
+"Ya existe una secuencia de correlativo de factura activa para la compañía "
+"%s. Solo se permite una."
+
+#. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/models/ir_sequence.py:0
+msgid "(no company)"
+msgstr "(sin compañía)"
