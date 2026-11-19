@@ -236,3 +236,23 @@ class TestTaxUnit(TransactionCase):
         self.assertFalse(self.ut_2025.status)
         self.assertEqual(other_retention.tax_unit_ids.id, ut_2026.id)
         self.assertEqual(inactive_retention.tax_unit_ids.id, ut_2026.id)
+
+    def test_10_tax_unit_is_global(self):
+        """ La UT es global (ticket 15581): no tiene compañía, otra compañía la ve
+        y no puede registrar otra UT con la misma fecha de gaceta """
+        self.assertNotIn('company_id', self.env['tax.unit']._fields)
+
+        other_company = self.env['res.company'].create({'name': 'Compañía UT global'})
+        self.env.user.company_ids |= other_company
+        TaxUnitOther = self.env['tax.unit'].with_company(other_company).with_context(
+            allowed_company_ids=[other_company.id],
+        )
+
+        self.assertIn(self.ut_2025, TaxUnitOther.search([]))
+
+        with self.assertRaises(UserError):
+            TaxUnitOther.create({
+                'name': 'UT 2025 otra compañía',
+                'value': 100.0,
+                'available_date': '2025-01-01',
+            })
