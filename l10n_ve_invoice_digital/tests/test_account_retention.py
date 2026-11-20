@@ -1,4 +1,5 @@
 from odoo.tests import TransactionCase, tagged, Form
+from odoo.addons.l10n_ve_invoice.tests.common import enable_historical_rate_fixtures
 from datetime import timedelta, date
 from odoo.exceptions import UserError
 from odoo import Command, fields
@@ -12,6 +13,7 @@ _logger = logging.getLogger(__name__)
 class TestAccumulatedRate(TransactionCase):
     def setUp(self):
         super().setUp()
+        enable_historical_rate_fixtures(self)
         self.currency_vef = self.env.ref("base.VEF")
         self.currency_usd = self.env.ref("base.USD")
         self.company = self.env.ref("base.main_company")

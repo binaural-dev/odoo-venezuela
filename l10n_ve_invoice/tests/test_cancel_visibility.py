@@ -3,12 +3,14 @@ from contextlib import contextmanager
 from unittest.mock import patch
 from odoo.tests import TransactionCase, tagged
 from odoo import fields, Command
+from .common import enable_historical_rate_fixtures
 
 @tagged("post_install", "-at_install", "l10n_ve_invoice")
 class TestCancelVisibility(TransactionCase):
 
     def setUp(self):
         super(TestCancelVisibility, self).setUp()
+        enable_historical_rate_fixtures(self)
         self.company = self.env.user.company_id
         # Ensure 'taxpayer_type' exists, otherwise likely added by this module
         # Set default to ordinary

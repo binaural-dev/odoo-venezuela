@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Global discount of the invoice (free form report). The subtotal keeps its
+         name; the discount is a positive amount printed where it impacts: over the
+         subtotal (the lines carry it) right before the Subtotal, unless the report
+         already prints "Descuento total"; over the total (the lines are untouched)
+         after the taxes. -->
+    <template id="tax_groups_totals_ve_global_discount" inherit_id="l10n_ve_invoice.tax_groups_totals_ve">
+        <xpath expr="//t[@t-foreach='subtotals']" position="before">
+            <t t-if="o.tax_totals.get('global_discount_mode') == 'global_subtotal' and not display_discount">
+                <tr style="line-height:1.2px;" class="mt-2">
+                    <td>Descuento global</td>
+                    <td class="text-end">
+                        <span class="text-nowrap" t-out="o.tax_totals.get('formatted_global_discount_ves', '')"/>
+                    </td>
+                </tr>
+            </t>
+        </xpath>
+        <xpath expr="//t[@t-foreach='subtotals']" position="after">
+            <tr t-if="o.tax_totals.get('global_discount_mode') == 'global_total'" style="line-height:1.2px;" class="mt-2">
+                <td>Descuento global</td>
+                <td class="text-end">
+                    <span class="text-nowrap" t-out="o.tax_totals.get('formatted_global_discount_ves', '')"/>
+                </td>
+            </tr>
+        </xpath>
+    </template>
+
+    <template id="tax_groups_totals_global_discount" inherit_id="l10n_ve_invoice.tax_groups_totals">
+        <xpath expr="//t[@t-foreach='subtotals']" position="before">
+            <t t-if="o.tax_totals.get('global_discount_mode') == 'global_subtotal' and not display_discount">
+                <tr style="line-height:1.2px;" class="mt-2">
+                    <td>Descuento global</td>
+                    <td class="text-end">
+                        <span class="text-nowrap" t-out="o.tax_totals.get('formatted_global_discount', '')"/>
+                    </td>
+                </tr>
+            </t>
+        </xpath>
+        <xpath expr="//t[@t-foreach='subtotals']" position="after">
+            <tr t-if="o.tax_totals.get('global_discount_mode') == 'global_total'" style="line-height:1.2px;" class="mt-2">
+                <td>Descuento global</td>
+                <td class="text-end">
+                    <span class="text-nowrap" t-out="o.tax_totals.get('formatted_global_discount', '')"/>
+                </td>
+            </tr>
+        </xpath>
+    </template>
+</odoo>

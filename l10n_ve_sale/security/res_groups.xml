@@ -29,6 +29,24 @@
         <field name="name">Hide Create Invoice (sale)</field>
         <field name="privilege_id" ref="l10n_ve_accountant.res_groups_privilege_category_hidden"/>
     </record>
-    
+
+    <!-- The discount permission lives in its own section: inside the Sales privilege
+         it would be one more option of the same selector and picking it would replace
+         the sales role of the user. -->
+    <record id="module_category_discount_control" model="ir.module.category">
+        <field name="name">Discount Control</field>
+        <field name="sequence">50</field>
+    </record>
+
+    <record id="res_groups_privilege_discount_approval" model="res.groups.privilege">
+        <field name="name">Discount Approval</field>
+        <field name="sequence">1</field>
+        <field name="category_id" ref="module_category_discount_control"/>
+    </record>
+
+    <record id="group_discount_approver" model="res.groups">
+        <field name="name">Approve Excess Discounts</field>
+        <field name="privilege_id" ref="res_groups_privilege_discount_approval"/>
+    </record>
 
 </odoo>

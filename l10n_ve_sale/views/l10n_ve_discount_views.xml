@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Sale order: the discount column shown depends on the scheme of the order -->
+    <record id="view_order_form_l10n_ve_discount" model="ir.ui.view">
+        <field name="name">sale.order.form.l10n.ve.discount</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='order_line']/list/field[@name='discount']" position="attributes">
+                <attribute name="column_invisible">parent.discount_type == 'amount'</attribute>
+                <attribute name="readonly">parent.discount_mode in ('global_subtotal', 'global_total')</attribute>
+            </xpath>
+            <xpath expr="//field[@name='order_line']/list/field[@name='discount']" position="after">
+                <field name="discount_fixed" string="Disc. Amt"
+                       groups="sale.group_discount_per_so_line"
+                       column_invisible="parent.discount_type != 'amount'"
+                       readonly="parent.discount_mode in ('global_subtotal', 'global_total')"
+                       optional="show"/>
+            </xpath>
+            <xpath expr="//field[@name='order_line']/form//field[@name='discount']" position="after">
+                <field name="discount_fixed" groups="sale.group_discount_per_so_line"
+                       invisible="parent.discount_type != 'amount'"/>
+            </xpath>
+            <xpath expr="//field[@name='order_line']/form//div[@name='discount']" position="attributes">
+                <attribute name="invisible">parent.discount_type == 'amount'</attribute>
+            </xpath>
+            <xpath expr="//header" position="inside">
+                <button name="action_approve_discount" string="Approve Discount" type="object"
+                        class="btn-primary" groups="l10n_ve_sale.group_discount_approver"
+                        invisible="discount_approval_state != 'to_approve'"/>
+                <button name="action_reject_discount" string="Reject Discount" type="object"
+                        groups="l10n_ve_sale.group_discount_approver"
+                        invisible="discount_approval_state != 'to_approve'"/>
+                <button name="action_cancel" string="Cancel" type="object"
+                        invisible="state != 'to_approve' or not id"/>
+            </xpath>
+            <xpath expr="//sheet" position="before">
+                <div class="alert alert-info mb-0" role="alert"
+                     invisible="discount_approval_state != 'exceeds'">
+                    <strong>The discount exceeds the maximum allowed.</strong> When you confirm the
+                    order it will go to a discount approval stage.
+                </div>
+                <div class="alert alert-warning mb-0" role="alert"
+                     invisible="discount_approval_state != 'to_approve'">
+                    <strong>To Approve:</strong> the discount exceeds the maximum allowed. A discount
+                    approver must approve it: approving confirms the order. Lowering the discount
+                    under the limit also takes it out of this stage.
+                </div>
+            </xpath>
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="discount_type" invisible="1"/>
+                <field name="discount_methods_available" invisible="1"/>
+                <field name="discount_mode" invisible="not discount_mode"
+                       groups="sale.group_discount_per_so_line"/>
+                <field name="discount_approval_state" invisible="not discount_approval_state"
+                       widget="badge"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Customer invoice: discount button + scheme -->
+    <record id="view_move_form_l10n_ve_discount" model="ir.ui.view">
+        <field name="name">account.move.form.l10n.ve.discount</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="l10n_ve_invoice.view_account_move_form_l10n_ve_invoice"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='invoice_line_ids']//field[@name='discount']" position="attributes">
+                <attribute name="readonly">parent.discount_mode in ('global_subtotal', 'global_total')</attribute>
+            </xpath>
+            <xpath expr="//field[@name='invoice_line_ids']//field[@name='discount_fixed']" position="attributes">
+                <attribute name="readonly">parent.discount_mode in ('global_subtotal', 'global_total')</attribute>
+            </xpath>
+            <xpath expr="//field[@name='invoice_line_ids']" position="after">
+                <field name="discount_methods_available" invisible="1"/>
+                <div class="d-flex justify-content-end d-print-none mb-2"
+                     invisible="move_type != 'out_invoice' or state != 'draft' or not discount_methods_available">
+                    <button string="Discount" name="action_open_discount_wizard" type="object"
+                            class="btn btn-secondary" groups="sale.group_discount_per_so_line"/>
+                </div>
+            </xpath>
+            <!-- One single status bar, like the order: Draft > Discount to Approve >
+                 Posted. The native bar stays in the view (hidden) for the state. -->
+            <xpath expr="//field[@name='state'][@widget='statusbar']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='state'][@widget='statusbar']" position="after">
+                <field name="discount_stage" widget="statusbar"
+                       statusbar_visible="draft,to_approve,posted"
+                       invisible="move_type != 'out_invoice'"
+                       groups="!account.group_account_secured"/>
+            </xpath>
+            <xpath expr="//header" position="inside">
+                <button name="action_approve_discount" string="Approve Discount" type="object"
+                        class="btn-primary" groups="l10n_ve_sale.group_discount_approver"
+                        invisible="discount_approval_state != 'to_approve'"/>
+                <button name="action_reject_discount" string="Reject Discount" type="object"
+                        groups="l10n_ve_sale.group_discount_approver"
+                        invisible="discount_approval_state != 'to_approve'"/>
+            </xpath>
+            <xpath expr="//sheet" position="before">
+                <div class="alert alert-info mb-0" role="alert"
+                     invisible="discount_approval_state != 'exceeds'">
+                    <strong>The discount exceeds the maximum allowed.</strong> When you post the
+                    invoice it will go to a discount approval stage.
+                </div>
+                <div class="alert alert-warning mb-0" role="alert"
+                     invisible="discount_approval_state != 'to_approve'">
+                    <strong>To Approve:</strong> the discount exceeds the maximum allowed. A discount
+                    approver must approve it: approving posts the invoice.
+                </div>
+            </xpath>
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="discount_mode" invisible="not discount_mode"
+                       groups="sale.group_discount_per_so_line"/>
+                <field name="discount_approval_state" invisible="not discount_approval_state"
+                       widget="badge"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Own "Global discounts" section in Accounting > Settings > Default Accounts,
+         right below "Invoice line discounts". -->
+    <record id="res_config_settings_l10n_ve_sale_global_discount" model="ir.ui.view">
+        <field name="name">res.config.settings.l10n.ve.sale.global.discount</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="account.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='account_discount_expense_allocation_id']/ancestor::setting[1]" position="after">
+                <setting id="l10n_ve_sale_global_discount_setting" string="Global discounts:"
+                         title="Account where the global discounts of customer invoices are recorded. Required to apply a global discount.">
+                    <div class="content-group">
+                        <div class="row mt8">
+                            <label for="global_discount_account_id" class="col-lg-5 o_light_label"
+                                   string="Customer Invoices"/>
+                            <field name="global_discount_account_id"/>
+                        </div>
+                    </div>
+                </setting>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- The two discount settings of the invoice and accountant modules live in
+         the Discounts block of this module, together with the limits. -->
+    <record id="res_config_settings_l10n_ve_invoice_discount_type_moved" model="ir.ui.view">
+        <field name="name">res.config.settings.l10n.ve.invoice.discount.type.moved</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="l10n_ve_invoice.view_res_config_settings_l10n_ve_invoice"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@id='l10n_ve_invoice_div_discount_type']" position="replace"/>
+        </field>
+    </record>
+
+    <record id="res_config_settings_l10n_ve_accountant_show_discount_moved" model="ir.ui.view">
+        <field name="name">res.config.settings.l10n.ve.accountant.show.discount.moved</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="l10n_ve_accountant.view_res_config_settings_l10n_ve_accountant"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@id='l10n_ve_tax_div_config_igtf_show_discount_on_moves']/preceding-sibling::separator[1]" position="replace"/>
+            <xpath expr="//div[@id='l10n_ve_tax_div_config_igtf_show_discount_on_moves']" position="replace"/>
+        </field>
+    </record>
+
+    <record id="res_config_settings_l10n_ve_sale_discount_limits" model="ir.ui.view">
+        <field name="name">res.config.settings.l10n.ve.sale.discount.limits</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="l10n_ve_base.l10n_ve_base_view_res_config_settings"/>
+        <field name="arch" type="xml">
+            <xpath expr="//app[@name='l10n_ve_base']" position="inside">
+                <block title="Discounts" name="l10n_ve_sale_discount_limits_block"
+                       invisible="not group_discount_per_so_line">
+                    <setting id="l10n_ve_sale_discount_line_type" string="Line Discount Type"
+                             help="Discount field shown on the lines of sale orders and invoices: percentage or fixed amount.">
+                        <field name="discount_type" class="oe_inline" widget="radio"
+                               options="{'horizontal': true}"/>
+                    </setting>
+                    <setting id="l10n_ve_sale_discount_show_on_moves" string="Show Discount on Invoices"
+                             help="Enable discount column visibility on invoice lines.">
+                        <field name="show_discount_on_moves"/>
+                    </setting>
+                    <setting id="l10n_ve_sale_discount_limits" string="Limit Discount Method"
+                             help="Only the methods ticked below can be applied, by any user.">
+                        <field name="discount_method_limit_enabled"/>
+                        <div class="content-group mt-2" invisible="not discount_method_limit_enabled">
+                            <div class="text-muted">Allowed methods (a method that is not ticked cannot be applied by anyone)</div>
+                            <div><field name="discount_allow_line_percent"/> <label for="discount_allow_line_percent"/></div>
+                            <div><field name="discount_allow_line_amount"/> <label for="discount_allow_line_amount"/></div>
+                            <div><field name="discount_allow_global_subtotal"/> <label for="discount_allow_global_subtotal"/></div>
+                            <div><field name="discount_allow_global_total"/> <label for="discount_allow_global_total"/></div>
+                        </div>
+                    </setting>
+                    <setting id="l10n_ve_sale_discount_max" string="Limit the Maximum Discount"
+                             help="Maximum discount percentage per scheme. Fixed amounts are compared as a percentage. Independent of the discount method limit.">
+                        <field name="discount_max_limit_enabled"/>
+                        <div class="content-group mt-2" invisible="not discount_max_limit_enabled">
+                            <div class="row mt8">
+                                <label for="discount_max_line" class="col-lg-5 o_light_label"/>
+                                <field name="discount_max_line"/>
+                            </div>
+                            <div class="row mt8">
+                                <label for="discount_max_global_subtotal" class="col-lg-5 o_light_label"/>
+                                <field name="discount_max_global_subtotal"/>
+                            </div>
+                            <div class="row mt8">
+                                <label for="discount_max_global_total" class="col-lg-5 o_light_label"/>
+                                <field name="discount_max_global_total"/>
+                            </div>
+                        </div>
+                    </setting>
+                    <setting id="l10n_ve_sale_discount_approval" string="Approve Excess Discounts"
+                             help="A discount above the maximum moves the document to 'To Approve' until a discount approver validates it."
+                             invisible="not discount_max_limit_enabled">
+                        <field name="discount_approval_enabled"/>
+                    </setting>
+                </block>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -7,7 +7,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Sales/Sales",
-    "version": "19.0.1.0.11",
+    "version": "19.0.1.0.15",
     # any module necessary for this one to work correctly
     "depends": [
         "base",
@@ -24,6 +24,7 @@
         "security/ir.model.access.csv",
         "security/res_groups.xml",
         "data/ir_cron.xml",
+        "data/mail_activity_type.xml",
         "report/report_sale_document.xml",
         "report/sale_report_views.xml",
         "views/res_config_settings.xml",
@@ -31,7 +32,13 @@
         "views/account_move.xml",
         "views/product_pricelist_item_views.xml",
         "views/menuitems.xml",
+        "wizard/l10n_ve_discount_wizard_views.xml",
+        "views/l10n_ve_discount_views.xml",
+        "report/report_invoice_global_discount.xml",
     ],
+    "assets": {
+        "web.assets_backend": ["l10n_ve_sale/static/src/components/**/*"],
+    },
     "images": ["static/description/icon.png"],
     "application": True,
     "pre_init_hook": "pre_init_hook",

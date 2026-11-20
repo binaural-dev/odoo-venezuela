@@ -4,8 +4,9 @@
 // The totals take a third of the sheet width. Odoo lays the label of the last row (amount due)
 // out next to its amount in a "1fr auto" grid, with the label on one line and the amount in
 // 1.3em bold. When that third gets narrow (laptops, reduced windows, form with the chatter on
-// the side) both do not fit and the amount ends up on top of the label.
-// Below 360px the label goes on its own line, above the amount. Wider than that nothing changes.
+// the side) both do not fit on one line. The amount always stays on the same line as its label:
+// below 360px it is the label that wraps (its own column shrinks), never the amount that moves
+// above or below it.
 .o_form_view .oe_invoice_lines_tab > .o_group,
 .o_form_view .o_ve_invoice_totals > .o_group {
     container-type: inline-size;
@@ -13,17 +14,10 @@
 }
 
 @container o_ve_invoice_totals (max-width: 360px) {
-    .o_form_view .oe_invoice_lines_tab .o_inner_group.oe_subtotal_footer .o_cell.o_wrap_label,
-    .o_form_view .oe_invoice_lines_tab .o_inner_group.oe_subtotal_footer .o_cell.o_wrap_input,
-    .o_form_view .o_ve_invoice_totals .o_inner_group.oe_subtotal_footer .o_cell.o_wrap_label,
-    .o_form_view .o_ve_invoice_totals .o_inner_group.oe_subtotal_footer .o_cell.o_wrap_input {
-        grid-column: 1 / -1;
-    }
-
     .o_form_view .oe_invoice_lines_tab .o_inner_group.oe_subtotal_footer .o_cell.o_wrap_label .o_form_label,
     .o_form_view .o_ve_invoice_totals .o_inner_group.oe_subtotal_footer .o_cell.o_wrap_label .o_form_label {
         white-space: normal;
-        padding-right: 0;
+        padding-right: 8px;
     }
 
     // Only the amount cell: the payments and outstanding credits widgets of the same group must keep wrapping

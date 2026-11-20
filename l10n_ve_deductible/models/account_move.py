@@ -130,6 +130,13 @@ class AccountMove(models.Model):
             name = line.product_id.display_name or line.name or ""
             if line.discount or line.discount_fixed:
                 issues.append(_("%s: lines cannot have a previous discount.", name))
+        # The global discount of l10n_ve_sale (optional): over the total it
+        # leaves no trace on the lines, so it is checked on the document.
+        if "discount_mode" in self._fields and self.discount_mode in (
+            "global_subtotal",
+            "global_total",
+        ):
+            issues.append(_("The document has a global discount."))
         return issues
 
     def _get_deductible_warning(self, title):

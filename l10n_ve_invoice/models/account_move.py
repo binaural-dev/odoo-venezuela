@@ -45,7 +45,11 @@ class AccountMove(models.Model):
     first_payment_date = fields.Date(compute="_compute_payment_dates", store=True)
     is_contingency = fields.Boolean(related="journal_id.is_contingency")
 
-    discount_type = fields.Selection(related="company_id.discount_type")
+    discount_type = fields.Selection(
+        [("percent", "Percentage"), ("amount", "Fixed Amount")],
+        compute="_compute_discount_type",
+    )
+    show_discount_on_moves = fields.Boolean(related="company_id.show_discount_on_moves")
 
     next_installment_date = fields.Date(compute="_compute_next_installment_date")
 
@@ -476,6 +480,18 @@ class AccountMove(models.Model):
                             )
                         )
         return super().action_post()
+
+    @api.depends("company_id.discount_type")
+    def _compute_discount_type(self):
+        for move in self:
+            move.discount_type = move._get_move_discount_type()
+
+    def _get_move_discount_type(self):
+        """Line discount shown on this document. Company setting by default;
+        modules that pick it per document override this hook (and the line
+        counterpart `_get_line_discount_type`)."""
+        self.ensure_one()
+        return self.company_id.discount_type
 
     @api.depends("invoice_line_ids.discount_fixed", "company_id.discount_type")
     def _compute_company_currency_line_totals(self):

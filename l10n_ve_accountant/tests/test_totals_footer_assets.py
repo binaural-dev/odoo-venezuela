@@ -27,3 +27,12 @@ class TestTotalsFooterAssets(TransactionCase):
         self.assertIn(".o_form_view .oe_invoice_lines_tab > .o_group", css)
         # The nowrap must stay on the amount cell: the payments widget shares the group and has to wrap
         self.assertIn(".o_cell.o_wrap_input .o_field_widget{white-space: nowrap;}", css.replace("\n", ""))
+
+    def test_amount_due_stays_on_the_line_of_its_label(self):
+        """Narrow totals: the label wraps, the amount never goes to another line."""
+        bundle = self.env["ir.qweb"]._get_asset_bundle("web.assets_web", assets_params={})
+        css = b"".join(attachment.raw for attachment in bundle.css()).decode().replace("\n", "")
+        start = css.index("@container o_ve_invoice_totals")
+        block = css[start:css.index("white-space: nowrap;}", start)]
+        self.assertNotIn("grid-column", block)
+        self.assertIn("white-space: normal", block)

@@ -69,6 +69,23 @@ class TfhkaDocumentService(models.AbstractModel):
             document_type = "02"
         return document_type
 
+    def _check_global_discount_supported(self, invoice):
+        """Un descuento global SOBRE EL TOTAL (``l10n_ve_sale``) se aplica
+        después del IVA: la base y el IVA quedan intactos y solo baja el monto
+        a pagar. El documento digital exige que subtotal + IVA = total y que el
+        descuento se declare antes del IVA, así que ese descuento no se puede
+        representar y el documento saldría descuadrado. Se rechaza antes de
+        llamar a la imprenta. El descuento global sobre el subtotal sí se envía:
+        las líneas ya llevan el descuento y los totales salen netos."""
+        if "discount_mode" in invoice._fields and invoice.discount_mode == "global_total":
+            raise TfhkaDataError(
+                _(
+                    "A global discount over the total cannot be sent to TFHKA: the "
+                    "digital document needs the discount before the VAT. Remove it "
+                    "and apply the discount over the subtotal."
+                )
+            )
+
     def _get_series(self, invoice):
         series = ""
         if invoice.company_id.group_sales_invoicing_series and invoice.journal_id.series_correlative_sequence_id:
@@ -91,6 +108,7 @@ class TfhkaDocumentService(models.AbstractModel):
         if not document_type:
             return
 
+        self._check_global_discount_supported(invoice)
         series = self._get_series(invoice)
 
         company = invoice.company_id
