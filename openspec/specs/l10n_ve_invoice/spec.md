@@ -203,6 +203,13 @@ Un `discount_fixed` que alcance o supere el subtotal bruto de la línea (`price_
 - **WHEN** una línea sin impuestos tiene precio unitario $333,33 y descuento fijo $25,55 (cuyo % equivalente, 7.6651...%, no es exacto a 2 decimales)
 - **THEN** la Base Imponible queda en $307,78 exactos, sin el arrastre de redondeo que produciría convertir primero a un `discount` (%) de 2 decimales
 
+#### Scenario: Descuento efectivo de la línea con descuento fijo
+
+- **GIVEN** la compañía en modo `amount` y una línea de 3 × $50,00 con descuento fijo de $15,00
+- **WHEN** `l10n_ve_accountant` reconstruye montos de la línea con `_get_effective_discount_percent()` (por ejemplo, el Detalle de ventas)
+- **THEN** el porcentaje es el equivalente exacto del descuento fijo (10%), no el `discount` nativo (0)
+- **AND** el Detalle de ventas muestra Bruto $150,00, Descuento $15,00 y Base $135,00
+
 #### Scenario: `price_unit * quantity` en cero
 
 - **WHEN** se calcula el porcentaje exacto con `price_unit * quantity` igual a cero
