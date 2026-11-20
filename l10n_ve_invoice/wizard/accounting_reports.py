@@ -1201,6 +1201,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
         password_protection = "secure"
         workbook = xlsxwriter.Workbook(file, {"in_memory": True, "nan_inf_to_errors": True})
+        workbook.set_calc_mode('auto')
         worksheet = workbook.add_worksheet()
 
         cell_bold = workbook.add_format(
@@ -1527,59 +1528,51 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             else self._resume_sale_book_fields(moves)
         )
 
+        # Sumas acumuladas por columna (C,D,E,F) para poder escribir el valor
+        # cacheado real de las filas "total", ya que xlsxwriter nunca evalúa
+        # las fórmulas que escribe: sin un valor cacheado correcto, cualquier
+        # visor que no recalcule (Google Sheets al importar, previews, etc.)
+        # muestra 0,00 aunque la fórmula en sí sea correcta.
+        col_running_sums = [0.0, 0.0, 0.0, 0.0]
+
         for idx, resume in enumerate(resume_columns):
             row_resume = (index_to_start + 4) + idx
 
             worksheet.write(row_resume, 0, idx + 1)
             worksheet.write(row_resume, 1, resume.get("name"))
 
+            row_values = resume.get("values")
             total_line = 0
-            for idx_line, line in enumerate(resume.get("values")):
+            for idx_line, line in enumerate(row_values):
                 total_line = idx_line + 2
                 worksheet.write(row_resume, idx_line + 2, line, cell_formats.get("number"))
+                if idx_line < len(col_running_sums):
+                    col_running_sums[idx_line] += line
 
-            if not is_purchase:
-                if resume.get("total"):
-                    total_c_formula = f"=SUM(C{index_to_start + 5}:C{row_resume})"
-                    total_d_formula = f"=SUM(D{index_to_start + 5}:D{row_resume})"
-                    total_e_formula = f"=SUM(E{index_to_start + 5}:E{row_resume})"
-                    total_f_formula = f"=SUM(F{index_to_start + 5}:F{row_resume})"
+            effective_values = row_values
+            if resume.get("total"):
+                total_c_formula = f"=SUM(C{index_to_start + 5}:C{row_resume})"
+                total_d_formula = f"=SUM(D{index_to_start + 5}:D{row_resume})"
+                total_e_formula = f"=SUM(E{index_to_start + 5}:E{row_resume})"
+                total_f_formula = f"=SUM(F{index_to_start + 5}:F{row_resume})"
 
-                    worksheet.write_formula(
-                        row_resume, 2, total_c_formula, cell_formats.get("number")
-                    )
-                    worksheet.write_formula(
-                        row_resume, 3, total_d_formula, cell_formats.get("number")
-                    )
-                    worksheet.write_formula(
-                        row_resume, 4, total_e_formula,cell_formats.get("number")
-                    )
-                    worksheet.write_formula(
-                        row_resume, 5, total_f_formula,cell_formats.get("number")
-                    )
+                effective_values = col_running_sums
 
-            else:
-                if resume.get("total"):
-                    total_c_formula = f"=SUM(C{index_to_start + 5}:C{row_resume})"
-                    total_d_formula = f"=SUM(D{index_to_start + 5}:D{row_resume})"
-                    total_e_formula = f"=SUM(E{index_to_start + 5}:E{row_resume})"
-                    total_f_formula = f"=SUM(F{index_to_start + 5}:F{row_resume})"
-
-                    worksheet.write_formula(
-                        row_resume, 2, total_c_formula, cell_formats.get("number")
-                    )
-                    worksheet.write_formula(
-                        row_resume, 3, total_d_formula, cell_formats.get("number")
-                    )
-                    worksheet.write_formula(
-                        row_resume, 4, total_e_formula,cell_formats.get("number")
-                    )
-                    worksheet.write_formula(
-                        row_resume, 5, total_f_formula,cell_formats.get("number")
-                    )
+                worksheet.write_formula(
+                    row_resume, 2, total_c_formula, cell_formats.get("number"), col_running_sums[0]
+                )
+                worksheet.write_formula(
+                    row_resume, 3, total_d_formula, cell_formats.get("number"), col_running_sums[1]
+                )
+                worksheet.write_formula(
+                    row_resume, 4, total_e_formula, cell_formats.get("number"), col_running_sums[2]
+                )
+                worksheet.write_formula(
+                    row_resume, 5, total_f_formula, cell_formats.get("number"), col_running_sums[3]
+                )
 
             start_col_formula = 6
-                
+
             column_bi_range = (
                 f"C{row_resume + 1}:{utility.xl_col_to_name(total_line - 1)}{row_resume + 1}"
             )
@@ -1593,12 +1586,15 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 f"=SUMPRODUCT(--({column_df_range}), --(MOD(COLUMN({column_df_range}), 2)=0))"
             )
 
+            imposed_value = sum(v for i, v in enumerate(effective_values) if i % 2 == 0)
+            debit_value = sum(v for i, v in enumerate(effective_values) if i % 2 == 1)
+
             worksheet.write_formula(
-                row_resume, start_col_formula, imposed_formula, cell_formats.get("number")
+                row_resume, start_col_formula, imposed_formula, cell_formats.get("number"), imposed_value
             )
             worksheet.write_formula(
-                row_resume, start_col_formula + 1, debit_formula, cell_formats.get("number")
-                    )
+                row_resume, start_col_formula + 1, debit_formula, cell_formats.get("number"), debit_value
+            )
 
     def _get_sale_book_field_groups(self):
         company = self.company_id

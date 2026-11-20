@@ -1,7 +1,9 @@
+import zipfile
 from datetime import date
 from io import BytesIO
 from types import SimpleNamespace
 from unittest.mock import patch
+from xml.etree import ElementTree
 
 import xlsxwriter
 from dateutil.relativedelta import relativedelta
@@ -10,6 +12,25 @@ from odoo import fields
 from odoo.exceptions import UserError
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
+
+_XLSX_MAIN_NS = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+
+
+def _read_cached_xlsx_cell_value(xlsx_bytes, cell_ref, sheet="xl/worksheets/sheet1.xml"):
+    """
+    Lee el valor cacheado (<v>) de una celda de un .xlsx sin depender de
+    openpyxl: un .xlsx es un zip con XML adentro, y xlsxwriter (usado para
+    generarlo) nunca evalua las formulas que escribe -- solo guarda el
+    texto de la formula junto a un valor cacheado, que por defecto es 0
+    salvo que se pase explicitamente.
+    """
+    with zipfile.ZipFile(BytesIO(xlsx_bytes)) as archive:
+        sheet_xml = archive.read(sheet)
+    cell = ElementTree.fromstring(sheet_xml).find(
+        f".//{{{_XLSX_MAIN_NS}}}c[@r='{cell_ref}']"
+    )
+    value_el = cell.find(f"{{{_XLSX_MAIN_NS}}}v") if cell is not None else None
+    return float(value_el.text) if value_el is not None else None
 
 
 @tagged("post_install", "-at_install", "l10n_ve_invoice")
@@ -1048,6 +1069,57 @@ class TestAccountingReports(TransactionCase):
                     self.wizard.generate_book_resume(worksheet, 10, merge_format, cell_formats)
 
                 workbook.close()
+
+    def test_generate_book_resume_writes_cached_total_neto_value(self):
+        """
+        xlsxwriter nunca evalua las formulas que escribe: sin un valor
+        cacheado explicito, cualquier visor que no recalcule (Google Sheets
+        al importar, previsualizaciones, etc.) muestra 0,00 en "Total Neto"
+        aunque la formula SUMPRODUCT sea correcta. Este test abre el zip del
+        xlsx resultante para leer justamente ese valor cacheado, no el texto
+        de la formula (ver _read_cached_xlsx_cell_value).
+        """
+        move = self._create_move(
+            name="BILL/2023/RESUME3",
+            move_type="in_invoice",
+            accounting_date=date(2023, 1, 10),
+        )
+        moves = self.env["account.move"].browse(move.id)
+
+        self.wizard.write({"report": "sale"})
+        buffer = BytesIO()
+        workbook = xlsxwriter.Workbook(buffer, {"in_memory": True})
+        worksheet = workbook.add_worksheet()
+        merge_format = workbook.add_format()
+        cell_formats = {"number": workbook.add_format({"num_format": "#,##0.00"})}
+
+        # Facturas/ND: base 1000.0, debito 160.0 -- Notas de Credito (ya en
+        # negativo, como las devuelve _determinate_resume_books): base -100.0,
+        # debito -16.0. Total Neto esperado: base 900.0, debito 144.0.
+        resume_lines = [
+            {"name": "L1", "values": [1000.0, 160.0, -100.0, -16.0]},
+            {"name": "TOTAL", "values": [0.0, 0.0, 0.0, 0.0], "total": True},
+        ]
+
+        with patch.object(type(self.wizard), "search_moves", return_value=moves), patch.object(
+            type(self.wizard), "_resume_sale_book_fields", return_value=resume_lines
+        ):
+            self.wizard.generate_book_resume(worksheet, 10, merge_format, cell_formats)
+
+        workbook.close()
+        xlsx_bytes = buffer.getvalue()
+
+        # index_to_start=10 -> filas de resumen empiezan en (10+4)=14 (0-based),
+        # es decir fila 15 de Excel (1-based) para "L1" y 16 para "TOTAL".
+        self.assertAlmostEqual(_read_cached_xlsx_cell_value(xlsx_bytes, "G15"), 900.0, places=2)
+        self.assertAlmostEqual(_read_cached_xlsx_cell_value(xlsx_bytes, "H15"), 144.0, places=2)
+
+        self.assertAlmostEqual(_read_cached_xlsx_cell_value(xlsx_bytes, "C16"), 1000.0, places=2)
+        self.assertAlmostEqual(_read_cached_xlsx_cell_value(xlsx_bytes, "D16"), 160.0, places=2)
+        self.assertAlmostEqual(_read_cached_xlsx_cell_value(xlsx_bytes, "E16"), -100.0, places=2)
+        self.assertAlmostEqual(_read_cached_xlsx_cell_value(xlsx_bytes, "F16"), -16.0, places=2)
+        self.assertAlmostEqual(_read_cached_xlsx_cell_value(xlsx_bytes, "G16"), 900.0, places=2)
+        self.assertAlmostEqual(_read_cached_xlsx_cell_value(xlsx_bytes, "H16"), 144.0, places=2)
 
     def test_generate_sales_book_returns_xlsx(self):
         self.wizard.write({"report": "sale"})
