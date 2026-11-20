@@ -552,7 +552,7 @@ class AccountMove(models.Model):
                 move.correlative = move.declaration_unique_of_customs
         return moves
 
-    @api.constrains("correlative", "is_contingency", "name")
+    @api.constrains("correlative", "is_contingency")
     def _check_correlative(self):
         AccountMove = self.env["account.move"]
         is_series_invoicing_enabled = self.company_id.group_sales_invoicing_series
@@ -603,6 +603,22 @@ class AccountMove(models.Model):
 
                 if repeated_moves:
                     move._raise_repeated_correlative(repeated_moves)
+
+    @api.constrains("name")
+    def _check_vendor_correlative_on_name(self):
+        """A vendor bill is a duplicate only when the invoice number matches too,
+        so the check also runs when the invoice number changes. It is kept apart
+        from ``_check_correlative`` so that the contingency rules do not run
+        every time the number of a draft is assigned."""
+        for move in self:
+            if (
+                move.correlative
+                and not move.is_contingency
+                and move.move_type in ("in_invoice", "in_refund")
+            ):
+                repeated_move = move._get_repeated_vendor_bill()
+                if repeated_move:
+                    move._raise_repeated_correlative(repeated_move)
 
     def _get_repeated_vendor_bill(self):
         """Return a posted vendor document that duplicates this one, if any.
