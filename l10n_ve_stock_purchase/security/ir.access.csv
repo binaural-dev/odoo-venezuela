@@ -1,0 +1,2 @@
+id,name,model_id,group_id/id,operation,domain
+purchase_stock.access_stock_picking_purchase_user,stock.picking,stock.picking,purchase.group_purchase_user,cru,

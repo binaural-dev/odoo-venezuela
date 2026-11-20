@@ -1,31 +1,31 @@
 <odoo>
-<record id="view_stock_scrap_form_inherit" model="ir.ui.view">
-    <field name="name">stock.scrap.form.inherit</field>
-    <field name="model">stock.scrap</field>
-    <field name="inherit_id" ref="stock.stock_scrap_form_view"/>
+<record id="view_scrap_move_form_donation" model="ir.ui.view">
+    <field name="name">stock.scrap.move.form.donation</field>
+    <field name="model">stock.move</field>
+    <field name="inherit_id" ref="stock.view_scrap_move_form"/>
     <field name="arch" type="xml">
-        <xpath expr="//field[@name='should_replenish']" position="attributes">
+        <xpath expr="//field[@name='should_replenish_scrapped']" position="attributes">
             <attribute name="invisible">is_donation</attribute>
         </xpath>
         <xpath expr="//field[@name='product_id']" position="after">
             <field name="is_donation" invisible="not is_donation" readonly="1"/>
         </xpath>
-        <xpath expr="//field[@name='scrap_location_id']" position="attributes">
+        <xpath expr="//field[@name='location_dest_id']" position="attributes">
             <attribute name="domain">scrap_location_domain</attribute>
             <attribute name="nolabel">1</attribute>
         </xpath>
-        <xpath expr="//field[@name='scrap_location_id']" position="before">
-            <div class="o_td_label">
-                <label for="scrap_location_id" string="Scrap Location" style="font-weight:bold;"
+        <xpath expr="//field[@name='location_dest_id']" position="before">
+            <div class="o_td_label" groups="stock.group_stock_multi_locations">
+                <label for="location_dest_id" string="Scrap Location" style="font-weight:bold;"
                     invisible="is_donation"/>
-                <label for="scrap_location_id" string="Donation Location" style="font-weight:bold;"
+                <label for="location_dest_id" string="Donation Location" style="font-weight:bold;"
                     invisible="not is_donation"/>
             </div>
         </xpath>
-        <xpath expr="//group[1]/field[@name='scrap_reason_tag_ids']" position="attributes">
+        <xpath expr="//field[@name='scrap_reason_tag_ids']" position="attributes">
             <attribute name="nolabel">1</attribute>
         </xpath>
-        <xpath expr="//group[1]/field[@name='scrap_reason_tag_ids']" position="before">
+        <xpath expr="//field[@name='scrap_reason_tag_ids']" position="before">
             <div class="o_td_label">
                 <label for="scrap_reason_tag_ids" invisible="is_donation" string="Scrap Reason" style="font-weight:bold;"/>
                 <label for="scrap_reason_tag_ids" invisible="not is_donation" string="Donation Reason" style="font-weight:bold;"/>
@@ -36,26 +36,17 @@
 
 <record id="view_stock_scrap_action_donation" model="ir.actions.act_window">
     <field name="name">Donation</field>
-    <field name="res_model">stock.scrap</field>
+    <field name="res_model">stock.move</field>
     <field name="view_mode">list,form</field>
-    <field name="domain">[('is_donation', '=', True)]</field>
-    <field name="context">{'default_is_donation': True}</field>
+    <field name="view_ids" eval="[(5, 0, 0),
+        (0, 0, {'view_mode': 'list', 'view_id': ref('stock.view_scrap_move_list')}),
+        (0, 0, {'view_mode': 'form', 'view_id': ref('stock.view_scrap_move_form')})]"/>
+    <field name="domain">[('is_scrap', '=', True), ('is_donation', '=', True)]</field>
+    <field name="context">{'default_is_scrap': True, 'default_is_donation': True}</field>
 </record>
 
-<record model="ir.actions.act_window" id="stock.action_stock_scrap">
-    <field name="name">Scrap Orders</field>
-    <field name="res_model">stock.scrap</field>
-    <field name="path">scraps</field>
-    <field name="view_mode">list,form,kanban,pivot,graph</field>
-    <field name="domain">[('is_donation', '=', False)]</field>
-    <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">
-                Scrap products
-            </p><p>
-                Scrapping a product will remove it from your stock. The product will
-                end up in a scrap location that can be used for reporting purpose.
-            </p>
-    </field>
+<record id="stock.stock_scrapped_moves_action" model="ir.actions.act_window">
+    <field name="domain">[('is_scrap', '=', True), ('is_donation', '=', False)]</field>
 </record>
 
 <menuitem id="menu_stock_scrap_donation" name="Donation" parent="stock.menu_stock_adjustments" sequence="100" action="view_stock_scrap_action_donation"/>

@@ -1,6 +1,7 @@
 import json
 
 from odoo.fields import Domain
+from odoo.orm.identifiers import NewId
 from odoo.tests.common import TransactionCase, tagged
 
 from odoo.addons.l10n_ve_filter_partner import (
@@ -13,7 +14,14 @@ from odoo.addons.l10n_ve_filter_partner import (
 @tagged("post_install", "-at_install")
 class TestFilterPartnerMixin(TransactionCase):
     def _new_mixin_record(self, **values):
-        return self.env["filter.partner.mixin"].new(values)
+        """Build an in-memory record of the mixin, as ``new()`` did before Odoo 20.
+
+        Odoo 20 refuses ``new()`` on an abstract model, and this module has no concrete model of
+        its own: the mixin is used by sales and purchases, which it does not depend on.
+        """
+        record = self.env["filter.partner.mixin"].browse((NewId(),))
+        record._update_cache(values, validate=False)
+        return record
 
     def test_get_partner_domain_no_filter(self):
         record = self._new_mixin_record()

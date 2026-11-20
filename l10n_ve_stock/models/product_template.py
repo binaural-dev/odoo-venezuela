@@ -122,6 +122,7 @@ class ProductTemplate(models.Model):
     liters_per_unit = fields.Float(digits="Stock Weight")
 
     company_id = fields.Many2one(tracking=True)
+    categ_id = fields.Many2one(check_company=False)
 
     can_edit_company_id = fields.Boolean(
         string="Can edit company",
@@ -642,7 +643,7 @@ class ProductTemplate(models.Model):
                     0,
                     {
                         "product_id": variant.id,
-                        "product_uom": variant.uom_id.id,
+                        "uom_id": variant.uom_id.id,
                         "product_uom_qty": quantity,
                         "location_id": source.id,
                         "location_dest_id": destination.id,

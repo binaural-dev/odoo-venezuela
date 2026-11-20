@@ -1,4 +1,4 @@
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 import logging
 from datetime import datetime, timedelta
 from io import BytesIO
@@ -10,6 +10,11 @@ from xlsxwriter import utility
 
 _logger = logging.getLogger(__name__)
 INIT_LINES = 8
+
+# What the book reads of each valued move. Up to Odoo 18 it read the valuation layers
+# (stock.valuation.layer); since Odoo 19 the valuation lives on the move itself.
+# quantity and value are signed like the layers were: positive in, negative out.
+ValuationEntry = namedtuple("ValuationEntry", "product_id quantity value stock_move_id")
 
 
 class WizardStockBookReport(models.TransientModel):
@@ -76,7 +81,7 @@ class WizardStockBookReport(models.TransientModel):
                     product_movements[product_id]["old_stock"] = old_total_stock_qty_product["total_stock_qty"]
                     product_movements[product_id]["old_stock_total"] = old_total_stock_qty_product["old_stock_total"]
 
-                if (stock_move.stock_move_id.picking_code == "incoming" and stock_move.stock_move_id.origin_returned_move_id and stock_move.stock_move_id.state == "done") or (stock_move.stock_move_id.is_inventory and stock_move.quantity>0 and stock_move.stock_move_id.state == "done") or (stock_move.stock_move_id.picking_code == "incoming" and not (stock_move.stock_move_id.origin_returned_move_id) and stock_move.stock_move_id.state == "done") or (stock_move.stock_move_id.production_id and stock_move.stock_move_id.state == "done"):
+                if (stock_move.stock_move_id.picking_code == "incoming" and stock_move.stock_move_id.origin_returned_move_id and stock_move.stock_move_id.state == "done") or (stock_move.stock_move_id.is_inventory and stock_move.quantity>0 and stock_move.stock_move_id.state == "done") or (stock_move.stock_move_id.picking_code == "incoming" and not (stock_move.stock_move_id.origin_returned_move_id) and stock_move.stock_move_id.state == "done") or (self._is_mrp_move(stock_move.stock_move_id, "production_id") and stock_move.stock_move_id.state == "done"):
                     product_movements[product_id]["stock_move_id"] = stock_move_id
 
                     product_movements[product_id]["incoming"] += quantity_done
@@ -84,7 +89,7 @@ class WizardStockBookReport(models.TransientModel):
                     product_movements[product_id]["incoming_total"] += stock_move.value
 
                 
-                if (stock_move.stock_move_id.picking_code == "outgoing" and stock_move.stock_move_id.origin_returned_move_id and stock_move.stock_move_id.state == "done") or (stock_move.stock_move_id.is_inventory and stock_move.quantity<0 and stock_move.stock_move_id.state == "done") or (stock_move.stock_move_id.picking_code == "outgoing" and not (stock_move.stock_move_id.origin_returned_move_id) and stock_move.stock_move_id.state == "done") or (stock_move.stock_move_id.raw_material_production_id and stock_move.stock_move_id.state =="done"):
+                if (stock_move.stock_move_id.picking_code == "outgoing" and stock_move.stock_move_id.origin_returned_move_id and stock_move.stock_move_id.state == "done") or (stock_move.stock_move_id.is_inventory and stock_move.quantity<0 and stock_move.stock_move_id.state == "done") or (stock_move.stock_move_id.picking_code == "outgoing" and not (stock_move.stock_move_id.origin_returned_move_id) and stock_move.stock_move_id.state == "done") or (self._is_mrp_move(stock_move.stock_move_id, "raw_material_production_id") and stock_move.stock_move_id.state =="done"):
                     product_movements[product_id]["stock_move_id"] = stock_move_id
 
                     product_movements[product_id]["outgoing"] += quantity_done
@@ -113,13 +118,19 @@ class WizardStockBookReport(models.TransientModel):
 
         return stock_book_lines
     
+    def _is_mrp_move(self, move, field_name):
+        """Whether the move belongs to a manufacturing order: the fields come from mrp,
+        which this module does not depend on."""
+        return field_name in move._fields and bool(move[field_name])
+
     def get_old_stock_by_product(self,product_id):
-        old_stock = self.env['stock.valuation.layer'].search([
+        old_stock = self._valuation_entries(self.env["stock.move"].search([
             ("product_id","=",product_id),
-            ("create_date", "<", self.date_from),
-            ("create_date", ">=", self.date_from - relativedelta(months=1)),
-            ("stock_move_id.state", "=", "done")
-        ])
+            ("date", "<", self.date_from),
+            ("date", ">=", self.date_from - relativedelta(months=1)),
+            ("state", "=", "done"),
+            "|", ("is_in", "=", True), ("is_out", "=", True),
+        ]))
 
         total_stock_qty = 0
         old_stock_total = 0
@@ -132,26 +143,31 @@ class WizardStockBookReport(models.TransientModel):
 
     
     def search_valuation_layers(self):
-        order = "id asc"
-        env = self.env
-        valuation_layer_model = env["stock.valuation.layer"]
-        domain = self._get_domain_stock_move()
-        valuation_layers = valuation_layer_model.search(domain, order=order)
+        """The valued moves of the period, as the valuation layers the book used to read."""
+        moves = self.env["stock.move"].search(self._get_domain_stock_move(), order="date asc, id asc")
+        return self._valuation_entries(moves)
 
-        if not valuation_layers:
-            return []
-
-        return valuation_layers
+    def _valuation_entries(self, moves):
+        """One ValuationEntry per valued move: quantity in the product unit and value in
+        company currency, positive for the moves that enter the valuation and negative for
+        the ones that leave it, as stock.valuation.layer had them."""
+        entries = []
+        for move in moves:
+            sign = 1 if move.is_in else -1
+            quantity = move.uom_id._compute_quantity(move.quantity, move.product_id.uom_id)
+            entries.append(ValuationEntry(move.product_id, sign * quantity, sign * abs(move.value), move))
+        return entries
 
     def _get_domain_stock_move(self):
         stock_move_search_domain = []
 
         stock_move_search_domain += [("company_id", "=", self.company_id.id)]
 
-        stock_move_search_domain += [("create_date", ">=", self.date_from)]
-        stock_move_search_domain += [("create_date", "<=", self.date_to)]
+        stock_move_search_domain += [("date", ">=", self.date_from)]
+        stock_move_search_domain += [("date", "<=", self.date_to)]
 
-        stock_move_search_domain += [("stock_move_id.state", "=", "done")]
+        stock_move_search_domain += [("state", "=", "done")]
+        stock_move_search_domain += ["|", ("is_in", "=", True), ("is_out", "=", True)]
 
         return stock_move_search_domain
     

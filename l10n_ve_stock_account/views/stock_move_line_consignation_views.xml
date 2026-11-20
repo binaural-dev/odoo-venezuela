@@ -9,7 +9,7 @@
                 <field name="guide_number" string="Guide Number"/>
                 <field name="location_id" string="Location"/>
                 <field name="product_id" string="Product"/>
-                <field name="product_uom_id" string="Unit of Measure"/>
+                <field name="uom_id" string="Unit of Measure"/>
                 <field name="quantity" string="Quantity Dispatched"/>
             </list>
         </field>

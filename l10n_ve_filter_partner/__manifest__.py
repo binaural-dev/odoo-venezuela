@@ -5,11 +5,12 @@
     "author": "binaural-dev",
     "website": "https://www.binauraldev.com",
     "category": "Technical",
-    "version": "19.0.1.0.0",
+    "version": "20.0.1.0.0",
     "depends": ["web"],
     "data": [
         'security/ir.access.csv',
     ],
     "pre_init_hook": "pre_init_hook",
-    "installable": False,
+    "installable": True,
+    "binaural_migrated": True,
 }

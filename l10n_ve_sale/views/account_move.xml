@@ -1,0 +1,27 @@
+<odoo>
+    <record id="view_account_move_form_l10n_ve_sale_order_rate" model="ir.ui.view">
+        <field name="name">view.account.move.form.l10n.ve.sale.order.rate</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="l10n_ve_accountant.view_account_move_form_l10n_ve_accountant" />
+        <field name="arch" type="xml">
+            <!-- "Usar la tasa de la orden en la factura" (ajuste de la compania): la factura de
+                 cliente de una sola orden usa la tasa de la orden, con la Rate Date bloqueada
+                 (la Rate Date se fija al crear la factura desde la orden). -->
+            <xpath expr="//header" position="after">
+                <field name="use_invoice_rate_from_sale_order" invisible="1" />
+                <field name="sale_order_count" invisible="1" />
+                <div class="alert alert-info mb-0" role="alert"
+                     invisible="not use_invoice_rate_from_sale_order or move_type != 'out_invoice' or sale_order_count != 1">
+                    This document uses the exchange rate of its sale order: the Rate Date is locked
+                    and the rate will not be recalculated when the invoice date changes.
+                </div>
+            </xpath>
+            <xpath expr="//field[@name='invoice_date'][@invisible=&quot;move_type not in ('out_invoice', 'out_refund', 'out_receipt')&quot;]" position="attributes">
+                <!-- Se agrega a la condicion base de l10n_ve_accountant (no se copia). -->
+                <attribute name="readonly"
+                           add="(use_invoice_rate_from_sale_order and move_type == 'out_invoice' and sale_order_count == 1)"
+                           separator=" or "/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

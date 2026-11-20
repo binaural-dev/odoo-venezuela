@@ -16,23 +16,23 @@ class TestWizardStockBookReport(TransactionCase):
         super().setUpClass()
         cls.company = cls.env.company
         cls.uom_unit = cls.env.ref("uom.product_uom_unit")
-        cls.category_all = cls.env.ref("product.product_category_all")
+        cls.category_all = cls.env.ref("product.product_category_goods")
         cls.location_stock = cls.env.ref("stock.stock_location_stock")
         cls.location_supplier = cls.env.ref("stock.stock_location_suppliers")
         cls.location_customer = cls.env.ref("stock.stock_location_customers")
         cls.picking_type_in = cls.env.ref("stock.picking_type_in")
         cls.picking_type_out = cls.env.ref("stock.picking_type_out")
 
-        tmpl = cls.env["product.template"].create({
-        "name": "Producto de Prueba",
-        "type": "service",
-        "uom_id": cls.uom_unit.id,
-        "uom_po_id": cls.uom_unit.id,
-        "categ_id": cls.category_all.id,
+        # Since Odoo 19 the valuation lives on the done moves (value, is_in, is_out):
+        # the book reads them instead of stock.valuation.layer.
+        cls.product = cls.env["product.product"].create({
+            "name": "Producto de Prueba",
+            "type": "consu",
+            "is_storable": True,
+            "uom_id": cls.uom_unit.id,
+            "categ_id": cls.category_all.id,
+            "standard_price": 10.0,
         })
-
-        cls.product = tmpl.product_variant_id
-
 
         cls.today = fields.Date.today()
         cls.tomorrow = cls.today + timedelta(days=1)
@@ -43,74 +43,33 @@ class TestWizardStockBookReport(TransactionCase):
             "date_to": cls.tomorrow,
         })
 
-        cls.old_move = cls.env["stock.move"].create({
-            "name": "Movimiento Viejo",
-            "product_id": cls.product.id,
-            "product_uom_qty": 2,
-            "product_uom": cls.uom_unit.id,
-            "company_id": cls.company.id,
-            "location_id": cls.location_supplier.id,
-            "location_dest_id": cls.location_stock.id,
-            "state": "done",
-            "picking_type_id": cls.picking_type_in.id,
-        })
-        cls.old_layer = cls.env["stock.valuation.layer"].create({
-            "product_id": cls.product.id,
-            "quantity": 2,
-            "value": 20,
-            "company_id": cls.company.id,
-            "stock_move_id": cls.old_move.id,
-            "unit_cost": 10,
-            "description": "Capa vieja",
-        })
-
+        cls.old_move = cls._done_move(2, cls.location_supplier, cls.location_stock, cls.picking_type_in)
         old_datetime = datetime.combine(cls.today - timedelta(days=10), datetime.min.time())
         cls.env.cr.execute(
-            "UPDATE stock_valuation_layer SET create_date = %s WHERE id = %s",
-            (fields.Datetime.to_string(old_datetime), cls.old_layer.id),
+            "UPDATE stock_move SET date = %s WHERE id = %s",
+            (fields.Datetime.to_string(old_datetime), cls.old_move.id),
         )
+        cls.old_move.invalidate_recordset(["date"])
 
-        cls.incoming_move = cls.env["stock.move"].create({
-            "name": "Entrada",
-            "product_id": cls.product.id,
-            "product_uom_qty": 5,
-            "product_uom": cls.uom_unit.id,
-            "company_id": cls.company.id,
-            "location_id": cls.location_supplier.id,
-            "location_dest_id": cls.location_stock.id,
-            "state": "done",
-            "picking_type_id": cls.picking_type_in.id,
-        })
-        cls.incoming_layer = cls.env["stock.valuation.layer"].create({
-            "product_id": cls.product.id,
-            "quantity": 5,
-            "value": 50,
-            "company_id": cls.company.id,
-            "stock_move_id": cls.incoming_move.id,
-            "unit_cost": 10,
-            "description": "Capa de entrada",
-        })
+        cls.incoming_move = cls._done_move(5, cls.location_supplier, cls.location_stock, cls.picking_type_in)
+        cls.outgoing_move = cls._done_move(3, cls.location_stock, cls.location_customer, cls.picking_type_out)
 
-        cls.outgoing_move = cls.env["stock.move"].create({
-            "name": "Salida",
+    @classmethod
+    def _done_move(cls, qty, location, location_dest, picking_type):
+        move = cls.env["stock.move"].create({
             "product_id": cls.product.id,
-            "product_uom_qty": 3,
-            "product_uom": cls.uom_unit.id,
+            "product_uom_qty": qty,
+            "uom_id": cls.uom_unit.id,
             "company_id": cls.company.id,
-            "location_id": cls.location_stock.id,
-            "location_dest_id": cls.location_customer.id,
-            "state": "done",
-            "picking_type_id": cls.picking_type_out.id,
+            "location_id": location.id,
+            "location_dest_id": location_dest.id,
+            "picking_type_id": picking_type.id,
         })
-        cls.outgoing_layer = cls.env["stock.valuation.layer"].create({
-            "product_id": cls.product.id,
-            "quantity": -3,
-            "value": -30,
-            "company_id": cls.company.id,
-            "stock_move_id": cls.outgoing_move.id,
-            "unit_cost": 10,
-            "description": "Capa de salida",
-        })
+        move._action_confirm()
+        move.quantity = qty
+        move.picked = True
+        move._action_done()
+        return move
 
     def test_download_stock_book_returns_action(self):
         wizard = self.env["wizard.stock.book.report"].create({
@@ -140,15 +99,15 @@ class TestWizardStockBookReport(TransactionCase):
     def test_get_domain_stock_move_filters_by_dates_and_company(self):
         domain = self.wizard._get_domain_stock_move()
         self.assertIn(("company_id", "=", self.company.id), domain)
-        self.assertIn(("create_date", ">=", self.today), domain)
-        self.assertIn(("create_date", "<=", self.tomorrow), domain)
-        self.assertIn(("stock_move_id.state", "=", "done"), domain)
+        self.assertIn(("date", ">=", self.today), domain)
+        self.assertIn(("date", "<=", self.tomorrow), domain)
+        self.assertIn(("state", "=", "done"), domain)
 
     def test_search_valuation_layers_includes_current_period(self):
-        layers = self.wizard.search_valuation_layers()
-        self.assertIn(self.incoming_layer, layers)
-        self.assertIn(self.outgoing_layer, layers)
-        self.assertNotIn(self.old_layer, layers)
+        moves = [entry.stock_move_id for entry in self.wizard.search_valuation_layers()]
+        self.assertIn(self.incoming_move, moves)
+        self.assertIn(self.outgoing_move, moves)
+        self.assertNotIn(self.old_move, moves)
 
     def test_get_old_stock_by_product_returns_previous_balances(self):
         data = self.wizard.get_old_stock_by_product(self.product.id)
@@ -161,11 +120,12 @@ class TestWizardStockBookReport(TransactionCase):
         line = lines[0]
         self.assertEqual(line["description"], self.product.name)
         self.assertEqual(line["old_stock"], 2)
-        self.assertEqual(line["incoming_stock"], 0.0)
-        self.assertEqual(line["outgoing_stock"], -0.0)
+        # The moves of the period have their picking type: 5 in, 3 out.
+        self.assertEqual(line["incoming_stock"], 5)
+        self.assertEqual(line["outgoing_stock"], 3)
         self.assertEqual(line["stock"], 2)
-        self.assertEqual(line["incoming_total"], 0.0)
-        self.assertEqual(line["outgoing_total"], -0.0)
+        self.assertEqual(line["incoming_total"], 50)
+        self.assertEqual(line["outgoing_total"], 30)
         self.assertEqual(line["old_stock_bs"], 20)
         self.assertEqual(line["total_stock_qty_product_bs"], 20)
 
@@ -197,7 +157,6 @@ class TestWizardStockBookReport(TransactionCase):
             "name": "Producto Sin Movimientos",
             "type": "service",
             "uom_id": self.uom_unit.id,
-            "uom_po_id": self.uom_unit.id,
             "categ_id": self.category_all.id,
         })
         product = tmpl.product_variant_id
@@ -215,7 +174,6 @@ class TestWizardStockBookReport(TransactionCase):
             "name": "Producto Sin Movimientos",
             "type": "service",
             "uom_id": self.uom_unit.id,
-            "uom_po_id": self.uom_unit.id,
             "categ_id": self.category_all.id,
         })
         product = tmpl.product_variant_id

@@ -157,6 +157,24 @@ class TestDonationStockPicking(StockAccountTestCommon):
 
     # ── _compute_picking_type_domain ──
 
+    def test_donation_scrap_goes_to_the_stock_location_of_the_donation_warehouse(self):
+        """A donation lands in the stock location of the donation warehouse, never in its view location."""
+        warehouse = self.env["stock.warehouse"].create({
+            "name": "Donation Warehouse Test",
+            "code": "DWT",
+            "company_id": self.company.id,
+            "is_donation_warehouse": True,
+        })
+        move = self.env["stock.move"].with_context(default_is_scrap=True, default_is_donation=True).create({
+            "product_id": self.product.id,
+            "product_uom_qty": 1.0,
+            "location_id": self.env["stock.warehouse"].search(
+                [("company_id", "=", self.company.id), ("id", "!=", warehouse.id)], limit=1
+            ).lot_stock_id.id,
+            "company_id": self.company.id,
+        })
+        self.assertEqual(move.location_dest_id, warehouse.lot_stock_id)
+
     def test_compute_picking_type_domain_uses_native_domain_for_donation(self):
         # l10n_ve_donation no longer restricts the domain by
         # `is_donation_picking_type` -- no data ever sets that flag, which

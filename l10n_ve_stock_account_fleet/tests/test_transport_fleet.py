@@ -264,6 +264,9 @@ class TestTransportFleet(TransactionCase):
         company_contact = self.env["res.partner"].create({
             "name": "Transportes Prueba C.A.",
             "is_company": True,
+            "prefix_vat": "J",
+            "vat": "301234567",
+            "country_id": self.env.ref("base.ve").id,
         })
         with self.assertRaises(ValidationError):
             self.env["fleet.vehicle"].create({
@@ -277,6 +280,9 @@ class TestTransportFleet(TransactionCase):
         company_contact = self.env["res.partner"].create({
             "name": "Transportes Prueba C.A.",
             "is_company": True,
+            "prefix_vat": "J",
+            "vat": "301234567",
+            "country_id": self.env.ref("base.ve").id,
         })
         with self.assertRaises(ValidationError):
             self.vehicle.future_driver_id = company_contact
@@ -288,6 +294,9 @@ class TestTransportFleet(TransactionCase):
         company_contact = self.env["res.partner"].create({
             "name": "Empresa Vieja Flota",
             "is_company": True,
+            "prefix_vat": "J",
+            "vat": "301234567",
+            "country_id": self.env.ref("base.ve").id,
         })
         vehicle = self.env["fleet.vehicle"].create({
             "model_id": self.model.id,

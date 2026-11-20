@@ -300,7 +300,8 @@ class TestProductTemplate(TransactionCase):
         self.assertEqual(len(product.taxes_id), 2)
 
     def test_16_write_change_type_consu_to_combo(self):
-        """Write que cambia type de consu a combo junto con taxes invalidos -> OK"""
+        """Write que cambia type de consu a combo junto con taxes invalidos -> OK.
+        En 20, account vacía los impuestos de todo producto que pasa a combo."""
         product = self.env["product.template"].create({
             "name": "Test Consu To Combo",
             "type": "consu",
@@ -315,7 +316,7 @@ class TestProductTemplate(TransactionCase):
             "taxes_id": [(6, 0, [self.tax_sale_1.id, self.tax_sale_2.id])],
         })
         self.assertEqual(product.type, "combo")
-        self.assertEqual(len(product.taxes_id), 2)
+        self.assertFalse(product.taxes_id)
 
     def test_17_write_change_type_combo_to_consu(self):
         """Write que cambia type de combo a consu junto con taxes invalidos -> UserError"""

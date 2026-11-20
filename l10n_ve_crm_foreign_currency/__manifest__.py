@@ -4,7 +4,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Sales/CRM",
-    "version": "19.0.1.0.0",
+    "version": "20.0.1.0.0",
     "depends": ["crm", "sale", "l10n_ve_rate", "l10n_ve_accountant"],
     "data": [
         "views/crm_lead_views.xml",
@@ -13,5 +13,6 @@
         "views/crm_lead_pipeline_analysis_views.xml",
     ],
     "post_init_hook": "post_init_hook",
-    "installable": False,
+    "installable": True,
+    "binaural_migrated": True,
 }

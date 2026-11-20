@@ -390,7 +390,7 @@ class TestAccountTaxForeign(TransactionCase):
 
         # Verificar que needed_terms tiene foreign_balance
         if invoice.needed_terms:
-            for term_key, term_data in invoice.needed_terms.items():
+            for term_key, term_data in invoice.needed_terms:
                 self.assertIn('foreign_balance', term_data,
                               f"Term {term_key} debe tener foreign_balance")
                 self.assertGreater(term_data['foreign_balance'], 0)

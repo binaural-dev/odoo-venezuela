@@ -26,8 +26,8 @@ class TestProductPricelistReport(TransactionCase):
                         0,
                         0,
                         {
-                            "compute_price": "percentage",
-                            "percent_price": 10,
+                            "compute_price": "discount",
+                            "price_discount": 10,
                             "applied_on": "3_global",
                         },
                     )
@@ -42,8 +42,8 @@ class TestProductPricelistReport(TransactionCase):
                         0,
                         0,
                         {
-                            "compute_price": "percentage",
-                            "percent_price": 20,
+                            "compute_price": "discount",
+                            "price_discount": 20,
                             "applied_on": "3_global",
                         },
                     )

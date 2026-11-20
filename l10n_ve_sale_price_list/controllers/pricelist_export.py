@@ -1,10 +1,10 @@
-import base64
 import csv
 import io
 import json
 
 from odoo import _
-from odoo.http import request, route, content_disposition
+from odoo.http import request, route
+from odoo.http.stream import content_disposition
 from odoo.addons.product.controllers.pricelist_report import ProductPricelistExportController
 
 
@@ -73,7 +73,7 @@ class ProductPricelistExportController(ProductPricelistExportController):
         ], bold)
         if company and company.logo:
             worksheet.insert_image(0, len(headers) + 1, 'logo.png', {
-                'image_data': io.BytesIO(base64.b64decode(company.logo)),
+                'image_data': io.BytesIO(company.logo.content),
                 'x_scale': 0.3,
                 'y_scale': 0.3,
             })

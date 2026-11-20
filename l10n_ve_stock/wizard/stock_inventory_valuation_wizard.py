@@ -21,23 +21,37 @@ FIELDSPRODUCTS=[
 ]
 
 
-class StockQuantityHistoryInh(models.TransientModel):
-    _inherit = "stock.quantity.history"
+class StockInventoryValuationWizard(models.TransientModel):
+    """Inventory valuation report of the localization, at a date and for a location.
 
+    Odoo 19 extended the core wizard "Inventory at Date" (``stock.quantity.history``), which Odoo 20
+    removed: the stock report now takes the date in its search panel. This wizard keeps the fields
+    and the download of Odoo 19, opens from the stock report and starts at the date chosen there.
+    """
+
+    _name = "stock.inventory.valuation.wizard"
+    _description = "Inventory valuation report"
+
+    inventory_datetime = fields.Datetime(
+        "Inventory at Date",
+        help="Choose a date to get the inventory at that date",
+        default=lambda self: fields.Datetime.to_datetime(self.env.context.get("to_date")) or fields.Datetime.now(),
+        required=True,
+    )
     warehouse_search_id = fields.Many2one("stock.location")
-
     except_products_at_zero = fields.Boolean()
 
     def get_fields_products(self):
         return FIELDSPRODUCTS
-    
+
     def open_at_date(self):
-
-        res = super(StockQuantityHistoryInh, self.with_context(location=self.warehouse_search_id)).open_at_date()
-        return res
-
-    def open_at_date_test(self):
-        self._compute_quantities_dict()
+        """Open the stock report at the date and location of the wizard."""
+        action = self.env["ir.actions.act_window"]._for_xml_id("stock.action_product_stock_view")
+        context = dict(self.env.context, to_date=fields.Datetime.to_string(self.inventory_datetime))
+        if self.warehouse_search_id:
+            context["location"] = self.warehouse_search_id.id
+        action["context"] = context
+        return action
 
     def generate_report(self):
         company = self.env.company

@@ -1,41 +1,10 @@
 <odoo>
     <data>
-        <!-- TREE -->
-        <record id="view_res_country_city_tree" model="ir.ui.view">
-            <field name="name">City</field>
-            <field name="model">res.country.city</field>
-            <field name="arch" type="xml">
-                <list>
-                    <field name="country_id" />
-                    <field name="state_id" />
-                    <field name="name" />
-                </list>
-            </field>
-        </record>
-
-        <!-- FORM -->
-        <record id="view_res_country_city_form" model="ir.ui.view">
-            <field name="name">City</field>
-            <field name="model">res.country.city</field>
-            <field name="arch" type="xml">
-                <form string="City">
-                    <sheet string="City">
-                        <group>
-                            <field name="country_id" />
-                            <field name="state_id" />
-                            <field name="name" />
-                        </group>
-                    </sheet>
-                </form>
-            </field>
-        </record>
-
-        <!-- ACTION -->
+        <!-- The cities are the ones of Odoo (res.city). The action keeps its id: other modules use it. -->
         <record id="action_res_country_city" model="ir.actions.act_window">
             <field name="name">City</field>
-            <field name="res_model">res.country.city</field>
+            <field name="res_model">res.city</field>
             <field name="type">ir.actions.act_window</field>
-            <field name="binding_view_types">form</field>
             <field name="view_mode">list,form</field>
         </record>
     </data>

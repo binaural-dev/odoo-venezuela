@@ -8,7 +8,7 @@ _logger = logging.getLogger(__name__)
 class AccountMoveLine(models.Model):
     _inherit = "account.move.line"
 
-    from_picking_line = fields.Boolean(string="From Picking", default=False)
+    from_picking_line = fields.Boolean(string="From Picking", default=False, copy=False)
 
     # TODO: Validar que solo se puedan agregar productos de tipo servicio cuando la factura proviene de un picking
     #
