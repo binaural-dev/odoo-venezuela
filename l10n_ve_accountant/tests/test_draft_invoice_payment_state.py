@@ -51,7 +51,8 @@ class TestDraftInvoicePaymentState(TestIndexedPayments):
         for field in amount_fields + [invoice._fields["payment_state"]]:
             self.env.add_to_compute(field, invoice)
         invoice.invalidate_recordset(["tax_totals"])
-        invoice.tax_totals  # noqa: B018 - dispara el calculo en este orden
+        # Leerlo dispara el calculo de tax_totals antes que los montos.
+        self.assertTrue(invoice.tax_totals)
 
     def _assert_unpaid_draft(self, invoice):
         self._recompute_tax_totals_first(invoice)
