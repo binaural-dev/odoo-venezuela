@@ -333,4 +333,4 @@ class TestEntryLastRate(TransactionCase):
         move = self.env["account.move"].new(self._invoice_vals("out_invoice", SATURDAY))
 
         with self.assertRaisesRegex(UserError, "There is no rate assigned"):
-            move.foreign_rate  # noqa: B018
+            self.assertIsNone(move.foreign_rate)
