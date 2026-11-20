@@ -5,16 +5,16 @@
 | Campo | Valor |
 |---|---|
 | Change ID | `ta-86967-donation-module-1440-port` |
-| Tarea | [Migración HIGEA v19 (86967)](https://binaural.odoo.com/odoo/project.task/86967) |
+| Tarea | [Tarea 86967](https://binaural.odoo.com/odoo/project.task/86967) |
 | Tipo | MIG / FEAT |
 | Estado | Implementado |
 | Módulo destino | `l10n_ve_donation` |
-| Origen | Lógica de donaciones de odoo-venezuela#1440 (versión 17, usada por Higea) |
+| Origen | Lógica de donaciones de odoo-venezuela#1440 (versión 17, usada por clientes) |
 
 ## Contexto
 
-Higea (Odoo 17, en producción desde el 1-3 ago 2026) migra a Odoo 19 con
-saldos iniciales. Sus cambios de donaciones (tickets 15394, 15445, 15672)
+Un cliente que usa esa lógica en Odoo 17 (en producción desde el 1-3 ago 2026)
+migra a Odoo 19 con saldos iniciales. Sus cambios de donaciones (tickets 15394, 15445, 15672)
 viven solo en #1440 y no existen en `17.0`, `maintenance-17.0`, `19.0` ni
 `maintenance-19.0`. El módulo V19 (`19.0.2.0.6`) nació antes que el backport
 de 17 y divergió: los dos modelan la donación de forma distinta (contacto
@@ -64,11 +64,12 @@ misma donación. Por eso se sustituye.
 **Fuera**
 - La donación por scrap (`stock.scrap`): modelo, vistas, secuencia
   `stock.donation`, razones en etiquetas.
-- Las migraciones `19.0.2.0.3` (scrap → etiquetas) y `17.0.1.0.5`: Higea entra
-  con saldos iniciales y base nueva.
+- Las migraciones `19.0.2.0.3` (scrap → etiquetas) y `17.0.1.0.5`: el cliente
+  que migra entra con saldos iniciales y base nueva.
 - `create_invoice`/`create_multi_invoice` de V19: #1440 no factura las
   donaciones de picking sin pedido.
-- Los customs de Higea (`higea_donation`, `higea_pos`, ...).
+- Los módulos propios de cada cliente (por ejemplo, el que agrega paciente y médico
+  a las donaciones).
 - Cambios en `l10n_ve_stock_account` e integra-addons (ver Riesgos).
 
 ## Approach
@@ -79,11 +80,11 @@ Ver `design.md`.
 
 | Riesgo | Mitigación |
 |---|---|
-| `binaural_subsidiary_stock` (integra) sobrescribe `_create_account_move` sin `super` y lee `stock.scrap.is_donation` | No se instala en Higea; queda documentado en el informe a Producto |
+| `binaural_subsidiary_stock` (integra) sobrescribe `_create_account_move` sin `super` y lee `stock.scrap.is_donation` | No se instala en el cliente que migra; queda documentado en el informe a Producto |
 | `binaural_stock_dispatch_note` deja el contacto del picking solo lectura si `is_donation` y el registro existe | Cambio acompañante de 1 línea en integra-addons (`is_donation and sale_id`) |
 | `l10n_ve_inventory_book` (tests) espera 'Autoconsumo' en donaciones | Ajustar `test_outgoing_with_donation` en integra |
 | El módulo V19 (`19.0.2.0.6`) está instalado como dependencia de `binaural_operative` en clientes 19; si el cambio llegara a `maintenance-19.0` llegaría a todos con su próxima actualización (pierde la donación por scrap, sin migración) | El cambio va a `19.0` (tronco): solo llega con el siguiente corte de mantenimiento |
-| `higea_donation` (17) usa campos y comportamientos que cambian: restaura al donante después de publicar, `test_22` espera el sufijo `- <ref>`, y una línea sin donante ahora aparece con el partner de la compañía | Se ajusta al migrar ese custom (fuera de este módulo) |
+| El módulo propio del cliente en 17 usa campos y comportamientos que cambian: restaura al donante después de publicar, `test_22` espera el sufijo `- <ref>`, y una línea sin donante ahora aparece con el partner de la compañía | Se ajusta al migrar ese módulo (fuera de este módulo) |
 | Producto aún debe validar el contacto libre en el pedido de donación | Pendiente con Producto |
 
 ## Criterios de aceptación

@@ -4,7 +4,7 @@
 
 Pedido: "la lógica de #1440 debe SUSTITUIR POR COMPLETO al `l10n_ve_donation` actual de V19
 (ni extensión ni parche encima)", con el scrap fuera de alcance. Tarea:
-[Migración HIGEA v19 (86967)](https://binaural.odoo.com/odoo/project.task/86967).
+[Tarea 86967](https://binaural.odoo.com/odoo/project.task/86967).
 
 ## Comandos
 
@@ -93,11 +93,11 @@ Otros hallazgos de la verificación en la interfaz:
 
 - `binaural_stock_dispatch_note` y `l10n_ve_inventory_book` (integra-addons): ver `tasks.md`.
 - `binaural_subsidiary_stock` (integra-addons): sobrescribe `_create_account_move` sin `super` y lee `stock.scrap.is_donation`.
-- `higea_donation`: `test_22`, restauración del donante tras publicar y líneas sin donante, al migrarlo.
+- Módulo propio del cliente (17): `test_22`, restauración del donante tras publicar y líneas sin donante, al migrarlo.
 
 ## No verificado
 
 - La baja de activos (`account_asset`) en la interfaz; solo cubierta por `test_account_asset.py`.
 - Nota de crédito publicada a mano (borrador → publicar) en la interfaz; cubierta por tests.
 - Almacén por defecto de un pedido normal con varios almacenes: en la prueba solo hay un almacén normal.
-- Prueba con `binaural_subsidiary_stock` instalado (Higea no lo tiene).
+- Prueba con `binaural_subsidiary_stock` instalado (el cliente que migra no lo tiene).

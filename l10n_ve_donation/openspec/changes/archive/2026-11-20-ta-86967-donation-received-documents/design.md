@@ -31,7 +31,7 @@ inventario / Haber ingreso. En 17 eran `valuation_out_account_id` y
 `l10n_ve_rate.compute_rate` guarda en `foreign_rate` la inversa de la tasa de la
 compañía y en `foreign_inverse_rate` la tasa de la compañía. Los bolívares por unidad
 de la otra moneda son `foreign_rate` con la compañía en bolívares y
-`foreign_inverse_rate` con la alterna en bolívares (compañía en USD, como Higea).
+`foreign_inverse_rate` con la alterna en bolívares (compañía en USD).
 `_compute_donation_amounts` (puro, sin base de datos) elige y devuelve el monto en
 bolívares primero.
 
@@ -92,8 +92,67 @@ Certificado o Recibo, emitido sobre una anulación. `print_donation_receipt` y
 `print_donation_certificate` la rechazan (`reversed_entry_id`) y los botones se ocultan con la
 misma condición; los documentos son los del asiento original.
 
+## D13. El Gestor de Donaciones tiene privilegio propio
+
+Un grupo sin `privilege_id` solo se dibuja en modo desarrollador («Extra Rights», `odoo.debug` en
+`res_user_group_ids_field.js`), y dentro del privilegio de Contabilidad es una opción más del mismo
+selector: guardar la ficha con otro nivel (por ejemplo Administrador) lo quita. Se crea
+`res_groups_privilege_donation` («Donaciones», categoría de Contabilidad) con ese único grupo. El
+registro del grupo deja de ser `noupdate` y la migración `19.0.3.0.1` lo mueve al privilegio nuevo en
+las bases ya instaladas; el administrador se agrega al instalar (`post_init_hook`), no en cada
+actualización.
+
+## D14. La marca del asiento del extracto es reversible
+
+`_mark_donation_received_from_statement` marca el asiento cuyas líneas acreditan una cuenta de
+donaciones recibidas y lo guarda en `donation_marked_from_statement`. Se reevalúa en cada cambio de
+líneas (`create`/`write` de la línea y `write` del asiento con `line_ids`): la marca automática se
+quita cuando el asiento deja de serlo; la que puso una persona no se toca. Un pago al donante (débito
+a la cuenta de ingreso) no se marca. `_check_partner_donation` no revisa los asientos de extracto y
+`_post` no pide el donante en ellos: deshacer o editar la conciliación reescribe las líneas
+(`Command.clear()` más `create`) y no puede fallar por la restricción. Una sola escritura por lote
+y sin `is_manually_modified`.
+
+## D15. Reverso y paso a borrador se comprueban en el servidor
+
+Ocultar el botón no basta: la acción de reverso está ligada a la lista de asientos y cualquier
+llamada llega a `_reverse_moves` y `button_draft`. `_check_donation_entry_manager` exige el grupo
+Gestor (o superusuario) para los asientos manuales de donación; el asiento de extracto sí puede
+restablecerse a borrador porque la conciliación lo hace. Las facturas de donación quedan fuera
+porque `action_post` crea su nota de crédito con el mismo asistente.
+
+## D16. Entregas y recepciones se valoran aparte
+
+El core crea un solo asiento para todos los movimientos que se validan juntos. Con `_is_donation_move`
+cubriendo entregas y recepciones, `_create_account_move` llama a `super()` por separado según
+`picking_type_code`, para que un asiento mixto no se tome como donación recibida.
+
+## D17. La cuenta en especie por defecto se valida al final al guardar los Ajustes
+
+`res.config.settings` escribe cada campo relacionado por separado y sin orden fijo: la restricción de
+`res.company` (la cuenta por defecto debe estar en la lista) se aplaza con el contexto
+`donation_defer_account_check` y se evalúa una vez al terminar `create` y `write`.
+
+## D18. Causa de H12: la moneda de la nota de crédito
+
+El core toma la moneda de una nota de crédito nueva de la lista de precios del cliente, no de la
+factura que revierte. `_reverse_moves` crea la nota sin `currency_id`: con una lista en bolívares, una
+factura de 100 USD se revertía con 100 Bs. Se pasa `currency_id` de la factura. El test tiene un caso
+de control que demuestra la causa.
+
+## D19. Formato del Certificado en carta con migración
+
+El formato de papel del Certificado pasa de A4 a Letter (el Recibo sigue en media carta). El registro
+es `noupdate`: la migración lo cambia solo si sigue en A4, para no pisar uno elegido a propósito.
+
 ## Alternativas descartadas
+- Valor unitario de la mercancía recibida (valor documentado): es una decisión de Contabilidad (C6) y
+  una mejora de Producto; se probó una versión opcional y se retiró del desarrollo.
+- Grupo Gestor sin privilegio (casilla independiente): solo se ve en modo desarrollador.
+- Ocultar solo los botones de reverso y borrador: la acción de la lista y las llamadas RPC los alcanzan.
+- Quitar la marca del extracto solo desde `create` de la línea: deshacer la conciliación reescribe las
+  líneas desde el asiento.
 - Campo explícito de dirección en el asiento: el usuario eligió mantener la inferencia
-  por cuentas, como Higea.
+  por cuentas, como en 17.
 - Módulo nuevo `l10n_ve_donation_received`: el usuario eligió el módulo existente.
 - Contacto real en las líneas de las otorgadas: se mantiene lo de `ta-86967-donation-module-1440-port`.

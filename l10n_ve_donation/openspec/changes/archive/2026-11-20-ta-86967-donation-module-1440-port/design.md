@@ -4,7 +4,7 @@
 
 En las instancias 19 la raíz del cliente va **después** de `odoo-venezuela` en
 `addons_path` (arreglo de traducciones), así que una carpeta
-`l10n_ve_donation/` en el repo de Higea quedaría tapada. Los dependientes
+`l10n_ve_donation/` en el repo del cliente quedaría tapada. Los dependientes
 (`binaural_operative`, `binaural_stock_dispatch_note`, `l10n_ve_inventory_book`)
 dependen del módulo por nombre. Los clientes lo consumen desde odoo-venezuela.
 
@@ -92,7 +92,7 @@ bajo `block[@name='l10n_ve_stock_block']` con el mismo `div id`
 ## D8. Asiento manual de donación: partner en borrador, nada al publicar
 
 Las donaciones recibidas en dinero son asientos manuales que el usuario marca
-(manual de donaciones de Higea, flujo F3). Se restaura la vista de la versión 17:
+(flujo F3 del manual de donaciones de la versión 17). Se restaura la vista de la versión 17:
 `is_donation` visible y editable solo en asientos manuales en borrador (V19 lo
 ocultaba hasta estar marcado).
 
@@ -106,8 +106,8 @@ que un `_compute_partner_id` no sirve), el `write` de `account.move` al marcar
 respetan y el constraint `_check_partner_donation` sigue validando.
 
 Se retira el sufijo `" - <ref>"` que se agregaba a la etiqueta de los apuntes: venía de la
-versión 17 y solo lo consume `higea_donation` (que lo quita para armar el concepto del
-recibo).
+versión 17 y solo lo consume el módulo propio de un cliente en 17 (que lo quita para armar el
+concepto del recibo).
 
 ## D9. "Crear factura" oculto en una donación sin pedido
 
@@ -122,7 +122,7 @@ factura esas donaciones).
 - **Forzar el partner de la compañía en la cabecera** (V19): la cabecera debe
   registrar al donante o beneficiario real (certificado).
 - **Mantener el sufijo moviéndolo a antes de publicar**: se descartó por
-  decisión del usuario; solo `higea_donation` lo usaba y tolera su ausencia.
+  decisión del usuario; solo el módulo propio de un cliente lo usaba y tolera su ausencia.
 - **Calcular el partner de los apuntes en `_compute_partner_id`**: no se
   ejecuta cuando el cliente envía `partner_id: False`.
 - **Forzar el motivo 'Autoconsumo'** (V19): 'Donación' por defecto, solo
@@ -132,15 +132,15 @@ factura esas donaciones).
 
 `stock_account` en `depends` (campo `account_stock_journal_id` core: no se
 redefine); `auto_install: False`; versión `19.0.3.0.0`. Contrato público que
-usa `higea_donation` (no se renombra): `print_donation_certificate`,
+usan los módulos de cliente (no se renombra): `print_donation_certificate`,
 `_get_donation_delivery_config_errors`, `_get_donation_product_lines`,
 `_get_donation_grand_total`, `product_line_donation`,
 `is_donation_picking_type`, `donation_reason`, `donation_menu`.
 
 > Nota (change `ta-86967-donation-received-documents`): `print_donation_certificate` cambió
 > de significado. Ya no imprime el documento de la entrega (ahora `print_donation_receipt`,
-> el Recibo) sino el Certificado de una donación RECIBIDA. `higea_donation` 17 usa los
-> nombres con el significado de 17; al portarlo a 19 se ajusta a este contrato.
+> el Recibo) sino el Certificado de una donación RECIBIDA. Los módulos de cliente
+> en 17 usan los nombres con el significado de 17; al portarlos a 19 se ajustan a este contrato.
 
 ## Testing
 

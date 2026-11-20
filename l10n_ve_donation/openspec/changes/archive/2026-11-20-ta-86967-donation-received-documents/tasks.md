@@ -32,9 +32,15 @@ Una tarea por unidad de trabajo del módulo.
 - **Estado**: ✅ Hecho: plantillas, botones y mensajes en inglés, un solo `es_VE.po` sin `msgstr` vacíos y con el mismo vocabulario.
 
 ## T7. [DOCS] openspec
-- **Estado**: ✅ Hecho: este change y la spec vigente (REQ-DON-018 a 028).
+- **Estado**: ✅ Hecho: este change y la spec vigente (REQ-DON-018 a 034).
+
+## T8. [FIX] ajustes de la validación funcional (staging, 19/11)
+- **Estado**: ✅ Hecho
+- **Archivos**: `models/` (`account_move.py`, `account_move_line.py`, `stock_move.py`, `stock_picking.py`, `res_company.py`, `res_config_settings.py`, `res_partner.py`), `report/`, `views/`, `security/res_groups.xml`, `i18n/es_VE.po`, tests
+- **Migración**: `migrations/19.0.3.0.1/post-migration.py` (versión `19.0.3.0.1`): mueve el grupo Gestor a su privilegio propio y pasa el Certificado a carta si sigue en A4.
+- **Done when**: REQ-DON-029 a 034 cubiertos: cuentas de gasto, asiento de la recepción marcado, donación por el extracto, formato de los documentos, nota de crédito en moneda extranjera, botón de reverso y grupo Gestor.
 
 ## Seguimiento en otros módulos
-- `higea_donation`: paciente/médico, extras del Recibo, texto legal y forma de pago; elimina lo que pasó al módulo compartido.
+- Módulo propio del cliente: paciente/médico, extras del Recibo, texto legal y forma de pago; elimina lo que pasó al módulo compartido.
 - Producto: forma de pago/banco/referencia.
 - `integra-addons` (`binaural_subsidiary_stock`, `binaural_stock_dispatch_note`, `l10n_ve_inventory_book`): ver el informe a Producto.
