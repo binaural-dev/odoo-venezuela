@@ -29,4 +29,4 @@ from . import test_alternate_totals_block
 from . import test_global_price_included_exempt
 from . import test_multicurrency_revaluation
 from . import test_cash_basis_foreign
-from . import test_entry_last_rate
+from . import test_entry_deferred_rate
