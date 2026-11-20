@@ -199,7 +199,7 @@ class AccountInvoiceDetailsReport(models.AbstractModel):
         gross_amount = previous["gross_amount"] + detailed["gross_amount"] * multiply
         discount_amount = previous["discount_amount"] + detailed["discount_amount"] * multiply
         gross_discount_amount = previous["gross_discount_amount"] + (
-            (detailed["gross_amount"] - detailed["discount_amount"]) * multiply
+            detailed["gross_discount_amount"] * multiply
         )
         taxes_amount = previous["taxes_amount"] + detailed["taxes_amount"] * multiply
         total_amount = previous["total_amount"] + (
@@ -248,17 +248,20 @@ class AccountInvoiceDetailsReport(models.AbstractModel):
         multiply = 1 if invoice.move_type == "out_invoice" else -1
         company_currency = invoice.company_id.currency_id
         tax_totals = invoice.tax_totals
-        doc_total = tax_totals["total_amount_currency"]
-        factor = 1 if float_is_zero(doc_total, precision_digits=6) else (
-            tax_totals["total_amount"] / doc_total
+        doc_base = tax_totals["base_amount_currency"]
+        # Factor documento -> compania solo para el descuento (no existe en tax_totals).
+        factor = 1 if float_is_zero(doc_base, precision_digits=6) else (
+            tax_totals["base_amount"] / doc_base
         )
         detailed = invoice.detailed_amounts
-        gross_amount = totals["gross_amount"] + detailed["gross_amount"] * factor * multiply
-        discount_amount = (
-            totals["discount_amount"] + detailed["discount_amount"] * factor * multiply
+        discount_company = detailed["discount_amount"] * factor
+        gross_discount_company = tax_totals["base_amount"]
+        gross_amount = totals["gross_amount"] + (
+            (gross_discount_company + discount_company) * multiply
         )
+        discount_amount = totals["discount_amount"] + discount_company * multiply
         gross_discount_amount = totals["gross_discount_amount"] + (
-            (detailed["gross_amount"] - detailed["discount_amount"]) * factor * multiply
+            gross_discount_company * multiply
         )
         taxes_amount = totals["taxes_amount"] + tax_totals["tax_amount"] * multiply
         total_amount = totals["total_amount"] + tax_totals["total_amount"] * multiply
