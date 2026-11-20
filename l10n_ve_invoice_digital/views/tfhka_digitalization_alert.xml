@@ -14,7 +14,7 @@
                 padding: 4px 8px;">
         <t t-foreach="tfhka_digitalization_alerts" t-as="tfhka_alert">
           <a t-att-href="tfhka_alert['url']" style="color: #FFFFFF; font-weight: bold; text-decoration: underline;">
-            <t t-esc="tfhka_alert['name']"/>
+            <t t-out="tfhka_alert['name']"/>
           </a>
           <span> could not be digitalized in The Factory HKA -- click to review.</span>
           <t t-if="not tfhka_alert_last"> | </t>

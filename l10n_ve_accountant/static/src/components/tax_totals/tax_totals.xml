@@ -7,18 +7,18 @@
         owl="1">
         <xpath expr="//tr/td[2]/t[@t-if]/t[@t-else]/span/span" position="replace">
             <span class="o_tax_group_amount_value o_list_monetary">
-                <i class="oi oi-filled me-2" data-icon="edit"/> <t t-out="formatMonetary(props.taxGroup.tax_amount_currency)"/>
+                <i class="oi oi-filled me-2" data-icon="edit"/> <t t-out="this.formatMonetary(this.props.taxGroup.tax_amount_currency)"/>
             </span>
         </xpath>
         <xpath expr="//tr" position="before">
             <tr>
                 <td class="o_td_label">
-                    <label class="o_form_label o_tax_total_label" t-esc="'Total G ' + props.taxGroup.group_name"/>
+                    <label class="o_form_label o_tax_total_label" t-out="'Total G ' + this.props.taxGroup.group_name"/>
                 </td>
 
                 <td class="o_tax_group">
                     <span class="o_tax_group_amount_value o_list_monetary">
-                        <t t-out="formatMonetary(props.taxGroup.base_amount_currency)" style="white-space: nowrap;"/>
+                        <t t-out="this.formatMonetary(this.props.taxGroup.base_amount_currency)" style="white-space: nowrap;"/>
                     </span>
                 </td>
             </tr>
@@ -55,6 +55,7 @@
     </t>
     <!-- Foreign Currency Totals-->
     <t t-name="l10n_ve_accountant.TaxForeignTotalsField" owl="1">
+        <t t-set="totals" t-value="this.totals()"/>
         <table class="float-end">
             <tbody>
                 <h1>
@@ -63,31 +64,31 @@
                 <t t-foreach="totals.subtotals" t-as="subtotal" t-key="subtotal.name">
                     <tr>
                         <td class="o_td_label">
-                            <label class="o_form_label o_tax_total_label" t-esc="subtotal.name"/>
+                            <label class="o_form_label o_tax_total_label" t-out="subtotal.name"/>
                         </td>
                         <td class="o_list_monetary">
                             <span style="white-space: nowrap; font-weight: bold;"
-                                  t-out="formatMonetaryForeign(subtotal.base_amount_foreign_currency)"/>
+                                  t-out="this.formatMonetaryForeign(subtotal.base_amount_foreign_currency)"/>
                         </td>
                     </tr>
                     <t t-foreach="subtotal.tax_groups" t-as="taxGroup" t-key="taxGroup.id">
                         <tr>
                             <td class="o_td_label">
-                                <label class="o_form_label o_tax_total_label" t-esc="'Total G ' + taxGroup.group_name"/>
+                                <label class="o_form_label o_tax_total_label" t-out="'Total G ' + taxGroup.group_name"/>
                             </td>
                             <td>
                                 <span class="o_tax_group_amount_value o_list_monetary"
-                                      t-out="formatMonetaryForeign(taxGroup.base_amount_foreign_currency)"
+                                      t-out="this.formatMonetaryForeign(taxGroup.base_amount_foreign_currency)"
                                       style="white-space: nowrap;"/>
                             </td>
                         </tr>
                         <tr>
                             <td class="o_td_label">
-                                <label class="o_form_label o_tax_total_label" t-esc="taxGroup.group_name"/>
+                                <label class="o_form_label o_tax_total_label" t-out="taxGroup.group_name"/>
                             </td>
                             <td class="o_list_monetary">
                                 <span style="white-space: nowrap;"
-                                      t-out="formatMonetaryForeign(taxGroup.tax_amount_foreign_currency)"/>
+                                      t-out="this.formatMonetaryForeign(taxGroup.tax_amount_foreign_currency)"/>
                             </td>
                         </tr>
                     </t>
@@ -98,7 +99,7 @@
                     </td>
                     <td class="o_list_monetary">
                         <span style="font-size: 1.3em; font-weight: bold; white-space: nowrap;"
-                              t-out="formatMonetaryForeign(totals.total_amount_foreign_currency)"/>
+                              t-out="this.formatMonetaryForeign(totals.total_amount_foreign_currency)"/>
                     </td>
                 </tr>
             </tbody>
@@ -106,36 +107,37 @@
     </t>
     <!-- VES ONLY FIELDS -->
     <t t-name="l10n_ve_accountant.TaxVesTotalsField" owl="1">
-        <table class="float-end" t-if="hasAlternate">
+        <t t-set="totals" t-value="this.totals()"/>
+        <table class="float-end" t-if="this.hasAlternate">
             <tbody>
                 <t t-foreach="totals.subtotals" t-as="subtotal" t-key="subtotal.name">
                     <tr>
                         <td class="o_td_label">
-                            <label class="o_form_label o_tax_total_label" t-esc="subtotal.name"/>
+                            <label class="o_form_label o_tax_total_label" t-out="subtotal.name"/>
                         </td>
                         <td class="o_list_monetary">
                             <span style="white-space: nowrap; font-weight: bold;"
-                                  t-out="showForeign ? formatMonetaryForeign(subtotal.base_amount_foreign_currency) : subtotal.formatted_base_amount_currency_ves"/>
+                                  t-out="this.showForeign ? this.formatMonetaryForeign(subtotal.base_amount_foreign_currency) : subtotal.formatted_base_amount_currency_ves"/>
                         </td>
                     </tr>
                     <t t-foreach="subtotal.tax_groups" t-as="taxGroup" t-key="taxGroup.id">
                         <tr>
                             <td class="o_td_label">
-                                <label class="o_form_label o_tax_total_label" t-esc="'Total G ' + taxGroup.group_name"/>
+                                <label class="o_form_label o_tax_total_label" t-out="'Total G ' + taxGroup.group_name"/>
                             </td>
                             <td>
                                 <span class="o_tax_group_amount_value o_list_monetary"
-                                      t-out="showForeign ? formatMonetaryForeign(taxGroup.base_amount_foreign_currency) : taxGroup.formatted_base_amount_currency_ves"
+                                      t-out="this.showForeign ? this.formatMonetaryForeign(taxGroup.base_amount_foreign_currency) : taxGroup.formatted_base_amount_currency_ves"
                                       style="white-space: nowrap;"/>
                             </td>
                         </tr>
                         <tr>
                             <td class="o_td_label">
-                                <label class="o_form_label o_tax_total_label" t-esc="taxGroup.group_name"/>
+                                <label class="o_form_label o_tax_total_label" t-out="taxGroup.group_name"/>
                             </td>
                             <td class="o_list_monetary">
                                 <span style="white-space: nowrap;"
-                                      t-out="showForeign ? formatMonetaryForeign(taxGroup.tax_amount_foreign_currency) : taxGroup.formatted_tax_amount_currency_ves"/>
+                                      t-out="this.showForeign ? this.formatMonetaryForeign(taxGroup.tax_amount_foreign_currency) : taxGroup.formatted_tax_amount_currency_ves"/>
                             </td>
                         </tr>
                     </t>
@@ -146,7 +148,7 @@
                     </td>
                     <td class="o_list_monetary">
                         <span style="font-size: 1.3em; font-weight: bold; white-space: nowrap;"
-                              t-out="showForeign ? formatMonetaryForeign(totals.total_amount_foreign_currency) : totals.formatted_total_amount_currency_ves"/>
+                              t-out="this.showForeign ? this.formatMonetaryForeign(totals.total_amount_foreign_currency) : totals.formatted_total_amount_currency_ves"/>
                     </td>
                 </tr>
             </tbody>

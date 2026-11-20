@@ -15,6 +15,37 @@ def pre_init_hook(env):
     reassign_xml_tax_unit_data_ids(env.cr)
     reassign_xml_ir_rule_ids(env.cr)
     retire_binaural_payment_extension(env.cr)
+    backfill_tax_unit_available_date(env.cr)
+
+
+def backfill_tax_unit_available_date(cr):
+    """Give a publish date to the tax units that already exist when this module is installed.
+
+    ``tax.unit`` comes from ``l10n_ve_accountant``, which also creates the 0,40 unit; this module
+    adds ``available_date`` as required. Installed on a database that already has units, Odoo
+    cannot add the NOT NULL constraint and logs an ERROR ("column available_date of relation
+    tax_unit contains null values"), which fails an Odoo.sh build. The units get a date that
+    never competes with a real one: 1900-01-01, one day apart in creation order. Their creation
+    date (what the migration from 17 uses) would be the day of the installation, and a unit
+    created that same day would be rejected as a duplicate date.
+    """
+    cr.execute("SELECT to_regclass('tax_unit')")
+    if not cr.fetchone()[0]:
+        return
+    cr.execute("ALTER TABLE tax_unit ADD COLUMN IF NOT EXISTS available_date date")
+    cr.execute(
+        """
+        WITH ordered AS (
+            SELECT id, (row_number() OVER (ORDER BY create_date, id) - 1)::int AS offset_days
+            FROM tax_unit
+            WHERE available_date IS NULL
+        )
+        UPDATE tax_unit t
+        SET available_date = DATE '1900-01-01' + ordered.offset_days
+        FROM ordered
+        WHERE t.id = ordered.id
+        """
+    )
 
 
 def retire_binaural_payment_extension(cr):

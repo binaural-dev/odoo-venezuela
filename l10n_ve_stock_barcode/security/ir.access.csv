@@ -1,0 +1,2 @@
+id,name,model_id,group_id/id,operation,domain
+stock_barcode.access_stock_picking_barcode_user,stock.picking barcode user,stock.picking,stock_barcode.group_barcode_user,cru,

@@ -38,7 +38,7 @@ class TestLockInternalReferenceOnMoves(TransactionCase):
             {
                 "product_id": product.id,
                 "product_uom_qty": 1,
-                "product_uom": product.uom_id.id,
+                "uom_id": product.uom_id.id,
                 "location_id": self.location_src.id,
                 "location_dest_id": self.location_dest.id,
             }

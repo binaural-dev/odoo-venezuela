@@ -105,18 +105,8 @@ class TestPickingInvoiceWizard(StockAccountTestCommon):
     def _create_return_picking(self):
         picking = self._create_outgoing_picking()
 
-        return_wizard = self.env["stock.return.picking"].with_context(
-            active_id=picking.id,
-            active_model="stock.picking",
-        ).create({
-            "picking_id": picking.id,
-        })
-
-        return_wizard.product_return_moves.write({
-            "quantity": 1,
-            "to_refund": True,
-        })
-        return_picking = return_wizard._create_return()
+        return_picking = picking._create_return()
+        return_picking.move_ids.write({"product_uom_qty": 1})
         return_picking.is_return = True
         return_picking.move_ids.write({"quantity": 1, "picked": True})
         return_picking.button_validate()
@@ -125,17 +115,8 @@ class TestPickingInvoiceWizard(StockAccountTestCommon):
     def _create_return_of_incoming_picking(self):
         """Create a return picking from an incoming picking (outgoing return)."""
         incoming = self._create_incoming_picking()
-        return_wizard = self.env["stock.return.picking"].with_context(
-            active_id=incoming.id,
-            active_model="stock.picking",
-        ).create({
-            "picking_id": incoming.id,
-        })
-        return_wizard.product_return_moves.write({
-            "quantity": 1,
-            "to_refund": True,
-        })
-        return_picking = return_wizard._create_return()
+        return_picking = incoming._create_return()
+        return_picking.move_ids.write({"product_uom_qty": 1})
         return_picking.is_return = True
         return_picking.move_ids.write({"quantity": 1, "picked": True})
         return_picking.button_validate()
@@ -401,7 +382,7 @@ class TestPickingInvoiceWizard(StockAccountTestCommon):
 
 @tagged("post_install", "-at_install", "test_wizards")
 class TestSelfConsumptionAndReturnWizard(TransactionCase):
-    """Tests for stock.picking.self.consumption.wizard and stock.return.picking."""
+    """Tests for stock.picking.self.consumption.wizard and the returns of a picking."""
 
     @classmethod
     def setUpClass(cls):
@@ -451,35 +432,16 @@ class TestSelfConsumptionAndReturnWizard(TransactionCase):
         result = wizard.action_cancel()
         self.assertEqual(result["type"], "ir.actions.act_window_close")
 
-    # ── stock.return.picking (is_return flag) ──
+    # ── returns of a picking (is_return flag) ──
 
     def test_return_picking_sets_is_return(self):
-        return_wizard = self.env["stock.return.picking"].with_context(
-            active_id=self.picking.id,
-            active_model="stock.picking",
-        ).create({
-            "picking_id": self.picking.id,
-        })
-        return_wizard.product_return_moves.write({
-            "quantity": 1,
-            "to_refund": True,
-        })
-        new_picking = return_wizard._create_return()
+        new_picking = self.picking._create_return()
+        new_picking.move_ids.write({"product_uom_qty": 1})
         self.assertTrue(new_picking.is_return)
 
     def test_return_picking_is_return_override(self):
-        return_wizard_obj = self.env["stock.return.picking"].with_context(
-            active_id=self.picking.id,
-            active_model="stock.picking",
-        )
-        return_wizard = return_wizard_obj.create({
-            "picking_id": self.picking.id,
-        })
-        return_wizard.product_return_moves.write({
-            "quantity": 1,
-            "to_refund": True,
-        })
-        new_picking = return_wizard._create_return()
+        new_picking = self.picking._create_return()
+        new_picking.move_ids.write({"product_uom_qty": 1})
         self.assertIsNotNone(new_picking)
         self.assertTrue(new_picking.is_return)
         self.assertNotEqual(new_picking.id, self.picking.id)

@@ -1,3 +1,4 @@
+from markupsafe import Markup
 from odoo import _, api, fields, models
 
 
@@ -34,21 +35,11 @@ class StockPickingAlterLocationLine(models.Model):
             for line in self:
                 pre_qty, pre_name = old_values.get(line.id, (0.0, line.name))
                 line.stock_alter_location_id.message_post(
-                    body=_("Quantity updated"),
-                    tracking_value_ids=[
-                        (
-                            0,
-                            0,
-                            {
-                                "field_info": {
-                                    "desc": _("Quantity in %s", pre_name),
-                                    "name": "available_qty",
-                                    "type": "float",
-                                },
-                                "old_value_float": pre_qty,
-                                "new_value_float": post_qty,
-                            },
-                        )
-                    ],
+                    body=Markup("%s<br/>%s → <b>%s</b> <i>(%s)</i>") % (
+                        _("Quantity updated"),
+                        pre_qty,
+                        post_qty,
+                        _("Quantity in %s", pre_name),
+                    )
                 )
         return res

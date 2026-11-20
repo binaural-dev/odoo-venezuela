@@ -66,8 +66,10 @@ class ProductPricelistReport(models.AbstractModel):
             pricelist.id: pricelist._get_products_price(products, 1) for pricelist in pricelists
         }
 
+        uom_names = {product.id: product.uom_id.name for product in products}
         variants_data = []
         for product_data in products_data:
+            product_data["uom"] = uom_names.get(product_data["id"], "")
             product_data["prices"] = {
                 pricelist_id: prices.get(product_data["id"], 0.0)
                 for pricelist_id, prices in prices_by_pricelist.items()

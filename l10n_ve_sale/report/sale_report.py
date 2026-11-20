@@ -1,5 +1,6 @@
 from lxml import etree
 from odoo import fields, models, _, api
+from odoo.tools import SQL
 
 
 class SaleReport(models.Model):
@@ -9,20 +10,17 @@ class SaleReport(models.Model):
     foreign_untaxed_total = fields.Monetary(string="Foreign Untaxed Total", readonly=True, currency_field='foreign_currency_id')
     foreign_total_billed = fields.Monetary(string="Foreign Total Billed", readonly=True, currency_field='foreign_currency_id')
 
-    def _select_additional_fields(self):
-        res = super()._select_additional_fields()
-        res.update({
-            'foreign_untaxed_total': """SUM(l.foreign_subtotal)""",
-            'foreign_total_billed': """SUM(l.foreign_subtotal + (l.foreign_subtotal / COALESCE(NULLIF(l.price_subtotal, 0.0), 1.0) * (l.price_total - l.price_subtotal)))""",
-            'foreign_currency_id': """s.foreign_currency_id""",
-        })
-        return res
-
-    def _group_by_sale(self):
-        res = super()._group_by_sale()
-        res += """,
-            s.foreign_currency_id"""
-        return res
+    def _select_dict(self, table):
+        """Alternate currency measures, on the query of the sales analysis of Odoo 20."""
+        subtotal = table.foreign_subtotal
+        return super()._select_dict(table) | {
+            "foreign_untaxed_total": SQL("SUM(%s)", subtotal),
+            "foreign_total_billed": SQL(
+                "SUM(%s + (%s / COALESCE(NULLIF(%s, 0.0), 1.0) * (%s - %s)))",
+                subtotal, subtotal, table.price_subtotal, table.price_total, table.price_subtotal,
+            ),
+            "foreign_currency_id": table.order_id.foreign_currency_id,
+        }
 
     @api.model
     def get_view(self, view_id=None, view_type="form", **options):

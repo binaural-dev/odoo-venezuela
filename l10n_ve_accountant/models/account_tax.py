@@ -529,6 +529,7 @@ class AccountTax(models.Model):
 
             # The special_mode for the taxes computation:
             'special_mode': load('special_mode', False, from_base_line=True),
+            'document_tax_mode': load('document_tax_mode', False),
 
             # A special typing of base line for some custom behavior:
             'special_type': load('special_type', False, from_base_line=True),

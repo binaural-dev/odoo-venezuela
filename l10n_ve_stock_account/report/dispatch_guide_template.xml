@@ -205,7 +205,7 @@
                                     </td>
                                     <!-- unit -->
                                     <td class="text-center">
-                                        <t t-out="line.product_uom.name" />
+                                        <t t-out="line.uom_id.name" />
                                     </td>
                                     <!-- weight -->
                                     <td class="text-center" t-if='o.operation_code != "internal" and not o.company_id.hide_weight_field_dispatch_guide'>

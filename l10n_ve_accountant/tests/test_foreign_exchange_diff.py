@@ -12,13 +12,8 @@ import logging
 _logger = logging.getLogger(__name__)
 
 
-@tagged("post_install", "-at_install", "l10n_ve_foreign_exchange_diff")
-class TestForeignExchangeDiff(TransactionCase):
-    """Alternate-currency amounts injected into Odoo's native exchange
-    difference entry, and the standalone entry when only the alternate
-    currency differs. Covers amounts, signs, posted state, and the
-    reconciliation-break/reversal flow for both cases.
-    """
+class ForeignExchangeDiffMixin:
+    """setUp y helpers de tasas compartidos por los tests del diferencial alterno."""
 
     def setUp(self):
         super().setUp()
@@ -181,7 +176,10 @@ class TestForeignExchangeDiff(TransactionCase):
         cambia ese dia".
         """
         auto_dates = self.__dict__.setdefault("_auto_rate_dates", set())
-        for date in dates:
+        # Core dates its exchange entries with `journal.accounting_date`, which
+        # can land on the month end: that day needs a rate too (same as native).
+        month_ends = {fields.Date.end_of(d, "month") for d in dates}
+        for date in sorted(set(dates) | month_ends):
             exists = self.Rate.search_count([
                 ("name", "=", date),
                 ("currency_id", "=", self.currency_usd.id),
@@ -197,6 +195,15 @@ class TestForeignExchangeDiff(TransactionCase):
             if previous:
                 self._set_usd_rate(date, previous.inverse_company_rate)
                 auto_dates.add(date)
+
+
+@tagged("post_install", "-at_install", "l10n_ve_foreign_exchange_diff")
+class TestForeignExchangeDiff(ForeignExchangeDiffMixin, TransactionCase):
+    """Alternate-currency amounts injected into Odoo's native exchange
+    difference entry, and the standalone entry when only the alternate
+    currency differs. Covers amounts, signs, posted state, and the
+    reconciliation-break/reversal flow for both cases.
+    """
 
     def _create_invoice(self, amount=100.0, currency=None, booking_ves_per_usd=None):
         # Doesn't force `foreign_inverse_rate` manually: as long as the
@@ -537,6 +544,7 @@ class TestForeignExchangeDiff(TransactionCase):
             "journal_id": self.bank_journal_usd.id,
             "payment_method_line_id": self.bank_journal_usd.inbound_payment_method_line_ids[:1].id,
         })
+        self._ensure_usd_rate(settlement_2)
         payment_2.action_post()
         payment_line_2 = payment_2.move_id.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
         (receivable_line + payment_line_2).reconcile()
@@ -1160,9 +1168,11 @@ class TestForeignExchangeDiff(TransactionCase):
             "A reversed standalone entry must not produce a synthetic row anymore",
         )
 
-    def test_payments_widget_standalone_case_shows_amount_and_hides_unreconcile(self):
-        """End-to-end via the real `invoice_payments_widget`: the row shows
-        the real 0.5 amount, no real partial, currency hardcoded to VEF.
+    def test_payments_widget_standalone_case_goes_to_exchange_info(self):
+        """End-to-end via the real `invoice_payments_widget`: Odoo 20 groups
+        every exchange partial in `exchange_info` instead of listing it as a
+        payment row, so the standalone entry shows there, with no
+        "Unreconcile" row of its own.
         Ver openspec: design-notes.md § _get_all_reconciled_invoice_partials
         """
         move = self._create_invoice(100.0, booking_ves_per_usd=40.0)
@@ -1172,14 +1182,11 @@ class TestForeignExchangeDiff(TransactionCase):
         entry = self.env["account.move"].search([
             ("l10n_ve_exchange_foreign_source_move_id", "=", move.id),
         ])
+        closing_line = entry.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
         widget = move.invoice_payments_widget
         self.assertTrue(widget)
-        rows = [r for r in widget['content'] if r.get('move_id') == entry.id]
-        self.assertEqual(len(rows), 1)
-        row = rows[0]
-        self.assertEqual(row['currency_id'], self.currency_vef.id)
-        self.assertAlmostEqual(row['amount'], 0.5, places=6)
-        self.assertFalse(row['partial_id'])
+        self.assertFalse([r for r in widget['content'] if r.get('move_id') == entry.id])
+        self.assertIn(closing_line.id, widget['exchange_info']['line_ids'])
 
     def test_payments_widget_no_synthetic_row_when_no_standalone_entry(self):
         move = self._create_invoice(100.0, booking_ves_per_usd=40.0)
@@ -1199,8 +1206,11 @@ class TestForeignExchangeDiff(TransactionCase):
         entry = self.env["account.move"].search([
             ("l10n_ve_exchange_foreign_source_move_id", "=", move.id),
         ])
-        rows_before = [r for r in move.invoice_payments_widget['content'] if r.get('move_id') == entry.id]
-        self.assertEqual(len(rows_before), 1, "Setup sanity: the row must be present before reversal")
+        closing_line = entry.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+        self.assertIn(
+            closing_line.id, move.invoice_payments_widget['exchange_info']['line_ids'],
+            "Setup sanity: the entry must be present before reversal",
+        )
 
         (receivable_line + payment_line).remove_move_reconcile()
         self.assertTrue(entry.reversal_move_ids, "Setup sanity: the entry must be reversed")
@@ -1210,8 +1220,8 @@ class TestForeignExchangeDiff(TransactionCase):
         # `False` (core's own behavior when there is nothing left to show
         # at all) -- either way, the reversed entry's row must be gone.
         widget_after = move.invoice_payments_widget
-        rows_after = [r for r in widget_after['content'] if r.get('move_id') == entry.id] if widget_after else []
-        self.assertFalse(rows_after, "A reversed standalone entry must not show up in the Pagos widget")
+        exchange_lines_after = widget_after['exchange_info']['line_ids'] if widget_after else []
+        self.assertNotIn(closing_line.id, exchange_lines_after, "A reversed standalone entry must not show up in the Pagos widget")
 
     # ── `account.partial.reconcile.unlink()`: safety net for the reversal ──
     # Ver openspec: design-notes.md § account_partial_reconcile.unlink()

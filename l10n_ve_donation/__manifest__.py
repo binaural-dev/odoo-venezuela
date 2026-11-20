@@ -1,6 +1,6 @@
 {
     "name": "Venezuela - Donaciones",
-    "version": "19.0.2.0.6",
+    "version": "20.0.1.0.0",
     "category": "Accounting/Accounting",
     "summary": "Venezuela - Donaciones",
     "author": "",
@@ -27,7 +27,8 @@
         "views/stock_scrap_views.xml",
         "views/stock_warehouse_views.xml",
     ],
-    "installable": False,
+    "installable": True,
+    "binaural_migrated": True,
     "application": True,
     "auto_install": False,
 }

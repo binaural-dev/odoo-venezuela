@@ -46,23 +46,18 @@ class AccountInvoiceReport(models.Model):
         "account.move.line": ["foreign_rate", "foreign_subtotal", "foreign_price_total"],
     }
 
-    @api.model
-    def _select(self):
+    def _select_list(self, table):
+        """Add the alternate currency, rate and totals of each line to the invoice analysis.
+
+        Odoo 20 builds the query of the report from ``_select_list``: the ``_select`` of Odoo 19 is
+        no longer called and these columns came out empty.
         """
-        This method is used to add the foreign_rate and foreign_total_billed fields to the query
-
-        Returns
-        -------
-
-        type = str
-            The query with the foreign_rate and foreign_total_billed fields
-
-        """
-        return SQL(
-            "%s, line.foreign_currency_id, line.foreign_rate, "
-            "line.foreign_subtotal, line.foreign_price_total",
-            super()._select(),
-        )
+        return super()._select_list(table) + [
+            table.foreign_currency_id,
+            table.foreign_rate,
+            table.foreign_subtotal,
+            table.foreign_price_total,
+        ]
 
     @api.model
     def get_view(self, view_id=None, view_type=None, **options):

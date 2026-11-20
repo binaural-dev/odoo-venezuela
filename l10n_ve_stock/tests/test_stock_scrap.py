@@ -1,10 +1,12 @@
-from unittest.mock import MagicMock, patch, PropertyMock
+from unittest.mock import MagicMock, patch
 from odoo.tests import TransactionCase, tagged
 from odoo.exceptions import ValidationError
 
 
 @tagged("post_install", "-at_install", "l10n_ve_stock")
 class TestStockScrapActionValidate(TransactionCase):
+    """The scrap rules of the company, on the scrap moves of Odoo 20 (``stock.scrap`` is gone)."""
+
     def setUp(self):
         super().setUp()
         self.warehouse = self.env["stock.warehouse"].search([], limit=1)
@@ -19,126 +21,82 @@ class TestStockScrapActionValidate(TransactionCase):
             "quantity": 50,
         })
 
+    def _scrap(self, quantity):
+        return self.env["stock.move"].with_context(default_is_scrap=True).create({
+            "product_id": self.product.id,
+            "product_uom_qty": quantity,
+            "quantity": quantity,
+            "location_id": self.warehouse.lot_stock_id.id,
+        })
+
+    def _production(self, produced, scrapped):
+        production = MagicMock()
+        production.qty_produced = produced
+        return (
+            patch.object(type(self.env["stock.move"]), "_get_scrap_production", return_value=production),
+            patch.object(type(self.env["stock.move"]), "_get_production_scrapped_quantity", return_value=scrapped),
+        )
+
     def test_action_validate_allow_scrap_more_than_available(self):
         self.env.company.allow_scrap_more_than_available = True
         self.env.company.not_allow_scrap_more_than_what_was_manufactured = False
-        scrap = self.env["stock.scrap"].create({
-            "product_id": self.product.id,
-            "scrap_qty": 5,
-            "location_id": self.warehouse.lot_stock_id.id,
-        })
-        scrap.action_validate()
+        scrap = self._scrap(5)
+        scrap.action_scrap()
         self.assertEqual(scrap.state, "done")
 
     def test_action_validate_not_allow_scrap_check_available(self):
         self.env.company.allow_scrap_more_than_available = False
         self.env.company.not_allow_scrap_more_than_what_was_manufactured = False
-        scrap = self.env["stock.scrap"].create({
-            "product_id": self.product.id,
-            "scrap_qty": 5,
-            "location_id": self.warehouse.lot_stock_id.id,
-        })
-        scrap.action_validate()
+        scrap = self._scrap(5)
+        scrap.action_scrap()
         self.assertEqual(scrap.state, "done")
 
     def test_action_validate_not_allow_scrap_insufficient_qty(self):
         self.env.company.allow_scrap_more_than_available = False
         self.env.company.not_allow_scrap_more_than_what_was_manufactured = False
-        scrap = self.env["stock.scrap"].create({
-            "product_id": self.product.id,
-            "scrap_qty": 99999,
-            "location_id": self.warehouse.lot_stock_id.id,
-        })
+        scrap = self._scrap(99999)
         with self.assertRaises(ValidationError):
-            scrap.action_validate()
+            scrap.action_scrap()
 
     def test_action_validate_not_allow_manufactured_no_production(self):
         self.env.company.allow_scrap_more_than_available = True
         self.env.company.not_allow_scrap_more_than_what_was_manufactured = True
-        scrap = self.env["stock.scrap"].create({
-            "product_id": self.product.id,
-            "scrap_qty": 5,
-            "location_id": self.warehouse.lot_stock_id.id,
-        })
-        scrap.action_validate()
+        scrap = self._scrap(5)
+        scrap.action_scrap()
         self.assertEqual(scrap.state, "done")
 
     def test_action_validate_production_no_scraps(self):
         self.env.company.allow_scrap_more_than_available = True
         self.env.company.not_allow_scrap_more_than_what_was_manufactured = True
-        scrap = self.env["stock.scrap"].create({
-            "product_id": self.product.id,
-            "scrap_qty": 5,
-            "location_id": self.warehouse.lot_stock_id.id,
-        })
-        mock_production = MagicMock()
-        mock_production.qty_produced = 10
-        mock_production.scrap_ids = False
-        with patch.object(type(scrap), 'production_id', mock_production, create=True):
-            scrap.action_validate()
+        scrap = self._scrap(5)
+        production, scrapped = self._production(produced=10, scrapped=0)
+        with production, scrapped:
+            scrap.action_scrap()
         self.assertEqual(scrap.state, "done")
 
     def test_action_validate_production_exceeds_qty_produced(self):
         self.env.company.allow_scrap_more_than_available = True
         self.env.company.not_allow_scrap_more_than_what_was_manufactured = True
-        scrap = self.env["stock.scrap"].create({
-            "product_id": self.product.id,
-            "scrap_qty": 15,
-            "location_id": self.warehouse.lot_stock_id.id,
-        })
-        done_scrap = MagicMock()
-        done_scrap.state = "done"
-        done_scrap.scrap_qty = 0
-        mock_scraps = MagicMock()
-        mock_scraps.__bool__ = lambda self: True
-        mock_scraps.filtered = MagicMock(return_value=[done_scrap])
-        mock_production = MagicMock()
-        mock_production.qty_produced = 10
-        mock_production.scrap_ids = mock_scraps
-        with patch.object(type(scrap), 'production_id', mock_production, create=True):
-            with self.assertRaises(ValidationError):
-                scrap.action_validate()
+        scrap = self._scrap(15)
+        production, scrapped = self._production(produced=10, scrapped=0)
+        with production, scrapped, self.assertRaises(ValidationError):
+            scrap.action_scrap()
 
     def test_action_validate_production_sum_exceeds(self):
         self.env.company.allow_scrap_more_than_available = True
         self.env.company.not_allow_scrap_more_than_what_was_manufactured = True
-        scrap = self.env["stock.scrap"].create({
-            "product_id": self.product.id,
-            "scrap_qty": 6,
-            "location_id": self.warehouse.lot_stock_id.id,
-        })
-        done_item = MagicMock()
-        done_item.state = "done"
-        done_item.scrap_qty = 5
-        mock_scraps = MagicMock()
-        mock_scraps.__bool__ = lambda self: True
-        mock_scraps.filtered = MagicMock(return_value=[done_item])
-        mock_production = MagicMock()
-        mock_production.qty_produced = 10
-        mock_production.scrap_ids = mock_scraps
-        with patch.object(type(scrap), 'production_id', mock_production, create=True):
-            with self.assertRaises(ValidationError):
-                scrap.action_validate()
+        scrap = self._scrap(6)
+        production, scrapped = self._production(produced=10, scrapped=5)
+        with production, scrapped, self.assertRaises(ValidationError):
+            scrap.action_scrap()
 
     def test_action_validate_production_within_limit(self):
         self.env.company.allow_scrap_more_than_available = True
         self.env.company.not_allow_scrap_more_than_what_was_manufactured = True
-        scrap = self.env["stock.scrap"].create({
-            "product_id": self.product.id,
-            "scrap_qty": 3,
-            "location_id": self.warehouse.lot_stock_id.id,
-        })
-        done_item = MagicMock()
-        done_item.state = "done"
-        done_item.scrap_qty = 5
-        mock_scraps = MagicMock()
-        mock_scraps.__bool__ = lambda self: True
-        mock_scraps.filtered = MagicMock(return_value=[done_item])
-        mock_production = MagicMock()
-        mock_production.qty_produced = 10
-        mock_production.scrap_ids = mock_scraps
-        with patch.object(type(scrap), 'production_id', mock_production, create=True):
-            scrap.action_validate()
+        scrap = self._scrap(3)
+        production, scrapped = self._production(produced=10, scrapped=5)
+        with production, scrapped:
+            scrap.action_scrap()
         self.assertEqual(scrap.state, "done")
 
 

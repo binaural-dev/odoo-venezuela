@@ -293,6 +293,12 @@ class StockPicking(models.Model):
 
     # === MAIN FUNCTIONS ===#
 
+    def _create_return(self):
+        """Mark the returned picking, which Odoo 20 creates from the picking itself."""
+        new_picking = super()._create_return()
+        new_picking.write({"is_return": True})
+        return new_picking
+
     def create_multi_invoice(self, pickings):
         lines = self._get_multiple_invoice_lines_for_invoice(
             pickings, from_picking_line=True

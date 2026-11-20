@@ -1,5 +1,8 @@
+import logging
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
+
+_logger = logging.getLogger(__name__)
 
 
 def _apply_m2m_commands(current_ids, raw_value):
@@ -187,6 +190,16 @@ class ProductTemplate(models.Model):
 
         if errors:
             name = vals.get('name') or ''
+            if self.env.context.get('install_mode'):
+                # A product created by a module's data while it is installed, in a
+                # company without its default taxes yet (on a new database the chart
+                # of accounts is loaded at the end): the policy is for the users, it
+                # must not stop the installation. The product is left without taxes.
+                _logger.warning(
+                    "Product '%s' created by module data without taxes: %s",
+                    name, " ".join(errors),
+                )
+                return
             self._raise_fiscal_inconsistency([(name, errors)])
 
     def _enforce_single_tax_vals_write(self, vals, records):

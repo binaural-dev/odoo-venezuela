@@ -1,7 +1,7 @@
 import logging
 from odoo.tests import TransactionCase, tagged
 from odoo import fields, Command
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import AccessError, UserError, ValidationError
 
 _logger = logging.getLogger(__name__)
 
@@ -292,6 +292,33 @@ class TestAccountMoveCore(TransactionCase):
         invoice.with_context(move_action_post_alert=True).action_post()
         with self.assertRaises(UserError):
             invoice.unlink()
+
+    def _billing_user(self):
+        return self.env["res.users"].create({
+            "name": "Billing User",
+            "login": "billing_user_l10n_ve_accountant",
+            "email": "billing_user_l10n_ve_accountant@example.com",
+            "group_ids": [Command.set([self.env.ref("account.group_account_invoice").id])],
+        })
+
+    def test_09b_billing_user_deletes_a_draft_never_posted(self):
+        invoice = self._create_simple_invoice(self.currency_vef, 100.0)
+        invoice.with_user(self._billing_user()).unlink()
+        self.assertFalse(invoice.exists())
+
+    def test_09c_billing_user_cannot_delete_a_posted_invoice(self):
+        invoice = self._create_simple_invoice(self.currency_vef, 100.0)
+        invoice.with_context(move_action_post_alert=True).action_post()
+        with self.assertRaises((AccessError, UserError)):
+            invoice.with_user(self._billing_user()).unlink()
+        self.assertTrue(invoice.exists())
+
+    def test_09d_billing_user_cannot_delete_an_invoice_reset_to_draft(self):
+        invoice = self._create_simple_invoice(self.currency_vef, 100.0)
+        invoice.with_context(move_action_post_alert=True).action_post()
+        invoice.button_draft()
+        with self.assertRaises(UserError):
+            invoice.with_user(self._billing_user()).unlink()
 
     # ═══════════════════════════════════════════════════════════════
     # button_draft

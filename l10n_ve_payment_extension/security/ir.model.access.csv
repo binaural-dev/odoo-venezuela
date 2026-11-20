@@ -1,4 +1,0 @@
-id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-account.access_account_invoice,account.access_account_invoice,model_account_retention,account.group_account_invoice,1,0,0,0
-account.access_payment_concept,account.access_payment_concept,model_payment_concept,account.group_account_invoice,1,0,0,0
-account.access_payment_concept_line,account.payment_concept_line,model_payment_concept_line,account.group_account_invoice,1,0,0,0
