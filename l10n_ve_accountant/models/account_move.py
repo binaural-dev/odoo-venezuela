@@ -663,25 +663,26 @@ class AccountMove(models.Model):
             if not record.tax_totals:
                 record.detailed_amounts = dict()
                 return
+            # Base, impuesto y total salen de `tax_totals` (ya corregidos para precio
+            # incluido). Solo el descuento no existe como numero en `tax_totals`
+            # (`formatted_total_discount` es texto y con impuesto incluido), asi que
+            # se deduce de las lineas, sin impuesto: la base de la linea sin
+            # descuento es `price_subtotal / (1 - descuento)`.
+            base_amount = record.tax_totals.get("base_amount_currency", 0)
             amount_taxed = record.tax_totals.get("tax_amount_currency", 0)
-            total = 0
-
             for line in record.invoice_line_ids:
-                # `price_subtotal` ya es la base sin impuesto (y con descuento) en
-                # la moneda del documento, incluso con impuestos de precio
-                # incluido; el bruto se reconstruye igual que en
-                # `company_currency_line_totals`.
                 discount_percent = line._get_effective_discount_percent()
-                subtotal = line.price_subtotal
-                if discount_percent and not float_is_zero(
-                    1 - discount_percent / 100.0, precision_digits=6
-                ):
-                    subtotal = line.price_subtotal / (1 - discount_percent / 100.0)
-                elif discount_percent:  # 100%: no hay base de la cual reconstruir
-                    subtotal = line.price_unit * line.quantity
-                if discount_percent > 0:
-                    discount_amount += subtotal - line.price_subtotal
-                total += subtotal
+                if not discount_percent:
+                    continue
+                if float_is_zero(1 - discount_percent / 100.0, precision_digits=6):
+                    # 100%: no hay base de la cual reconstruir el bruto.
+                    discount_amount += line.price_unit * line.quantity
+                else:
+                    discount_amount += line.price_subtotal * discount_percent / (
+                        100.0 - discount_percent
+                    )
+            # Bruto (B.I) = base antes del descuento = base + descuento.
+            total = base_amount + discount_amount
 
             record.detailed_amounts = dict(
                 {
@@ -693,9 +694,9 @@ class AccountMove(models.Model):
                     "formatted_discount_amount": formatLang(
                         self.env, discount_amount, currency_obj=record.currency_id
                     ),
-                    "gross_discount_amount": total - discount_amount,
+                    "gross_discount_amount": base_amount,
                     "formatted_gross_discount_amount": formatLang(
-                        self.env, total - discount_amount, currency_obj=record.currency_id
+                        self.env, base_amount, currency_obj=record.currency_id
                     ),
                     "taxes_amount": amount_taxed,
                     "formatted_taxes_amount": formatLang(
