@@ -6,4 +6,9 @@
 - [x] `l10n_ve_igtf`: xpath de alertas por condición y no por posición (el aviso de l10n_ve_sale se perdía)
 - [x] Prueba en l10n_ve_igtf que inserta un alert-info de un tercero y verifica que sobrevive y que las 4 variantes quedan en su sitio (falla con el xpath posicional)
 - [x] Bump de versión `l10n_ve_invoice` `19.0.1.0.29`, `l10n_ve_payment_extension` `19.0.2.2.9`, `l10n_ve_igtf` `19.0.1.2.23` y `l10n_ve_invoice_digital` `19.0.1.4.9`
-- [ ] Confirmar con el cliente las dos fechas del ticket (ND A798 y ND de cliente 00092780)
+- [x] Columna TD del comprobante de ISLR por `_is_debit_note()`
+- [x] Título del PDF sin reemplazar el del núcleo (conserva la traducción de "Vendor Bill" en todos los idiomas)
+- [x] `l10n_ve_igtf_note_debit`: aviso de IGTF pendiente por condición y no por posición
+- [x] `integra-addons` `binaural_third_party_invoice`: factura afectada por `_is_debit_note()` (PR aparte)
+- [x] Fecha propia de la ND por el asistente en las pruebas; NC por el asistente de reversión
+- [x] Fuera de este PR: confirmar con el cliente las dos fechas (ND A798 y ND de cliente 00092780) y la ruta fiscal / Reporte Z

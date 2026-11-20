@@ -1,3 +1,4 @@
+import random
 import unicodedata
 
 from lxml import html as lxml_html
@@ -14,7 +15,9 @@ PDF_REF = "account.report_invoice_with_payments"
 FREE_FORM_REF = "l10n_ve_invoice.template_invoice_free_form_l10n_ve_invoice"
 
 # Columnas de la fila del comprobante de retencion de IVA.
-COL_INVOICE, COL_DEBIT, COL_CREDIT, COL_TYPE, COL_AFFECTED = 1, 3, 4, 5, 6
+COL_DATE, COL_INVOICE, COL_DEBIT, COL_CREDIT, COL_TYPE, COL_AFFECTED, COL_BASE = 0, 1, 3, 4, 5, 6, 9
+# Columnas de la fila del comprobante de retencion de ISLR.
+COL_ISLR_TD, COL_ISLR_NUMBER = 0, 1
 
 
 @tagged("post_install", "-at_install", "debit_note_detection")
@@ -31,6 +34,9 @@ class TestDebitNoteDetection(RetentionFlowHelpers, RetentionTestCommon):
         self.accounting_date = fields.Date.today()
         self.doc_date = fields.Date.subtract(self.accounting_date, days=3)
         self._set_rates(380.0, 400.0)
+        # La comun deja el pais fiscal distinto del pais de la compania (el de los impuestos); la
+        # reversion valida el pais de los impuestos (`_validate_taxes_country`) y la NC no se crearia.
+        self.company.account_fiscal_country_id = self.company.country_id
         self.IvaWizard = self.env["wizard.retention.iva"]
 
     # ------------------------------------------------------------------ #
@@ -57,11 +63,44 @@ class TestDebitNoteDetection(RetentionFlowHelpers, RetentionTestCommon):
         if kind == "invoice":
             expected = (name, "--", "--", "01-REG", "--")
         elif kind == "debit":
+            self.assertTrue(document.debit_origin_id, name)
             expected = ("--", name, "--", "02-REG", document.debit_origin_id.name)
         else:
-            expected = ("--", "--", name, "03-REG", document.reversed_entry_id.name or "--")
+            self.assertTrue(document.reversed_entry_id, "La nota de credito %s nace de una factura." % name)
+            expected = ("--", "--", name, "03-REG", document.reversed_entry_id.name)
         got = (tds[COL_INVOICE], tds[COL_DEBIT], tds[COL_CREDIT], tds[COL_TYPE], tds[COL_AFFECTED])
         self.assertEqual(got, expected, "Fila del comprobante de %s (%s)" % (name, kind))
+        # La nota de credito resta: su base imponible sale en negativo; la factura y la ND suman.
+        base = tds[COL_BASE]
+        self.assertTrue(any(c in "123456789" for c in base), "Base imponible en cero en %s: %s" % (name, base))
+        self.assertEqual(base.startswith("-"), kind == "credit", "Signo de la base de %s (%s): %s" % (name, kind, base))
+
+    def _credit(self, doc_type, auto_iva=False):
+        """Nota de credito publicada, creada con el asistente de reversion desde una factura
+        publicada, como la crea el usuario (con `reversed_entry_id`). Es parcial (la mitad): al
+        publicarse se concilia con su origen, y una NC total dejaria la factura pagada y fuera de
+        la retencion de IVA."""
+        origin = self._document(doc_type.replace("_refund", "_invoice"), "iva")
+        wizard = Form(self.env["account.move.reversal"].with_context(
+            active_model="account.move", active_ids=origin.ids,
+        ))
+        wizard.reason = "Devolucion"
+        wizard.journal_id = origin.journal_id
+        action = wizard.save().refund_moves()
+        credit = self.env["account.move"].browse(action["res_id"])
+        with Form(credit) as form_credit:
+            if doc_type.startswith("in_"):
+                form_credit.correlative = str(random.randint(10000000000000, 99999999999999))
+            with form_credit.invoice_line_ids.edit(0) as line:
+                line.price_unit = self.AMOUNT / 2
+        credit.write({
+            "date": self.doc_date, "invoice_date": self.doc_date, "invoice_date_display": self.doc_date,
+            **({"generate_iva_retention": True} if auto_iva else {}),
+        })
+        credit.with_context(move_action_post_alert=True).action_post()
+        self.assertEqual(credit.move_type, doc_type)
+        self.assertEqual(credit.reversed_entry_id, origin)
+        return credit
 
     def _retention_form_multi(self, documents, side="supplier"):
         """Retencion de IVA creada con `Form` desde la accion de su menu, con exactamente estos
@@ -85,14 +124,19 @@ class TestDebitNoteDetection(RetentionFlowHelpers, RetentionTestCommon):
                     line.move_id = document
         return form.save()
 
-    def _mixed_supplier_documents(self):
+    def _mixed_supplier_documents(self, credit_from_origin=True):
         """Facturas y notas intercaladas, en el orden en que se crean: factura, nota de debito (con su
-        factura de origen), factura, nota de debito (con su origen) y nota de credito."""
+        factura de origen), factura, nota de debito (con su origen) y nota de credito.
+
+        `credit_from_origin`: la NC nace del asistente de reversion (con factura afectada). Al
+        publicarse queda conciliada con su origen y sin saldo, y una retencion no se puede publicar
+        sobre un documento sin saldo; para publicar la retencion se usa una NC con saldo abierto
+        (sin origen)."""
         inv_a = self._document("in_invoice", "iva")
         nd_b = self._document("in_debit", "iva")
         inv_c = self._document("in_invoice", "iva")
         nd_d = self._document("in_debit", "iva")
-        nc_e = self._document("in_refund", "iva")
+        nc_e = self._credit("in_refund") if credit_from_origin else self._document("in_refund", "iva")
         kinds = [
             (inv_a, "invoice"),
             (nd_b.debit_origin_id, "invoice"),
@@ -102,6 +146,8 @@ class TestDebitNoteDetection(RetentionFlowHelpers, RetentionTestCommon):
             (nd_d, "debit"),
             (nc_e, "credit"),
         ]
+        if credit_from_origin:
+            kinds.insert(-1, (nc_e.reversed_entry_id, "invoice"))
         return kinds
 
     # ------------------------------------------------------------------ #
@@ -110,8 +156,10 @@ class TestDebitNoteDetection(RetentionFlowHelpers, RetentionTestCommon):
     def test_01_is_debit_note_by_document(self):
         invoice = self._document("in_invoice", "iva")
         debit = self._document("in_debit", "iva")
-        credit = self._document("in_refund", "iva")
+        credit = self._credit("in_refund")
         self.assertFalse(debit.journal_id.is_debit, "La nota nace en el diario normal de compras.")
+        self.assertEqual(debit.company_id, debit.debit_origin_id.company_id,
+                         "El asistente crea la ND en la compania de su origen.")
         self.assertFalse(invoice._is_debit_note())
         self.assertTrue(debit._is_debit_note())
         self.assertFalse(credit._is_debit_note())
@@ -126,7 +174,7 @@ class TestDebitNoteDetection(RetentionFlowHelpers, RetentionTestCommon):
         self.assertFalse(invoice.debit_origin_id)
 
     def test_03_credit_note_is_never_debit_note(self):
-        credit = self._document("in_refund", "iva")
+        credit = self._credit("in_refund")
         credit.journal_id.is_debit = True
         self.assertFalse(credit._is_debit_note())
 
@@ -144,7 +192,7 @@ class TestDebitNoteDetection(RetentionFlowHelpers, RetentionTestCommon):
     def test_11_supplier_payment_sign_unchanged(self):
         """La nota de debito de proveedor suma deuda, como la factura: su pago va en el mismo sentido.
         Solo la nota de credito se invierte."""
-        kinds = self._mixed_supplier_documents()
+        kinds = self._mixed_supplier_documents(credit_from_origin=False)
         retention = self._retention_form_multi(self.env["account.move"].union(*[d for d, _ in kinds]))
         retention.action_post()
         for document, kind in kinds:
@@ -166,7 +214,7 @@ class TestDebitNoteDetection(RetentionFlowHelpers, RetentionTestCommon):
 
     def test_14_customer_voucher_form_invoice_and_credit_unchanged(self):
         invoice = self._document("out_invoice", "iva")
-        credit = self._document("out_refund", "iva")
+        credit = self._credit("out_refund")
         self._assert_voucher_row(self._voucher_rows(self._retention_from_form("iva", invoice)), invoice, "invoice")
         self._assert_voucher_row(self._voucher_rows(self._retention_from_form("iva", credit)), credit, "credit")
 
@@ -180,7 +228,10 @@ class TestDebitNoteDetection(RetentionFlowHelpers, RetentionTestCommon):
 
     def test_20_supplier_voucher_auto_invoice_debit_credit(self):
         for doc_type, kind in (("in_invoice", "invoice"), ("in_debit", "debit"), ("in_refund", "credit")):
-            document = self._document(doc_type, "iva", auto_iva=True)
+            if kind == "credit":
+                document = self._credit(doc_type, auto_iva=True)
+            else:
+                document = self._document(doc_type, "iva", auto_iva=True)
             retention = self._auto_retention(document)
             self._assert_voucher_row(self._voucher_rows(retention), document, kind)
 
@@ -227,7 +278,7 @@ class TestDebitNoteDetection(RetentionFlowHelpers, RetentionTestCommon):
             elif kind == "debit":
                 expected = ("02", document.debit_origin_id.name)
             else:
-                expected = ("03", document.reversed_entry_id.name or "0")
+                expected = ("03", document.reversed_entry_id.name)
             self.assertEqual(
                 (row["Tipo de documento"], row["Número del documento afectado"]), expected,
                 "%s (%s)" % (document.name, kind),
@@ -261,7 +312,7 @@ class TestDebitNoteDetection(RetentionFlowHelpers, RetentionTestCommon):
             elif kind == "debit":
                 expected = ("ND", "02-REG", "--", name, "--", document.debit_origin_id.name)
             else:
-                expected = ("NC", "03-REG", "--", "--", name, document.reversed_entry_id.name or "--")
+                expected = ("NC", "03-REG", "--", "--", name, document.reversed_entry_id.name)
             got = tuple(
                 (line[key] or "--") if line[key] != "" else "--"
                 for key in (
@@ -281,16 +332,18 @@ class TestDebitNoteDetection(RetentionFlowHelpers, RetentionTestCommon):
     def test_60_standard_pdf_title(self):
         invoice = self._document("in_invoice", "iva")
         debit = self._document("in_debit", "iva")
-        credit = self._document("in_refund", "iva")
+        credit = self._credit("in_refund")
         self.assertTrue(self._pdf_title(invoice).startswith("Vendor Bill"))
         self.assertTrue(self._pdf_title(debit).startswith("Vendor Debit Note"))
         self.assertTrue(self._pdf_title(credit).startswith("Vendor Credit Note"))
 
     def test_62_standard_pdf_title_es_ve(self):
-        """En es_VE la factura de proveedor normal sigue con su titulo en espanol (el reemplazo del
-        titulo de `account` no la deja en ingles) y la nota de debito sale rotulada."""
+        """En es_VE la factura de proveedor normal sigue con el titulo traducido de `account` (la
+        herencia no reemplaza ese texto) y la nota de debito sale rotulada con el de este modulo."""
         self.env["res.lang"]._activate_lang("es_VE")
-        self.env["ir.module.module"].search([("name", "=", "l10n_ve_invoice")])._update_translations(["es_VE"], overwrite=True)
+        self.env["ir.module.module"].search(
+            [("name", "in", ("account", "l10n_ve_invoice"))]
+        )._update_translations(["es_VE"], overwrite=True)
         invoice = self._document("in_invoice", "iva")
         debit = self._document("in_debit", "iva")
         # El PDF se imprime en el idioma del contacto.
@@ -299,13 +352,22 @@ class TestDebitNoteDetection(RetentionFlowHelpers, RetentionTestCommon):
         self.assertTrue(self._pdf_title(debit, "es_VE").startswith("Nota de débito de proveedor"))
 
     def test_61_free_form_title(self):
+        """El titulo del formato libre es exactamente el del documento, y la ND muestra su factura
+        afectada."""
         invoice = self._document("out_invoice", "iva")
         debit = self._document("out_debit", "iva")
-        credit = self._document("out_refund", "iva")
+        credit = self._credit("out_refund")
+
+        def nfc(text):
+            return unicodedata.normalize("NFC", " ".join(text.split()))
+
         for document, title in ((invoice, "FACTURA"), (debit, "NOTA DE DÉBITO"), (credit, "NOTA DE CRÉDITO")):
             content, _ = self.env["ir.actions.report"]._render_qweb_html(FREE_FORM_REF, document.ids)
-            text = unicodedata.normalize("NFC", " ".join(lxml_html.fromstring(content).text_content().split()))
-            self.assertIn(unicodedata.normalize("NFC", title), text, document.name)
+            tree = lxml_html.fromstring(content)
+            titles = [nfc(span.text_content()) for span in tree.xpath("//div[hasclass('text-center')]/span")]
+            self.assertEqual(titles, [nfc(title)], document.name)
+            if document == debit:
+                self.assertIn(nfc("Factura afectada: %s" % debit.debit_origin_id.name), nfc(tree.text_content()))
 
     # ------------------------------------------------------------------ #
     # Fecha propia de la nota de debito
@@ -317,17 +379,18 @@ class TestDebitNoteDetection(RetentionFlowHelpers, RetentionTestCommon):
         self.assertNotEqual(debit.invoice_date_display, origin.invoice_date_display)
         retention = self._retention_from_form("iva", debit)
         tds = self._row_for(self._voucher_rows(retention), debit)
-        self.assertEqual(tds[0], debit.invoice_date_display.strftime("%d/%m/%Y"))
-        self.assertNotEqual(tds[0], origin.invoice_date_display.strftime("%d/%m/%Y"))
+        self.assertEqual(debit.invoice_date, origin.invoice_date, "La tasa sigue siendo la del origen.")
+        self.assertEqual(tds[COL_DATE], self.accounting_date.strftime("%d/%m/%Y"))
+        self.assertNotEqual(tds[COL_DATE], origin.invoice_date_display.strftime("%d/%m/%Y"))
         row = {r["Número de documento"]: r for r in self.IvaWizard._retention_iva(retention)}[debit.name]
-        self.assertEqual(row["Fecha de factura"], debit.invoice_date_display.strftime("%Y-%m-%d"))
+        self.assertEqual(row["Fecha de factura"], self.accounting_date.strftime("%Y-%m-%d"))
 
     # ------------------------------------------------------------------ #
     # Nota de credito en un diario is_debit: sale como nota de credito
     # ------------------------------------------------------------------ #
     def test_31_credit_note_in_is_debit_journal(self):
         self.purchase_journal.is_debit = True
-        credit = self._document("in_refund", "iva")
+        credit = self._credit("in_refund")
         self.assertTrue(credit.journal_id.is_debit)
         retention = self._retention_from_form("iva", credit)
         tds = self._row_for(self._voucher_rows(retention), credit)
@@ -360,7 +423,7 @@ class TestDebitNoteDetection(RetentionFlowHelpers, RetentionTestCommon):
     def test_51_sale_book_native_debit_note(self):
         invoice = self._document("out_invoice", "iva")
         debit = self._document("out_debit", "iva")
-        credit = self._document("out_refund", "iva")
+        credit = self._credit("out_refund")
         lines = self._sale_book()
         line = self._sale_line(lines, invoice)
         self.assertEqual((line["move_type"], line["transaction_type"], line["number_invoice_affected"]),
@@ -370,7 +433,8 @@ class TestDebitNoteDetection(RetentionFlowHelpers, RetentionTestCommon):
                           line["invoice_number"], line["number_invoice_affected"]),
                          ("ND", "02-REG", debit.name, "--", debit.debit_origin_id.name))
         line = self._sale_line(lines, credit)
-        self.assertEqual((line["move_type"], line["transaction_type"]), ("NC", "03-REG"))
+        self.assertEqual((line["move_type"], line["transaction_type"], line["number_invoice_affected"]),
+                         ("NC", "03-REG", credit.reversed_entry_id.name))
 
     def test_52_sale_book_debit_note_in_is_debit_journal(self):
         """Nota de debito de cliente en un diario dedicado `is_debit`, sin factura de origen."""
@@ -380,3 +444,32 @@ class TestDebitNoteDetection(RetentionFlowHelpers, RetentionTestCommon):
         line = self._sale_line(self._sale_book(), debit)
         self.assertEqual((line["move_type"], line["transaction_type"], line["debit_note_number"]),
                          ("ND", "02-REG", debit.name))
+
+    # ------------------------------------------------------------------ #
+    # Comprobante de ISLR: columna TD
+    # ------------------------------------------------------------------ #
+    def _islr_rows(self, retention):
+        content, _ = self.env["ir.actions.report"]._render_qweb_html(VOUCHER_REF, retention.ids)
+        rows = []
+        for tr in lxml_html.fromstring(content).xpath("//tbody/tr"):
+            tds = [" ".join(td.text_content().split()) for td in tr.xpath("./td")]
+            if len(tds) >= 8:
+                rows.append(tds)
+        return rows
+
+    def test_80_islr_voucher_document_type(self):
+        """El comprobante de ISLR rotula FA / ND / NC por el documento: la ND de proveedor en el
+        diario normal de compras sale como ND, igual que en el de IVA."""
+        # La comun agrega a `concept_one` un segundo tramo para el mismo tipo de persona que el de los
+        # datos, y `_get_code_of_retention` espera uno solo: se deja solo el de la prueba.
+        (self.concept_one.line_payment_concept_ids.filtered(
+            lambda l: l.type_person_id == self.islr_concept_line.type_person_id
+        ) - self.islr_concept_line).unlink()
+        invoice = self._document("in_invoice", "islr")
+        debit = self._document("in_debit", "islr")
+        self.assertFalse(debit.journal_id.is_debit)
+        for document, td in ((invoice, "FA"), (debit, "ND")):
+            retention = self._retention_from_form("islr", document)
+            row = next((r for r in self._islr_rows(retention) if r[COL_ISLR_NUMBER] == document.name), None)
+            self.assertTrue(row, "El comprobante de ISLR no tiene fila para %s" % document.name)
+            self.assertEqual(row[COL_ISLR_TD], td, document.name)

@@ -20,9 +20,18 @@ crédito no tenían el problema porque se identifican por `move_type`.
   - TXT de retenciones de IVA (`wizard_retention_iva.py`),
   - libros de compras y ventas y su TXT (`accounting_reports.py`: tipo FAC/ND, tipo de transacción,
     factura afectada),
-  - formato libre de factura (`report_invoice_free_form.xml`).
+  - formato libre de factura (`report_invoice_free_form.xml`),
+  - columna TD del comprobante de ISLR (`report_islr_customer`): FA / ND / NC por el documento. Antes la ND de
+    proveedor en diario normal salía "FA" y la NC de cliente caía en la rama "ND".
 - PDF estándar: herencia de `account.report_invoice_document` que rotula "Nota de débito de proveedor" a la
-  ND de proveedor (`report_invoice_debit_note_title.xml`, traducción en `es_VE.po`).
+  ND de proveedor (`report_invoice_debit_note_title.xml`, traducción en `es_VE.po`). No reemplaza el título del
+  núcleo: le agrega `t-if="not o._is_debit_note()"` y pone el de la ND al lado, así "Vendor Bill" conserva la
+  traducción de `account` en todos los idiomas (no solo es_VE).
+- `l10n_ve_igtf_note_debit` (`views/account_move_views.xml`): el aviso "notas de IGTF pendientes" se ubica
+  después de la alerta de la NC de cliente por su condición y no con el índice `[3]`, igual que en
+  `l10n_ve_igtf`.
+- `integra-addons` (`binaural_third_party_invoice`, PR aparte contra `maintenance-19.0`): la factura afectada del
+  libro de terceros usa `_is_debit_note()`. Depende de este PR.
 - Pruebas que quedaban en error por falta de tasa (`compute_rate` solo usa la fecha exacta):
   `l10n_ve_invoice/tests/common.py::ForeignRateFixture`, aplicado a 6 clases de `l10n_ve_invoice` y 3 de
   `l10n_ve_invoice_digital`. En `l10n_ve_invoice_digital`, `_create_retention` usa la vista de IVA (la línea
@@ -31,8 +40,13 @@ crédito no tenían el problema porque se identifican por `move_type`.
   pendientes" del núcleo identifican cada alerta por su condición `invisible` y no por posición. Ver la sección
   "Alertas de IGTF" más abajo: no es parte de las notas de débito, es un defecto que apareció al correr las
   pruebas de los módulos dependientes.
+- Pruebas de `l10n_ve_payment_extension` que ya fallaban con `l10n_ve_igtf` instalado (también en
+  `maintenance-19.0`) y se arreglan aquí para que la corrida conjunta quede en verde:
+  `TestForeignSupplierRequiredFields` (el formulario del contacto exige las cuentas de anticipo; la prueba las
+  configura en la compañía) y `TestRetentionCurrencyPrecisionWriteoff` (las facturas se publican con
+  `move_action_post_alert` para que el asistente de alerta no las deje en borrador). Solo pruebas.
 - Bump de versión: `l10n_ve_invoice` `19.0.1.0.29`, `l10n_ve_payment_extension` `19.0.2.2.9`, `l10n_ve_igtf` `19.0.1.2.23`,
-  `l10n_ve_invoice_digital` `19.0.1.4.9` (pruebas arregladas).
+  `l10n_ve_invoice_digital` `19.0.1.4.9` (pruebas arregladas), `l10n_ve_igtf_note_debit` `19.0.1.0.3`.
 
 ## Decisiones
 
@@ -44,6 +58,14 @@ crédito no tenían el problema porque se identifican por `move_type`.
 - **`is_debit_journal` (campo almacenado) no se toca**: lo usan las vistas y las máquinas fiscales.
 - **Alcance también en ventas**: una ND de cliente con `debit_origin_id` en un diario normal sale como ND en
   los libros y el comprobante.
+- **NC en un diario `is_debit`**: antes salía como ND (el diario mandaba); ahora sale como NC, que es lo que es.
+  Cubierto en comprobante, TXT y libro (`test_31`).
+- **ND automáticas de IGTF y de diferencial cambiario**: también llevan `debit_origin_id`, pero ambas nacen en
+  un diario `is_debit` (`l10n_ve_igtf_note_debit/models/account_move.py` y
+  `l10n_ve_exchange_difference/models/account_move_line.py` buscan `is_debit = True`), así que ya eran ND por el
+  diario: no cambian.
+- **Multicompañía**: el asistente `account.debit.note` copia la factura de origen, así que la ND nace en la
+  compañía de su origen (`test_01` lo comprueba); `debit_origin_id` no apunta a otra compañía por la UI.
 
 ## Alertas de IGTF (`l10n_ve_igtf`, fuera del tema de las notas de débito)
 
@@ -87,17 +109,31 @@ nuevos pasan.
 **Límites.** No se vio en el navegador; se comprobó sobre la vista combinada (`get_view`). Las pruebas de
 `l10n_ve_sale` siguen siendo las que cubren el aviso de la tasa de la orden con IGTF instalado.
 
+**Dependencia.** Los `xpath` dependen del texto de la condición `invisible` de las cuatro alertas de
+`account` 19.0 (`account/views/account_move_views.xml`). Si una actualización del núcleo la cambia, el `xpath`
+no calza y la instalación falla de forma visible (no se pierde el aviso en silencio); la prueba
+`TestAccountMoveAlertViews` lo detecta.
+
 ## Non-goals
 
-- `l10n_ve_iot_mf` y `l10n_ve_account_mf` (impresión fiscal) siguen leyendo `journal_id.is_debit`.
+- `l10n_ve_iot_mf` y `l10n_ve_account_mf` (impresión fiscal y Reporte Z) siguen leyendo `journal_id.is_debit` /
+  `is_debit_journal`, a propósito: ese campo decide qué comando recibe la impresora (factura o ND fiscal), y el
+  Reporte Z resume lo que la impresora imprimió. Cambiar solo el Reporte Z lo descuadraría de la impresora, y
+  cambiar la impresión (una ND de cliente en diario normal impresa como ND fiscal) es una decisión fiscal que el
+  ticket no pide. Queda como pendiente fuera de este PR.
 - Las dos fechas del ticket (ND A798 con fecha 06/08, ND de cliente 00092780 con fecha contable) quedan por
-  confirmar con el cliente.
-- ISLR y municipal: sus comprobantes no tienen columnas de ND.
+  confirmar con el cliente, fuera de este PR. La ND ya imprime su fecha propia (la del asistente, `test_70`).
+- Comprobante municipal: no distingue tipo de documento.
 
 ## Tests
 
 `l10n_ve_igtf/tests/test_account_move_alert_views.py` (2 pruebas): alertas de IGTF sin depender de la posición.
 
-`l10n_ve_payment_extension/tests/test_debit_note_detection.py` (15 pruebas): retención a mano con `Form` y
-automática al publicar, líneas intercaladas de facturas, NDs y NC, ND de cliente, diario `is_debit`, signo del
-pago, TXT, libro de compras, título del PDF estándar y del formato libre.
+`l10n_ve_payment_extension/tests/test_debit_note_detection.py`: retención a mano con `Form` y automática al
+publicar, líneas intercaladas de facturas, NDs y NC (la NC creada con el asistente de reversión, con factura
+afectada y base en negativo), ND de cliente, diario `is_debit`, NC en diario `is_debit`, signo del pago, TXT,
+libros de compras y ventas, título del PDF estándar (también en es_VE) y del formato libre, fecha propia de la
+ND (entra por el asistente) y columna TD del comprobante de ISLR.
+
+`l10n_ve_igtf_note_debit/tests/test_igtf_note_debit_alert_view.py`: el aviso de notas de IGTF pendientes queda
+después de la alerta de la NC de cliente aunque otro módulo agregue un `alert-info` antes.
