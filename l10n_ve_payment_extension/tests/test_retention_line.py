@@ -25,7 +25,7 @@ class TestRetentionFlows(TransactionCase):
         cls.journal = cls.env["account.journal"].search(
             [("company_id", "=", cls.company.id), ("type", "=", "purchase")], limit=1
         )
-        cls.tax_unit = cls.env["tax.unit"].search([("name", "=", "Test Tax Unit 2025")], limit=1) or             cls.env["tax.unit"].create({"name": "Test Tax Unit 2025", "value": 9.0, "status": True})
+        cls.tax_unit = cls.env["tax.unit"].search([("name", "=", "Test Tax Unit 2025")], limit=1) or             cls.env["tax.unit"].create({"name": "Test Tax Unit 2025", "value": 9.0, "status": True, "available_date": "2025-01-01"})
         cls.person_type = cls.env["type.person"].search([("name", "=", "Test Person Type")], limit=1) or             cls.env["type.person"].create({"name": "Test Person Type"})
         cls.partner.write({"type_person_id": cls.person_type.id})
         cls.islr_tariff = cls.env["fees.retention"].search([("name", "=", "Test Tariff 3%")], limit=1) or             cls.env["fees.retention"].create({"name": "Test Tariff 3%", "percentage": 3.0, "tax_unit_ids": cls.tax_unit.id})

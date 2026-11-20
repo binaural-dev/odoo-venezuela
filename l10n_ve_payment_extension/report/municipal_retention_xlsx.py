@@ -3,7 +3,6 @@ from odoo.tools.image import image_process
 from datetime import date
 import xlsxwriter
 from io import BytesIO
-import base64
 import pandas
 from collections import OrderedDict
 
@@ -42,7 +41,7 @@ class MunicipalRetentionXlsx(models.AbstractModel):
         # --- 3. ENCABEZADO Y LOGO ---
         tax_auth = self._get_tax_authorities_record(company, retention_id)
         if tax_auth.tax_authorities_logo:
-            logo_data = BytesIO(base64.b64decode(tax_auth.tax_authorities_logo))
+            logo_data = BytesIO(tax_auth.tax_authorities_logo.content)
             worksheet.insert_image("A2", "logo.png", {"image_data": logo_data})
 
         text1 = tax_auth.text_header_1_municipal_retention or ""
@@ -138,7 +137,7 @@ class MunicipalRetentionXlsx(models.AbstractModel):
         # Firma configurada (Imagen)
         signature_rec = self.env["signature.config"].search([("active", "=", True)], limit=1, order="id asc")
         if signature_rec and signature_rec.signature:
-            sig_img = image_process(base64.b64decode(signature_rec.signature), (200, 200))
+            sig_img = image_process(signature_rec.signature.content, (200, 200))
             worksheet.insert_image("B" + str(last_row_index + 7), 
                                    "signature.png", 
                                    {"image_data": BytesIO(sig_img),

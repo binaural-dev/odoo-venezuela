@@ -117,7 +117,7 @@ class TestIgtfWizardAmounts(TestIndexedPayments):
 
         invoice = self._create_foreign_invoice(self.currency_usd, amount=100.0)
         wizard = self._create_igtf_wizard(invoice)
-        total_amount_values = wizard._get_total_amounts_to_pay(wizard.batches)
+        total_amount_values = wizard._get_total_amounts_to_pay(wizard._get_batches())
         debt = total_amount_values["amount_by_default"]
 
         wizard.payment_difference_handling = "reconcile"

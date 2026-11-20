@@ -1,5 +1,5 @@
 from odoo.tests import TransactionCase, tagged
-from odoo.exceptions import ValidationError, MissingError
+from odoo.exceptions import AccessError, ValidationError, MissingError
 
 
 @tagged("res_partner", "bin", "-at_install", "post_install")
@@ -17,6 +17,41 @@ class TestResPartner(TransactionCase):
             "email": "test@example.com",
             "country_id": self.env.ref("base.ve").id,
         })
+
+    def test_natural_person_with_rif_is_not_a_company(self):
+        self.assertFalse(self.partner.is_company)
+        for prefix in ("E", "P"):
+            self.partner.prefix_vat = prefix
+            self.assertFalse(self.partner.is_company)
+
+    def test_legal_entity_rif_is_a_company(self):
+        for prefix in ("J", "G", "C"):
+            self.partner.prefix_vat = prefix
+            self.assertTrue(self.partner.is_company)
+        self.partner.prefix_vat = "V"
+        self.assertFalse(self.partner.is_company)
+
+    def test_contact_of_a_company_is_not_a_company(self):
+        self.partner.prefix_vat = "J"
+        contact = self.env["res.partner"].create({
+            "name": "Contacto",
+            "parent_id": self.partner.id,
+            "prefix_vat": "J",
+            "vat": "30123456",
+            "email": "contacto@example.com",
+            "country_id": self.env.ref("base.ve").id,
+        })
+        self.assertFalse(contact.is_company)
+
+    def test_foreign_partner_keeps_the_core_rule(self):
+        foreign = self.env["res.partner"].create({
+            "name": "Foreign Supplier",
+            "prefix_vat": "V",
+            "vat": "900123456",
+            "email": "foreign@example.com",
+            "country_id": self.env.ref("base.co").id,
+        })
+        self.assertTrue(foreign.is_company)
 
     def test_duplicate_vat(self):
         with self.assertRaises(ValidationError):
@@ -89,6 +124,34 @@ class TestResPartner(TransactionCase):
         self.partner.vat = "12A34"
         with self.assertRaises(MissingError):
             self.partner._check_vat()
+
+    def test_onchange_vat_accepts_invalid_vat_without_raising(self):
+        partner = self.env["res.partner"].new({
+            "name": "Draft Partner",
+            "prefix_vat": "V",
+            "vat": "12A34",
+            "country_id": self.env.ref("base.ve").id,
+        })
+        partner._onchange_vat()
+        self.assertEqual(partner.vat, "12A34")
+
+    def test_partner_manager_cannot_delete_partner(self):
+        manager = self.env["res.users"].create({
+            "name": "Contact Manager",
+            "login": "contact_manager_ve",
+            "group_ids": [(6, 0, [
+                self.env.ref("base.group_user").id,
+                self.env.ref("base.group_partner_manager").id,
+            ])],
+        })
+        partner = self.env["res.partner"].with_user(manager).create({"name": "Created By Manager"})
+        with self.assertRaises(AccessError):
+            partner.unlink()
+
+    def test_check_vat_setnull_clears_invalid_vat(self):
+        partner = self.env["res.partner"].new({"name": "Draft Partner", "vat": "12A34"})
+        partner._check_vat(validation="setnull")
+        self.assertFalse(partner.vat)
 
     def test_check_vat_valid(self):
         self.partner.vat = "123456"
