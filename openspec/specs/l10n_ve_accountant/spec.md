@@ -1066,3 +1066,33 @@ Con la base efectivo activa, el asiento que genera el core al conciliar el pago 
 
 - **WHEN** se cobra el 50% de la factura
 - **THEN** el asiento de base efectivo mueve 8 USD de IVA, también en moneda alterna
+
+### Requirement: El Detalle de ventas agrupa por moneda y cierra en la moneda de la compañía
+
+El reporte Detalle de ventas (`account.invoices.details`) DEBE (MUST) poder imprimirse con facturas y pagos en cualquier combinación de monedas. `_compute_detailed_amounts` DEBE (MUST) formatear cada factura con su propia moneda aunque el campo se calcule por lote. Facturas y pagos se agrupan por moneda dentro de cada plazo y diario; cada grupo lleva su subtotal en esa moneda, sin convertir. El reporte DEBE (MUST) cerrar con el total general de ventas y de pagos en la moneda de la compañía, convertido con la tasa de cada documento (`tax_totals['total_amount']` y `amount_company_currency_signed`). NO DEBE (MUST NOT) sumar montos de monedas distintas en un mismo total. Los pagos incluidos son los publicados (`in_process` y `paid`). Los impuestos y el total de cada documento se leen de `tax_totals` (`tax_amount_currency`, `total_amount_currency`) y `gross_discount_amount` es el bruto menos el descuento.
+
+#### Scenario: Facturas en VEF y USD en el mismo período
+
+- **GIVEN** dos facturas en VEF y dos en USD con IVA 16% publicadas el mismo día
+- **WHEN** se imprime el Detalle de ventas
+- **THEN** el reporte no falla con `Expected singleton`
+- **AND** hay un grupo por moneda, cada uno con su subtotal en esa moneda
+- **AND** la última fila "Total Sales" está en la moneda de la compañía y suma cada factura con su tasa
+
+#### Scenario: Pagos en distintas monedas
+
+- **GIVEN** pagos publicados de 2.320 Bs.F, 100 USD y 30 USD en el mismo diario
+- **WHEN** se imprime el Detalle de ventas
+- **THEN** el diario muestra un subtotal de 130 USD y otro de 2.320 Bs.F
+- **AND** "Total Payments" está en la moneda de la compañía y suma los tres con su tasa
+
+#### Scenario: Pago en borrador
+
+- **WHEN** existe un pago en borrador en el período
+- **THEN** no aparece en el reporte
+
+#### Scenario: Lote con un asiento sin totales
+
+- **GIVEN** un asiento contable (sin `tax_totals`) y una factura en el mismo recordset, el asiento primero
+- **WHEN** se calcula `detailed_amounts` sobre el lote
+- **THEN** el asiento queda con `detailed_amounts` vacío y la factura se calcula igual
