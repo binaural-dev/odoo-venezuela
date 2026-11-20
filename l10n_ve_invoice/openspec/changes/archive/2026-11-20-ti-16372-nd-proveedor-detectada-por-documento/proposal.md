@@ -30,8 +30,11 @@ crédito no tenían el problema porque se identifican por `move_type`.
 - `l10n_ve_igtf_note_debit` (`views/account_move_views.xml`): el aviso "notas de IGTF pendientes" se ubica
   después de la alerta de la NC de cliente por su condición y no con el índice `[3]`, igual que en
   `l10n_ve_igtf`.
-- `integra-addons` (`binaural_third_party_invoice`, PR aparte contra `maintenance-19.0`): la factura afectada del
-  libro de terceros usa `_is_debit_note()`. Depende de este PR.
+- `integra-addons` `binaural_third_party_invoice`, en PR aparte: binaural-dev/integra-addons#3319, contra
+  `maintenance-19.0`. La factura afectada del libro de terceros usa `_is_debit_note()`. **Fuera del alcance del
+  ticket**: lo señaló la revisión de este PR como hallazgo adicional y se asume porque es el mismo criterio y,
+  sin él, ese libro contradice a los libros base con la misma ND. **Depende de este PR**: #3319 se mergea
+  después.
 - Pruebas que quedaban en error por falta de tasa (`compute_rate` solo usa la fecha exacta): las 3 clases de
   `l10n_ve_invoice_digital` heredan de `ForeignRateTransactionCase` (`l10n_ve_invoice/tests/common.py`, llegó
   a `maintenance-19.0` con #16546 y ya cubre las de `l10n_ve_invoice`). En `l10n_ve_invoice_digital`,

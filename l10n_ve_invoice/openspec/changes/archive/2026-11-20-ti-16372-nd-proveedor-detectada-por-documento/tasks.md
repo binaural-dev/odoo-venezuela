@@ -9,6 +9,6 @@
 - [x] Columna TD del comprobante de ISLR por `_is_debit_note()`
 - [x] Título del PDF sin reemplazar el del núcleo (conserva la traducción de "Vendor Bill" en todos los idiomas)
 - [x] `l10n_ve_igtf_note_debit`: aviso de IGTF pendiente por condición y no por posición
-- [x] `integra-addons` `binaural_third_party_invoice`: factura afectada por `_is_debit_note()` (PR aparte)
+- [x] `integra-addons` `binaural_third_party_invoice`: factura afectada por `_is_debit_note()` (binaural-dev/integra-addons#3319, fuera del alcance del ticket, se mergea después de este PR)
 - [x] Fecha propia de la ND por el asistente en las pruebas; NC por el asistente de reversión
 - [x] Fuera de este PR: confirmar con el cliente las dos fechas (ND A798 y ND de cliente 00092780) y la ruta fiscal / Reporte Z
