@@ -256,6 +256,21 @@ class TestInvoiceDetailsReport(TransactionCase):
         html = self.env["ir.actions.report"]._render_qweb_html(self.REPORT, wizard.ids)[0]
         self.assertTrue(html)
 
+    def test_report_without_movements_shows_no_sections(self):
+        """Sin facturas ni pagos en el periodo no se imprimen secciones, columnas ni totales."""
+        wizard = self._wizard()
+        html = self.env["ir.actions.report"]._render_qweb_html(self.REPORT, wizard.ids)[0].decode()
+        for marker in ("header_invoices", "header_payments", "total_sales_company_currency",
+                       "total_payments_company_currency", "Payments"):
+            self.assertNotIn(marker, html)
+
+    def test_report_with_invoices_but_no_payments_hides_payments_section(self):
+        self._mixed_invoices()
+        wizard = self._wizard()
+        html = self.env["ir.actions.report"]._render_qweb_html(self.REPORT, wizard.ids)[0].decode()
+        self.assertIn("header_invoices", html)
+        self.assertNotIn("header_payments", html)
+
     # ------------------------------------------------------------------
     # pagos
     # ------------------------------------------------------------------
