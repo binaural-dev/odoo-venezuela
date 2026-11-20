@@ -162,6 +162,9 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
             vals = dict(vals, date_state=fields.Datetime.now())
         return super().write(vals)
 
+    def _valid_field_parameter(self, field, name):
+        return name == "tracking" or super()._valid_field_parameter(field, name)
+
     def _tfhka_commit(self):
         """Commits the current transaction -- except under the test runner,
         where Odoo's test framework forbids cr.commit()/rollback() (it needs

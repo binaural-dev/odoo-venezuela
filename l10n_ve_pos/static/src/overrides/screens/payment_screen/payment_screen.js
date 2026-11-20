@@ -6,7 +6,7 @@ import { _t } from "@web/core/l10n/translation";
 import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { useService } from "@web/core/utils/hooks";
 import { SelectionPopup } from "@point_of_sale/app/components/popups/selection_popup/selection_popup";
-import { useEnv, onWillStart } from "@odoo/owl";
+import { onWillStart } from "@odoo/owl";
 import { makeAwaitable } from "@point_of_sale/app/utils/make_awaitable_dialog";
 import { GT } from "@point_of_sale/app/utils/numbers";
 
@@ -15,7 +15,6 @@ patch(PaymentScreen.prototype, {
 
   setup(){
     super.setup(...arguments)
-    this.utils = useEnv().utils;
     this.dialog = useService("dialog");
     this.orm = useService("orm");
     // For a refund, prefetch (before the screen renders) the exact rate the
@@ -61,78 +60,73 @@ patch(PaymentScreen.prototype, {
     const amount = order && typeof order.get_foreign_total_with_tax === "function"
       ? Number(order.get_foreign_total_with_tax()) || 0
       : 0;
-    return this.env.utils.formatForeignCurrency(amount);
+    return this.pos.formatForeignCurrency(amount);
   },
-  async addNewPaymentLine(method) {
-    // Snapshot the local due BEFORE super attaches the new payment line
-    // (after attachment remainingDue drops to zero).
-    // Odoo 19: remainingDue getter replaces get_due().
-    const order = this.currentOrder;
-    const localDueBefore = Number(
-      order?.remainingDue ??
-      (typeof order?.get_due === "function" ? order.get_due() : 0)
-    ) || 0;
-    const result = await super.addNewPaymentLine(method);
-
-    if (method?.is_foreign_currency && localDueBefore !== 0) {
-      const line = this.selectedPaymentLine;
-      const order = this.currentOrder;
-      if (line && order && typeof line.set_foreign_amount === "function" &&
-          typeof order._convertOrderAmount === "function") {
-        // Convert the LOCAL remaining due to foreign using the same
-        // rounding as get_foreign_total_with_tax() (foreign_currency.round).
-        // No manual floor: the "covers the due" branch in set_foreign_amount
-        // handles fx-noise and prevents real overpayment by clamping the
-        // local amount to the exact remainingDue. Truncating here would
-        // steal a cent whenever the natural round is up.
-        //
-        // _convertOrderAmount (not raw localToForeign) so a REFUND prefills
-        // the foreign amount at the frozen original-sale rate — the value
-        // that matches the original payment shown in "ver pagos de origen".
-        const foreignDue = order._convertOrderAmount(localDueBefore);
-        line.set_foreign_amount(foreignDue);
-        // Use locale-aware formatting (e.g. "-0,01" in es_VE) for the
-        // number buffer. NEVER use toFixed() which produces "." decimal
-        // separators — Odoo's oParseFloat in es_VE locale treats "." as
-        // a thousands separator, turning "3.88" into 388.
-        this.numberBuffer.set(
-          this.env.utils.formatForeignCurrency(foreignDue, false)
-        );
-      }
-    } else {
-      // For LOCAL (non-foreign) methods, the core auto-filled the buffer
-      // via result.data.amount.toString() which uses "." as decimal (e.g.
-      // "3.88"). Fix: reformat with locale-aware formatting.
-      const line = this.selectedPaymentLine;
-      if (line && localDueBefore !== 0) {
-        const amount = typeof line.getAmount === "function"
-          ? line.getAmount()
-          : (line.amount || 0);
-        this.numberBuffer.set(
-          this.env.utils.formatCurrency(amount, false)
-        );
-      }
+  async addNewPaymentLine(paymentMethod, args = {}) {
+    // Same as the core method but without its "only one currency by order"
+    // refusal: a sale can be paid in Bs, USD and EUR at once (the server groups
+    // the payments by method and currency). Keep in sync with
+    // point_of_sale PaymentScreen.addNewPaymentLine.
+    const { status: canSend, message } = paymentMethod.getPaymentInterfaceStates();
+    if (!canSend) {
+      this.dialog.add(AlertDialog, { title: _t("Oh snap !"), body: message });
+      return;
     }
-    return result;
+    if (this.paymentLines.length === 0) {
+      this.makeAnimation();
+    }
+    const methodCurrencies = paymentMethod.availableCurrencies;
+    if (
+      !args.currency &&
+      methodCurrencies.length &&
+      !methodCurrencies.some((currency) => currency.id === this.pos.config.currency_id.id)
+    ) {
+      // A method that does not take the currency of the register (Zelle, in
+      // dollars) has no currency buttons when it takes just one: its single
+      // button pays in that currency.
+      args = { ...args, currency: methodCurrencies[0] };
+    }
+    const order = this.currentOrder;
+    const localDueBefore = Number(order?.remainingDue) || 0;
+    const result = order.addPaymentline(paymentMethod, args);
+    if (!result.status) {
+      this.dialog.add(AlertDialog, {
+        title: _t("Oh snap !"),
+        body: result.data,
+        size: result.size,
+      });
+      return false;
+    }
+    const line = result.data;
+    if (line.isForeignPayment && localDueBefore !== 0) {
+      // The remaining due in the currency the customer pays with, converted
+      // once from the LOCAL due; a refund uses the frozen original rate. The
+      // "covers the due" branch of set_foreign_amount absorbs the fx noise.
+      const foreignDue = line._localToPaymentCurrency(localDueBefore);
+      line.setAmount(foreignDue, line.currency);
+      // Locale-aware formatting: a toFixed() "3.88" would be read as 388 in
+      // es_VE, where "." is the thousands separator.
+      this.numberBuffer.set(
+        this.pos.formatCurrency(foreignDue, line.currency.id, { noSymbol: true })
+      );
+    } else if (localDueBefore !== 0) {
+      this.numberBuffer.set(
+        this.pos.formatCurrency(line.getAmount(), undefined, { noSymbol: true })
+      );
+    } else {
+      this.numberBuffer.set(line.amount.toString());
+    }
+    if (!this.isRefundOrder && paymentMethod.useBankQrCode) {
+      this.sendPaymentRequest(this.paymentLines.at(-1));
+    }
+    return true;
   },
   shouldDownloadInvoice() {
     return false;
   },
   updateSelectedPaymentline(amount = false) {
-    if (this.paymentLines.every((line) => line.paid)) {
-      this.currentOrder.addPaymentline(this.payment_methods_from_config[0]);
-    }
-    if (!this.selectedPaymentLine) {
-      return;
-    } // do nothing if no selected payment line
-
-    const selectedMethod = this.selectedPaymentLine.payment_method_id;
-    if (!selectedMethod) {
-      return super.updateSelectedPaymentline(amount);
-    }
-
-    // >>  BINAURAL
-    if (!selectedMethod.is_foreign_currency) {
+    const line = this.selectedPaymentLine;
+    if (!line?.isForeignPayment) {
       return super.updateSelectedPaymentline(amount);
     }
 
@@ -146,45 +140,31 @@ patch(PaymentScreen.prototype, {
       }
     }
 
-    // disable changing amount on paymentlines with running or done payments on a payment terminal
-    const payment_terminal = selectedMethod.payment_terminal;
     const hasCashPaymentMethod = this.payment_methods_from_config.some(
       (method) => method.type === "cash"
     );
-    // Comparación que funciona con montos negativos (reembolsos):
-    // Odoo 19: remainingDue getter replaces get_due().
-    const currentDue = Number(
-      this.currentOrder?.remainingDue ??
-      (typeof this.currentOrder?.get_due === "function" ? this.currentOrder.get_due() : 0)
-    ) || 0;
-    // "Excede lo adeudado" en valor absoluto, para ventas (positivos) y
-    // reembolsos (negativos). currency.comp() redondea ambos operandos a la
-    // precisión de la moneda local antes de comparar (AbstractNumbers).
+    const currentDue = Number(this.currentOrder?.remainingDue) || 0;
     const cur = this.pos.currency;
-    const limit = currentDue + this.selectedPaymentLine.amount;
+    const limit = currentDue + line.amount;
     const absAmount = amount < 0 ? -amount : amount;
     const absLimit = limit < 0 ? -limit : limit;
     if (!hasCashPaymentMethod && cur.comp(absAmount, absLimit) === GT) {
       const maxAmount = currentDue < 0 ? -currentDue : currentDue;
-      this.selectedPaymentLine.setAmount(0);
+      line.setAmount(0);
       this.numberBuffer.set(maxAmount.toString());
       amount = maxAmount;
       this.showMaxValueError();
     }
     if (
-      payment_terminal &&
-      !["pending", "retry"].includes(this.selectedPaymentLine.getPaymentStatus())
+      line.payment_interface &&
+      !["pending", "retry"].includes(line.getPaymentStatus())
     ) {
       return;
     }
     if (amount === null) {
-      this.deletePaymentLine(this.selectedPaymentLine.uuid);
+      this.deletePaymentLine(line.uuid);
     } else {
-      if (selectedMethod.is_foreign_currency && typeof this.selectedPaymentLine.set_foreign_amount === "function") {
-        this.selectedPaymentLine.set_foreign_amount(amount);
-      } else {
-        this.selectedPaymentLine.setAmount(amount);
-      }
+      line.setAmount(amount, line.currency);
     }
   },
   async _isOrderValid(isForceValidate) {
@@ -211,6 +191,32 @@ patch(PaymentScreen.prototype, {
       return false
     }
     return res
+  },
+  /**
+   * Total due of the payment screen, always in the currency of the register.
+   *
+   * Odoo 20 shows it in the currency of the first payment line; the alternate
+   * currency amount is displayed next to it by this module.
+   */
+  get orderTotalDue() {
+    const order = this.currentOrder;
+    return order.formatAmountInCurrency(order.totalDue, order.currency);
+  },
+  /**
+   * Name of an original payment as its payment line shows it: the payment
+   * method, followed by the currency when the method accepts several.
+   */
+  _originPaymentName(payment) {
+    const [methodId, methodName] = payment.payment_method_id || [];
+    if (!methodName) {
+      return _t("Método desconocido");
+    }
+    const method = this.pos.models["pos.payment.method"].get(methodId);
+    if (!method || method.availableCurrencies.length <= 1) {
+      return methodName;
+    }
+    const currencyName = payment.foreign_currency_id?.[1] || this.pos.config.currency_id.name;
+    return `${methodName} ${currencyName}`;
   },
   async showPaymentsOrigin() {
     // En Odoo 19, obtener las órdenes origen desde las líneas de reembolso
@@ -249,7 +255,7 @@ patch(PaymentScreen.prototype, {
       const payment_list = payments.map(el => {
         return {
           id: el.id,
-          label: `${el.payment_method_id?.[1] || _t("Método desconocido")} ${el.display_name || ""} / ${this.utils.formatForeignCurrency(el.foreign_amount || el.amount || 0)}`,
+          label: `${this._originPaymentName(el)} ${el.display_name || ""} / ${this.pos.formatForeignCurrency(el.foreign_amount || el.amount || 0)}`,
           isSelected: false,
           item: el,
         }

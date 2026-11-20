@@ -1,17 +1,24 @@
-
 <odoo>
     <record id="pos_payment_method_view_form" model="ir.ui.view">
         <field name="name">binaural.pos.payment.method.form</field>
         <field name="model">pos.payment.method</field>
         <field name="inherit_id" ref="point_of_sale.pos_payment_method_view_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//field[@name='split_transactions']" position="after">
-                <field name="is_foreign_currency" />
+            <xpath expr="//field[@name='journal_id']" position="before">
+                <field name="split_transactions" />
             </xpath>
 
-            <xpath expr="//field[@name='receivable_account_id']" position="after">
-                <field name="cross_account_journal" invisible="not is_foreign_currency" />
-                <field name="cross_journal" invisible="not is_foreign_currency" />
+            <xpath expr="//group[@name='Payment methods']" position="after">
+                <group name="currency_settings" string="Currency Settings"
+                       invisible="type not in ['cash', 'bank'] or not currency_ids">
+                    <field name="currency_setting_ids" nolabel="1" colspan="2" readonly="open_session_ids">
+                        <list editable="bottom">
+                            <field name="currency_id" options="{'no_create': True}" domain="[('id', 'in', parent.currency_ids)]"/>
+                            <field name="cross_account_journal" options="{'no_create': True}"/>
+                            <field name="cross_journal" options="{'no_create': True}"/>
+                        </list>
+                    </field>
+                </group>
             </xpath>
         </field>
     </record>

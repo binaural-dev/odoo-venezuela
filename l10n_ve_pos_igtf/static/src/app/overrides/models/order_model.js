@@ -1,7 +1,4 @@
-/** @odoo-module */
-
 import { PosOrder } from "@point_of_sale/app/models/pos_order";
-import { PosPayment } from "@point_of_sale/app/models/pos_payment";
 import { PosOrderAccounting } from "@point_of_sale/app/models/accounting/pos_order_accounting";
 import { patch } from "@web/core/utils/patch";
 import { floatIsZero } from "@web/core/utils/numbers";
@@ -20,21 +17,6 @@ patch(PosOrder.prototype, {
     this.bi_igtf = 0;
     this.foreign_bi_igtf = 0;
     this.update_igtf();
-  },
-  init_from_JSON(json) {
-    super.init_from_JSON(...arguments);
-    this.igtf_amount = json.igtf_amount;
-    this.bi_igtf = json.bi_igtf;
-    this.foreign_igtf_amount = json.foreign_igtf_amount;
-    this.foreign_bi_igtf = json.foreign_bi_igtf;
-  },
-  export_as_JSON() {
-    let json = super.export_as_JSON();
-    json["igtf_amount"] = this.igtf_amount;
-    json["bi_igtf"] = this.bi_igtf;
-    json["foreign_igtf_amount"] = this.foreign_igtf_amount;
-    json["foreign_bi_igtf"] = this.foreign_bi_igtf;
-    return json;
   },
   // Único punto de entrega de los campos IGTF al backend.
   //
@@ -108,7 +90,7 @@ patch(PosOrder.prototype, {
         continue;
       }
       const amt = this._igtfRoundLocal(sign * (payment.amount || 0));
-      const isIgtf = Boolean(payment.payment_method_id?.apply_igtf);
+      const isIgtf = payment.appliesIgtf;
       const isChange = amt < 0;
       if (isChange || floatIsZero(amt, this.currency.decimal_places)) {
         lines.push({ payment, base: 0, newIgtf: 0, isChange, isIgtf });
@@ -261,9 +243,9 @@ patch(PosOrder.prototype, {
       : total;
   },
 
-  // --- O19: remainingDue must include IGTF surcharge ---
+  // --- 20: remainingDue must include IGTF surcharge ---
   //
-  // Core O19's remainingDue = totalDue - amountPaid, CLAMPADO a 0 en cuanto
+  // Core 20's remainingDue = totalDue - amountPaid, CLAMPADO a 0 en cuanto
   // amountPaid >= totalDue. No sirve como base para componer: cuando una
   // línea absorbe deuda IGTF, amountPaid excede totalDue y el clamp pierde
   // ese exceso — sumarle igtf_amount completo devolvía la deuda IGTF TOTAL
@@ -303,7 +285,7 @@ patch(PosOrder.prototype, {
     return remaining;
   },
 
-  // --- O19: change must respect the IGTF-inclusive effective total ---
+  // --- 20: change must respect the IGTF-inclusive effective total ---
   //
   // CONVENCIÓN DE SIGNO DEL CORE (pos_order_accounting.js::change): el vuelto
   // tiene el signo OPUESTO al total de la orden — negativo en ventas, positivo
@@ -335,43 +317,8 @@ patch(PosOrder.prototype, {
       : amount;
   },
 
-  // --- Compat wrappers (O17 → O19) ---
   get_paymentlines() {
     return this.payment_ids ? Array.from(this.payment_ids) : [];
-  },
-  get_due() {
-    return Number(this.remainingDue ?? 0) || 0;
-  },
-  get_rounding_applied() {
-    // O19: renamed to roundingApplied getter in accounting mixin.
-    return Number(this.roundingApplied ?? (typeof this.get_rounding_applied === "function" ? 0 : 0)) || 0;
-  },
-  get_foreign_rounding_applied() {
-    // O19: no existe en core ni en l10n_ve_pos (método comentado).
-    // El cash rounding en moneda extranjera no fue migrado.
-    return 0;
-  },
-  add_paymentline(payment_method) {
-    return this.addPaymentline(payment_method);
-  },
-  select_paymentline(line) {
-    this.selectPaymentline(line);
-  },
-  assert_editable() {
-    if (typeof this.assertEditable === "function") {
-      this.assertEditable();
-    }
-  },
-  electronic_payment_in_progress() {
-    if (typeof this.electronicPaymentInProgress === "function") {
-      return this.electronicPaymentInProgress();
-    }
-    return false;
-  },
-  get_selected_paymentline() {
-    return (this.payment_ids || []).find(
-      (line) => line.uuid === this.uiState?.selected_paymentline_uuid
-    ) ?? null;
   },
   // La precarga es SIEMPRE la del core: remainingDue (deuda de factura +
   // deuda IGTF ya acumulada), sin importar el método. El IGTF que genere la

@@ -29,7 +29,7 @@ patch(KioskOrdersDialog.prototype, {
         if (order.mf_invoice_number) {
             return "complete";
         }
-        if (order.state === "invoiced" || order.is_invoiced) {
+        if (order.state === "invoiced" || order.is_singly_invoiced) {
             return "pending_fiscal";
         }
         return "pending_invoice";

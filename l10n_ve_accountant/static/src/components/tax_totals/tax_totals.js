@@ -1,13 +1,11 @@
 /** @odoo-module **/
 
+import { toRaw } from "@odoo/owl";
 import { formatMonetary } from "@web/views/fields/formatters";
-import { standardFieldProps } from "@web/views/fields/standard_field_props";
 import { registry } from "@web/core/registry";
 
 import { TaxTotalsComponent } from "@account/components/tax_totals/tax_totals";
 import { patch } from "@web/core/utils/patch";
-const { Component, onPatched, onWillUpdateProps, useRef, toRaw, useState } =
-  owl;
 
 patch(TaxTotalsComponent.prototype, {
   formatData(props) {
@@ -74,7 +72,6 @@ patch(TaxTotalsComponent.prototype, {
       totals.total_amount_currency,
       currencyFmtOpts,
     );
-    this.totals = totals;
     return totals;
   },
 
@@ -86,12 +83,12 @@ patch(TaxTotalsComponent.prototype, {
 });
 
 class TaxForeignTotalsComponent extends TaxTotalsComponent {
+  static template = "l10n_ve_accountant.TaxForeignTotalsField";
+
   get readonly() {
     return this.props.readonly;
   }
 }
-TaxForeignTotalsComponent.template = "l10n_ve_accountant.TaxForeignTotalsField";
-TaxForeignTotalsComponent.props = { ...standardFieldProps };
 
 /**
  * El documento esta en la moneda de la compania (el bloque alterno muestra la
@@ -110,6 +107,8 @@ export function hasAlternateBlock(totals, foreignCurrencyId) {
 }
 
 class TaxVesTotalsComponent extends TaxTotalsComponent {
+  static template = "l10n_ve_accountant.TaxVesTotalsField";
+
   get readonly() {
     return this.props.readonly;
   }
@@ -117,15 +116,13 @@ class TaxVesTotalsComponent extends TaxTotalsComponent {
   // Documento en moneda de la compañía: el bloque inferior muestra los
   // montos de la moneda de referencia en lugar de los de la compañía.
   get showForeign() {
-    return isCompanyCurrencyDocument(this.totals);
+    return isCompanyCurrencyDocument(this.totals());
   }
 
   get hasAlternate() {
-    return hasAlternateBlock(this.totals, this.props.record.data.foreign_currency_id);
+    return hasAlternateBlock(this.totals(), this.props.record.data.foreign_currency_id);
   }
 }
-TaxVesTotalsComponent.template = "l10n_ve_accountant.TaxVesTotalsField";
-TaxVesTotalsComponent.props = { ...standardFieldProps };
 
 const fieldsRegistry = registry.category("fields");
 

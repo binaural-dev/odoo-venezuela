@@ -11,7 +11,6 @@ import { useService } from "@web/core/utils/hooks";
 patch(DebugWidget.prototype, {
     setup() {
         super.setup(...arguments);
-        this.dialog = useService("dialog");
         this.orm = useService("orm");
     },
 
@@ -76,8 +75,7 @@ patch(DebugWidget.prototype, {
      * Obtiene la orden original afectada (si la actual es una devolución)
      */
     async get_order() {
-        const pos = this.env.services.pos;
-        const order = pos.getOrder();
+        const order = this.pos.getOrder();
         if (!order) {
             console.log("No hay orden activa");
             return;
@@ -104,8 +102,8 @@ patch(DebugWidget.prototype, {
      * Logger para debugging
      */
     logger() {
-        console.log("POS State:", this.env.services.pos);
-        console.log("Current Order:", this.env.services.pos.getOrder());
+        console.log("POS State:", this.pos);
+        console.log("Current Order:", this.pos.getOrder());
         console.log("Fiscal Printer:", window.fiscalPrinter);
     },
 });

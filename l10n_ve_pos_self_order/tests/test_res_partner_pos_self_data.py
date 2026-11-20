@@ -32,10 +32,10 @@ class TestResPartnerPosSelfData(TransactionCase):
         )
         cls.config = cls.env["pos.config"].create(
             {
+                "default_partner_id": cls.company.partner_id.id,
                 "name": "Partner SelfData Config",
                 "company_id": cls.company.id,
                 "journal_id": sale_journal.id,
-                "invoice_journal_id": sale_journal.id,
                 "payment_method_ids": [(6, 0, [])],
             }
         )

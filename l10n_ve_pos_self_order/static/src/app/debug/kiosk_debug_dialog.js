@@ -1,6 +1,6 @@
 /** @odoo-module */
 
-import { Component, useState } from "@odoo/owl";
+import { Component, proxy, t, useProps } from "@odoo/owl";
 import { Dialog } from "@web/core/dialog/dialog";
 import { useService } from "@web/core/utils/hooks";
 import { _t } from "@web/core/l10n/translation";
@@ -22,12 +22,12 @@ import { KioskOrdersDialog } from "@l10n_ve_pos_self_order/app/debug/kiosk_order
 export class KioskDebugDialog extends Component {
     static components = { Dialog };
     static template = "l10n_ve_pos_self_order.KioskDebugDialog";
-    static props = { close: Function };
+    props = useProps({ close: t.function() });
 
     setup() {
         this.selfOrder = useService("self_order");
         this.dialog = useService("dialog");
-        this.state = useState({ busy: false, message: "" });
+        this.state = proxy({ busy: false, message: "" });
     }
 
     get dialogTitle() {

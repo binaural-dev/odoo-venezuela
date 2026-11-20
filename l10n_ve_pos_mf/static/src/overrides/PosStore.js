@@ -24,6 +24,11 @@ const MF_PORT_RECLAIM_RETRY_DELAY_MS = 750;
 /**
  * Override del PosStore para integrar la máquina fiscal vía Web Serial API.
  *
+ * Migración Odoo 19 → 20:
+ * - Cajero actual: pos.getCashier() → pos.accessRight.loggedCashier
+ * - Descuento global (pos_discount): applyDiscount(value, type, order)
+ * - Código fiscal del pago: por método y moneda del pago (payment.fiscalPrinterCode)
+ *
  * Migración Odoo 17 → 19:
  * - Imports: @point_of_sale/app/store/pos_store → app/services/pos_store
  * - Popups: ErrorPopup → dialog service + AlertDialog
@@ -39,8 +44,16 @@ patch(PosStore.prototype, {
   /**
    * Abre la gaveta usando el comando directo a la máquina fiscal.
    * En 19 la firma es openCashbox(action) (cash in/out manual).
+   * Durante la validación de una orden (`_mfValidatingOrder`) no se envía
+   * nada a la gaveta fiscal: en 19 la validación no pasaba por aquí.
    */
   async openCashbox(action) {
+    if (this._mfDrawerOpenedByInvoice) {
+      return;
+    }
+    if (this._mfValidatingOrder && !this.mfOpensDrawerOnValidation(this._mfValidatingOrder)) {
+      return super.openCashbox(...arguments);
+    }
     const fiscalPrinter = this.getFiscalPrinter();
 
     if (fiscalPrinter && fiscalPrinter.isConnected && this.config.has_cashbox) {
@@ -56,6 +69,17 @@ patch(PosStore.prototype, {
       }
     }
     return super.openCashbox(...arguments);
+  },
+
+  /**
+   * Indica si validar la orden abre la gaveta por la máquina fiscal. Como en
+   * 19 es falso: la gaveta la abre el comando de la factura fiscal o el
+   * cash in/out manual, nunca la validación.
+   * @param {PosOrder} order
+   * @returns {boolean}
+   */
+  mfOpensDrawerOnValidation(order) {
+    return false;
   },
 
   /**
@@ -210,7 +234,7 @@ patch(PosStore.prototype, {
     }
   },
 
-  async applyDiscount(percent, order = this.getOrder(), options = {}) {
+  async applyDiscount(percent, type = "percent", order = this.getOrder(), options = {}) {
     if (!order || order.state !== "draft") {
       return;
     }
@@ -237,7 +261,7 @@ patch(PosStore.prototype, {
 
     order._mf_applying_global_discount = true;
     try {
-      const result = await super.applyDiscount(percent, order);
+      const result = await super.applyDiscount(percent, type, order);
 
       if (discountPercent <= 0) {
         this._resetGlobalDiscountOnLines(order);
@@ -249,7 +273,7 @@ patch(PosStore.prototype, {
 
       this._applyGlobalDiscountBeforeValidation(order, {
         force: true,
-        expectedPercent: discountPercent,
+        expectedPercent: type === "percent" ? discountPercent : null,
       });
       return result;
     } finally {
@@ -259,7 +283,7 @@ patch(PosStore.prototype, {
 
   aditionalInfo(order) {
     const res = [];
-    const cashier = this.getCashier();
+    const cashier = this.accessRight.loggedCashier;
     if (cashier?.name) {
       res.push(`OPERADOR: ${cashier.name}`);
     }
@@ -314,7 +338,7 @@ patch(PosStore.prototype, {
         mf_invoice_number: originalOrder.mf_invoice_number,
         mf_reportz: originalOrder.mf_reportz,
         payment_lines: (originalOrder.payment_ids || []).map((p) => ({
-          payment_method_code: p.payment_method_id?.code_fiscal_printer || false,
+          payment_method_code: p.fiscalPrinterCode,
           payment_method_name: p.payment_method_id?.name || "",
           amount: p.amount,
         })),
@@ -489,7 +513,7 @@ patch(PosStore.prototype, {
             ? payment.amount
             : payment.get_foreign_amount?.() ?? payment.amount;
           return {
-            payment_method: payment.payment_method_id?.code_fiscal_printer || false,
+            payment_method: payment.fiscalPrinterCode,
             amount: roundAmount(amount),
           };
         })
@@ -681,7 +705,7 @@ patch(PosStore.prototype, {
         mf_invoice_number: order.mf_invoice_number,
         mf_reportz: order.mf_reportz,
         payment_lines: [...(order.payment_ids || [])].map((p) => ({
-          payment_method_code: p.payment_method_id?.code_fiscal_printer || false,
+          payment_method_code: p.fiscalPrinterCode,
           payment_method_name: p.payment_method_id?.name || "",
           amount: p.amount,
         })),

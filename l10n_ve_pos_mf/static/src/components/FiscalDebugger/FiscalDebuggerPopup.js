@@ -1,6 +1,6 @@
 /** @odoo-module */
 
-import { Component, useState, onMounted, onWillUnmount } from "@odoo/owl";
+import { Component, onMounted, onWillUnmount, proxy, signal, t, useProps } from "@odoo/owl";
 import { FiscalProtocol } from "@l10n_ve_mf_base/core/FiscalProtocol";
 import { StatusParser } from "@l10n_ve_mf_base/core/StatusParser";
 import { _t } from "@web/core/l10n/translation";
@@ -18,40 +18,36 @@ import { _t } from "@web/core/l10n/translation";
  */
 export class FiscalDebuggerPopup extends Component {
     static template = "l10n_ve_pos_mf.FiscalDebuggerPopup";
-    static props = {
-        title: { type: String, optional: true },
-        close: Function,
-    };
-    static defaultProps = {
-        title: _t("Fiscalizador - Debugger de Máquina Fiscal"),
-    };
+    props = useProps({
+        title: t.string().optional(_t("Fiscalizador - Debugger de Máquina Fiscal")),
+        close: t.function(),
+    });
 
     setup() {
         
-        this.state = useState({
+        this.autoScroll = signal(true);
+        this.autoRefresh = signal(false);
+        this.rawCommand = signal("");
+        this.flagNumber = signal("01");
+        this.flagValue = signal("00");
+
+        this.state = proxy({
             // Tab activo
             activeTab: "monitor", // monitor, status, s3, console, flags
             
             // Monitor de tramas
             commandLog: [],
-            autoScroll: true,
             
             // Status parser
             currentStatus: null,
             statusRefreshInterval: null,
-            autoRefresh: false,
 
             // Diagnóstico S3
             s3Data: null,
             s3Error: "",
             
             // Consola de comandos
-            rawCommand: "",
             rawResponse: "",
-            
-            // Flags
-            flagNumber: "01",
-            flagValue: "00",
         });
 
         // Referencia al driver
@@ -154,7 +150,7 @@ export class FiscalDebuggerPopup extends Component {
         }
 
         // Auto-scroll al final si está activo
-        if (this.state.autoScroll) {
+        if (this.autoScroll()) {
             this._scrollToBottom();
         }
     }
@@ -214,17 +210,13 @@ export class FiscalDebuggerPopup extends Component {
      * Activa/desactiva el auto-refresh del status
      */
     toggleAutoRefresh() {
-        this.state.autoRefresh = !this.state.autoRefresh;
-        
-        if (this.state.autoRefresh) {
+        clearInterval(this.state.statusRefreshInterval);
+        this.state.statusRefreshInterval = null;
+
+        if (this.autoRefresh()) {
             this.state.statusRefreshInterval = setInterval(() => {
                 this.refreshStatus();
             }, 2000); // Cada 2 segundos
-        } else {
-            if (this.state.statusRefreshInterval) {
-                clearInterval(this.state.statusRefreshInterval);
-                this.state.statusRefreshInterval = null;
-            }
         }
     }
 
@@ -269,7 +261,7 @@ export class FiscalDebuggerPopup extends Component {
             return;
         }
 
-        if (!this.state.rawCommand.trim()) {
+        if (!this.rawCommand().trim()) {
             this.state.rawResponse = "Error: Comando vacío";
             return;
         }
@@ -277,7 +269,7 @@ export class FiscalDebuggerPopup extends Component {
         try {
             this.state.rawResponse = "Enviando comando...";
             
-            const result = await this.fiscalPrinter.sendCommand(this.state.rawCommand.trim());
+            const result = await this.fiscalPrinter.sendCommand(this.rawCommand().trim());
             
             if (result.success) {
                 this.state.rawResponse = JSON.stringify({
@@ -323,7 +315,7 @@ export class FiscalDebuggerPopup extends Component {
      * @param {string} command - Comando a ejecutar (PJ, I0X, I0Z, 0, etc.)
      */
     async quickCommand(command) {
-        this.state.rawCommand = command;
+        this.rawCommand.set(command);
         await this.sendRawCommand();
     }
 
@@ -390,13 +382,13 @@ export class FiscalDebuggerPopup extends Component {
             return;
         }
 
-        const flagCommand = `PJ${this.state.flagNumber}${this.state.flagValue}`;
+        const flagCommand = `PJ${this.flagNumber()}${this.flagValue()}`;
         
         try {
             const result = await this.fiscalPrinter.sendCommand(flagCommand);
             
             if (result.success) {
-                alert(`Flag ${this.state.flagNumber} configurado a valor ${this.state.flagValue}`);
+                alert(`Flag ${this.flagNumber()} configurado a valor ${this.flagValue()}`);
             } else {
                 alert(`Error al configurar flag: ${result.error}`);
             }

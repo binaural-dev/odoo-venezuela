@@ -6,7 +6,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "19.0.1.5.0",
+    "version": "20.0.1.0.0",
     "depends": [
         "base",
         "l10n_ve_pos",
@@ -22,8 +22,12 @@
         "point_of_sale._assets_pos": [
             "l10n_ve_pos_igtf/static/src/**/*",
         ],
+        "web.assets_unit_tests": [
+            "l10n_ve_pos_igtf/static/tests/unit/**/*",
+        ],
     },
     "application": True,
     "binaural": True,
-    "installable": False,
+    "installable": True,
+    "binaural_migrated": True,
 }

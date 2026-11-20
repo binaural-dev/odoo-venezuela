@@ -1,4 +1,4 @@
-import { Component, useState } from "@odoo/owl";
+import { Component, proxy, useProps } from "@odoo/owl";
 import { useSelfOrder } from "@pos_self_order/app/services/self_order_service";
 import { rpc } from "@web/core/network/rpc";
 import { useService } from "@web/core/utils/hooks";
@@ -22,12 +22,12 @@ const PHONE_NUMBER_LENGTH = 7;
 export class IdentificationPage extends Component {
     static template = "l10n_ve_pos_self_order.IdentificationPage";
     static components = { KioskKeyboard };
-    static props = {};
+    props = useProps();
 
     setup() {
         this.selfOrder = useSelfOrder();
         this.router = useService("router");
-        this.state = useState({
+        this.state = proxy({
             // "identify" = ask for cédula; "create" = cédula not found, ask
             // for the rest of the contact data (cédula stays fixed); "phone" =
             // cédula found but the partner has no phone on file, ask for it.

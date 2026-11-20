@@ -86,14 +86,14 @@ class ProductPricelist(models.Model):
         return seen
 
     @api.model
-    def _load_pos_data_domain(self, data, config):
+    def _load_pos_data_domain(self, data):
         """Extiende el dominio del core al cierre transitivo de la cadena.
 
         Se ejecuta el dominio del core con ``search`` en vez de inspeccionar su
         forma: así seguimos siendo correctos si el core cambia cómo arma la
         semilla (listas disponibles, presets, etc.).
         """
-        domain = super()._load_pos_data_domain(data, config)
+        domain = super()._load_pos_data_domain(data)
         seed = self.search(domain).ids
         chain = self._pos_expand_base_pricelists(seed)
         self._pos_warn_absolute_amounts_in_chain(set(chain) - set(seed))

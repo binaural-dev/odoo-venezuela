@@ -49,17 +49,12 @@ class TestKioskToInvoice(TransactionCase):
         )
         cls.config = cls.env["pos.config"].create(
             {
+                "default_partner_id": cls.company.partner_id.id,
                 "name": "Kiosk Invoice Config",
                 "company_id": cls.company.id,
                 "currency_id": vef.id,
                 "journal_id": cls.sale_journal.id,
                 "self_ordering_mode": "kiosk",
-                # invoice_journal_id has the SAME ambient-company default
-                # pitfall as payment_method_ids below
-                # (point_of_sale/models/pos_config.py:90-95) — left unset
-                # it silently pulls in a journal from a DIFFERENT company
-                # and _check_company() rejects the whole record.
-                "invoice_journal_id": cls.sale_journal.id,
                 # payment_method_ids' default is computed from
                 # self.env.company (ambient), not from company_id above
                 # (point_of_sale/models/pos_config.py:170) — left unset it
@@ -69,6 +64,9 @@ class TestKioskToInvoice(TransactionCase):
                 "payment_method_ids": [(6, 0, [])],
             }
         )
+        cls.session = cls.env["pos.session"].create(
+            {"config_id": cls.config.id, "user_id": cls.env.ref("base.user_admin").id}
+        )
 
     def _order_payload(self, **overrides):
         """Minimal Kiosk order payload for ``_check_pos_order``. Mirrors what
@@ -76,6 +74,7 @@ class TestKioskToInvoice(TransactionCase):
         ``to_invoice`` forcing (that logic runs before line processing)."""
         payload = {
             "to_invoice": False,
+            "session_id": self.session.id,
             "lines": [],
             "amount_total": 0.0,
             "amount_tax": 0.0,

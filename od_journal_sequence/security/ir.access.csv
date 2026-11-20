@@ -1,0 +1,2 @@
+id,name,model_id,group_id/id,operation,domain,active
+account.access_account_resequence,access.account.resequence.wizard,account.resequence.wizard,account.group_account_manager,cru,,0

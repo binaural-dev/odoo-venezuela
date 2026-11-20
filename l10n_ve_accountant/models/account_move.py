@@ -6,8 +6,7 @@ from lxml import etree
 from contextlib import ExitStack, contextmanager
 from odoo import _, api, fields, models,Command
 from odoo.exceptions import UserError, ValidationError
-from odoo.tools import float_compare, format_date, index_exists
-from odoo.tools.sql import drop_index
+from odoo.tools import float_compare, format_date
 from odoo.tools.float_utils import float_round, float_is_zero
 from odoo.tools.misc import formatLang
 from odoo.tools.misc import clean_context
@@ -37,6 +36,20 @@ class AccountMove(models.Model):
         """
         super()._compute_date()
 
+    def get_currency_rate(self, company_id, to_currency_id, requested_date):
+        """Return the rate of ``requested_date`` without the next-day shift of Odoo 20.
+
+        The core adds a day because its rates apply from the day after their date;
+        ``l10n_ve_rate`` makes the rate of a day apply on that same day.
+        """
+        company = self.env["res.company"].browse(company_id)
+        return self.env["res.currency"]._get_conversion_rate(
+            from_currency=company.currency_id,
+            to_currency=self.env["res.currency"].browse(to_currency_id),
+            company=company,
+            date=requested_date,
+        )
+
     def _get_accounting_date_source(self):
         """
         Overrides the base method to substitute invoice_date with invoice_date_display
@@ -46,12 +59,8 @@ class AccountMove(models.Model):
         self.ensure_one()
         return self.invoice_date_display or self.date
 
-    _unique_name = models.Constraint(
-        '',
-        "Another entry with the same name already exists.",
-    )
-    _unique_name_ve = models.Constraint(
-        '',
+    _unique_name = models.UniqueIndex(
+        "(name, partner_id, company_id, journal_id) WHERE (state = 'posted' AND name != '/')",
         "Another entry with the same name already exists.",
     )
 
@@ -72,64 +81,6 @@ class AccountMove(models.Model):
                 move.company_currency_rate = currency_search.inverse_rate or 1.0
             else:
                 move.company_currency_rate = 1.0
-
-    def _auto_init(self):
-        res = super()._auto_init()
-        if not index_exists(self.env.cr, "account_move_unique_name_ve"):
-            drop_index(self.env.cr, "account_move_unique_name", self._table)
-            # Make all values of `name` different (naming them `name (1)`, `name (2)`...) so that
-            # we can add the following UNIQUE INDEX
-            self.env.cr.execute(
-                """
-                WITH duplicated_sequence AS (
-                    SELECT name, partner_id, state, journal_id
-                    FROM account_move
-                    WHERE state = 'posted'
-                    AND name != '/'
-                    AND move_type IN ('in_invoice', 'in_refund', 'in_receipt')
-                GROUP BY partner_id, journal_id, name, state
-                    HAVING COUNT(*) > 1
-                ),
-                to_update AS (
-                    SELECT move.id,
-                        move.name,
-                        move.state,
-                        move.date,
-                        row_number() OVER(PARTITION BY move.name, move.partner_id, move.partner_id, move.date) AS row_seq
-                        FROM duplicated_sequence
-                        JOIN account_move move ON move.name = duplicated_sequence.name
-                                            AND move.partner_id = duplicated_sequence.partner_id
-                                            AND move.state = duplicated_sequence.state
-                                            AND move.journal_id = duplicated_sequence.journal_id
-                ),
-                new_vals AS (
-                    SELECT id,
-                            name || ' (' || (row_seq-1)::text || ')' AS name
-                        FROM to_update
-                        WHERE row_seq > 1
-                )
-                UPDATE account_move
-                SET name = new_vals.name
-                FROM new_vals
-                WHERE account_move.id = new_vals.id;
-            """
-            )
-
-            self.env.cr.execute(
-                """
-                CREATE UNIQUE INDEX account_move_unique_name
-                    ON account_move(
-                        name, partner_id, company_id, journal_id
-                    )
-                WHERE state = 'posted' AND name != '/';
-                CREATE UNIQUE INDEX account_move_unique_name_ve
-                    ON account_move(
-                        name, partner_id, company_id, journal_id
-                    )
-                WHERE state = 'posted' AND name != '/';
-            """
-            )
-        return res
 
     def default_alternate_currency(self):
         """
@@ -159,55 +110,22 @@ class AccountMove(models.Model):
             if not move.journal_id.is_purchase_international:
                 move.invoice_line_ids.update({"international_purchase_exent_product": False})
 
-    def default_rate(self):
-        """
-        This method is used to get the rate of the payment.
-
-        Returns
-        -------
-        type = float
-            The rate of the payment
-        """
-        rate_values = self.env["res.currency.rate"].compute_rate(
-            self.currency_id.id or self.env.company.currency_id.id,
-            fields.Date.context_today(self),
-        )
-        return rate_values.get("foreign_rate", 0)
-
     foreign_rate = fields.Float(
         compute="_compute_rate",
         digits="Tasa",
-        default=default_rate,
         store=True,
         tracking=True,
     )
     
 
 
-    def default_inverse_rate(self):
-        """
-        This method is used to get the inverse rate of the payment.
-
-        Returns
-        -------
-        type = float
-            The inverse rate of the payment
-        """
-        rate_values = self.env["res.currency.rate"].compute_rate(
-            self.currency_id.id or self.env.company.currency_id.id,
-            fields.Date.context_today(self),
-        )
-        return rate_values.get("foreign_inverse_rate", 0)
-    
     foreign_inverse_rate = fields.Float(
         help="Rate that will be used as factor to multiply of the foreign currency for this move.",
         compute="_compute_rate",
         digits=(16, 15),
-        default=default_inverse_rate,
         store=True,
         index=True,
     )
-
 
     move_currency_to_company_currency_rate = fields.Float(
         string="Move Currency to Company Currency Rate",
@@ -321,16 +239,7 @@ class AccountMove(models.Model):
         store=True,
     )
 
-    _unique_name = models.Constraint(
-        '',
-        "Another entry with the same name already exists.",
-    )
-    _unique_name_ve = models.Constraint(
-        '',
-        "Another entry with the same name already exists.",
-    )
-
-    detailed_amounts = fields.Binary(compute="_compute_detailed_amounts")
+    detailed_amounts = fields.Json(compute="_compute_detailed_amounts")
 
     foreign_debit = fields.Monetary(
         compute="_compute_total_debit_credit", currency_field="foreign_currency_id"
@@ -381,19 +290,19 @@ class AccountMove(models.Model):
     amount = fields.Float(tracking=True)
 
     real_portion_amount = fields.Monetary(
-        string=_("Real Portion"),
+        string="Real Portion",
         currency_field='company_currency_id',
-        help=_("Accumulated remainder from cross-currency rounding."),
+        help="Accumulated remainder from cross-currency rounding.",
     )
     real_portion_count = fields.Integer(
-        string=_("Real Portion Adjustments"),
+        string="Real Portion Adjustments",
         default=0,
     )
     # Stored to avoid KeyError in trigger tree when
     # account.move.line.company_currency_id (stored related)
     # forces the dependency move_id.company_currency_id
     company_currency_id = fields.Many2one(
-        related='company_id.currency_id', readonly=True, store=True,
+        related='company_id.currency_id', readonly=True, store=True, precompute=True,
     )
 
     amount_residual_company = fields.Monetary(
@@ -566,9 +475,10 @@ class AccountMove(models.Model):
         for move in self:
             if move.debit_origin_id or move.reversed_entry_id:
                 continue
+            if move._is_rate_date_locked():
+                continue
             if move.invoice_date_display and move.is_sale_document(include_receipts=True):
                 move.invoice_date = move.invoice_date_display
-
 
     def _l10n_ve_check_note_date(self, note_date):
         """A Credit/Debit Note is the same transaction as its origin, so its
@@ -799,10 +709,10 @@ class AccountMove(models.Model):
         debit and foreign credit of the line_ids fields (journal entries) when the move is created.
         """
         moves = super().create(vals_list)
+        precision = self.env["decimal.precision"].precision_get("Tasa")
 
         for move in moves:
-            if move.move_type != "in_invoice":
-                move._compute_rate()
+            move._compute_rate()
             if move.move_type in ["out_refund", "in_refund"] and move.reversed_entry_id:
                 move.foreign_rate = move.reversed_entry_id.foreign_rate
                 move.foreign_inverse_rate = move.reversed_entry_id.foreign_inverse_rate
@@ -815,9 +725,18 @@ class AccountMove(models.Model):
                 rate_date = move.date or fields.Date.context_today(move)
             else:
                 rate_date = move.invoice_date or move.date or fields.Date.context_today(move)
-            rate_values = Rate.compute_rate(move.foreign_currency_id.id, rate_date)
+            # A move with a manually set rate keeps it (e.g. the depreciation moves of an
+            # asset, dated at future month ends that have no rate yet): the lookup is only
+            # to compare and post a message, so a date without a rate must not stop it.
+            rate_values = Rate.compute_rate(
+                move.foreign_currency_id.id,
+                rate_date,
+                raise_if_not_found=not move.manually_set_rate,
+            )
             last_foreign_rate = rate_values.get("foreign_rate", 0)
-            if move.manually_set_rate and move.foreign_rate != last_foreign_rate:
+            if move.manually_set_rate and rate_values and float_compare(
+                move.foreign_rate, last_foreign_rate, precision_digits=precision
+            ):
                 move.message_post(
                     body=_(
                         "The rate has been updated from %(last_rate)s to %(rate)s ",
@@ -847,8 +766,8 @@ class AccountMove(models.Model):
         amounts in company currency.
 
         The web client does not send an unchanged date on its own (it only
-        sends what the user changed, and the form view does not carry
-        ``foreign_rate``), so this guards against any other caller (RPC,
+        sends what the user changed; ``foreign_rate`` travels hidden with
+        ``force_save``), so this guards against any other caller (RPC,
         imports, other modules).
 
         Scope and limits:
@@ -901,7 +820,11 @@ class AccountMove(models.Model):
             if (
                 vals.get("foreign_rate", False)
                 and move.manually_set_rate
-                and move.foreign_rate != move.last_foreign_rate
+                and float_compare(
+                    move.foreign_rate,
+                    move.last_foreign_rate,
+                    precision_digits=self.env["decimal.precision"].precision_get("Tasa"),
+                )
             ):
                 move.message_post(
                     body=_(
@@ -1196,6 +1119,27 @@ class AccountMove(models.Model):
         """
         self._compute_rate_for_documents(self)
 
+    def _has_foreign_rate(self):
+        """True si la tasa ya tiene un valor util (con la precision de "Tasa", no solo != 0)."""
+        self.ensure_one()
+        precision = self.env["decimal.precision"].precision_get("Tasa")
+        return not float_is_zero(self.foreign_rate, precision_digits=precision)
+
+    def _is_rate_date_locked(self):
+        """Hook: True si la Rate Date esta bloqueada por la configuracion (la factura usa la
+        fecha de tasa de su orden) y no debe seguir a la fecha de la factura. Ventas la
+        implementa para sus facturas."""
+        self.ensure_one()
+        return False
+
+    def _get_rate_date(self):
+        """Fecha con la que se busca la tasa: la Rate Date en facturas (la fecha contable de
+        respaldo) y la fecha contable en asientos, cuyo invoice_date solo trae el "hoy"."""
+        self.ensure_one()
+        if self.move_type == "entry":
+            return self.date
+        return self.invoice_date or self.date
+
     @api.model
     def _compute_rate_for_documents(self, documents):
         """
@@ -1204,16 +1148,25 @@ class AccountMove(models.Model):
         Rate = self.env["res.currency.rate"]
 
         for move in documents:
-            if move.manually_set_rate:
+            if move.manually_set_rate and move._has_foreign_rate():
                 continue
             # "Rate Date" (invoice_date) drives the rate for every invoice,
             # purchases included. An entry's invoice_date is just the default
             # "today", so entries use the accounting date.
-            if move.move_type == "entry":
-                rate_date = move.date
-            else:
-                rate_date = move.invoice_date or move.date
-            rate_date = rate_date or fields.Date.context_today(move)
+            rate_date = move._get_rate_date() or fields.Date.context_today(move)
+            # Registro virtual del form (onchange) de un borrador ya guardado: si la
+            # fecha vuelve a la original se conserva la tasa que ya tenia, en vez de
+            # recalcularla con la tasa actual del dia.
+            origin = move._origin
+            if (
+                origin
+                and isinstance(move.id, api.NewId)
+                and origin._has_foreign_rate()
+                and origin._get_rate_date() == rate_date
+            ):
+                move.foreign_rate = origin.foreign_rate
+                move.foreign_inverse_rate = origin.foreign_inverse_rate
+                continue
             rate_values = Rate.compute_rate(move.foreign_currency_id.id, rate_date)
             move.foreign_rate = rate_values.get("foreign_rate", 0)
             move.foreign_inverse_rate = rate_values.get("foreign_inverse_rate", 0)
@@ -1286,7 +1239,6 @@ class AccountMove(models.Model):
         specific to this project) but the call itself is delegated
         directly, with no per-record context."""
         super()._compute_tax_totals()
-
 
     @api.onchange("foreign_rate")
     def _onchange_foreign_rate(self):
@@ -1530,20 +1482,20 @@ class AccountMove(models.Model):
     def _compute_needed_terms(self):
         res = super()._compute_needed_terms()
         for invoice in self:
-            if not isinstance(invoice.needed_terms, dict):
+            if not invoice.needed_terms:
                 continue
             if not invoice.is_invoice(include_receipts=True) or not invoice.invoice_line_ids:
                 continue
             if not invoice.foreign_currency_id:
                 continue
             rate_date = invoice._get_invoice_currency_rate_date() or fields.Date.context_today(invoice)
-            for key in invoice.needed_terms:
-                balance = invoice.needed_terms[key].get('balance', 0)
-                invoice.needed_terms[key]['foreign_balance'] = \
-                    invoice.company_id.currency_id._convert(
-                        balance, invoice.foreign_currency_id,
-                        invoice.company_id, rate_date
-                    )
+            invoice.needed_terms = [
+                (key, dict(values, foreign_balance=invoice.company_id.currency_id._convert(
+                    values.get('balance', 0), invoice.foreign_currency_id,
+                    invoice.company_id, rate_date,
+                )))
+                for key, values in invoice.needed_terms
+            ]
         return res
 
    
@@ -2294,7 +2246,6 @@ class AccountMove(models.Model):
                 self.env.cr.cache.pop(key,None)
             raise
 
-
     def _distribute_invoice_real_portion(self, move, cc):
         rate = move.invoice_currency_rate
         if not rate:
@@ -2370,7 +2321,6 @@ class AccountMove(models.Model):
             )
             move.real_portion_count += 1
 
-
     @api.model
     def _distribute_to_lines(self, lines, amount, currency):
         if currency.is_zero(amount) or not lines:
@@ -2411,9 +2361,9 @@ class AccountMove(models.Model):
     def _get_all_reconciled_invoice_partials(self):
         """Adds the standalone alt-diff entry as a synthetic partial (it
         never reconciles by design, so core's own SQL never finds it).
-        `is_exchange=True` hides the dead "Unreconcile" button; accepted
-        cost is the row's currency getting hardcoded to VEF downstream
-        (see openspec for the full trade-off and the combined-case gap).
+        `is_exchange=True` makes Odoo 20 group it in the widget's
+        `exchange_info` instead of listing it as a payment row, which would
+        offer an "Unreconcile" button with no partial behind it.
         """
         self.ensure_one()
         res = super()._get_all_reconciled_invoice_partials()

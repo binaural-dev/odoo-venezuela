@@ -1,4 +1,4 @@
-from odoo import models, fields, api, _
+from odoo import models, fields, _
 from odoo.exceptions import UserError
 from odoo.tools import float_is_zero, float_round
 
@@ -38,7 +38,7 @@ class PosOrder(models.Model):
             return super().action_pos_order_paid()
 
         # Copia deliberada de point_of_sale/models/pos_order.py::
-        # action_pos_order_paid (Odoo 19). El core compara amount_total contra
+        # action_pos_order_paid (Odoo 20). El core compara amount_total contra
         # amount_paid con su propia lógica inline y no expone ningún hook
         # factorizado (_get_rounded_amount / _is_pos_order_paid NO participan),
         # así que la única forma de comparar contra el total CON IGTF es
@@ -49,7 +49,7 @@ class PosOrder(models.Model):
 
         if not self.config_id.cash_rounding \
            or self.config_id.only_round_cash_method \
-           and not any(p.payment_method_id.is_cash_count for p in self.payment_ids):
+           and not any(p.payment_method_id.type == "cash" for p in self.payment_ids):
             total = total_with_igtf
         else:
             total = float_round(
@@ -97,7 +97,25 @@ class PosOrder(models.Model):
             precision_rounding=self.currency_id.rounding,
         )
 
-    def _create_invoice(self, move_vals):
-        res = super()._create_invoice(move_vals)
-        res.write({"bi_igtf": abs(self.bi_igtf)})
-        return res
+    def _prepare_account_move_line_data_for_payments(self, partner=None):
+        """Add the IGTF of the payments each entry groups to its metadata and,
+        on an invoice, take it out of its ``payment_term`` line.
+
+        The payments of an order that pays IGTF add up to the invoice total
+        plus the IGTF (``pos.payment.amount`` is base + IGTF), but the invoice
+        only owes its total: the IGTF is not a tax line of the invoice, it is
+        settled apart (``pos.payment.method._create_payment_line``). Closing
+        entries (no partner) are left as core builds them.
+        """
+        result = super()._prepare_account_move_line_data_for_payments(partner)
+        for entry in result:
+            metadata = entry["metadata"]
+            payments = metadata.get("payments", self.env["pos.payment"]).filtered(
+                "include_igtf"
+            )
+            igtf = self.currency_id[:1].round(sum(payments.mapped("igtf_amount")))
+            metadata["igtf_amount"] = igtf
+            metadata["foreign_igtf_amount"] = sum(payments.mapped("foreign_igtf_amount"))
+            if igtf and partner:
+                entry["account.move.line"]["amount_currency"] -= igtf
+        return result

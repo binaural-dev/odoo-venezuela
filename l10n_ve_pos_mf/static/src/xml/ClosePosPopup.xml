@@ -4,26 +4,26 @@
         <!-- Reemplaza el botón nativo "Close Register" por uno que primero
              valida pedidos sin facturar, luego imprime el Reporte Z, y solo
              si todo fue exitoso continúa con el cierre nativo de la sesión. -->
-        <xpath expr="//button[@t-on-click='confirm']" position="replace">
+        <xpath expr="//button[@t-on-click='this.confirm']" position="replace">
             <button
                 class="button highlight btn btn-primary btn-lg"
-                t-on-click="closeSessionAndPrintZ"
-                t-att-disabled="!canConfirm() or mfState.isPrintingReport"
+                t-on-click="this.closeSessionAndPrintZ"
+                t-att-disabled="!this.canConfirm() or this.mfState.isPrintingReport"
                 title="Imprime el Reporte Z y cierra la sesion de POS">
-                <t t-if="mfState.isPrintingReport">
+                <t t-if="this.mfState.isPrintingReport">
                     <i class="oi oi-spin me-1" data-icon="progress_activity"/>Procesando...
                 </t>
                 <t t-else="">Cerrar sesion e imprimir Z</t>
             </button>
         </xpath>
         <!-- Botón adicional: Reporte X (consulta, no cierra el día fiscal) -->
-        <xpath expr="//button[@t-on-click='closeSessionAndPrintZ']" position="before">
+        <xpath expr="//button[@t-on-click='this.closeSessionAndPrintZ']" position="before">
             <button
                 class="button btn btn-secondary btn-lg"
-                t-on-click="generate_report_x"
-                t-att-disabled="mfState.isPrintingReport"
+                t-on-click="this.generate_report_x"
+                t-att-disabled="this.mfState.isPrintingReport"
                 title="Generar Reporte X">
-                <t t-if="mfState.isPrintingReport">
+                <t t-if="this.mfState.isPrintingReport">
                     <i class="oi oi-spin me-1" data-icon="progress_activity"/>Imprimiendo...
                 </t>
                 <t t-else="">Reporte X</t>
@@ -32,12 +32,12 @@
         <!-- Boton adicional (solo con el grupo group_pos_close_native):
              cierre 100% nativo de Odoo, sin Reporte Z ni validacion de
              pedidos sin facturar. -->
-        <xpath expr="//button[@t-on-click='closeSessionAndPrintZ']" position="after">
+        <xpath expr="//button[@t-on-click='this.closeSessionAndPrintZ']" position="after">
             <button
-                t-if="canCloseNative"
+                t-if="this.canCloseNative"
                 class="button btn btn-secondary btn-lg"
-                t-att-disabled="!canConfirm()"
-                t-on-click="confirm"
+                t-att-disabled="!this.canConfirm()"
+                t-on-click="this.confirm"
                 title="Cierra la sesion de POS sin imprimir Reporte Z ni validar pedidos sin facturar (cierre nativo)">
                 Cerrar sesión
             </button>

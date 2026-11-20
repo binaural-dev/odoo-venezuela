@@ -122,14 +122,7 @@ export class SerialConnection {
                 return false;
             }
 
-            const port =
-                ports.find((p) => {
-                    const info = (p.getInfo && p.getInfo()) || {};
-                    return (
-                        info.usbVendorId === saved.usbVendorId &&
-                        info.usbProductId === saved.usbProductId
-                    );
-                }) || null;
+            const port = ports.find((p) => this.isSavedDevice(p, saved)) || null;
 
             if (!port) {
                 // La MF autorizada no está presente ahora (desenchufada, u otro
@@ -537,6 +530,24 @@ export class SerialConnection {
         } catch (error) {
             console.error("SerialConnection:: Error al guardar identidad del dispositivo", error);
         }
+    }
+
+    /**
+     * Indica si `port` es la máquina fiscal guardada, comparando su identidad
+     * USB (VID/PID) con la que se persistió al verificarla. Sin identidad
+     * guardada devuelve false: no se adivina cuál puerto es la MF.
+     * @param {SerialPort} port
+     * @param {{usbVendorId: (number|null), usbProductId: (number|null)}|null} [saved]
+     * @returns {boolean}
+     */
+    isSavedDevice(port, saved = this._loadDeviceInfo()) {
+        if (!port || !saved) {
+            return false;
+        }
+        const info = (port.getInfo && port.getInfo()) || {};
+        return (
+            info.usbVendorId === saved.usbVendorId && info.usbProductId === saved.usbProductId
+        );
     }
 
     /**

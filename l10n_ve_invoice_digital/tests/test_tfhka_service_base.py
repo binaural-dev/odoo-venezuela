@@ -11,16 +11,17 @@ class TestTfhkaServiceBase(TransactionCase):
         """``l10n_ve_location`` (no es dependencia de este módulo, pero suele
         convivir instalado junto a él) convierte ``res.partner.city`` en un
         campo ``related`` de solo lectura sobre ``city_id`` (Many2one a
-        ``res.country.city``): asignar el string directo no tiene efecto.
-        Si ese módulo está instalado, resuelve/crea el ``res.country.city``
+        ``res.city``): asignar el string directo no tiene efecto.
+        Si ese módulo está instalado, resuelve/crea la ciudad (``res.city``)
         y usa ``city_id``; si no, usa el ``city`` Char normal.
         """
         if "city_id" in self.env["res.partner"]._fields:
-            city = self.env["res.country.city"].search(
+            city_model = self.env["res.partner"]._fields["city_id"].comodel_name
+            city = self.env[city_model].search(
                 [("name", "=", name), ("state_id", "=", state.id)], limit=1
             )
             if not city:
-                city = self.env["res.country.city"].create(
+                city = self.env[city_model].create(
                     {"name": name, "state_id": state.id, "country_id": country.id}
                 )
             return {**vals, "city_id": city.id}

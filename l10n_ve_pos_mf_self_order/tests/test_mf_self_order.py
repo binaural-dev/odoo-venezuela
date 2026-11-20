@@ -2,10 +2,10 @@
 
 Cubre las dos costuras del modelo que el Kiosko fiscal necesita:
 
-* ``_send_payment_result`` — el core NO incluye los pagos en el evento del bus
-  ``PAYMENT_STATUS``; este módulo lo reemplaza para añadir ``pos.payment`` (la
-  impresión fiscal en ``confirmationPage`` necesita el método de pago para leer
-  su ``code_fiscal_printer``).
+* ``_send_payment_result`` — el evento del bus ``PAYMENT_STATUS`` debe incluir
+  ``pos.payment`` (la impresión fiscal en ``confirmationPage`` necesita el
+  método de pago para leer su ``code_fiscal_printer``). En 19 lo agregaba este
+  módulo; el core de 20 ya lo incluye y la prueba vigila que siga así.
 * ``_load_pos_self_data_fields`` — expone ``mf_invoice_number``/
   ``fiscal_machine``/``mf_reportz`` al esquema del cliente del Kiosko para que el
   número devuelto por la máquina viaje al servidor con la orden.
@@ -59,7 +59,20 @@ class TestMfSelfOrder(TransactionCase):
             }
         )
         cls.company.write(
-            {"account_sale_tax_id": tax.id, "account_purchase_tax_id": tax.id}
+            {
+                "account_sale_tax_id": tax.id,
+                "account_purchase_tax_id": cls.env["account.tax"]
+                .create(
+                    {
+                        "name": "Kiosk Purchase Tax",
+                        "amount": 0.0,
+                        "type_tax_use": "purchase",
+                        "tax_group_id": tax_group.id,
+                        "company_id": cls.company.id,
+                    }
+                )
+                .id,
+            }
         )
         category = cls.env["product.category"].create(
             {
@@ -68,7 +81,10 @@ class TestMfSelfOrder(TransactionCase):
                 "property_account_expense_categ_id": account.id,
             }
         )
-        cls.product = cls.env["product.product"].create(
+        # `l10n_ve_stock` only lets a product be created with the `company_id`
+        # of `env.company`: without `with_company` the create raises
+        # AccessError and the whole setUpClass is skipped.
+        cls.product = cls.env["product.product"].with_company(cls.company).create(
             {
                 "name": "MF SelfOrder Product",
                 "lst_price": 100.0,
@@ -105,7 +121,7 @@ class TestMfSelfOrder(TransactionCase):
         cls.cash_method = cls.env["pos.payment.method"].create(
             {
                 "name": "MF SelfOrder Cash",
-                "is_cash_count": True,
+                "type": "cash",
                 "company_id": cls.company.id,
                 "journal_id": cash_journal.id,
             }
@@ -115,11 +131,11 @@ class TestMfSelfOrder(TransactionCase):
         # pago en efectivo es válido (el kiosko lo prohíbe).
         cls.config = cls.env["pos.config"].create(
             {
+                "default_partner_id": cls.company.partner_id.id,
                 "name": "MF SelfOrder Config",
                 "company_id": cls.company.id,
                 "currency_id": vef.id,
                 "journal_id": sale_journal.id,
-                "invoice_journal_id": sale_journal.id,
                 "payment_method_ids": [(6, 0, [cls.cash_method.id])],
             }
         )
@@ -138,7 +154,6 @@ class TestMfSelfOrder(TransactionCase):
                 "amount_tax": 0.0,
                 "amount_paid": 100.0,
                 "amount_return": 0.0,
-                "last_order_preparation_change": "{}",
                 "lines": [
                     Command.create(
                         {
@@ -167,9 +182,9 @@ class TestMfSelfOrder(TransactionCase):
             self.assertIn(field_name, fields_list)
 
     def test_send_payment_result_includes_pos_payment(self):
-        """El evento del bus PAYMENT_STATUS debe incluir pos.payment (el core no
-        lo hace), para que el cliente del Kiosko tenga el método de pago al
-        imprimir la factura fiscal."""
+        """El evento del bus PAYMENT_STATUS debe incluir pos.payment, para que el
+        cliente del Kiosko tenga el método de pago al imprimir la factura
+        fiscal."""
         order = self._make_paid_order_with_payment()
         captured = {}
 

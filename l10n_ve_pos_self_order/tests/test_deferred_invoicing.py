@@ -8,7 +8,7 @@ generación de la factura en un ``savepoint``: si falla, la orden queda ``paid``
 ``to_invoice`` SIN ``account_move`` (recuperable), en vez de perderse por el
 rollback del request. La ruta EXPLÍCITA (sin el flag) sigue propagando el error.
 
-Se fuerza el fallo parcheando el ``_create_invoice`` del core (equivale a un
+Se fuerza el fallo parcheando el ``_prepare_invoice_vals`` del core (en 20 desaparece ``_create_invoice``) (equivale a un
 diario/secuencia inválido): ``l10n_ve_pos_mf._generate_pos_order_invoice`` llama a
 ``super()``, así que la cadena llega al core y revienta ahí dentro.
 """
@@ -69,7 +69,20 @@ class TestKioskDeferredInvoicing(TransactionCase):
             }
         )
         cls.company.write(
-            {"account_sale_tax_id": tax.id, "account_purchase_tax_id": tax.id}
+            {
+                "account_sale_tax_id": tax.id,
+                "account_purchase_tax_id": cls.env["account.tax"]
+                .create(
+                    {
+                        "name": "Kiosk Purchase Tax",
+                        "amount": 0.0,
+                        "type_tax_use": "purchase",
+                        "tax_group_id": tax_group.id,
+                        "company_id": cls.company.id,
+                    }
+                )
+                .id,
+            }
         )
         category = cls.env["product.category"].create(
             {
@@ -115,11 +128,11 @@ class TestKioskDeferredInvoicing(TransactionCase):
         )
         cls.config = cls.env["pos.config"].create(
             {
+                "default_partner_id": cls.company.partner_id.id,
                 "name": "Kiosk Deferred Config",
                 "company_id": cls.company.id,
                 "currency_id": vef.id,
                 "journal_id": sale_journal.id,
-                "invoice_journal_id": sale_journal.id,
                 "self_ordering_mode": "kiosk",
                 "payment_method_ids": [(6, 0, [])],
             }
@@ -140,7 +153,6 @@ class TestKioskDeferredInvoicing(TransactionCase):
                 "amount_tax": 0.0,
                 "amount_paid": 100.0,
                 "amount_return": 0.0,
-                "last_order_preparation_change": "{}",
                 "lines": [
                     Command.create(
                         {
@@ -160,7 +172,7 @@ class TestKioskDeferredInvoicing(TransactionCase):
         orden queda paid + to_invoice sin account_move; el savepoint revierte el
         estado 'done' que el core fija de primero."""
         order = self._make_order()
-        with patch(f"{CORE}._create_invoice", _boom):
+        with patch(f"{CORE}._prepare_invoice_vals", _boom):
             result = order.with_context(
                 kiosk_defer_invoice=True
             )._generate_pos_order_invoice()
@@ -173,7 +185,7 @@ class TestKioskDeferredInvoicing(TransactionCase):
         """Sin el flag (facturación explícita: panel de recuperación / backend),
         el error SÍ se propaga para que el operador vea la causa."""
         order = self._make_order()
-        with patch(f"{CORE}._create_invoice", _boom):
+        with patch(f"{CORE}._prepare_invoice_vals", _boom):
             with self.assertRaises(UserError):
                 order._generate_pos_order_invoice()
 
@@ -181,7 +193,9 @@ class TestKioskDeferredInvoicing(TransactionCase):
         """_process_saved_order enruta las órdenes del Kiosko por el diferido: un
         fallo de factura las conserva pagadas en vez de perderlas."""
         order = self._make_order()
-        with patch(f"{CORE}._create_invoice", _boom):
+        with patch(f"{CORE}._prepare_invoice_vals", _boom), patch(
+            f"{CORE}.action_pos_order_paid", return_value=True
+        ):
             order._process_saved_order(draft=False)
         self.assertEqual(order.state, "paid")
         self.assertFalse(order.account_move)

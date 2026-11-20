@@ -7,21 +7,28 @@
         <xpath expr="//button[hasclass('o_kiosk_debug_view_orders')]" position="before">
             <div class="d-flex align-items-center gap-2">
                 <span>Fiscal machine status (last test):</span>
-                <span t-if="connected === null" class="badge text-bg-secondary">
+                <span t-if="this.connected === null" class="badge text-bg-secondary">
                     Not tested
                 </span>
-                <span t-else="" t-att-class="connected ? 'badge text-bg-success' : 'badge text-bg-danger'">
-                    <t t-if="connected">Connected</t>
+                <span t-else="" t-att-class="this.connected ? 'badge text-bg-success' : 'badge text-bg-danger'">
+                    <t t-if="this.connected">Connected</t>
                     <t t-else="">Disconnected</t>
                 </span>
             </div>
             <button type="button" class="btn btn-outline-secondary text-start"
-                    t-on-click="onCheckStatus" t-att-disabled="state.busy">
+                    t-on-click="this.onCheckStatus" t-att-disabled="this.state.busy">
                 Check connection status
             </button>
             <button type="button" class="btn btn-warning text-start"
-                    t-on-click="onPair" t-att-disabled="state.busy">
+                    t-on-click="this.onPair" t-att-disabled="this.state.busy">
                 Pair fiscal machine (authorize port)
+            </button>
+            <!-- Cierre del día (ticket 16406): mismo flujo que el botón
+                 "Cerrar sesión e imprimir Z" de la caja (l10n_ve_pos_mf). -->
+            <button t-if="selfOrder.config.access_button_mf" type="button"
+                    class="btn btn-danger text-start o_kiosk_debug_close_session_z"
+                    t-on-click="onCloseSessionAndPrintZ" t-att-disabled="state.busy">
+                Close session and print Z
             </button>
         </xpath>
     </t>

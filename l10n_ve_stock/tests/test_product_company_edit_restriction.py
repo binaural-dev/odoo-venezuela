@@ -99,9 +99,10 @@ class TestProductCompanyEditRestriction(TransactionCase):
             len(self.template.message_ids), message_count_before,
             "Changing company_id should post a tracking message to the chatter.",
         )
-        tracking_values = self.template.message_ids[0].tracking_value_ids
-        self.assertTrue(
-            any(tv.field_id.name == "company_id" for tv in tracking_values),
+        label = self.template._fields["company_id"].string
+        self.assertIn(
+            f"<i>({label})</i>",
+            str(self.template.message_ids[0].body),
             "The tracking message should include a tracking value for company_id.",
         )
 

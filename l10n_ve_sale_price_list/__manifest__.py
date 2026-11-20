@@ -1,6 +1,6 @@
 {
     "name": "Venezuela - Reporte de Lista de Precios Multi-Lista",
-    "version": "19.0.1.0.0",
+    "version": "20.0.1.0.0",
     "license": "LGPL-3",
     "summary": "Reporte de lista de precios con varias listas en columnas, "
     "por compañía/sucursal, con paginación",
@@ -35,5 +35,6 @@
     },
     "images": ["static/description/icon.png"],
     "application": False,
-    "installable": False,
+    "installable": True,
+    "binaural_migrated": True,
 }

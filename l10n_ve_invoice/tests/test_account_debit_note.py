@@ -1,5 +1,6 @@
 from odoo import fields
 from odoo.tests import TransactionCase, tagged
+from odoo.addons.l10n_ve_rate.tests.common import ensure_daily_rates
 
 
 @tagged("post_install", "-at_install", "l10n_ve_invoice")
@@ -11,6 +12,7 @@ class TestAccountDebitNote(TransactionCase):
         self.currency_usd = self.env.ref("base.USD")
         self.company.currency_id = self.currency_vef
         self.company.foreign_currency_id = self.currency_usd
+        ensure_daily_rates(self.env, self.currency_usd, self.company)
 
         self.partner = self.env["res.partner"].create({"name": "Test DN Partner"})
 

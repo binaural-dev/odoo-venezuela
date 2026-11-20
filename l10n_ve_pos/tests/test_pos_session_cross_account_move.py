@@ -16,7 +16,7 @@ Spec (fecha del cruce en el dia del usuario, ticket 16145):
 from datetime import date
 from unittest.mock import patch
 
-from odoo import fields
+from odoo import Command, fields
 from odoo.addons.point_of_sale.models.pos_config import PosConfig as CorePosConfig
 from odoo.exceptions import UserError, ValidationError
 from odoo.tests import tagged
@@ -80,18 +80,27 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
         )
 
     def _configure_cross(self, method, *, cross_account_journal=True, cross_journal=True):
-        """Wire up a payment method for the cross move.
+        """Wire up a payment method for the cross move of its payments in
+        ``payment_currency``.
 
-        ``is_foreign_currency`` is the only switch that arms the flow (the
-        base fixture already sets it on all four methods), so this helper
-        only has to fill in the two journals. Passing either flag as False
-        leaves that journal empty, which is the "incomplete configuration"
-        case the flow must skip in silence.
+        The foreign currency of the payment is what arms the flow (the base
+        fixture already makes every method take it), so this helper only has
+        to fill in the two journals of the method's settings for that
+        currency. Passing either flag as False leaves that journal empty,
+        which is the "incomplete configuration" case the flow must skip in
+        silence.
         """
-        vals = {}
-        vals["cross_account_journal"] = self.cross_account_journal.id if cross_account_journal else False
-        vals["cross_journal"] = self.real_bank_journal.id if cross_journal else False
-        method.write(vals)
+        vals = {
+            "cross_account_journal": self.cross_account_journal.id if cross_account_journal else False,
+            "cross_journal": self.real_bank_journal.id if cross_journal else False,
+        }
+        setting = method._get_currency_settings(self.payment_currency)
+        if setting:
+            setting.write(vals)
+        else:
+            self.env["pos.payment.method.currency"].create(
+                dict(vals, payment_method_id=method.id, currency_id=self.payment_currency.id)
+            )
 
     def _cross_moves(self):
         return self.env["account.move"].search(
@@ -290,11 +299,13 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
         self.assertAlmostEqual(transitory_leg.foreign_debit, abs(payment.foreign_amount), places=2)
 
     def test_combine_net_negative_uses_outgoing_branch(self):
-        """Combine cuyo neto queda negativo produce UN asiento saliente.
+        """Combine con mas devoluciones que ventas: UN asiento con la pata de
+        entradas y la de salidas (tarea 86066).
 
-        La ruta combine legacy solo tenia rama entrante. Al netear los pagos
-        del metodo, un neto negativo (mas devoluciones que ventas) es
-        alcanzable y debe salir por la rama espejo.
+        La ruta combine legacy solo tenia rama entrante; despues un neto
+        negativo salia por la rama espejo con un solo par de lineas. Ahora el
+        asiento lleva una pata por direccion (venta 40 entrante, devolucion
+        100 saliente) y el neto que pasa a la cuenta real sigue siendo -60.
         """
         self._configure_cross(self.combined_bank_method)
         session = self._new_session().with_company(self.company)
@@ -316,15 +327,77 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
         session._validate_cross_move()
 
         moves = self._cross_moves()
-        self.assertEqual(len(moves), 1)
-        real_leg, transitory_leg = self._legs(
+        self.assertEqual(len(moves), 1, "un asiento por metodo y sesion")
+        real_legs, transitory_legs = self._legs(
             moves, self.combined_bank_method.outstanding_account_id
         )
-        self.assertAlmostEqual(real_leg.credit, 60.0, places=2, msg="|40 - 100|")
-        self.assertAlmostEqual(transitory_leg.debit, 60.0, places=2)
+        self.assertEqual(sorted(real_legs.mapped("balance")), [-100.0, 40.0])
+        self.assertEqual(sorted(transitory_legs.mapped("balance")), [-40.0, 100.0])
+        self.assertAlmostEqual(sum(real_legs.mapped("balance")), -60.0, places=2, msg="40 - 100")
+        self.assertAlmostEqual(sum(transitory_legs.mapped("balance")), 60.0, places=2)
+
+    def test_combine_opposite_sign_nets_cross_each_leg_on_its_own(self):
+        """Venta y devolucion a tasas distintas en la misma sesion (tarea
+        86066, hallazgo 6): venta de 40 a 50 (2.000 en la alterna) y
+        devolucion de 60 a 10 (-600): neto -20 en la moneda de la caja y
+        +1.400 en la alterna. Con un solo par de lineas, la linea del diario
+        real (en la alterna) quedaba con saldo y ``amount_currency`` de signos
+        opuestos y ``account_move_line_check_amount_currency_balance_sign``
+        rechazaba el cierre. Cada pata tiene signos coherentes."""
+        self._configure_cross(self.combined_bank_method)
+        session = self._new_session().with_company(self.company)
+        self._create_paid_order(
+            session, method=self.combined_bank_method, amount=40.0, tax_amount=0.0,
+            foreign_rate=50.0, name="OL/CROSS/OPP-SALE",
+        )
+        self._create_paid_order(
+            session, method=self.combined_bank_method, amount=-60.0, tax_amount=0.0,
+            foreign_rate=10.0, name="OL/CROSS/OPP-REFUND",
+        )
+
+        session._validate_cross_move()
+
+        move = self._cross_moves()
+        self.assertEqual(len(move), 1)
+        self.assertEqual(len(move.line_ids), 4)
+        for line in move.line_ids:
+            self.assertGreaterEqual(line.amount_currency * line.balance, 0.0)
+        real_legs, _transitory_legs = self._legs(
+            move, self.combined_bank_method.outstanding_account_id
+        )
+        self.assertEqual(real_legs.currency_id, self.foreign_currency)
+        self.assertAlmostEqual(sum(real_legs.mapped("balance")), -20.0, places=2)
+        self.assertAlmostEqual(sum(real_legs.mapped("amount_currency")), 1400.0, places=2)
+
+    def test_combine_zero_net_in_the_pos_currency_still_crosses_the_foreign_amount(self):
+        """Neto cero en la moneda de la caja con alterna de diferencia (venta
+        y devolucion de 40 a tasas distintas): antes no se creaba el cruce y
+        esa alterna nunca pasaba al diario real."""
+        self._configure_cross(self.combined_bank_method)
+        session = self._new_session().with_company(self.company)
+        self._create_paid_order(
+            session, method=self.combined_bank_method, amount=40.0, tax_amount=0.0,
+            foreign_rate=50.0, name="OL/CROSS/ZERO-SALE",
+        )
+        self._create_paid_order(
+            session, method=self.combined_bank_method, amount=-40.0, tax_amount=0.0,
+            foreign_rate=10.0, name="OL/CROSS/ZERO-REFUND",
+        )
+
+        session._validate_cross_move()
+
+        move = self._cross_moves()
+        self.assertEqual(len(move), 1)
+        real_legs, _transitory_legs = self._legs(
+            move, self.combined_bank_method.outstanding_account_id
+        )
+        self.assertAlmostEqual(sum(real_legs.mapped("balance")), 0.0, places=2)
+        self.assertAlmostEqual(sum(real_legs.mapped("amount_currency")), 1600.0, places=2)
 
     def test_combine_net_zero_creates_nothing(self):
-        """Combine cuyo neto es cero no crea asiento: no hay nada que cruzar."""
+        """Combine cuyo neto es cero, en la moneda de la caja y en la alterna
+        (venta y devolucion a la misma tasa), no crea asiento: no hay nada que
+        cruzar."""
         self._configure_cross(self.combined_bank_method)
         session = self._new_session().with_company(self.company)
         self._create_paid_order(
@@ -454,7 +527,11 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
         )
 
     def test_cash_sale_net_negative_mirrors_the_entry(self):
-        """Neto negativo en efectivo: el asiento entre transitorias se invierte."""
+        """Neto negativo en efectivo: el asiento entre transitorias se invierte.
+
+        Desde la tarea 86066 el asiento combinado lleva una pata de entradas
+        (venta 40) y otra de salidas (devolucion 100), cada una invertida por
+        ``use_suspense``; el neto que mueve cada cuenta es el mismo de antes."""
         self._configure_cross(self.combined_cash_method)
         suspense_origin, suspense_cross = self._configure_use_suspense_accounts(
             self.combined_cash_method
@@ -483,14 +560,18 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
             lambda l: l.account_id == suspense_origin
         )
         cross_leg = moves.line_ids.filtered(lambda l: l.account_id == suspense_cross)
-        self.assertAlmostEqual(origin_leg.credit, 60.0, places=2, msg="|40 - 100|")
-        self.assertAlmostEqual(cross_leg.debit, 60.0, places=2)
-        self.assertAlmostEqual(origin_leg.debit, 0.0, places=2)
-        self.assertAlmostEqual(cross_leg.credit, 0.0, places=2)
+        self.assertEqual(sorted(origin_leg.mapped("balance")), [-100.0, 40.0])
+        self.assertEqual(sorted(cross_leg.mapped("balance")), [-40.0, 100.0])
+        self.assertAlmostEqual(sum(origin_leg.mapped("balance")), -60.0, places=2, msg="40 - 100")
+        self.assertAlmostEqual(sum(cross_leg.mapped("balance")), 60.0, places=2)
         self.assertGreater(
-            origin_leg.foreign_credit, 0.0, "el alterno tambien se invierte"
+            sum(origin_leg.mapped("foreign_credit")) - sum(origin_leg.mapped("foreign_debit")),
+            0.0,
+            "el alterno tambien se invierte",
         )
-        self.assertGreater(cross_leg.foreign_debit, 0.0)
+        self.assertGreater(
+            sum(cross_leg.mapped("foreign_debit")) - sum(cross_leg.mapped("foreign_credit")), 0.0
+        )
         self.assertFalse(
             moves.line_ids.filtered(
                 lambda l: l.account_id in (self.account_cash, self.account_real_bank)
@@ -626,6 +707,7 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
 
         move = session._create_cross_move_for(
             self.split_cash_method,
+            self.payment_currency,
             amount=58.0,
             foreign_amount=58.0 * 36.5,
             foreign_rate=36.5,
@@ -668,6 +750,7 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
 
         move = session._create_cross_move_for(
             self.split_cash_method,
+            self.payment_currency,
             amount=-25.0,
             foreign_amount=-25.0 * 36.5,
             foreign_rate=36.5,
@@ -697,12 +780,12 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
             "fixture: sin configurar todavia",
         )
         self.assertTrue(
-            session._is_cross_move_eligible(self.split_cash_method),
+            session._is_cross_move_eligible(self.split_cash_method, self.payment_currency),
             "use_suspense=False (cruce de banco, diferencias) ya es elegible "
             "con default_account_id resuelto",
         )
         self.assertFalse(
-            session._is_cross_move_eligible(self.split_cash_method, use_suspense=True),
+            session._is_cross_move_eligible(self.split_cash_method, self.payment_currency, use_suspense=True),
             "use_suspense=True no es elegible sin suspense_account_id en el diario",
         )
 
@@ -716,7 +799,7 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
         )
         self.split_cash_method.journal_id.suspense_account_id = suspense_origin.id
         self.assertFalse(
-            session._is_cross_move_eligible(self.split_cash_method, use_suspense=True),
+            session._is_cross_move_eligible(self.split_cash_method, self.payment_currency, use_suspense=True),
             "con el origen configurado pero el destino vacio sigue sin ser "
             "elegible: esa pata saldria con account_id = False y tumbaria el "
             "cierre de la sesion",
@@ -732,7 +815,7 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
         )
         self.real_bank_journal.suspense_account_id = suspense_destination.id
         self.assertTrue(
-            session._is_cross_move_eligible(self.split_cash_method, use_suspense=True),
+            session._is_cross_move_eligible(self.split_cash_method, self.payment_currency, use_suspense=True),
             "con las dos transitorias configuradas si es elegible",
         )
 
@@ -740,13 +823,9 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
     # Elegibilidad
     # ------------------------------------------------------------------
     def test_no_cross_move_when_not_foreign_currency(self):
-        """is_foreign_currency=False no crea cruce aunque tenga los diarios.
-
-        ``is_foreign_currency`` es el unico interruptor del flujo desde que
-        se retiro ``apply_one_cross_move``.
-        """
+        """A payment made in the currency of the order is not crossed, even
+        when its method has the cross journals for a foreign currency."""
         self._configure_cross(self.split_bank_method)
-        self.split_bank_method.write({"is_foreign_currency": False})
         session = self._new_session().with_company(self.company)
         self._create_paid_order(
             session,
@@ -754,6 +833,7 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
             amount=58.0,
             tax_amount=8.0,
             name="OL/CROSS/NOT-FOREIGN",
+            payment_currency=False,
         )
 
         session._validate_cross_move()
@@ -800,11 +880,17 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
         pay_later_method = self.env["pos.payment.method"].create(
             {
                 "name": "C Pay Later",
-                "is_cash_count": False,
+                "type": "pay_later",
                 "split_transactions": False,
                 "company_id": self.company.id,
                 "journal_id": False,
-                "is_foreign_currency": True,
+                "currency_ids": [Command.set(self.payment_currency.ids)],
+            }
+        )
+        self.env["pos.payment.method.currency"].create(
+            {
+                "payment_method_id": pay_later_method.id,
+                "currency_id": self.payment_currency.id,
                 "cross_account_journal": self.cross_account_journal.id,
                 "cross_journal": self.real_bank_journal.id,
             }
@@ -812,7 +898,7 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
         self.assertEqual(pay_later_method.type, "pay_later")
         session = self._new_session().with_company(self.company)
 
-        self.assertFalse(session._is_cross_move_eligible(pay_later_method))
+        self.assertFalse(session._is_cross_move_eligible(pay_later_method, self.payment_currency))
         self.assertTrue(
             session._get_cross_transitory_account(pay_later_method),
             "el fallback si resuelve una cuenta: lo que excluye al metodo es el tipo",
@@ -904,6 +990,8 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
                 "payment_date": order.date_order,
                 "foreign_rate": 36.5,
                 "foreign_amount": 50.0 * 36.5,
+                "foreign_currency_id": self.payment_currency.id,
+                "amount_currency": 50.0 * 36.5,
             }
         )
         self.assertEqual(len(order.payment_ids), 2)
@@ -1036,8 +1124,8 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
         real_bank_line = move.line_ids.filtered(
             lambda l: l.account_id == self.account_real_bank
         )
-        # La linea de la cuenta real vive en la moneda de la compania
-        # (no la foranea): amount_currency debe ser payment.amount, no
+        # The line of the real account lives in the currency of the company
+        # (not the foreign one): amount_currency must be payment.amount, not
         # payment.foreign_amount.
         self.assertAlmostEqual(real_bank_line.amount_currency, payment.amount, places=2)
         self.assertNotAlmostEqual(
@@ -1156,6 +1244,7 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
                 with self.assertRaises(UserError) as error:
                     session._create_cross_move_for(
                         self.split_bank_method,
+                        self.payment_currency,
                         amount=amount,
                         foreign_amount=amount * 36.5,
                         foreign_rate=36.5,

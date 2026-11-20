@@ -6,8 +6,11 @@ import "@l10n_ve_pos/overrides/services/pos_store";
 
 function makeList(query, liveValue) {
     return {
+        get searchedVat() {
+            return searchedVat(this);
+        },
         state: { query },
-        searchInputRef: liveValue === undefined ? null : { el: { value: liveValue } },
+        searchInputRef: () => (liveValue === undefined ? null : { value: liveValue }),
         pos: {
             newPartnerVat: false,
             editPartner: async () => false,
@@ -52,9 +55,12 @@ describe("l10n_ve_pos PartnerList searched VAT", () => {
 
 describe("l10n_ve_pos PosStore.editPartnerContext", () => {
     test("the searched VAT is the default of the next form only", () => {
-        const store = { newPartnerVat: "304050110", config: {} };
+        const store = { newPartnerVat: "304050110", config: {}, partnerSearchContext: "304050110" };
         const editPartnerContext = PosStore.prototype.editPartnerContext;
-        expect(editPartnerContext.call(store).default_vat).toBe("304050110");
+        const context = editPartnerContext.call(store);
+        expect(context.default_vat).toBe("304050110");
+        // The prefill of the core (phone for a number, name for a text) is kept.
+        expect(context.default_phone).toBe("304050110");
         expect(store.newPartnerVat).toBe(false);
         expect("default_vat" in editPartnerContext.call(store)).toBe(false);
     });

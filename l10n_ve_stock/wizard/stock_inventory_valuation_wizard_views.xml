@@ -1,0 +1,40 @@
+<odoo>
+    <record id="view_stock_inventory_valuation_wizard_form" model="ir.ui.view">
+        <field name="name">stock.inventory.valuation.wizard.form</field>
+        <field name="model">stock.inventory.valuation.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Inventory Valuation">
+                <group>
+                    <field name="inventory_datetime"/>
+                    <field name="warehouse_search_id" domain="[('usage', '=', 'internal')]"
+                        options="{'no_create': True, 'no_open': True}" placeholder="All Warehouse"/>
+                    <field name="except_products_at_zero"/>
+                </group>
+                <footer>
+                    <button name="generate_report" type="object" class="btn-primary" string="Download" data-hotkey="q"/>
+                    <button name="open_at_date" type="object" string="Confirm" groups="base.group_no_one"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel" data-hotkey="x"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_stock_inventory_valuation_wizard" model="ir.actions.act_window">
+        <field name="name">Inventory Valuation</field>
+        <field name="res_model">stock.inventory.valuation.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <record id="product_product_stock_tree_inventory_valuation" model="ir.ui.view">
+        <field name="name">product.product.stock.list.inventory.valuation</field>
+        <field name="model">product.product</field>
+        <field name="inherit_id" ref="stock.product_product_stock_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="%(action_stock_inventory_valuation_wizard)d" type="action" string="Inventory Valuation"
+                    display="always" groups="stock.group_stock_user"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -7,19 +7,23 @@ class ResCurrency(models.Model):
     _inherit = 'res.currency'
 
     @api.model
-    def _load_pos_data_domain(self, data, config):
-        """Odoo 19 loader contract: restrict the currencies to the active
-        company currency, the PoS config currency, and the company foreign
-        currency. Avoids loading extra currencies present in pricelists.
+    def _load_pos_data_domain(self, data):
+        """Odoo 20 loader contract: restrict the currencies to the active
+        company currency, the PoS config currency, the company foreign
+        currency and the ones the payment methods of the PoS declare. Avoids
+        loading extra currencies present in pricelists.
         """
-        domain = super()._load_pos_data_domain(data, config)
-        company = self.env['res.company'].browse(int(config['company_id']))
-        currency_ids = [company.currency_id.id, int(config['currency_id'])]
-        if company.foreign_currency_id:
-            currency_ids.append(company.foreign_currency_id.id)
-        currency_ids = list(set(currency_ids))
-        if len(currency_ids) > 1:
-            return [('id', 'in', currency_ids)]
+        domain = super()._load_pos_data_domain(data)
+        config = data['pos.config']
+        company = config.company_id
+        currencies = (
+            company.currency_id
+            | config.currency_id
+            | company.foreign_currency_id
+            | config.payment_method_ids.currency_ids
+        )
+        if len(currencies) > 1:
+            return [('id', 'in', currencies.ids)]
         return domain
 
     @api.model

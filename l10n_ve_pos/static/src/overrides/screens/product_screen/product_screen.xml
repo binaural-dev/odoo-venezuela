@@ -5,8 +5,8 @@
      t-inherit-mode="extension">
 
     <!-- "Crear manualmente" de la pantalla sin productos: solo con la creación permitida -->
-    <xpath expr="//button[@t-on-click='()=>pos.editProduct()']" position="attributes">
-      <attribute name="t-if">pos.isProductCreationAllowed</attribute>
+    <xpath expr="//button[@t-on-click='()=>this.pos.editProduct()']" position="attributes">
+      <attribute name="t-if">this.pos.isProductCreationAllowed</attribute>
     </xpath>
   </t>
 </templates>

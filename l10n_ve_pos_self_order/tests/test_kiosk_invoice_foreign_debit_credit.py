@@ -191,7 +191,16 @@ class TestKioskInvoiceForeignDebitCredit(TransactionCase):
         # (product_template.py::_enforce_single_tax_vals), not just sale —
         # cls.product below only sets taxes_id (sale); this company default
         # satisfies the purchase side without touching the product vals.
-        cls.company.write({"account_purchase_tax_id": cls.tax.id})
+        purchase_tax = cls.env["account.tax"].create(
+            {
+                "name": "Kiosk FX Purchase Tax",
+                "amount": 16.0,
+                "type_tax_use": "purchase",
+                "tax_group_id": cls.tax_group.id,
+                "company_id": cls.company.id,
+            }
+        )
+        cls.company.write({"account_purchase_tax_id": purchase_tax.id})
         # ``type="service"``: sidesteps stock/picking generation entirely so
         # these tests stay focused on the accounting (foreign) side.
         cls.product = cls.env["product.product"].create(
@@ -241,7 +250,7 @@ class TestKioskInvoiceForeignDebitCredit(TransactionCase):
         cls.payment_method = cls.env["pos.payment.method"].create(
             {
                 "name": "Kiosk FX Card",
-                "is_cash_count": False,
+                "type": "bank",
                 "company_id": cls.company.id,
                 "journal_id": cls.bank_journal.id,
                 "outstanding_account_id": cls.account_bank.id,
@@ -265,11 +274,12 @@ class TestKioskInvoiceForeignDebitCredit(TransactionCase):
         )
         cls.config = cls.env["pos.config"].create(
             {
+                "default_partner_id": cls.company.partner_id.id,
                 "name": "Kiosk FX Config",
                 "company_id": cls.company.id,
                 "self_ordering_mode": "kiosk",
-                "journal_id": cls.sale_journal.id,
-                "invoice_journal_id": cls.invoice_journal.id,
+                "journal_id": cls.invoice_journal.id,
+                "closing_journal_id": cls.sale_journal.id,
                 "payment_method_ids": [(6, 0, [cls.payment_method.id])],
                 # self_ordering_default_user_id's default
                 # (pos_self_order/models/pos_config.py::_self_order_default_user)
@@ -342,7 +352,6 @@ class TestKioskInvoiceForeignDebitCredit(TransactionCase):
                 "amount_tax": 0.0,
                 "amount_paid": 0.0,
                 "amount_return": 0.0,
-                "last_order_preparation_change": "{}",
                 "lines": [
                     Command.create(
                         {

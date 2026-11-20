@@ -227,96 +227,13 @@ class ProductProduct(models.Model):
     def _compute_quantities_dict_for_report(
         self, lot_id, owner_id, package_id, from_date=False, to_date=False, location=False
     ):
-        domain_quant_loc, domain_move_in_loc, domain_move_out_loc = self._get_domain_locations()
-        domain_quant = [("product_id", "in", self.ids)] + domain_quant_loc
-        dates_in_the_past = False
-        to_date = fields.Datetime.to_datetime(to_date)
-        if to_date and to_date < fields.Datetime.now():
-            dates_in_the_past = True
+        """Quantities of the inventory valuation report: the stock at ``to_date`` in the locations of
+        the context.
 
-        domain_move_in = [("product_id", "in", self.ids)] + domain_move_in_loc
-        domain_move_out = [("product_id", "in", self.ids)] + domain_move_out_loc
-
-        if lot_id is not None:
-            domain_quant += [("lot_id", "=", lot_id)]
-        if owner_id is not None:
-            domain_quant += [("owner_id", "=", owner_id)]
-            domain_move_in += [("restrict_partner_id", "=", owner_id)]
-            domain_move_out += [("restrict_partner_id", "=", owner_id)]
-        if package_id is not None:
-            domain_quant += [("package_id", "=", package_id)]
-
-        if from_date:
-            date_date_expected_domain_from = [("date", ">=", from_date)]
-            domain_move_in += date_date_expected_domain_from
-            domain_move_out += date_date_expected_domain_from
-        if to_date:
-            date_date_expected_domain_to = [("date", "<=", to_date)]
-            domain_move_in += date_date_expected_domain_to
-            domain_move_out += date_date_expected_domain_to
-
-        MoveLine = self.env['stock.move.line'].with_context(active_test=False)
-
-        # These lines are always filtered to state == 'done', so the "final destination
-        # of an in-progress chained move" branch of _get_domain_locations() does not
-        # apply here. `skip_in_progress=True` makes the core return the plain
-        # done-only in/out domains (each already excluding the other side via `~`,
-        # e.g. `dest_loc_domain_done & ~loc_domain`), instead of the union with the
-        # in-progress branch used for stock.move. Without that exclusion, an internal
-        # transfer (both origin and destination inside the selected locations) would
-        # count as incoming AND outgoing at once, inflating both quantities.
-        _, domain_move_line_in_loc, domain_move_line_out_loc = self.with_context(
-            skip_in_progress=True
-        )._get_domain_locations()
-
-        domain_move_line_in = [('product_id', 'in', self.ids), ('state', '=', 'done')] + domain_move_line_in_loc
-        domain_move_line_out = [('product_id', 'in', self.ids), ('state', '=', 'done')] + domain_move_line_out_loc
-
-        if from_date:
-            domain_move_line_in += [('date', '>=', from_date)]
-            domain_move_line_out += [('date', '>=', from_date)]
-        if to_date:
-            domain_move_line_in += [('date', '<=', to_date)]
-            domain_move_line_out += [('date', '<=', to_date)]
-
-        move_lines_in_res = {product.id: product_qty for product, product_qty in MoveLine._read_group(domain_move_line_in, ['product_id'], ['quantity:sum'])}
-        move_lines_out_res = {product.id: product_qty for product, product_qty in MoveLine._read_group(domain_move_line_out, ['product_id'], ['quantity:sum'])}
-
-        Quant = self.env['stock.quant'].with_context(active_test=False)
-        quants_res = {product.id: (quantity, reserved_quantity) for product, quantity, reserved_quantity in Quant._read_group(domain_quant, ['product_id'], ['quantity:sum', 'reserved_quantity:sum'])}
-
-        res = dict()
-        for product in self.with_context(prefetch_fields=False):
-            origin_product_id = product._origin.id
-            product_id = product.id
-            if not origin_product_id:
-                res[product_id] = dict.fromkeys(
-                    [
-                        "qty_available",
-                        "free_qty",
-                        "incoming_qty",
-                        "outgoing_qty",
-                        "virtual_available",
-                    ],
-                    0.0,
-                )
-                continue
-
-            rounding = product.uom_id.rounding
-            res[product_id] = {}
-
-            qty_available = quants_res.get(origin_product_id, [0.0])[0]
-            qty_available += move_lines_in_res.get(origin_product_id, 0.0) - move_lines_out_res.get(origin_product_id, 0.0)
-
-            reserved_quantity = quants_res.get(origin_product_id, [False, 0.0])[1]
-
-            res[product_id]['qty_available'] = float_round(qty_available, precision_rounding=rounding)
-            res[product_id]['free_qty'] = float_round(qty_available - reserved_quantity, precision_rounding=rounding)
-            res[product_id]['incoming_qty'] = float_round(move_lines_in_res.get(origin_product_id, 0.0), precision_rounding=rounding)
-            res[product_id]['outgoing_qty'] = float_round(move_lines_out_res.get(origin_product_id, 0.0), precision_rounding=rounding)
-            res[product_id]['virtual_available'] = float_round(
-                qty_available + res[product_id]['incoming_qty'] - res[product_id]['outgoing_qty'],
-                precision_rounding=rounding
-            )
-
-        return res
+        Odoo 19 added the done moves up to the date to the current stock, so the incoming stock was
+        counted twice, and a ``False`` lot kept only the stock without lot. The report now uses the
+        stock at a date as Odoo computes it, and ``False`` filters mean no filter.
+        """
+        return self._compute_quantities_dict(
+            lot_id or None, owner_id or None, package_id or None, from_date=from_date, to_date=to_date
+        )

@@ -16,6 +16,26 @@ class AccountMoveLine(models.Model):
         "Amount. Applies on create/write, not only through the form.",
     )
 
+    def _get_free_form_description(self):
+        """
+        Description of the line as the free-form invoice printed it in Odoo 19, where the name of
+        a line started with the name of its product. Odoo 20 keeps only the description of the
+        product in ``name``: a line with no text of its own gets the name of the product back,
+        and a text written on the line is printed as it is.
+        """
+        self.ensure_one()
+        product = self.product_id.with_context(lang=self.move_id._get_lang())
+        if not product or self.display_type != "product":
+            return self.name
+        if not self.name:
+            return product.display_name
+        description = (
+            product.description_purchase if self.journal_id.type == "purchase" else product.description_sale
+        )
+        if self.name == description:
+            return f"{product.display_name}\n{self.name}"
+        return self.name
+
     @api.model
     def _enforce_discount_exclusivity(self, vals, company=None):
         """Only one of discount (%) / discount_fixed is ever meaningful on a

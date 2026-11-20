@@ -7,7 +7,7 @@
     "author": "binaural-dev",
     "website": "https://www.binauraldev.com",
     "category": "Stock Account",
-    "version": "19.0.2.1.5",
+    "version": "20.0.1.0.0",
     "depends": [
         "l10n_ve_stock",
         "l10n_ve_invoice",
@@ -45,5 +45,6 @@
     "application": True,
     "auto_install": False,
     "pre_init_hook": "pre_init_hook",
-    "installable": False,
+    "installable": True,
+    "binaural_migrated": True,
 }
