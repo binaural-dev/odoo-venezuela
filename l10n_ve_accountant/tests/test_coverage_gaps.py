@@ -467,6 +467,27 @@ class TestCoverageGaps(TransactionCase):
         result = invoice._account_analytic_by_line_id(invoice.line_ids)
         self.assertIsInstance(result, dict)
 
+    def test_17b_account_analytic_by_line_id_combined_key(self):
+        """_account_analytic_by_line_id: una clave combinada ("12,34")
+        no revienta y devuelve el codigo de ambas cuentas (ticket 16304)."""
+        acc_a, _acc_a2, _acc_a3, acc_b = self._create_analytic_accounts()
+        invoice, line = self._post_with_distribution({"%s,%s" % (acc_a.id, acc_b.id): 100})
+        result = invoice._account_analytic_by_line_id(line)
+        self.assertEqual(result[line.id], "%s, %s" % (acc_a.code, acc_b.code))
+
+    def test_17c_account_analytic_by_line_id_repeated_account(self):
+        """_account_analytic_by_line_id: una cuenta repetida entre claves
+        combinadas aparece una sola vez, en orden de aparicion."""
+        acc_a, acc_a2, _acc_a3, acc_b = self._create_analytic_accounts()
+        invoice, line = self._post_with_distribution({
+            "%s,%s" % (acc_a.id, acc_b.id): 50,
+            "%s,%s" % (acc_a2.id, acc_b.id): 50,
+        })
+        result = invoice._account_analytic_by_line_id(line)
+        self.assertEqual(
+            result[line.id], "%s, %s, %s" % (acc_a.code, acc_b.code, acc_a2.code)
+        )
+
     # ═══════════════════════════════════════════════════════════════
     # account_move.py - _compute_company_currency_line_totals
     # ═══════════════════════════════════════════════════════════════
@@ -760,6 +781,86 @@ class TestCoverageGaps(TransactionCase):
         if line:
             # Verificar que el metodo existe
             self.assertTrue(hasattr(line, '_prepare_analytic_distribution_line'))
+
+    def _create_analytic_accounts(self):
+        """Dos planes y cuatro cuentas: A, A2 y A3 en el plan 1; B en el plan 2."""
+        Plan = self.env["account.analytic.plan"]
+        Account = self.env["account.analytic.account"]
+        plan_1 = Plan.create({"name": "Plan 16304 uno"})
+        plan_2 = Plan.create({"name": "Plan 16304 dos"})
+        return tuple(
+            Account.create({"name": code, "code": code, "plan_id": plan.id})
+            for code, plan in (
+                ("T16304A", plan_1), ("T16304A2", plan_1),
+                ("T16304A3", plan_1), ("T16304B", plan_2),
+            )
+        )
+
+    def _post_with_distribution(self, distribution):
+        """Factura en USD de 100 sin impuesto con la distribucion dada, publicada
+        como lo hace el asistente de confirmacion. Devuelve (factura, linea)."""
+        invoice = self._create_invoice(self.currency_usd, 100.0, tax=False)
+        line = invoice.invoice_line_ids[0]
+        line.analytic_distribution = distribution
+        invoice.with_context(move_action_post_alert=True).action_post()
+        return invoice, line
+
+    def _assert_analytic_amounts(self, analytic_line, line, percentage):
+        """amount y foreign_amount son el porcentaje de la linea (con el signo
+        del core: el contrario al balance)."""
+        self.assertAlmostEqual(
+            analytic_line.amount, -line.balance * percentage / 100.0, places=2
+        )
+        self.assertAlmostEqual(
+            analytic_line.foreign_amount, -line.foreign_balance * percentage / 100.0, places=2
+        )
+
+    def test_36b_prepare_analytic_distribution_combined_key(self):
+        """_prepare_analytic_distribution_line: una clave combinada de dos
+        planes ("12,34") publica y crea una linea analitica con ambos
+        planes al 100% (ticket 16304: antes fallaba con ValueError en int())."""
+        acc_a, _acc_a2, _acc_a3, acc_b = self._create_analytic_accounts()
+        _invoice, line = self._post_with_distribution({"%s,%s" % (acc_a.id, acc_b.id): 100})
+        analytic = line.analytic_line_ids
+        self.assertEqual(len(analytic), 1)
+        self.assertEqual(analytic[acc_a.plan_id._column_name()], acc_a)
+        self.assertEqual(analytic[acc_b.plan_id._column_name()], acc_b)
+        self._assert_analytic_amounts(analytic, line, 100.0)
+
+    def test_36c_prepare_analytic_distribution_combined_key_partial(self):
+        """_prepare_analytic_distribution_line: clave combinada al 70%."""
+        acc_a, _acc_a2, _acc_a3, acc_b = self._create_analytic_accounts()
+        _invoice, line = self._post_with_distribution({"%s,%s" % (acc_a.id, acc_b.id): 70})
+        analytic = line.analytic_line_ids
+        self.assertEqual(len(analytic), 1)
+        self._assert_analytic_amounts(analytic, line, 70.0)
+
+    def test_36d_prepare_analytic_distribution_two_combined_keys(self):
+        """_prepare_analytic_distribution_line: dos claves combinadas que
+        comparten la cuenta B (50% y 50%)."""
+        acc_a, acc_a2, _acc_a3, acc_b = self._create_analytic_accounts()
+        _invoice, line = self._post_with_distribution({
+            "%s,%s" % (acc_a.id, acc_b.id): 50,
+            "%s,%s" % (acc_a2.id, acc_b.id): 50,
+        })
+        analytic = line.analytic_line_ids
+        self.assertEqual(len(analytic), 2)
+        for analytic_line in analytic:
+            self._assert_analytic_amounts(analytic_line, line, 50.0)
+
+    def test_36e_prepare_analytic_distribution_single_plan_remainder(self):
+        """_prepare_analytic_distribution_line: tres cuentas de un plan
+        (33.33/33.33/33.34) siguen sumando el 100% en moneda alterna."""
+        acc_a, acc_a2, acc_a3, _acc_b = self._create_analytic_accounts()
+        _invoice, line = self._post_with_distribution({
+            str(acc_a.id): 33.33, str(acc_a2.id): 33.33, str(acc_a3.id): 33.34,
+        })
+        analytic = line.analytic_line_ids
+        self.assertEqual(len(analytic), 3)
+        self.assertAlmostEqual(sum(analytic.mapped("amount")), -line.balance, places=2)
+        self.assertAlmostEqual(
+            sum(analytic.mapped("foreign_amount")), -line.foreign_balance, places=2
+        )
 
     # ═══════════════════════════════════════════════════════════════
     # account_move.py - _compute_detailed_amounts sin tax_totals
