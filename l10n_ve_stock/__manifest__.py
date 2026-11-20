@@ -1,5 +1,6 @@
 {
     "name": "Venezuela - Inventario",
+    "description": "Localización venezolana para inventario",
     "summary": """
         Inventario para la localización en Venezuela
     """,
@@ -7,7 +8,7 @@
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     "category": "Stock",
-    "version": "17.0.0.1.3",
+    "version": "17.0.0.1.4",
     "depends": [
         "stock",
         "l10n_ve_tax",

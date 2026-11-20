@@ -6,8 +6,6 @@ from odoo.osv import expression
 
 _logger = logging.getLogger(__name__)
 
-from odoo.exceptions import UserError
-
 
 class StockPicking(models.Model):
     _inherit = "stock.picking"
@@ -213,51 +211,42 @@ class StockPicking(models.Model):
                                     _("You cannot add products to shipment-type transfers")
                                 )
 
-                            if "quantity" in move_line[2] or "quantity" in move_line[2]:
+                            if "quantity" in move_line[2]:
                                 lines = self[matched_key]
                                 for line in lines:
                                     if line.id == move_line[1]:
-                                        if "quantity" in move_line[2]:
-                                            quantity_done = move_line[2].get("quantity")
-                                            if line.product_uom_qty < quantity_done:
-                                                raise UserError(
-                                                    _(
-                                                        "You cannot make transfers larger than the demand"
-                                                    )
+                                        quantity_done = move_line[2].get("quantity")
+                                        if line.product_uom_qty < quantity_done:
+                                            raise UserError(
+                                                _(
+                                                    "You cannot make transfers larger than the demand"
                                                 )
-                                        elif "quantity" in move_line[2]:
-                                            quantity_done = move_line[2].get("quantity")
-                                            # if line.quantity_product_uom < quantity_done: ??
-                                            if line.reserved_uom_qty < quantity_done:
-                                                raise UserError(
-                                                    _(
-                                                        "You cannot make transfers larger than the reserved quantity"
-                                                    )
-                                                )
+                                            )
 
                 else:
                     raise UserError(_("You do not have permission to make shipment-type transfers"))
 
     def action_assign(self):
-        if self.type_delivery_step != "pick":
-            self = self.with_context(skip_physical_location=True)
-        return super().action_assign()
+        picks = self.filtered(lambda picking: picking.type_delivery_step == "pick")
+        others = self - picks
+        if others:
+            super(StockPicking, others.with_context(skip_physical_location=True)).action_assign()
+        if picks:
+            super(StockPicking, picks).action_assign()
+        return True
 
-    def button_validate(self):
+    def _pre_action_done_hook(self):
         if self.env.company.not_allow_negative_stock_movement:
-            res = super(StockPicking, self).button_validate()
-            if isinstance(res, dict) and res.get('res_model') == 'stock.backorder.confirmation':
-                return res
-            else:
-                self._check_stock_availability_for_pickings()
-        return super().button_validate()
+            self._check_stock_availability_for_pickings()
+        return super()._pre_action_done_hook()
         
     def _check_stock_availability_for_pickings(self):
-        if self.picking_type_id.code in ['internal', 'outgoing']:
+        pickings = self.filtered(lambda p: p.picking_type_id.code in ['internal', 'outgoing'])
+        if pickings:
             group_product_location_lot = {}
-            
+
             all_move_lines_to_check = self.env['stock.move.line']
-            for picking in self:
+            for picking in pickings:
                 all_move_lines_to_check |= picking.move_line_ids
 
             for line in all_move_lines_to_check:
@@ -285,17 +274,18 @@ class StockPicking(models.Model):
                     context_to_stock['lot_id'] = lot_obj.id
                 
                 qty_real_allow = \
-                    product_obj.with_context(context_to_stock).qty_available - \
+                    product_obj.with_context(**context_to_stock).qty_available - \
                     total_qty_to_move
                 
                 if qty_real_allow < 0:
                     info_lote_serial = f" ({_('Lot/Serial')}: {lot_obj.name})" if lot_obj else ""
                     stock_msg.append(
-                        _("%s%s", product_obj.display_name, info_lote_serial)
+                        _("%(name)s%(serial)s", name=product_obj.display_name, serial=info_lote_serial)
                     )
             
             if stock_msg:
                 error_msg = _(
-                    "Insufficient stock:\n%s\n\nAdjust quantitys or request stock for this location."
-                ) % "\n".join(stock_msg)
+                    "Insufficient stock:\n%(items)s\n\nAdjust quantitys or request stock for this location.",
+                    items="\n".join(stock_msg),
+                )
                 raise ValidationError(error_msg)
