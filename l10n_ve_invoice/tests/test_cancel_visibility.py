@@ -1,13 +1,13 @@
 import datetime
 from contextlib import contextmanager
 from unittest.mock import patch
-from odoo.tests import TransactionCase, tagged
-
-from .common import ForeignRateFixture
+from odoo.tests import tagged
 from odoo import fields, Command
 
+from .common import ForeignRateTransactionCase
+
 @tagged("post_install", "-at_install", "l10n_ve_invoice")
-class TestCancelVisibility(ForeignRateFixture, TransactionCase):
+class TestCancelVisibility(ForeignRateTransactionCase):
 
     def setUp(self):
         super(TestCancelVisibility, self).setUp()
@@ -71,8 +71,6 @@ class TestCancelVisibility(ForeignRateFixture, TransactionCase):
             'property_account_income_id': self.account_revenue.id,
             'property_account_expense_id': self.account_expense.id,
         })
-
-        self._set_foreign_rates(['2025-01-01', '2025-10-10', '2025-10-29', '2025-10-30', '2025-11-01'])
         
     @contextmanager
     def _mock_today(self, mocked_date):

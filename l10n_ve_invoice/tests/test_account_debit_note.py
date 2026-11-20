@@ -1,11 +1,11 @@
 from odoo import fields
-from odoo.tests import TransactionCase, tagged
+from odoo.tests import tagged
 
-from .common import ForeignRateFixture
+from .common import ForeignRateTransactionCase
 
 
 @tagged("post_install", "-at_install", "l10n_ve_invoice")
-class TestAccountDebitNote(ForeignRateFixture, TransactionCase):
+class TestAccountDebitNote(ForeignRateTransactionCase):
     def setUp(self):
         super().setUp()
         self.company = self.env.ref("base.main_company")
@@ -61,8 +61,6 @@ class TestAccountDebitNote(ForeignRateFixture, TransactionCase):
                 "taxes_id": [(6, 0, [self.tax.id])],
             }
         )
-
-        self._set_foreign_rates()
 
     def _create_posted_invoice(self):
         invoice = self.env["account.move"].create(

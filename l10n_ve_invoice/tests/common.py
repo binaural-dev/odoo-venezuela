@@ -1,29 +1,31 @@
-from odoo import fields
+from unittest.mock import patch
+
+from odoo.tests import TransactionCase
 
 
-class ForeignRateFixture:
-    """Tasa de la moneda alterna para las fechas que usa una prueba.
+class ForeignRateTransactionCase(TransactionCase):
+    """TransactionCase for tests that create and post invoices without caring
+    about the exchange rate.
 
-    `res.currency.rate.compute_rate` (l10n_ve_rate) solo usa la tasa de la fecha exacta y falla con
-    "There is no rate assigned" si no existe. Una prueba que crea facturas sin crear tasas
-    queda en error en una base limpia: se llama al final de su `setUp`, cuando la compañía ya tiene
-    su moneda y su moneda alterna. El valor de la tasa da igual a estas pruebas: no revisan montos
-    en moneda alterna."""
+    ``compute_rate`` only uses the rate dated exactly on the document date, so
+    a test that creates documents on arbitrary dates (today, fixed or relative
+    ones) fails with "There is no rate assigned" in a clean database. Here a
+    missing rate resolves to 1.0 / 1.0 instead of raising; a rate that does
+    exist is still used as is, and the rate lookup itself is covered by the
+    tests of ``l10n_ve_rate``.
+    """
 
-    def _set_foreign_rates(self, dates=(), rate=1.0, currency=None):
-        """`currency`: la moneda que recibe la tasa; por defecto la alterna de la compañía."""
-        company = self.company
-        currency = currency or company.foreign_currency_id
-        Rate = self.env["res.currency.rate"]
-        for date in {fields.Date.today(), *map(fields.Date.to_date, dates)}:
-            if not Rate.search_count([
-                ("currency_id", "=", currency.id),
-                ("company_id", "=", company.id),
-                ("name", "=", date),
-            ]):
-                Rate.create({
-                    "name": date,
-                    "currency_id": currency.id,
-                    "company_id": company.id,
-                    "company_rate": rate,
-                })
+    def setUp(self):
+        super().setUp()
+        rate_model = type(self.env["res.currency.rate"])
+        original = rate_model.compute_rate
+
+        def compute_rate(model, foreign_currency_id, rate_date=None, raise_if_not_found=True):
+            values = original(model, foreign_currency_id, rate_date, raise_if_not_found=False)
+            if values or not raise_if_not_found:
+                return values
+            return {"foreign_rate": 1.0, "foreign_inverse_rate": 1.0}
+
+        patcher = patch.object(rate_model, "compute_rate", compute_rate)
+        patcher.start()
+        self.addCleanup(patcher.stop)

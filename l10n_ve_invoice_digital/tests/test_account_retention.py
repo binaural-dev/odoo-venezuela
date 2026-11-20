@@ -1,16 +1,16 @@
-from odoo.tests import TransactionCase, tagged, Form
+from odoo.tests import tagged, Form
 from datetime import timedelta, date
 from odoo.exceptions import UserError
 from odoo import Command, fields
 from odoo.addons.l10n_ve_invoice_digital.services.tfhka_service_base import TfhkaSequenceMismatchError
 from unittest.mock import patch, MagicMock
 import logging
-from odoo.addons.l10n_ve_invoice.tests.common import ForeignRateFixture
+from odoo.addons.l10n_ve_invoice.tests.common import ForeignRateTransactionCase
 
 _logger = logging.getLogger(__name__)
 
 @tagged("post_install", "-at_install", "l10n_ve_invoice_digital", "retention_digital") 
-class TestAccumulatedRate(ForeignRateFixture, TransactionCase):
+class TestAccumulatedRate(ForeignRateTransactionCase):
     def setUp(self):
         super().setUp()
         self.currency_vef = self.env.ref("base.VEF")
@@ -262,8 +262,6 @@ class TestAccumulatedRate(ForeignRateFixture, TransactionCase):
             "refund_sequence_id": refund_sequence.id,
             "company_id": self.env.company.id,
         })
-
-        self._set_foreign_rates()
 
     def _create_invoice(self):
         invoice = self.env["account.move"].create({

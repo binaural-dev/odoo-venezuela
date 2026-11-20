@@ -1,12 +1,12 @@
 
 from odoo import fields
-from odoo.tests import TransactionCase, tagged
-
-from .common import ForeignRateFixture
+from odoo.tests import tagged
 from odoo.exceptions import ValidationError
 
+from .common import ForeignRateTransactionCase
+
 @tagged("post_install", "-at_install", "l10n_ve_invoice")
-class TestInvoiceTaxConstraint(ForeignRateFixture, TransactionCase):
+class TestInvoiceTaxConstraint(ForeignRateTransactionCase):
     def setUp(self):
         super(TestInvoiceTaxConstraint, self).setUp()
         self.company = self.env.ref("base.main_company")
@@ -61,8 +61,6 @@ class TestInvoiceTaxConstraint(ForeignRateFixture, TransactionCase):
             "list_price": 100,
             "taxes_id": [(6, 0, [self.tax.id])],
         })
-
-        self._set_foreign_rates()
 
     def _create_new_invoice(self, move_type, lines):
         return self.env["account.move"].create({

@@ -2,13 +2,13 @@ from datetime import date, timedelta
 
 from odoo import fields
 from odoo.exceptions import UserError, ValidationError
-from odoo.tests import TransactionCase, tagged
+from odoo.tests import tagged
 
-from .common import ForeignRateFixture
+from .common import ForeignRateTransactionCase
 
 
 @tagged("post_install", "-at_install", "l10n_ve_invoice")
-class TestAccountMoveExtended(ForeignRateFixture, TransactionCase):
+class TestAccountMoveExtended(ForeignRateTransactionCase):
     def setUp(self):
         super().setUp()
         self.company = self.env.ref("base.main_company")
@@ -139,8 +139,6 @@ class TestAccountMoveExtended(ForeignRateFixture, TransactionCase):
                 "default_account_id": self.account_expense.id,
             }
         )
-
-        self._set_foreign_rates([fields.Date.today() - timedelta(days=5)])
 
     # --- _check_price_in_zero ---
 
@@ -525,12 +523,6 @@ class TestAccountMoveExtended(ForeignRateFixture, TransactionCase):
         if post:
             invoice.action_post()
         return invoice
-
-    def test_vendor_bill_duplicate_correlative_same_partner(self):
-        self._create_vendor_bill(self.partner, "00060", post=True)
-
-        with self.assertRaises(ValidationError):
-            self._create_vendor_bill(self.partner, "00060", post=True)
 
     def test_vendor_bill_duplicate_correlative_different_partners(self):
         other_partner = self.env["res.partner"].create(

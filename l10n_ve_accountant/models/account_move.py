@@ -46,19 +46,6 @@ class AccountMove(models.Model):
         self.ensure_one()
         return self.invoice_date_display or self.date
 
-    _sql_constraints = [
-        (
-            "unique_name",
-            "",
-            "Another entry with the same name already exists.",
-        ),
-        (
-            "unique_name_ve",
-            "",
-            "Another entry with the same name already exists.",
-        ),
-    ]
-
     company_currency_rate = fields.Float(
         string="Tasa de moneda de la compañía",
         compute="_compute_company_currency_rate",
@@ -292,19 +279,6 @@ class AccountMove(models.Model):
         currency_field="foreign_currency_id",
         store=True,
     )
-
-    _sql_constraints = [
-        (
-            "unique_name",
-            "",
-            "Another entry with the same name already exists.",
-        ),
-        (
-            "unique_name_ve",
-            "",
-            "Another entry with the same name already exists.",
-        ),
-    ]
 
     detailed_amounts = fields.Binary(compute="_compute_detailed_amounts")
 
@@ -662,35 +636,45 @@ class AccountMove(models.Model):
             discount_amount = 0
             if not record.tax_totals:
                 record.detailed_amounts = dict()
-                return
-            amount_taxed = record.tax_totals.get(
-                "amount_total", 0
-            ) - record.tax_totals.get("amount_untaxed", 0)
-            total = 0
-
+                continue
+            # Base, impuesto y total salen de `tax_totals` (ya corregidos para precio
+            # incluido). Solo el descuento no existe como numero en `tax_totals`
+            # (`formatted_total_discount` es texto y con impuesto incluido), asi que
+            # se deduce de las lineas, sin impuesto: la base de la linea sin
+            # descuento es `price_subtotal / (1 - descuento)`.
+            base_amount = record.tax_totals.get("base_amount_currency", 0)
+            amount_taxed = record.tax_totals.get("tax_amount_currency", 0)
             for line in record.invoice_line_ids:
-                subtotal = line.price_unit * line.quantity
-                if line._get_effective_discount_percent() > 0:
-                    discount_amount += subtotal - line.price_subtotal
-                total += subtotal
+                discount_percent = line._get_effective_discount_percent()
+                if not discount_percent:
+                    continue
+                if float_is_zero(1 - discount_percent / 100.0, precision_digits=6):
+                    # 100%: no hay base de la cual reconstruir el bruto.
+                    discount_amount += line.price_unit * line.quantity
+                else:
+                    discount_amount += line.price_subtotal * discount_percent / (
+                        100.0 - discount_percent
+                    )
+            # Bruto (B.I) = base antes del descuento = base + descuento.
+            total = base_amount + discount_amount
 
             record.detailed_amounts = dict(
                 {
                     "gross_amount": total,
                     "formatted_gross_amount": formatLang(
-                        self.env, total, currency_obj=self.currency_id
+                        self.env, total, currency_obj=record.currency_id
                     ),
                     "discount_amount": discount_amount,
                     "formatted_discount_amount": formatLang(
-                        self.env, discount_amount, currency_obj=self.currency_id
+                        self.env, discount_amount, currency_obj=record.currency_id
                     ),
-                    "gross_discount_amount": total,
+                    "gross_discount_amount": base_amount,
                     "formatted_gross_discount_amount": formatLang(
-                        self.env, total - discount_amount, currency_obj=self.currency_id
+                        self.env, base_amount, currency_obj=record.currency_id
                     ),
                     "taxes_amount": amount_taxed,
                     "formatted_taxes_amount": formatLang(
-                        self.env, amount_taxed, currency_obj=self.currency_id
+                        self.env, amount_taxed, currency_obj=record.currency_id
                     ),
                 }
             )
@@ -1362,12 +1346,15 @@ class AccountMove(models.Model):
                 account_analytic_by_line_id[line_id.id] = ""
                 continue
 
-            account_analytic_ids_ids = [
-                int(analytic_id) for analytic_id in line_id.analytic_distribution.keys()
-            ]
+            # Claves combinadas como "12,9" (cuentas de distintos planes en una fila).
+            account_analytic_ids = list(dict.fromkeys(
+                int(analytic_id)
+                for key in line_id.analytic_distribution
+                for analytic_id in key.split(",")
+            ))
             account_analytic_ids = self.env["account.analytic.account"].browse(
-                account_analytic_ids_ids
-            )
+                account_analytic_ids
+            ).exists()
 
             if not account_analytic_ids:
                 account_analytic_by_line_id[line_id.id] = ""

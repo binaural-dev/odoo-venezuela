@@ -32,10 +32,11 @@ crédito no tenían el problema porque se identifican por `move_type`.
   `l10n_ve_igtf`.
 - `integra-addons` (`binaural_third_party_invoice`, PR aparte contra `maintenance-19.0`): la factura afectada del
   libro de terceros usa `_is_debit_note()`. Depende de este PR.
-- Pruebas que quedaban en error por falta de tasa (`compute_rate` solo usa la fecha exacta):
-  `l10n_ve_invoice/tests/common.py::ForeignRateFixture`, aplicado a 6 clases de `l10n_ve_invoice` y 3 de
-  `l10n_ve_invoice_digital`. En `l10n_ve_invoice_digital`, `_create_retention` usa la vista de IVA (la línea
-  nace con su alícuota; `_check_iva_lines_have_aliquot` rechaza 0%).
+- Pruebas que quedaban en error por falta de tasa (`compute_rate` solo usa la fecha exacta): las 3 clases de
+  `l10n_ve_invoice_digital` heredan de `ForeignRateTransactionCase` (`l10n_ve_invoice/tests/common.py`, llegó
+  a `maintenance-19.0` con #16546 y ya cubre las de `l10n_ve_invoice`). En `l10n_ve_invoice_digital`,
+  `_create_retention` usa la vista de IVA (la línea nace con su alícuota; `_check_iva_lines_have_aliquot`
+  rechaza 0%).
 - `l10n_ve_igtf` (`views/account_move.xml`): los cuatro `xpath` que reemplazan las alertas de "créditos/débitos
   pendientes" del núcleo identifican cada alerta por su condición `invisible` y no por posición. Ver la sección
   "Alertas de IGTF" más abajo: no es parte de las notas de débito, es un defecto que apareció al correr las
@@ -45,7 +46,7 @@ crédito no tenían el problema porque se identifican por `move_type`.
   `TestForeignSupplierRequiredFields` (el formulario del contacto exige las cuentas de anticipo; la prueba las
   configura en la compañía) y `TestRetentionCurrencyPrecisionWriteoff` (las facturas se publican con
   `move_action_post_alert` para que el asistente de alerta no las deje en borrador). Solo pruebas.
-- Bump de versión: `l10n_ve_invoice` `19.0.1.0.29`, `l10n_ve_payment_extension` `19.0.2.2.9`, `l10n_ve_igtf` `19.0.1.2.23`,
+- Bump de versión: `l10n_ve_invoice` `19.0.1.0.31`, `l10n_ve_payment_extension` `19.0.2.2.10`, `l10n_ve_igtf` `19.0.1.2.23`,
   `l10n_ve_invoice_digital` `19.0.1.4.9` (pruebas arregladas), `l10n_ve_igtf_note_debit` `19.0.1.0.3`.
 
 ## Decisiones
