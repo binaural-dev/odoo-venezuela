@@ -1297,8 +1297,24 @@ class AccountMove(models.Model):
 
         The `@api.depends` above is kept (needed for `foreign_rate`,
         specific to this project) but the call itself is delegated
-        directly, with no per-record context."""
+        directly, with no per-record context.
+
+        En una factura en borrador el nucleo calcula amount_residual a partir
+        de tax_totals (account.move._compute_amount). Los resumenes de esta
+        localizacion leen montos de la factura mientras arman tax_totals
+        (l10n_ve_accountant: el total en Bs; l10n_ve_igtf: bi_igtf,
+        payment_state, amount_total), y esa lectura calcula el saldo con
+        tax_totals todavia vacio: queda en 0 y la factura en borrador, como
+        pagada, aunque su linea por cobrar siga pendiente. Por eso, ya armado
+        tax_totals, se vuelven a calcular el saldo y el estado de pago de las
+        facturas en borrador."""
         super()._compute_tax_totals()
+        drafts = self.filtered(
+            lambda move: move.state == 'draft' and move.is_invoice(include_receipts=True)
+        )
+        if drafts:
+            for field_name in ('amount_residual', 'amount_residual_signed', 'payment_state'):
+                self.env.add_to_compute(self._fields[field_name], drafts)
 
 
     @api.onchange("foreign_rate")
