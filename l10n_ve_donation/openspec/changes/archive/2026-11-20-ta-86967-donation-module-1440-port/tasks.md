@@ -72,4 +72,4 @@ Una tarea por unidad de trabajo del módulo.
 - `binaural_stock_dispatch_note` (integra-addons): contacto de solo lectura solo con pedido.
 - `l10n_ve_inventory_book` (integra-addons): `test_outgoing_with_donation` debe esperar 'Donación'.
 - `binaural_subsidiary_stock` (integra-addons): ver el informe a Producto.
-- `higea_donation`: `test_22` (espera el sufijo), restauración del donante tras publicar y líneas sin donante, al migrarlo.
+- Módulo propio del cliente (17): `test_22` (espera el sufijo), restauración del donante tras publicar y líneas sin donante, al migrarlo.
