@@ -10,7 +10,10 @@ class TestStockLocation(TestDonationCommon):
     """The destination of a donation delivery operation type determines the
     accounts of the delivery entries: it cannot be left incoherent, and a new
     `inventory` location of the donation warehouse starts with the company
-    donation account."""
+    donation account.
+
+    Covers: REQ-DON-008, REQ-DON-009.
+    """
 
     def _create_location(self, warehouse, **vals):
         return self.env["stock.location"].create({

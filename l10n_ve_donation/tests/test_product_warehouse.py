@@ -5,6 +5,7 @@ from .common import TestDonationCommon
 
 @tagged('l10n_ve_donation', 'product_warehouse', '-at_install', 'post_install')
 class TestProductWarehouse(TestDonationCommon):
+    """Covers: REQ-DON-008, REQ-DON-010."""
 
     def test_01_unique_donation_product(self):
         """Only one product can be marked as donation product."""

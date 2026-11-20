@@ -1,10 +1,11 @@
 {
     "name": "Venezuela - Donaciones",
-    "version": "19.0.3.0.0",
+    "version": "19.0.3.0.1",
     "category": "Accounting/Accounting",
     "summary": "Venezuela - Donaciones",
-    "author": "",
-    "website": "",
+    "author": "binaural-dev",
+    "website": "https://binauraldev.com/",
+    "license": "LGPL-3",
     "depends": [
         "l10n_ve_accountant",
         "l10n_ve_stock",
@@ -32,6 +33,7 @@
         "views/stock_picking_views.xml",
         "views/stock_warehouse_views.xml",
     ],
+    "post_init_hook": "_post_init_hook",
     "installable": True,
     "application": True,
     "auto_install": False,

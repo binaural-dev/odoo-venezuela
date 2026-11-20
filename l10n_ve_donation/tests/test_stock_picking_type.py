@@ -6,12 +6,13 @@ from .common import TestDonationCommon
 
 @tagged('l10n_ve_donation', 'stock_picking_type', '-at_install', 'post_install')
 class TestStockPickingType(TestDonationCommon):
+    """Covers: REQ-DON-008."""
 
     def test_05_picking_type_donation_must_be_incoming_or_outgoing(self):
         """Donation picking type must have code incoming or outgoing.
 
         `is_donation_picking_type` is a shared flag: `l10n_ve_donation` uses
-        it for its outgoing donation delivery, `higea_donation` reuses the
+        it for its outgoing donation delivery, a client module can reuse the
         SAME flag for its incoming donation receipt -- so both codes must be
         accepted, while any other code (ej. 'internal') must still fail."""
         donation_incoming = self.env["stock.picking.type"].create({

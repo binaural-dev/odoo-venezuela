@@ -13,7 +13,10 @@ from .common import TestDonationCommon
 class TestReceivedDonation(TestDonationCommon):
     """Donations RECEIVED by the company: the direction is told by the
     income accounts of the company, and the lines of their entries carry the
-    donor (the lines of the donations given carry the company)."""
+    donor (the lines of the donations given carry the company).
+
+    Covers: REQ-DON-018, REQ-DON-020, REQ-DON-021, REQ-DON-022, REQ-DON-023, REQ-DON-026, REQ-DON-027, REQ-DON-028.
+    """
 
     @classmethod
     def setUpClass(cls):
@@ -544,7 +547,10 @@ class TestReceivedDonation(TestDonationCommon):
 class TestReceivedDonationPicking(TestDonationCommon):
     """Receipt of goods donated to the company: the origin is an `inventory`
     location whose valuation account is a received donations account (the
-    stock valuation credits it)."""
+    stock valuation credits it).
+
+    Covers: REQ-DON-018, REQ-DON-024, REQ-DON-025, REQ-DON-028, REQ-DON-030.
+    """
 
     @classmethod
     def setUpClass(cls):
@@ -621,6 +627,94 @@ class TestReceivedDonationPicking(TestDonationCommon):
         self.assertEqual(credit.account_id, self.account_income)
         self.assertEqual(debit.account_id, self.account_stock)
 
+    def _user(self, login, manager=False):
+        groups = self.env.ref("base.group_user") | self.env.ref("account.group_account_invoice")
+        if manager:
+            groups |= self.env.ref("l10n_ve_donation.group_donation_manager")
+        return self.env["res.users"].create({
+            "name": login, "login": login, "company_id": self.company.id,
+            "company_ids": [Command.set(self.company.ids)],
+            "group_ids": [Command.set(groups.ids)],
+        })
+
+    def test_02b_the_valuation_entry_of_a_receipt_is_a_donation_received(self):
+        # REQ-DON-030
+        """The entry is marked as donation: only the Donation Manager reverses
+        it (it was left unmarked and anyone saw «Reverse Entry» and «Reset to
+        Draft»), and its lines keep the donor."""
+        picking = self._receipt()
+        self._validate(picking)
+        entry = picking.move_ids.account_move_id
+        self.assertTrue(entry.is_donation)
+        self.assertTrue(entry.is_incoming_donation)
+        self.assertEqual(entry.line_ids.partner_id, self.donor)
+        self.assertFalse(entry.with_user(self._user("not.manager")).can_reverse_donation_move)
+        self.assertTrue(entry.with_user(self._user("manager", manager=True)).can_reverse_donation_move)
+
+    def test_02c_the_certificate_of_a_receipt_is_printed_from_the_picking(self):
+        # REQ-DON-030
+        """The entry of a reception has no document of its own: the
+        certificate is the one of the picking (the buttons of the entry are
+        hidden, and the methods refuse it too)."""
+        picking = self._receipt()
+        self._validate(picking)
+        entry = picking.move_ids.account_move_id
+        self.assertTrue(entry.is_stock_valuation_entry)
+        with self.assertRaisesRegex(UserError, picking.name):
+            entry.print_donation_certificate()
+        with self.assertRaisesRegex(UserError, picking.name):
+            entry.print_donation_receipt()
+        self.assertIsInstance(picking.print_donation_certificate(), dict)
+
+    def test_02d_the_usd_of_the_document_is_the_amount_in_bolivars_over_the_rate(self):
+        # REQ-DON-025
+        """The equivalent of the document is the amount in bolivars at the
+        rate of the day, not the dollars of the lines of the entry: the entry
+        can carry a historical value (a product bought at another rate) and
+        the document must agree with its own data."""
+        picking = self._receipt(quantity=2.0)
+        self._validate(picking)
+        entry = picking.move_ids.account_move_id
+        expected = picking._get_donation_picking_amounts()
+        self.assertTrue(expected["equivalent_amount"])
+        # The lines of the entry carry another value in the other currency
+        # (flushed first, or the pending values would overwrite the update).
+        self.env.flush_all()
+        self.env.cr.execute(
+            "UPDATE account_move_line SET foreign_debit = foreign_debit + 7, "
+            "foreign_credit = foreign_credit + 7 WHERE move_id = %s", (entry.id,)
+        )
+        self.env.invalidate_all()
+        self.assertNotAlmostEqual(
+            sum(entry.line_ids.mapped("foreign_debit")), expected["equivalent_amount"], places=2
+        )
+        amounts = picking._get_donation_picking_amounts()
+        self.assertEqual(amounts["equivalent_amount"], expected["equivalent_amount"])
+        self.assertEqual(amounts["rate"], expected["rate"])
+
+    def test_02e_a_delivery_and_a_reception_validated_together_have_their_own_entry(self):
+        # REQ-DON-030
+        """The core creates ONE entry for all the moves that are validated at
+        once: a delivery and a reception would share it, and the mixed entry
+        would be a donation received."""
+        delivery = self._create_donation_picking(partner=self.partner)
+        self._create_stock(self.product_storable, 1, delivery.location_id)
+        reception = self._receipt(quantity=2.0)
+        moves = delivery.move_ids | reception.move_ids
+        for picking in (delivery, reception):
+            picking.action_confirm()
+            picking.action_assign()
+        for move in moves:
+            move.write({"quantity": move.product_uom_qty, "picked": True})
+        moves._action_done()
+        delivery_entry = delivery.move_ids.account_move_id
+        reception_entry = reception.move_ids.account_move_id
+        self.assertTrue(delivery_entry and reception_entry)
+        self.assertNotEqual(delivery_entry, reception_entry)
+        self.assertFalse(delivery_entry.is_incoming_donation)
+        self.assertTrue(delivery_entry.is_donation)
+        self.assertTrue(reception_entry.is_incoming_donation)
+
     def test_03_without_received_donations_accounts_the_receipt_is_a_regular_one(self):
         """The company does not receive donations: the receipt is checked as
         any other receipt (no donor, any origin)."""
@@ -629,6 +723,8 @@ class TestReceivedDonationPicking(TestDonationCommon):
         self.assertEqual(picking._get_donation_receipt_config_errors(), [])
         self._validate(picking)
         self.assertEqual(picking.state, "done")
+        # Its entry is not marked as donation either.
+        self.assertFalse(picking.move_ids.account_move_id.filtered("is_donation"))
 
     def test_04_the_origin_must_be_an_inventory_location(self):
         picking = self._receipt(origin=self.warehouse_donation.lot_stock_id)
@@ -704,7 +800,7 @@ class TestReceivedDonationPicking(TestDonationCommon):
     def test_11b_the_certificate_of_goods_shows_the_value_in_the_other_currency(self):
         """The shared table shows the total in the currency of the company;
         the paragraph below shows the other one: the bolivar amount when the
-        company is in USD (Higea), the equivalent in USD when it is in
+        company is in USD, the equivalent in USD when it is in
         bolivars. The bolivar amount is never missing."""
         usd = self.env.ref("base.USD")
         vef = self.company.currency_id
@@ -831,11 +927,11 @@ class TestReceivedDonationPicking(TestDonationCommon):
     def test_14b_without_received_donations_accounts_the_certificate_is_not_offered(self):
         """The company that does not receive donations is inert: its
         receptions have no certificate, neither the button nor the method."""
-        picking = self._receipt()
-        self._validate(picking)
-        self.assertTrue(picking.has_donation_income_accounts)
-        self.assertIsInstance(picking.print_donation_certificate(), dict)
+        # The accounts cannot be removed once a reception was posted with them
+        # (its entry is a donation received): the company never had them.
         self.company.donation_income_account_ids = False
+        picking = self._receipt(partner=False, origin=self.env.ref("stock.stock_location_suppliers"))
+        self._validate(picking)
         self.assertFalse(picking.has_donation_income_accounts)
         with self.assertRaisesRegex(UserError, "no received donations accounts"):
             picking.print_donation_certificate()

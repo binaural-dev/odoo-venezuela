@@ -261,11 +261,6 @@ msgstr ""
 "compra."
 
 #. module: l10n_ve_donation
-#: model_terms:ir.ui.view,arch_db:l10n_ve_donation.l10n_ve_donation_inherit_l10n_ve_stock_account
-msgid "Account to be used for donation flow."
-msgstr "Cuenta a utilizar para el flujo de donación."
-
-#. module: l10n_ve_donation
 #. odoo-python
 #: code:addons/l10n_ve_donation/models/account_move.py:0
 msgid "All the journal items must have the donor as contact."
@@ -370,12 +365,6 @@ msgid "Display Name"
 msgstr "Mostrar nombre"
 
 #. module: l10n_ve_donation
-#: model:ir.model.fields,field_description:l10n_ve_donation.field_res_company__donation_account_id
-#: model:ir.model.fields,field_description:l10n_ve_donation.field_res_config_settings__donation_account_id
-msgid "Donation Account"
-msgstr "Cuenta de Donación"
-
-#. module: l10n_ve_donation
 #: model_terms:ir.ui.view,arch_db:l10n_ve_donation.donation_receipt_body
 msgid "Donation Amount"
 msgstr "Monto de la donación"
@@ -424,6 +413,7 @@ msgstr "El tipo de operación de donación debe ser de entrada o de salida"
 #. module: l10n_ve_donation
 #: model:ir.actions.act_window,name:l10n_ve_donation.action_stock_picking_donation
 #: model:ir.ui.menu,name:l10n_ve_donation.menu_stock_picking_donation
+#: model:res.groups.privilege,name:l10n_ve_donation.res_groups_privilege_donation
 msgid "Donations"
 msgstr "Donaciones"
 
@@ -495,13 +485,13 @@ msgstr ""
 #: model:ir.model.fields,help:l10n_ve_donation.field_res_config_settings__donation_income_account_ids
 msgid ""
 "Income accounts that identify the journal entries of the donations RECEIVED "
-"by the company, as opposed to the donations given (which use the Donation "
-"Account). Several accounts are allowed (e.g. events, collection boxes). "
+"by the company, as opposed to the donations given (which use the donation "
+"expense accounts). Several accounts are allowed (e.g. events, collection boxes). "
 "Without accounts, no entry is a received donation."
 msgstr ""
 "Cuentas de ingresos que identifican los asientos de las donaciones RECIBIDAS"
-" por la compañía, en contraposición a las otorgadas (que usan la Cuenta de "
-"donación). Se permiten varias cuentas (p. ej. eventos, alcancías). Sin "
+" por la compañía, en contraposición a las otorgadas (que usan las cuentas de "
+"gasto de donaciones). Se permiten varias cuentas (p. ej. eventos, alcancías). Sin "
 "cuentas, ningún asiento es una donación recibida."
 
 #. module: l10n_ve_donation
@@ -1121,3 +1111,81 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:l10n_ve_donation.donation_certificate_body
 msgid "transfers to my principal the ownership of"
 msgstr "transfiere a mi representada la propiedad de"
+
+#. module: l10n_ve_donation
+#: model:ir.model.fields,field_description:l10n_ve_donation.field_res_company__donation_account_id
+#: model:ir.model.fields,field_description:l10n_ve_donation.field_res_config_settings__donation_account_id
+msgid "In-Kind Donation Expense Account"
+msgstr "Cuenta de gasto de donaciones en especie"
+
+#. module: l10n_ve_donation
+#: model:ir.model.fields,help:l10n_ve_donation.field_res_company__donation_account_id
+msgid "Default expense account of the donations in kind: it is proposed as the valuation account of the Inventory Loss locations of the donation warehouse and it is the one of the credit note of a donation sale. When there are donation expense accounts, it must be one of them."
+msgstr "Cuenta de gasto por defecto de las donaciones en especie: se propone como cuenta de valoración de las ubicaciones de Pérdida de inventario del almacén de donación y es la de la nota de crédito de una venta de donación. Cuando hay cuentas de gasto de donaciones, debe ser una de ellas."
+
+#. module: l10n_ve_donation
+#: model:ir.model.fields,field_description:l10n_ve_donation.field_res_company__donation_expense_account_ids
+#: model:ir.model.fields,field_description:l10n_ve_donation.field_res_config_settings__donation_expense_account_ids
+msgid "Donation Expense Accounts"
+msgstr "Cuentas de gasto de donaciones"
+
+#. module: l10n_ve_donation
+#: model:ir.model.fields,help:l10n_ve_donation.field_res_company__donation_expense_account_ids
+msgid "Expense accounts that a donation given can use, in money and in kind (e.g. deductible and not deductible). A donation entry in money must have a line on one of them, and the destination location of a donation delivery must have one of them as valuation account. Without accounts there is no restriction."
+msgstr "Cuentas de gasto que puede usar una donación otorgada, en dinero y en especie (p. ej. deducibles y no deducibles). El asiento de una donación en dinero debe tener una línea en una de ellas, y la ubicación de destino de una entrega de donación debe tener una de ellas como cuenta de valoración. Sin cuentas no hay restricción."
+
+#. module: l10n_ve_donation
+#. odoo-python
+#: code:addons/l10n_ve_donation/models/res_company.py:0
+msgid "The In-Kind Donation Expense Account %(account)s must be one of the Donation Expense Accounts of %(company)s."
+msgstr "La Cuenta de gasto de donaciones en especie %(account)s debe ser una de las Cuentas de gasto de donaciones de %(company)s."
+
+#. module: l10n_ve_donation
+#. odoo-python
+#: code:addons/l10n_ve_donation/models/account_move.py:0
+msgid "A donation given in money must have a journal item on one of the donation expense accounts: %(accounts)s."
+msgstr "Una donación otorgada en dinero debe tener una línea en una de las cuentas de gasto de donaciones: %(accounts)s."
+
+#. module: l10n_ve_donation
+#. odoo-python
+#: code:addons/l10n_ve_donation/models/stock_picking.py:0
+msgid "The Stock Valuation Account %(account)s of the destination location %(location)s is not a donation expense account. Set one of them (%(accounts)s) in Inventory > Configuration > Locations."
+msgstr "La Cuenta de valoración de existencias %(account)s de la ubicación de destino %(location)s no es una cuenta de gasto de donaciones. Configure una de ellas (%(accounts)s) en Inventario > Configuración > Ubicaciones."
+
+#. module: l10n_ve_donation
+#. odoo-python
+#: code:addons/l10n_ve_donation/models/account_move.py:0
+msgid "This entry is the stock valuation of a donation reception and has no donation certificate. Print the Donation Certificate from the donation picking: %(pickings)s."
+msgstr "Este asiento es la valoración de inventario de una recepción de donación y no tiene Certificado de Donación. Imprima el Certificado de Donación desde el traslado de donación: %(pickings)s."
+
+#. module: l10n_ve_donation
+#. odoo-python
+#: code:addons/l10n_ve_donation/models/account_move.py:0
+msgid "Donation"
+msgstr "Donación"
+
+#. module: l10n_ve_donation
+#: model_terms:ir.ui.view,arch_db:l10n_ve_donation.l10n_ve_donation_inherit_l10n_ve_stock_account
+msgid "Default expense account of the donations in kind (inventory and donation sales). It must be one of the donation expense accounts."
+msgstr "Cuenta de gasto por defecto de las donaciones en especie (inventario y ventas de donación). Debe ser una de las cuentas de gasto de donaciones."
+
+#. module: l10n_ve_donation
+#: model_terms:ir.ui.view,arch_db:l10n_ve_donation.l10n_ve_donation_inherit_l10n_ve_stock_account
+msgid "Expense accounts that a donation given can use, in money and in kind. Without accounts there is no restriction."
+msgstr "Cuentas de gasto que puede usar una donación otorgada, en dinero y en especie. Sin cuentas no hay restricción."
+
+#. module: l10n_ve_donation
+#: model:ir.model.fields,field_description:l10n_ve_donation.field_account_move__donation_marked_from_statement
+msgid "Donation Marked From Statement"
+msgstr "Donación marcada por el extracto"
+
+#. module: l10n_ve_donation
+#: model:ir.model.fields,help:l10n_ve_donation.field_account_move__donation_marked_from_statement
+msgid "Technical field: the donation mark was set automatically because the entry of a bank statement line was reconciled against a received donations account. Only those marks are removed again when the entry stops being a donation received."
+msgstr "Campo técnico: la marca de donación se puso sola porque el asiento de una línea de extracto bancario se concilió contra una cuenta de donaciones recibidas. Solo esas marcas se quitan de nuevo cuando el asiento deja de ser una donación recibida."
+
+#. module: l10n_ve_donation
+#. odoo-python
+#: code:addons/l10n_ve_donation/models/account_move.py:0
+msgid "Only the Donation Manager can reverse or reset to draft a donation entry: %(entries)s."
+msgstr "Solo el Gestor de Donaciones puede revertir o restablecer a borrador un asiento de donación: %(entries)s."

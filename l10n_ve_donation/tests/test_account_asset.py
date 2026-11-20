@@ -16,6 +16,8 @@ class TestDonationAccountAsset(TransactionCase):
     `_get_disposal_moves` is mocked out: these tests isolate the donation
     override's own logic (context propagation, ref/name writes) instead of
     re-testing enterprise internals.
+
+    Covers: REQ-DON-035.
     """
 
     @classmethod

@@ -15,6 +15,8 @@ class TestDonationCreditNoteRegression(StockAccountTestCommon):
     invoice -- so it is exempted through `is_donation` (see
     `_l10n_ve_skip_refund_origin_validation()`). This is the regression
     Manuel Guerrero's review (16 ago 2026) flagged as missing.
+
+    Covers: REQ-DON-012, REQ-DON-013, REQ-DON-033.
     """
 
     @classmethod
@@ -175,6 +177,65 @@ class TestDonationCreditNoteRegression(StockAccountTestCommon):
         # the document: the receivable lines are compared with each other.
         self.assertEqual(receivable.balance, -invoice_receivable.balance)
         self.assertEqual(sum(credit_note.line_ids.mapped("balance")), 0.0)
+
+    def test_donation_credit_note_of_a_foreign_currency_invoice(self):
+        # REQ-DON-033
+        """The invoice of a donation in dollars is reversed by a credit note
+        in dollars: the note takes the currency of the invoice. The core takes
+        the currency of a new note from the pricelist of the customer (here in
+        bolivars), not from the invoice it reverses: the note credited 100 Bs
+        for a 100 USD invoice and left the invoice unpaid."""
+        pricelist_vef = self.env["product.pricelist"].create(
+            {"name": "Bolivars pricelist", "currency_id": self.currency_vef.id}
+        )
+        self.company.partner_id.property_product_pricelist = pricelist_vef
+        invoice = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "is_donation": True,
+            "partner_id": self.company.partner_id.id,
+            "journal_id": self.journal.id,
+            "currency_id": self.currency_usd.id,
+            "invoice_date": fields.Date.today(),
+            "invoice_date_display": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.regular_product.id,
+                    "quantity": 1,
+                    "price_unit": 100.0,
+                })
+            ],
+        })
+        self._post_donation_invoice(invoice)
+        credit_note = self.env["account.move"].search([
+            ("reversed_entry_id", "=", invoice.id),
+            ("move_type", "=", "out_refund"),
+        ], limit=1)
+
+        # Control: a note created without telling its currency takes the one
+        # of the pricelist, which is what the donation reversal must prevent.
+        control = self.env["account.move"].with_context(check_move_validity=False).create({
+            "move_type": "out_refund",
+            "journal_id": invoice.journal_id.id,
+            "partner_id": invoice.partner_id.id,
+            "reversed_entry_id": invoice.id,
+            "is_donation": True,
+            "invoice_date": invoice.invoice_date,
+            "invoice_line_ids": invoice.product_line_donation(),
+        })
+        self.assertEqual(control.currency_id, self.currency_vef)
+
+        self.assertEqual(credit_note.currency_id, self.currency_usd)
+        # The amounts are the ones of the invoice (with its taxes), in dollars.
+        self.assertEqual(invoice.amount_untaxed, 100.0)
+        self.assertEqual(credit_note.amount_total, invoice.amount_total)
+        self.assertEqual(credit_note.state, "posted")
+        # The balances (in bolivars) of both documents offset each other and
+        # the invoice is left with nothing to collect.
+        self.assertAlmostEqual(
+            credit_note.amount_total_signed, -invoice.amount_total_signed, places=2
+        )
+        self.assertEqual(invoice.amount_residual, 0.0)
+        self.assertEqual(invoice.payment_state, "reversed")
 
     def test_donation_credit_note_posted_later_without_context_key(self):
         """A donation credit note left in draft (e.g. created by

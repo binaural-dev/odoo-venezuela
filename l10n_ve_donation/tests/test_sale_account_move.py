@@ -6,6 +6,7 @@ from .common import TestDonationCommon
 
 @tagged('l10n_ve_donation', 'sale_account', '-at_install', 'post_install')
 class TestSaleAccountMove(TestDonationCommon):
+    """Covers: REQ-DON-011, REQ-DON-012, REQ-DON-013, REQ-DON-014, REQ-DON-015, REQ-DON-016, REQ-DON-026, REQ-DON-027."""
 
     def test_01_sale_order_donation_onchange(self):
         """Marking a SO as donation sets the document type and the donation
@@ -737,6 +738,21 @@ class TestSaleAccountMove(TestDonationCommon):
         self.assertIn("Entry 1", html)
         self.assertNotIn("goods", html)
 
+    def test_22b_concept_without_text_is_the_donation(self):
+        # REQ-DON-032
+        """The concept comes from the label of the debit line, and the labels
+        equal to the reference are left out (the reference is the
+        observation): without any text the concept was an empty line."""
+        vals = self._entry_vals(ref="Same text")
+        vals["line_ids"][0][2]["name"] = "Same text"
+        move = self.env["account.move"].create(vals)
+        move.with_context(move_action_post_alert=True).action_post()
+        self.assertEqual(move._get_donation_concept_lines(), ["Donation"])
+        self.assertIn("Donation</p>", self._render_receipt(move))
+        # A line with a label of its own keeps it.
+        move2 = self.env["account.move"].create(self._entry_vals(ref="Other reference"))
+        self.assertEqual(move2._get_donation_concept_lines(), ["Entry 1"])
+
     def test_23_receipt_without_alternate_amount_omits_the_equivalent(self):
         move = self.env["account.move"].create(self._entry_vals())
         move.foreign_currency_id = self.company.currency_id
@@ -765,7 +781,7 @@ class TestSaleAccountMove(TestDonationCommon):
         self.assertEqual(amounts["rate"], 450.0)
 
     def test_23c_amounts_with_the_bolivar_as_alternate_currency(self):
-        """Company in USD, alternate currency the bolivar (Higea): the
+        """Company in USD, alternate currency the bolivar: the
         bolivar amount still comes first and the rate is the company rate
         (`foreign_inverse_rate`: bolivars per USD), not the inverse one."""
         vef = self.company.currency_id
