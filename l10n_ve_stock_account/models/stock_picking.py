@@ -913,7 +913,11 @@ class StockPicking(models.Model):
                 ]
             )
 
-    @api.depends("picking_type_id", "partner_id", "sale_id")
+    # Sin "sale_id": depende de move_ids, y editar una línea desde el formulario
+    # recalcularía la ubicación de origen de sus movimientos (p. ej. la de
+    # subcontratación de una recepción). La venta ya se lee al elegir el tipo de
+    # operación, y la ubicación solo se llena si está vacía.
+    @api.depends("picking_type_id", "partner_id")
     def _compute_location_id(self):
         for picking in self:
             location_dest_id = None
@@ -924,26 +928,31 @@ class StockPicking(models.Model):
 
             if not picking.location_id:
                 if picking.sale_id and picking.sale_id.is_consignation:
+                    # is_consignation_warehouse de stock.location no se guarda y no
+                    # se puede buscar: se filtra por el almacén de la ubicación.
                     location_id = (
                         self.env["stock.location"]
                         .search(
                             [
                                 ("partner_id", "=", picking.sale_id.partner_id.id),
                                 ("usage", "=", "internal"),
-                                ("is_consignation_warehouse", "=", True),
+                                ("warehouse_id.is_consignation_warehouse", "=", True),
                             ],
                             limit=1,
                         )
                         .id
                     )
-                elif picking.picking_type_id.default_location_src_id:
-                    location_id = picking.picking_type_id.default_location_src_id.id
-                elif picking.partner_id:
-                    location_id = picking.partner_id.property_stock_supplier.id
-                else:
-                    _customerloc, location_id = self.env[
-                        "stock.warehouse"
-                    ]._get_partner_locations()
+                # Sin ubicación del cliente en el almacén de consignación, la del
+                # tipo de operación, como cualquier traslado.
+                if not location_id:
+                    if picking.picking_type_id.default_location_src_id:
+                        location_id = picking.picking_type_id.default_location_src_id.id
+                    elif picking.partner_id:
+                        location_id = picking.partner_id.property_stock_supplier.id
+                    else:
+                        _customerloc, location_id = self.env[
+                            "stock.warehouse"
+                        ]._get_partner_locations()
                 picking.location_id = location_id
 
             if not picking.location_dest_id:
@@ -953,7 +962,6 @@ class StockPicking(models.Model):
                     location_dest_id, _supplierloc = self.env[
                         "stock.warehouse"
                     ]._get_partner_locations()
-                picking.location_id = location_id
                 picking.location_dest_id = location_dest_id
 
     @api.depends(
