@@ -86,9 +86,12 @@ certificado. Los tests de cada corrección fallan sin ella.
 - El USD del documento como Bs ÷ tasa del día se fija con un test que simula un valor histórico en
   las líneas del asiento; la prueba con asientos de USD histórico reales (T04) la hace Producto en
   el staging.
-- H1 y H10 no se recorrieron en el navegador: se comprobaron con tests y leyendo el widget del
-  formulario de usuario de Odoo 19 (un grupo sin privilegio solo se dibuja en modo desarrollador, por
-  eso el Gestor tiene privilegio propio).
+- H1 y H10 se validaron en el navegador el 20/11/2026 sobre una base local descartable (con el
+  módulo instalado de cero): el Gestor de Donaciones aparece como selector propio, sin modo
+  desarrollador, y se conserva junto a Contabilidad Administrador al guardar y al cambiar otro nivel
+  de la ficha; «Revertir asiento» no aparece en un borrador, aparece en un asiento publicado y en uno
+  de donación solo lo ve el Gestor. Un grupo sin privilegio solo se dibuja en modo desarrollador, por
+  eso el Gestor tiene privilegio propio.
 
 ## Próximos pasos
 
