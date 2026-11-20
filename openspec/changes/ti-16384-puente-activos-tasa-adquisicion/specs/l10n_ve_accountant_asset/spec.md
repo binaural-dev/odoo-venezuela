@@ -1,33 +1,53 @@
 ## ADDED Requirements
 
-### Requirement: Tasa de la fecha de adquisición en las cuotas de depreciación
+### Requirement: Tasa efectiva en las cuotas de depreciación
 
-Cada cuota de depreciación (`account.move` con `asset_move_type == 'depreciation'`) de un activo de una compañía con moneda alterna DEBE (MUST) crearse con `manually_set_rate=True` y con `foreign_rate` y `foreign_inverse_rate` de la tasa de la fecha de adquisición del activo (`acquisition_date`), calculada con `compute_rate(use_last_rate=True)` en la compañía del activo (`account.asset._get_acquisition_rate_values`). La tasa de la cuota NO DEBE (MUST NOT) recalcularse al publicarla (manual o por el cron nativo), ni tomar la tasa de la fecha de la cuota ni la de la factura de compra del activo. Si la compañía no tiene moneda alterna no se asigna ninguna tasa. Las cuotas nacen con su fecha real y, si son futuras, con el `auto_post='at_date'` nativo; el addon no define un modo de publicación propio. Aplica solo a cuotas de tipo `depreciation`; `negative_revaluation`, `disposal` y `modify` con moneda distinta quedan fuera de alcance.
+Cada cuota de depreciación (`account.move` con `asset_move_type == 'depreciation'`) de un activo de una compañía con moneda alterna DEBE (MUST) crearse con `manually_set_rate=True` y con `foreign_rate` y `foreign_inverse_rate` de la tasa efectiva del activo (`account.asset._get_acquisition_rate_values`), que se resuelve en este orden: (1) la tasa propia del activo, si el campo `foreign_rate` existe en `account.asset` (lo define `binaural_account_asset`, que no es dependencia) y es mayor que 0, con su inversa (si la inversa falta se deriva); (2) si no hay tasa propia, la última tasa de la tabla en la fecha de adquisición (`acquisition_date`), calculada con `compute_rate(use_last_rate=True)` en la compañía del activo: si ese día no hay tasa se usa la última anterior. Si no hay tasa propia y falta `acquisition_date` DEBE (MUST) lanzarse un `UserError` (guarda defensiva: la base no permite persistir un activo sin fecha porque `prorata_date` es NOT NULL). Si no hay ninguna tasa en esa fecha ni antes DEBE (MUST) lanzarse un `UserError` que indica el activo, la fecha y la moneda, y no se crea ninguna cuota. La tasa de la tabla manda sobre la de la factura de compra solo cuando el activo no tiene tasa propia. La tasa de la cuota NO DEBE (MUST NOT) recalcularse al publicarla (manual o por el cron nativo) ni tomar la tasa de la fecha de la cuota. Si la compañía no tiene moneda alterna no se asigna ninguna tasa. Las cuotas nacen con su fecha real y, si son futuras, con el `auto_post='at_date'` nativo; el addon no define un modo de publicación propio. Aplica solo a cuotas de tipo `depreciation`; `negative_revaluation`, `disposal` y `modify` con moneda distinta quedan fuera de alcance y siguen la regla de asiento manual de `l10n_ve_accountant` (salvo con `binaural_account_asset`, que escribe la tasa del activo en todos los tipos).
 
-#### Scenario: Cuota con la tasa de adquisición
+#### Scenario: Cuota con la tasa de la tabla en la fecha de adquisición
 
-- **WHEN** se calcula el plan de depreciación de un activo cuya fecha de adquisición tiene tasa propia distinta de la tasa de la fecha de cada cuota
+- **WHEN** se calcula el plan de depreciación de un activo sin tasa propia cuya fecha de adquisición tiene tasa distinta de la de la fecha de cada cuota
 - **THEN** todas las cuotas de depreciación quedan con `manually_set_rate=True` y la tasa de la fecha de adquisición
+
+#### Scenario: Activo con tasa propia
+
+- **WHEN** el activo tiene tasa propia (`foreign_rate` > 0, p. ej. la de su factura de compra con `binaural_account_asset`)
+- **THEN** las cuotas usan esa tasa y no se consulta la tabla, aunque la fecha de adquisición no tenga ninguna tasa
+
+#### Scenario: Tasa propia sin inversa
+
+- **WHEN** el activo tiene `foreign_rate` > 0 y su `foreign_inverse_rate` vacía
+- **THEN** la inversa de las cuotas se deriva de `foreign_rate`
+
+#### Scenario: Tasa propia en cero
+
+- **WHEN** el activo tiene `foreign_rate` en 0
+- **THEN** se trata como sin tasa propia y se usa la tasa de la tabla en la fecha de adquisición
 
 #### Scenario: Publicación sin recalcular la tasa
 
 - **WHEN** el cron nativo publica una cuota futura (`auto_post='at_date'`) en su fecha
-- **THEN** la cuota se publica con la tasa de adquisición y su importe alterno no cambia; el cron publica solo la cuota de su fecha
+- **THEN** la cuota se publica con su tasa efectiva y su importe alterno no cambia; el cron publica solo la cuota de su fecha
 
-#### Scenario: Activo con factura de compra
+#### Scenario: Activo con factura de compra sin tasa propia
 
-- **WHEN** el activo proviene de una factura de compra con una tasa distinta a la de adquisición
-- **THEN** las cuotas usan la tasa de adquisición, no la de la factura
+- **WHEN** el activo proviene de una factura de compra con una tasa distinta y no tiene tasa propia
+- **THEN** las cuotas usan la tasa de la tabla en la fecha de adquisición, no la de la factura
 
 #### Scenario: Adquisición en fin de semana
 
-- **WHEN** la fecha de adquisición cae en un día sin tasa cargada y existe una tasa anterior
+- **WHEN** la fecha de adquisición cae en un día sin tasa cargada, el activo no tiene tasa propia y existe una tasa anterior
 - **THEN** las cuotas usan la última tasa anterior a la fecha de adquisición
 
-#### Scenario: Sin ninguna tasa previa a la adquisición
+#### Scenario: Sin ninguna tasa en la fecha de adquisición ni antes
 
-- **WHEN** la fecha de adquisición es anterior a todas las tasas cargadas de la moneda alterna
-- **THEN** se lanza el `UserError` "There is no rate assigned for <moneda> on <fecha>" y no se crea ninguna cuota
+- **WHEN** el activo no tiene tasa propia y la fecha de adquisición es anterior a todas las tasas cargadas de la moneda alterna
+- **THEN** se lanza un `UserError` con el activo, la fecha y la moneda, y no se crea ninguna cuota
+
+#### Scenario: Sin fecha de adquisición
+
+- **WHEN** se resuelve la tasa de un activo sin tasa propia y sin `acquisition_date` (solo alcanzable con registros virtuales)
+- **THEN** se lanza un `UserError` que indica que falta la fecha de adquisición
 
 #### Scenario: Cuotas futuras con su fecha real
 
@@ -38,10 +58,10 @@ Cada cuota de depreciación (`account.move` con `asset_move_type == 'depreciatio
 
 El importe en moneda alterna de las líneas de una cuota de depreciación con tasa manual DEBE (MUST) ser `(debit - credit) / foreign_rate` de la cuota, redondeado con la moneda alterna de la compañía (`account.move.line._get_non_invoice_foreign_value`). NO DEBE (MUST NOT) usarse `foreign_inverse_rate` (truncado a 6 decimales en el activo) ni inferirse la orientación de la tasa: `foreign_rate` son unidades de la moneda de la compañía por unidad de la alterna, sea esta USD o VEF. Para el reverso de una cuota, la tasa se toma de la cuota original siguiendo la cadena de `reversed_entry_id`, de modo que el reverso devuelve exactamente el importe alterno original. Los asientos que no son cuotas de activo, aunque tengan tasa manual, conservan el cálculo estándar.
 
-#### Scenario: USD con la tasa de adquisición
+#### Scenario: USD con la tasa efectiva
 
 - **WHEN** se calcula el importe alterno de una línea de una cuota de depreciación
-- **THEN** es el balance de la línea dividido entre la tasa de adquisición de la cuota, incluso para importes grandes
+- **THEN** es el balance de la línea dividido entre la tasa efectiva de la cuota, incluso para importes grandes
 
 #### Scenario: Moneda alterna VEF en compañía USD
 
@@ -60,12 +80,12 @@ El importe en moneda alterna de las líneas de una cuota de depreciación con ta
 
 ### Requirement: Protección de las cuotas publicadas al recalcular el plan
 
-Al ejecutar `compute_depreciation_board`, las cuotas ya publicadas (`state == 'posted'`) DEBEN (MUST) conservar `manually_set_rate`, `foreign_rate` y `foreign_inverse_rate` que tenían, aunque `binaural_account_asset` (no es dependencia del addon) escriba la tasa del activo en todas las cuotas. Si el campo `foreign_rate` existe en `account.asset`, el addon DEBE (MUST) dejar en el activo la tasa de adquisición antes del `super`, para que esa escritura copie el mismo valor sea cual sea el orden del MRO. Las cuotas nuevas (borradores y las que el mismo plan acaba de publicar) que difieran de la tasa de adquisición DEBEN (MUST) corregirse. El addon NO DEBE (MUST NOT) escribir en las cuotas ni en el activo cuando la tasa ya es la correcta (a la precisión de cada campo).
+Al ejecutar `compute_depreciation_board`, las cuotas ya publicadas (`state == 'posted'`) DEBEN (MUST) conservar `manually_set_rate`, `foreign_rate` y `foreign_inverse_rate` que tenían, aunque `binaural_account_asset` (no es dependencia del addon) escriba la tasa del activo en todas las cuotas. Si el campo `foreign_rate` existe en `account.asset` y el activo NO tiene tasa propia, el addon DEBE (MUST) dejar en el activo la tasa de la tabla antes del `super`, para que esa escritura copie el mismo valor sea cual sea el orden del MRO; si el activo ya tiene tasa propia NO DEBE (MUST NOT) escribir nada en él. Las cuotas nuevas (borradores y las que el mismo plan acaba de publicar) que difieran de la tasa efectiva DEBEN (MUST) corregirse. El addon NO DEBE (MUST NOT) escribir en las cuotas ni en el activo cuando la tasa ya es la correcta (a la precisión de cada campo).
 
 #### Scenario: Recalcular con cuotas publicadas
 
 - **WHEN** se recalcula el plan de un activo que ya tiene cuotas publicadas
-- **THEN** las publicadas conservan su tasa y su importe alterno, y las nuevas llevan la tasa de adquisición
+- **THEN** las publicadas conservan su tasa y su importe alterno, y las nuevas llevan la tasa efectiva
 
 #### Scenario: Modificar el activo con cuotas publicadas
 
@@ -75,11 +95,16 @@ Al ejecutar `compute_depreciation_board`, las cuotas ya publicadas (`state == 'p
 #### Scenario: binaural_account_asset instalado
 
 - **WHEN** `binaural_account_asset` está instalado, ya sea antes o después de este addon en la cadena de herencia
-- **THEN** las cuotas quedan con la tasa de adquisición y las publicadas no cambian
+- **THEN** las cuotas quedan con la tasa efectiva y las publicadas no cambian
+
+#### Scenario: Activo con tasa propia al recalcular
+
+- **WHEN** se recalcula el plan de un activo con tasa propia que ya tiene cuotas publicadas
+- **THEN** no se escribe la tasa en el activo ni en las cuotas publicadas, y los borradores conservan la tasa propia
 
 #### Scenario: Tasa ya correcta
 
-- **WHEN** se recalcula el plan y las cuotas ya tienen la tasa de adquisición
+- **WHEN** se recalcula el plan y las cuotas ya tienen la tasa efectiva
 - **THEN** no se escribe ninguna tasa ni se generan mensajes de tasa actualizada
 
 ### Requirement: Migración del modo de publicación personalizado
