@@ -292,32 +292,34 @@ class AccountRetentionLine(models.Model):
 
     @api.depends("invoice_amount", "foreign_invoice_amount")
     def _compute_amounts(self):
-        # Both fields must be assigned here on every record, or Odoo resets the
-        # untouched one to 0 on recompute. _origin preserves the persisted value.
+        """Keep the taxable income in both currencies at the rate of the line.
+
+        The view only shows the amount in VEF: the foreign one when the company currency is
+        not VEF, the company one otherwise. The other amount follows the edited one (ticket
+        15769: editing the Bs base of an ISLR supplier line left the USD base, and so the USD
+        retention and its payment, computed on the whole invoice subtotal).
+
+        Both fields are assigned on every record from their current value (the one just typed
+        in the form), or Odoo resets the untouched one to 0 on recompute. The other amount is
+        only changed when it no longer matches at the rate, so it keeps its exact value from
+        the invoice.
+        """
         base_currency_is_vef = self.env.company.currency_id == self.env.ref("base.VEF")
         for line in self:
-            if not line._origin:
-                # Brand-new (unsaved) line: there is no persisted value to
-                # restore, so keep whatever the user/onchange just set instead
-                # of collapsing it to 0. Same guard already applied to
-                # retention_amount/foreign_retention_amount in _compute_retention_amount.
-                continue
-            origin_invoice_amount = line._origin.invoice_amount
-            origin_foreign_invoice_amount = line._origin.foreign_invoice_amount
-            if not base_currency_is_vef:
-                if origin_foreign_invoice_amount:
-                    line.invoice_amount = origin_foreign_invoice_amount * (
-                        1 / line.foreign_currency_rate
-                    )
-                else:
-                    line.invoice_amount = origin_invoice_amount
-                line.foreign_invoice_amount = origin_foreign_invoice_amount
-            else:
-                if origin_invoice_amount > 0:
-                    line.foreign_invoice_amount = origin_invoice_amount * line.foreign_currency_rate
-                else:
-                    line.foreign_invoice_amount = origin_foreign_invoice_amount
-                line.invoice_amount = origin_invoice_amount
+            invoice_amount = line.invoice_amount
+            foreign_invoice_amount = line.foreign_invoice_amount
+            rate = line.foreign_currency_rate
+            if rate and not base_currency_is_vef and foreign_invoice_amount:
+                converted = foreign_invoice_amount / rate
+                if line.company_id.currency_id.compare_amounts(invoice_amount, converted):
+                    invoice_amount = converted
+            elif rate and base_currency_is_vef and invoice_amount > 0:
+                converted = invoice_amount * rate
+                foreign_currency = line.foreign_currency_id or line.company_id.currency_foreign_id
+                if foreign_currency.compare_amounts(foreign_invoice_amount, converted):
+                    foreign_invoice_amount = converted
+            line.invoice_amount = invoice_amount
+            line.foreign_invoice_amount = foreign_invoice_amount
 
     @api.onchange(
         "invoice_amount",

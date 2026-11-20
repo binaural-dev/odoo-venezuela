@@ -108,7 +108,7 @@ class AccountPayment(models.Model):
         for payment in self:
             payment.amount = sum(payment.retention_line_ids.mapped("retention_amount"))
 
-    @api.depends("retention_line_ids")
+    @api.depends("retention_line_ids", "retention_line_ids.foreign_retention_amount")
     def _compute_retention_foreign_amount(self):
         for payment in self:
             payment.retention_foreign_amount = abs(

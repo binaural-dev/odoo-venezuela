@@ -716,6 +716,12 @@ class AccountRetention(models.Model):
             if not retention.payment_ids:
                 payments = retention.create_payment_from_retention_form()
                 retention.payment_ids = payments.ids
+            else:
+                # Posting again from draft reuses the payments: they take the amounts of the
+                # lines as they are now, not the ones they were created with (ticket 15769).
+                retention.payment_ids.filtered(
+                    lambda p: p.state == "draft"
+                ).compute_retention_amount_from_retention_lines()
 
             if retention.type in ["in_invoice", "in_refund", "in_debit"]:
                 retention._set_sequence()
