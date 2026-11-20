@@ -5,6 +5,7 @@ import { patch } from "@web/core/utils/patch";
 import { useService } from "@web/core/utils/hooks";
 import { ErrorPopup } from "@point_of_sale/app/errors/popups/error_popup";
 import { ConfirmPopup } from "@point_of_sale/app/utils/confirm_popup/confirm_popup";
+import { NumberPopup } from "@point_of_sale/app/utils/input_popups/number_popup";
 import { _t } from "@web/core/l10n/translation";
 
 patch(ClosePosPopup.prototype, {
@@ -54,13 +55,92 @@ patch(ClosePosPopup.prototype, {
   },
 
   /**
-   * Imprime el Reporte Z y sincroniza el contador con Odoo.
-   * No cierra la sesión — solo se encarga de la parte fiscal.
-   * @returns {Promise<boolean>} true si el reporte se imprimió y sincronizó correctamente
+   * Lee el S1 con reintentos. Justo después del Z la máquina puede seguir
+   * ocupada terminando la impresión y no responder al primer S1.
+   * Debe llamarse con el puerto ya abierto (dentro de withConnection).
+   */
+  async _readS1AfterZ(fiscalPrinter) {
+    const delays = [2000, 3000, 5000, 8000];
+    let s1Result = null;
+    for (const delayMs of delays) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+      s1Result = await fiscalPrinter._readS1Data();
+      if (this._isValidS1(s1Result)) {
+        return s1Result;
+      }
+    }
+    return s1Result;
+  },
+
+  _isValidS1(s1Result) {
+    return Boolean(
+      s1Result?.success &&
+        s1Result.data?.registeredMachineNumber &&
+        Number.isInteger(s1Result.data?.dailyClosureCounter)
+    );
+  },
+
+  async _getMfCloseState() {
+    return await this.orm.call("pos.session", "get_mf_close_state", [[this.pos.pos_session.id]]);
+  },
+
+  /**
+   * Cuando el S1 no respondió tras un Z ya impreso, pide al cajero el número
+   * del Z que salió en el papel (sugerido desde las órdenes de la sesión).
+   * Nunca se vuelve a imprimir el Z: saldría en cero.
+   * @returns {Promise<{reportZ: number, serial: string}|null>}
+   */
+  async _askManualReportZ(closeState) {
+    const { confirmed, payload } = await this.popup.add(NumberPopup, {
+      title: _t("No se pudo leer el estado S1"),
+      body: _t(
+        "El Reporte Z ya se imprimio. Confirma el numero de Z que aparece en el papel para cerrar la sesion sin volver a imprimirlo."
+      ),
+      startingValue: closeState.suggested_report_z ? String(closeState.suggested_report_z) : "",
+      isInputSelected: true,
+    });
+    if (!confirmed) {
+      return null;
+    }
+    const reportZ = parseInt(String(payload || "").replace(/[^0-9]/g, ""), 10);
+    if (!Number.isInteger(reportZ) || reportZ <= 0) {
+      await this.popup.add(ErrorPopup, {
+        title: _t("Numero de Reporte Z invalido"),
+        body: _t("Ingresa el numero de Z que aparece en el papel."),
+      });
+      return null;
+    }
+    return { reportZ, serial: closeState.suggested_serial || "" };
+  },
+
+  async _syncReportZ(reportZ, serial) {
+    const value = {
+      valid: true,
+      data: {
+        _registeredMachineNumber: serial,
+        _dailyClosureCounter: reportZ,
+      },
+    };
+    if (serial) {
+      await this.orm.call("account.move", "report_z", [[], serial, value]);
+    }
+    await this.orm.call("pos.session", "set_report_z", [[this.pos.pos_session.id], value]);
+  },
+
+  /**
+   * Imprime el Reporte Z (si aún no se imprimió en esta sesión) y registra
+   * su número y el serial en Odoo. No cierra la sesión.
+   * @returns {Promise<boolean>} true si la sesión quedó con su Reporte Z registrado
    */
   async _printFiscalReportZ() {
+    const closeState = await this._getMfCloseState();
+    if (closeState.report_z) {
+      // El Z ya quedó registrado (ej. un cierre anterior falló después).
+      return true;
+    }
+
     const fiscalPrinter = this.getFiscalPrinter();
-    if (!fiscalPrinter) {
+    if (!fiscalPrinter && !closeState.mf_z_printed) {
       await this.popup.add(ErrorPopup, {
         title: _t("Maquina Fiscal no configurada"),
         body: _t("No hay una maquina fiscal configurada para esta caja."),
@@ -68,63 +148,68 @@ patch(ClosePosPopup.prototype, {
       return false;
     }
 
-    const { confirmed } = await this.popup.add(ConfirmPopup, {
-      title: _t("Confirmar Reporte Z"),
-      body: _t("El Reporte Z cerrara el dia fiscal actual. Esta accion es irreversible. Deseas continuar?"),
-    });
-    if (!confirmed) {
-      return false;
+    if (!closeState.mf_z_printed) {
+      const { confirmed } = await this.popup.add(ConfirmPopup, {
+        title: _t("Confirmar Reporte Z"),
+        body: _t("El Reporte Z cerrara el dia fiscal actual. Esta accion es irreversible. Deseas continuar?"),
+      });
+      if (!confirmed) {
+        return false;
+      }
     }
 
     this.state.isPrintingReport = true;
     try {
-      // Una sola apertura de puerto cubre imprimir el Z y leer S1 justo
-      // después para confirmar el cierre — son dos pasos de una misma
-      // operación fiscal, no dos operaciones independientes.
-      const { zResult, s1Result } = await fiscalPrinter.withConnection(async () => {
-        const zResult = await fiscalPrinter.printReportZ();
-        if (!zResult.success) {
-          return { zResult, s1Result: null };
+      let s1Result = null;
+      if (fiscalPrinter) {
+        try {
+          // Una sola apertura de puerto cubre imprimir el Z y leer S1.
+          s1Result = await fiscalPrinter.withConnection(async () => {
+            if (!closeState.mf_z_printed) {
+              const zResult = await fiscalPrinter.printReportZ();
+              if (!zResult.success) {
+                throw new Error(zResult.error || _t("Error desconocido"));
+              }
+              // Se marca en el servidor antes del S1: si algo falla de aquí
+              // en adelante, un reintento no vuelve a emitir el Z.
+              closeState.mf_z_printed = true;
+              await this.orm.call("pos.session", "mark_mf_z_printed", [[this.pos.pos_session.id]]);
+            }
+            return await this._readS1AfterZ(fiscalPrinter);
+          });
+        } catch (error) {
+          if (!closeState.mf_z_printed) {
+            await this.popup.add(ErrorPopup, {
+              title: _t("Error al imprimir Reporte Z"),
+              body: error.message || _t("Error interno"),
+            });
+            return false;
+          }
+          // Z ya impreso: el fallo fue al reconectar / leer S1 → carga manual.
+          s1Result = null;
         }
-        const s1Result = await fiscalPrinter._readS1Data();
-        return { zResult, s1Result };
-      });
-
-      if (!zResult.success) {
-        await this.popup.add(ErrorPopup, {
-          title: _t("Error al imprimir Reporte Z"),
-          body: _t(zResult.error || "Error desconocido"),
-        });
-        return false;
       }
 
-      const dailyClosureCounter = s1Result.data?.dailyClosureCounter;
-      if (!s1Result.success || !s1Result.data?.registeredMachineNumber || !Number.isInteger(dailyClosureCounter)) {
-        await this.popup.add(ErrorPopup, {
-          title: _t("Reporte Z impreso con advertencia"),
-          body: _t(
-            "El Reporte Z se imprimio, pero no se pudo leer el estado S1 para sincronizar Odoo. Verifica el libro de ventas manualmente."
-          ),
-        });
-        return false;
+      let reportZ;
+      let serial;
+      if (this._isValidS1(s1Result)) {
+        reportZ = s1Result.data.dailyClosureCounter;
+        serial = s1Result.data.registeredMachineNumber;
+      } else {
+        const manual = await this._askManualReportZ(closeState);
+        if (!manual) {
+          return false;
+        }
+        reportZ = manual.reportZ;
+        serial = manual.serial;
       }
 
-      const value = {
-        valid: true,
-        data: {
-          _registeredMachineNumber: s1Result.data.registeredMachineNumber,
-          _dailyClosureCounter: dailyClosureCounter,
-        },
-      };
-
-      await this.orm.call("account.move", "report_z", [[], this.pos.config.serial_machine, value]);
-      await this.orm.call("pos.session", "set_report_z", [[this.pos.pos_session.id], value]);
-
+      await this._syncReportZ(reportZ, serial);
       return true;
     } catch (error) {
       await this.popup.add(ErrorPopup, {
-        title: _t("Error al imprimir Reporte Z"),
-        body: _t(error.message || "Error interno"),
+        title: _t("Error al registrar el Reporte Z"),
+        body: error.message || _t("Error interno"),
       });
       return false;
     } finally {
