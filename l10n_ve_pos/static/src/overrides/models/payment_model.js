@@ -248,18 +248,23 @@ patch(PosPayment.prototype, {
                 && absRequested + (Number(fc?.rounding) || 0.01) / 2 >= absDue;
 
         if (coversDue) {
-            // Payment covers the local due exactly, plus any overpay.
-            // isPositive() discards float-noise "overpay" below the
-            // currency precision instead of converting it. The overpay is a
-            // magnitude: it takes the sign of the due (negative on a refund).
+            // Typed exactly the due shown: the local amount is the local due,
+            // with no round trip. Typed more: the whole tender is converted
+            // at the rate of its currency, so the line is worth what was
+            // handed over and the change comes from it. Converting only the
+            // excess over the ROUNDED due shifted the line by up to half a
+            // step of the payment currency (task 87709). isPositive()
+            // discards float noise below the currency precision. Amounts are
+            // magnitudes that take the sign of the due (negative on a refund).
             const overpaymentForeign = absRequested - absDue;
             const hasOverpay = hasComp
                 ? fc.isPositive(overpaymentForeign)
                 : overpaymentForeign > 0;
-            const overpaymentLocal = hasOverpay
-                ? sign * this._paymentCurrencyToLocal(overpaymentForeign)
-                : 0;
-            this.amount = localDueBefore + overpaymentLocal;
+            const absLocalDue = localDueBefore < 0 ? -localDueBefore : localDueBefore;
+            const absTenderLocal = hasOverpay
+                ? this._paymentCurrencyToLocal(absRequested)
+                : absLocalDue;
+            this.amount = absTenderLocal > absLocalDue ? sign * absTenderLocal : localDueBefore;
             this._stampForeignAmount(signedRequested);
             return;
         }

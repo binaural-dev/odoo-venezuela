@@ -22,6 +22,9 @@
         "point_of_sale._assets_pos": [
             "l10n_ve_pos_igtf/static/src/**/*",
         ],
+        "web.assets_unit_tests": [
+            "l10n_ve_pos_igtf/static/tests/unit/**/*",
+        ],
     },
     "application": True,
     "binaural": True,

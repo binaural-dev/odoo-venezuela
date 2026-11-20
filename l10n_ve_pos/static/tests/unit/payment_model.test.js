@@ -25,11 +25,19 @@ describe("l10n_ve_pos set_foreign_amount", () => {
         expect(payment.foreign_amount).toBe(FOREIGN_DUE);
     });
 
-    test("sobrepago real: deuda exacta más excedente convertido", () => {
+    test("sobrepago real: lo entregado se convierte completo (tarea 87709)", () => {
         const order = makeOrderStub({ totalDue: TOTAL });
         const payment = callSetForeignAmount(order, 110);
-        // Excedente 110 − 99,26 = $10,74 → 392,01 Bs.
-        expect(payment.amount).toBe(TOTAL + 392.01);
+        // 110 × 36,50 = 4.015,00. Antes: deuda exacta más el excedente sobre la
+        // deuda redondeada (110 − 99,26 = $10,74 → 392,01 Bs) = 4.014,87.
+        expect(payment.amount).toBe(4015);
+    });
+
+    test("sobrepago de pocos céntimos: vale lo entregado a la tasa", () => {
+        const order = makeOrderStub({ totalDue: TOTAL });
+        const payment = callSetForeignAmount(order, 99.3);
+        expect(payment.amount).toBe(3624.45);
+        expect(payment.foreign_amount).toBe(99.3);
     });
 
     test("pago parcial usa conversión estricta", () => {
