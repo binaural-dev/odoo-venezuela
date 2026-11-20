@@ -9,34 +9,47 @@ class SaleOrder(models.Model):
     @api.onchange("is_donation")
     def _onchange_is_donation(self):
         if self.is_donation:
-            self.partner_id = self.company_id.partner_id
             self.document = "invoice"
-
-    @api.onchange("partner_id")
-    def _onchange_partner_id_donation(self):
-        """Update the document field when the partner is changed."""
-        company_id = self.env.company or self.company_id
-        if self.is_donation:
-            if self.partner_id != company_id.partner_id:
+            warehouse_id = self.env["stock.warehouse"].search(
+                [
+                    ("is_donation_warehouse", "=", True),
+                    ("company_id", "=", self.company_id.id),
+                ],
+                limit=1,
+            )
+            if not warehouse_id:
                 raise ValidationError(
                     _(
-                        "The Contact/Customer cannot be changed when it is a donation."
+                        "No donation warehouse found. \nIf you wish to configure one, please go to Inventory > Configuration > Warehouses \nand select a warehouse as 'Donation Warehouse'."
                     )
                 )
-            self.document = "invoice"
-
-    @api.constrains("is_donation", "state")
-    def _check_is_donation(self):
-        for order in self:
-            if (order.state in ["sale", "done"]) and order._origin:
-                if order.is_donation != order._origin.is_donation:
-                    raise ValidationError(
-                        _(
-                            "The field 'Is Donation' cannot be modified on a confirmed or completed order."
-                        )
-                    )
+            self.warehouse_id = warehouse_id
+        else:
+            if getattr(self, 'is_consignation', False):
+                return
+            warehouse_id = self.env["stock.warehouse"].search(
+                [
+                    ("is_donation_warehouse", "=", False),
+                    ("is_consignation_warehouse", "=", False),
+                    ("company_id", "=", self.company_id.id),
+                ],
+                limit=1,
+            )
+            if warehouse_id:
+                self.warehouse_id = warehouse_id
 
     def _prepare_invoice(self):
         invoice_vals = super()._prepare_invoice()
         invoice_vals["is_donation"] = self.is_donation
         return invoice_vals
+
+    def write(self, vals):
+        if "is_donation" in vals:
+            for order in self:
+                if order.state in ["sale", "done"] and order.is_donation != vals["is_donation"]:
+                    raise ValidationError(
+                        _(
+                            "The field 'Is Donation' cannot be modified on a confirmed or completed order."
+                        )
+                    )
+        return super().write(vals)
