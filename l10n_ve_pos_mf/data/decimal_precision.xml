@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <!--
+        Los documentos fiscales solo admiten 2 decimales en el precio
+        unitario, en la moneda de la compañía y en la alterna. Se aplica al
+        instalar el módulo; en las bases donde ya estaba instalado lo aplica
+        la migración 19.0.3.2.1. Después se respeta lo que cambie el usuario, que
+        queda en el chatter de la precisión.
+    -->
+    <data noupdate="1">
+        <record id="product.decimal_price" model="decimal.precision">
+            <field name="name">Product Price</field>
+            <field name="digits">2</field>
+        </record>
+        <record id="l10n_ve_accountant.alternative_price_product" model="decimal.precision">
+            <field name="name">Foreign Product Price</field>
+            <field name="digits">2</field>
+        </record>
+    </data>
+</odoo>
