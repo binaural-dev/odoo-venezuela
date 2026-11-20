@@ -145,6 +145,30 @@ class TestInvoiceDetailsReport(TransactionCase):
         self.assertIn("$", amounts[usd_invoice]["formatted_gross_amount"])
         self.assertIn("$", amounts[usd_invoice]["formatted_taxes_amount"])
 
+    def test_detailed_amounts_batch_with_entry_without_totals(self):
+        """Un asiento sin `tax_totals` en medio de un lote de facturas no corta el
+        calculo: el asiento queda vacio y las facturas siguientes se calculan."""
+        entry = self.env["account.move"].create({
+            "move_type": "entry",
+            "date": self.today,
+            "line_ids": [
+                Command.create({"account_id": self.acc_rec.id, "debit": 100.0, "partner_id": self.partner.id}),
+                Command.create({"account_id": self.acc_inc.id, "credit": 100.0}),
+            ],
+        })
+        self.assertFalse(entry.tax_totals)
+        first = self._invoice(self.ves, 1000.0)
+        last = self._invoice(self.usd, 50.0, quantity=3.0, discount=10.0)
+        moves = first | entry | last
+        moves.invalidate_recordset(["detailed_amounts"])
+        # Al iterar, leer la primera factura calcula el lote [factura, asiento,
+        # factura]: con `return` la ultima quedaba sin asignar ("Compute method
+        # failed to assign").
+        amounts = [move.detailed_amounts for move in moves]
+        self.assertAlmostEqual(amounts[0]["gross_amount"], 1000.0, places=2)
+        self.assertEqual(amounts[1], {})
+        self.assertAlmostEqual(amounts[2]["gross_amount"], 150.0, places=2)
+
     def test_detailed_amounts_values(self):
         """Bruto, descuento, base y IVA (claves de `tax_totals` de Odoo 19)."""
         usd_invoice = self._invoice(self.usd, 50.0, quantity=3.0, discount=10.0)

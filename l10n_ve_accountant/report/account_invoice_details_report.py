@@ -10,7 +10,6 @@ import logging
 
 _logger = logging.getLogger(__name__)
 
-p_initial_amounts = {"amount": 0, "foreign_amount": 0}
 
 initial_amounts = {
     "gross_amount": 0,

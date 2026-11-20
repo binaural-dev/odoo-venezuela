@@ -636,7 +636,7 @@ class AccountMove(models.Model):
             discount_amount = 0
             if not record.tax_totals:
                 record.detailed_amounts = dict()
-                return
+                continue
             # Base, impuesto y total salen de `tax_totals` (ya corregidos para precio
             # incluido). Solo el descuento no existe como numero en `tax_totals`
             # (`formatted_total_discount` es texto y con impuesto incluido), asi que

@@ -1090,3 +1090,9 @@ El reporte Detalle de ventas (`account.invoices.details`) DEBE (MUST) poder impr
 
 - **WHEN** existe un pago en borrador en el período
 - **THEN** no aparece en el reporte
+
+#### Scenario: Lote con un asiento sin totales
+
+- **GIVEN** un asiento contable (sin `tax_totals`) y una factura en el mismo recordset, el asiento primero
+- **WHEN** se calcula `detailed_amounts` sobre el lote
+- **THEN** el asiento queda con `detailed_amounts` vacío y la factura se calcula igual
