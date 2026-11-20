@@ -2,7 +2,12 @@ from dateutil.relativedelta import relativedelta
 
 from odoo.tests import TransactionCase, tagged
 
-from .common import MONTHLY_VALUE, AcquisitionRateMixin
+from .common import (
+    INVOICE_INVERSE_RATE,
+    INVOICE_RATE,
+    MONTHLY_VALUE,
+    AcquisitionRateMixin,
+)
 
 
 class BinauralEmulationTests:
@@ -15,28 +20,48 @@ class BinauralEmulationTests:
         self._patch_commit_progress()
         self._emulate_binaural()
 
-    def test_acquisition_rate_beats_invoice_rate(self):
-        asset = self._create_asset()
+    def test_asset_own_rate_beats_table_rate(self):
+        own = {"foreign_rate": INVOICE_RATE, "foreign_inverse_rate": INVOICE_INVERSE_RATE}
+        asset = self._create_asset(own_rate=self.invoice_rates)
         move = self._future_drafts(asset)[0]
-        self._assert_acquisition_rate(move)
-        expected = round(MONTHLY_VALUE / self.acquisition_value, 2)
+        self._assert_rate_of(move, own)
+        expected = round(MONTHLY_VALUE / INVOICE_RATE, 2)
         self.assertEqual(self._debit_line(move).foreign_debit, expected)
 
         self._publish(move)
 
         self.assertEqual(move.state, "posted")
-        self._assert_acquisition_rate(move)
+        self._assert_rate_of(move, own)
         self.assertEqual(self._debit_line(move).foreign_debit, expected)
 
-    def test_zero_invoice_rate_uses_acquisition_rate_not_daily_rate(self):
+    def test_recompute_with_own_rate_keeps_it_in_drafts(self):
+        own = {"foreign_rate": INVOICE_RATE, "foreign_inverse_rate": INVOICE_INVERSE_RATE}
+        asset = self._create_asset(own_rate=self.invoice_rates)
+
+        asset.compute_depreciation_board()
+
+        for draft in self._future_drafts(asset):
+            self._assert_rate_of(draft, own)
+
+    def test_zero_own_rate_uses_table_rate_not_daily_rate(self):
+        # Con binaural "terco" (inner) las cuotas nacen con 0.0 y se corrigen a la efectiva.
         self.invoice_rates = (0.0, 0.0)
-        asset = self._create_asset()
+        asset = self._create_asset(own_rate=(0.0, 0.0))
         move = self._future_drafts(asset)[0]
         self._assert_acquisition_rate(move)
         self.assertEqual(
             self._debit_line(move).foreign_debit,
             round(MONTHLY_VALUE / self.acquisition_value, 2),
         )
+
+    def test_stubborn_invoice_rate_is_corrected_to_the_table_rate(self):
+        """Solo con binaural "terco" (inner), que escribe SIEMPRE la tasa de la factura: sin
+        tasa propia en el activo, la efectiva es la de la tabla y el puente la restituye."""
+        if self.binaural_order != "inner":
+            self.skipTest("Solo aplica al orden 'inner' (binaural escribe la tasa de la factura).")
+        asset = self._create_asset()
+        for move in asset.depreciation_move_ids:
+            self._assert_acquisition_rate(move)
 
     def test_recompute_restores_published_installment_rate(self):
         asset = self._create_asset()

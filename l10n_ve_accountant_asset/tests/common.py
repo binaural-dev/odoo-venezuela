@@ -25,6 +25,9 @@ class AcquisitionRateMixin:
     hoy es el último día del mes: así la primera cuota siempre es futura), con tasa propia
     en la fecha de adquisición y otra distinta en la fecha de la primera cuota.
 
+    Tasa de las cuotas: la propia del activo si es > 0 (``own_rate`` de ``_create_asset``);
+    si no, la de la tabla en la fecha de adquisición.
+
     `create_date` viene del reloj real de la BD: las fechas se calculan con el "hoy" real y
     `freeze_time` solo envuelve la llamada al cron.
     """
@@ -133,9 +136,10 @@ class AcquisitionRateMixin:
         Parchea la clase de enterprise (``inner``: queda DENTRO de la cadena del super de
         este addon, que es el MRO real) o la clase final del registro (``outer``: queda por
         fuera). Binaural escribe la tasa manual en las cuotas al prepararlas y en TODAS al
-        recalcular el plan. En ``outer`` usa la tasa del activo si el campo existe (así se
-        prueba que este addon la fija antes); en ``inner`` usa siempre la de la factura de
-        prueba, como un binaural "terco" que este addon debe corregir después.
+        recalcular el plan. En ``outer`` usa la tasa del activo (el campo debe existir: si el
+        activo no trae tasa propia este addon le deja la de la tabla antes del super); en
+        ``inner`` usa siempre la de ``invoice_rates``, como un binaural "terco" que este addon
+        debe corregir después si difiere de la tasa efectiva del activo.
         """
         outer = self.binaural_order == "outer"
         asset_has_rate = "foreign_rate" in self.env["account.asset"]._fields
@@ -188,12 +192,24 @@ class AcquisitionRateMixin:
         if "foreign_rate" in self.env["account.asset"]._fields:
             self.skipTest("binaural_account_asset real no acepta 'date' en compute_depreciation_board.")
 
-    def _create_asset(self, validate=True, **vals):
+    def _create_asset(self, validate=True, own_rate=None, **vals):
+        """Crea (y valida) el activo. ``own_rate`` es la tasa propia del activo, una tupla
+        ``(foreign_rate, foreign_inverse_rate)``: ``None`` = sin tasa propia (cuotas con la
+        tasa de la tabla). Si ``account.asset`` no tiene el campo (binaural no instalado) se
+        emula parchando ``_get_own_rate_values``, el único punto del puente que lo lee."""
         asset_vals = dict(self.asset_vals, **vals)
-        if "foreign_rate" in self.env["account.asset"]._fields:
-            # Con binaural_account_asset instalado la tasa de la factura vive en el activo.
-            rate, inverse_rate = self.invoice_rates
-            asset_vals.update({"foreign_rate": rate, "foreign_inverse_rate": inverse_rate})
+        if own_rate is not None:
+            if "foreign_rate" in self.env["account.asset"]._fields:
+                asset_vals.update(
+                    {"foreign_rate": own_rate[0], "foreign_inverse_rate": own_rate[1]}
+                )
+            else:
+                values = {"foreign_rate": own_rate[0], "foreign_inverse_rate": own_rate[1]}
+                self.patch(
+                    self.registry["account.asset"],
+                    "_get_own_rate_values",
+                    lambda asset: dict(values),
+                )
         asset = self.env["account.asset"].create(asset_vals)
         if validate:
             asset.validate()
@@ -230,6 +246,16 @@ class AcquisitionRateMixin:
         self.assertAlmostEqual(
             move.foreign_inverse_rate, rate_values["foreign_inverse_rate"], places=6
         )
+
+    def _remove_rates_until(self, rate_date):
+        """Borra las tasas de la alterna con fecha <= ``rate_date`` (deja las posteriores)."""
+        self.env["res.currency.rate"].search(
+            [
+                ("currency_id", "=", self.foreign_currency.id),
+                ("company_id", "=", self.company.id),
+                ("name", "<=", rate_date),
+            ]
+        ).unlink()
 
     def _assert_acquisition_rate(self, move):
         self._assert_rate_of(move, self.acquisition_rate)

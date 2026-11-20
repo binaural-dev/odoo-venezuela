@@ -14,8 +14,8 @@ from .common import MONTHLY_VALUE, AcquisitionRateMixin
 @tagged("post_install", "-at_install", "l10n_ve_accountant_asset")
 class TestDepreciationManualRate(AcquisitionRateMixin, TransactionCase):
     """
-    Las cuotas de depreciación llevan la tasa de la FECHA DE ADQUISICIÓN como tasa manual: el
-    cron las publica en su fecha sin revalorizar el valor alterno (con o sin factura de compra
+    Las cuotas de depreciación llevan como tasa manual la tasa efectiva del activo (sin tasa
+    propia: la de la tabla en la FECHA DE ADQUISICIÓN; ver test_effective_rate): el cron las publica en su fecha sin revalorizar el valor alterno (con o sin factura de compra
     y con o sin binaural_account_asset, que aquí no se emula: ver test_acquisition_rate).
     """
 
@@ -116,6 +116,7 @@ class TestDepreciationManualRate(AcquisitionRateMixin, TransactionCase):
             asset.validate()
         self.assertIn(self.foreign_currency.name, str(caught.exception))
         self.assertIn(str(asset.acquisition_date), str(caught.exception))
+        self.assertIn(asset.name, str(caught.exception))
         self.assertFalse(asset.depreciation_move_ids)
 
     def test_reversal_returns_the_original_foreign_value(self):
