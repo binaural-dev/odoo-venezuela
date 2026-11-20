@@ -10,14 +10,15 @@ class AccountMove(models.Model):
     def _prepare_move_for_asset_depreciation(self, vals):
         """
         Las cuotas de depreciación (``asset_move_type == 'depreciation'``) llevan como tasa
-        manual la de la fecha de adquisición del activo (última tasa anterior a esa fecha,
-        ver ``account.asset._get_acquisition_rate_values``). Nacen con su fecha real: el
-        core las deja con ``auto_post='at_date'`` si son futuras y el cron nativo las publica
-        ese día sin recalcular la tasa, de modo que el valor alterno no cambia al publicar.
+        manual la efectiva del activo (ver ``account.asset._get_acquisition_rate_values``: su
+        tasa propia si es > 0, la que fija ``binaural_account_asset`` (no es dependencia)
+        desde la factura de compra; si no, la última tasa de la tabla anterior o igual a la
+        fecha de adquisición). Nacen con su fecha real: el core las deja con
+        ``auto_post='at_date'`` si son futuras y el cron nativo las publica ese día sin
+        recalcular la tasa, de modo que el valor alterno no cambia al publicar.
 
-        Se pisa también la tasa de la factura de compra que fija ``binaural_account_asset``
-        (no es dependencia). Los valores se toman tal cual de ``compute_rate``. Si no existe
-        ninguna tasa anterior lanza el UserError original y no se crea ninguna cuota.
+        Los valores se toman tal cual. Si el activo no tiene tasa propia ni hay tasa en la
+        tabla (o falta la fecha de adquisición) lanza un UserError y no se crea ninguna cuota.
 
         Fuera de alcance: los demás tipos (``negative_revaluation``, ``disposal``,
         ``modify`` con moneda distinta, etc.) se dejan como los devuelve el super.

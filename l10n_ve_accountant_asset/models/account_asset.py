@@ -1,4 +1,5 @@
-from odoo import models
+from odoo import _, models
+from odoo.exceptions import UserError
 from odoo.tools import float_compare
 
 RATE_FIELDS = ("foreign_rate", "foreign_inverse_rate")
@@ -7,29 +8,79 @@ RATE_FIELDS = ("foreign_rate", "foreign_inverse_rate")
 class AccountAsset(models.Model):
     _inherit = "account.asset"
 
-    def _get_acquisition_rate_values(self):
-        """Tasa de la fecha de adquisición del activo, tal cual la devuelve ``compute_rate``
-        (``foreign_rate`` y ``foreign_inverse_rate``), o ``{}`` si la compañía no tiene
-        moneda alterna.
+    def _get_own_rate_values(self):
+        """Tasa propia del activo tal cual está guardada (``foreign_rate`` y
+        ``foreign_inverse_rate``), o ``{}`` si el campo no existe.
 
-        Si en esa fecha no hay tasa se usa la última anterior (``use_last_rate``: fin de
-        semana o feriado). Si no existe ninguna tasa anterior lanza el UserError original de
-        l10n_ve_rate y no se crea ninguna cuota.
+        Esos campos los define ``binaural_account_asset`` (no es dependencia), que copia en
+        ellos la tasa de la factura de compra. Es el único punto del puente que los lee, así
+        los tests pueden emular el campo sin el addon.
+        """
+        self.ensure_one()
+        if "foreign_rate" not in self._fields:
+            return {}
+        return {fname: self[fname] for fname in RATE_FIELDS}
+
+    def _has_own_rate(self):
+        """True si el activo trae una tasa propia utilizable (``foreign_rate`` > 0)."""
+        self.ensure_one()
+        return (self._get_own_rate_values().get("foreign_rate") or 0.0) > 0
+
+    def _get_acquisition_rate_values(self):
+        """Tasa efectiva de las cuotas de depreciación (``foreign_rate`` y
+        ``foreign_inverse_rate``), o ``{}`` si la compañía no tiene moneda alterna.
+
+        Orden de resolución:
+
+        1. Tasa propia del activo (``foreign_rate`` > 0, la de la factura de compra que fija
+           ``binaural_account_asset``): se devuelve tal cual, sin consultar la tabla. Si su
+           inversa está vacía se deriva con ``compute_inverse_rate``.
+        2. Sin tasa propia, la de la tabla en la fecha de adquisición (``compute_rate``
+           con ``use_last_rate``: si ese día no hay tasa, la última anterior, p. ej. fin de
+           semana o feriado). Sin ninguna tasa en esa fecha ni antes, lanza un UserError y
+           no se crea ninguna cuota.
+
+        La guarda de "falta la fecha de adquisición" es defensiva: ``account.asset`` exige
+        ``prorata_date`` (NOT NULL, derivada de ``acquisition_date``), así que un activo
+        guardado siempre trae fecha; solo es alcanzable con registros virtuales.
         """
         self.ensure_one()
         company = self.company_id
         if not company.foreign_currency_id:
             return {}
-        return (
-            self.env["res.currency.rate"]
-            .with_company(company)
-            .compute_rate(
-                company.foreign_currency_id.id,
-                self.acquisition_date,
-                raise_if_not_found=True,
-                use_last_rate=True,
+        Rate = self.env["res.currency.rate"].with_company(company)
+        if self._has_own_rate():
+            own = self._get_own_rate_values()
+            return {
+                "foreign_rate": own["foreign_rate"],
+                "foreign_inverse_rate": own["foreign_inverse_rate"]
+                or Rate.compute_inverse_rate(own["foreign_rate"]),
+            }
+        if not self.acquisition_date:
+            raise UserError(
+                _(
+                    "The acquisition date of the asset %(asset)s is missing. "
+                    "Set it before confirming the asset.",
+                    asset=self.display_name,
+                )
             )
+        rate_values = Rate.compute_rate(
+            company.foreign_currency_id.id,
+            self.acquisition_date,
+            raise_if_not_found=False,
+            use_last_rate=True,
         )
+        if not rate_values:
+            raise UserError(
+                _(
+                    "There is no %(currency)s rate on %(date)s or on earlier dates for the "
+                    "asset %(asset)s. Load the rate and confirm the asset again.",
+                    currency=company.foreign_currency_id.name,
+                    date=self.acquisition_date,
+                    asset=self.display_name,
+                )
+            )
+        return rate_values
 
     def _rate_differs(self, move, values):
         """True si la tasa de ``move`` difiere de ``values`` a la precisión del campo."""
@@ -45,15 +96,16 @@ class AccountAsset(models.Model):
 
     def compute_depreciation_board(self, date=False):
         """
-        Las cuotas de depreciación llevan la tasa de la fecha de adquisición (ver
-        ``account.move._prepare_move_for_asset_depreciation``). ``binaural_account_asset`` (no
-        es dependencia) escribe después del super la tasa del activo en TODAS las cuotas,
-        también las ya publicadas, así que: antes del super se deja en el activo la tasa de
-        adquisición para que esa escritura copie nuestro valor sea cual sea el orden del MRO;
-        y después se restauran las publicadas a como estaban y se corrigen las cuotas nuevas (los
-        borradores y las que este mismo plan acaba de publicar) que difieran. Solo se escribe
-        si algo cambia (evita mensajes "rate updated" y
-        recálculos).
+        Las cuotas de depreciación llevan la tasa efectiva del activo (ver
+        ``_get_acquisition_rate_values``: su tasa propia si es > 0; si no, la de la tabla en la
+        fecha de adquisición) y ``account.move._prepare_move_for_asset_depreciation``.
+        ``binaural_account_asset`` (no es dependencia) escribe después del super la tasa del
+        activo en TODAS las cuotas, también las ya publicadas, así que: si el activo no
+        tiene tasa propia, antes del super se le deja la de la tabla para que esa escritura copie
+        nuestro valor sea cual sea el orden del MRO (si ya la tiene no se escribe nada en el
+        activo); y después se restauran las publicadas a como estaban y se corrigen las
+        cuotas nuevas (los borradores y las que este mismo plan acaba de publicar) que difieran.
+        Solo se escribe si algo cambia (evita mensajes "rate updated" y recálculos).
 
         Fuera de alcance: ``negative_revaluation``, ``disposal`` y ``modify`` con moneda
         distinta.
@@ -61,7 +113,7 @@ class AccountAsset(models.Model):
         acquisition_rates = {asset: asset._get_acquisition_rate_values() for asset in self}
         if "foreign_rate" in self._fields:
             for asset, rates in acquisition_rates.items():
-                if rates and asset._rate_differs(asset, rates):
+                if rates and not asset._has_own_rate() and asset._rate_differs(asset, rates):
                     asset.write({fname: rates[fname] for fname in RATE_FIELDS})
         snapshot = {
             move: {
