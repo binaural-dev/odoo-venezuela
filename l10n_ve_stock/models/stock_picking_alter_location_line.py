@@ -16,6 +16,13 @@ class StockPickingAlterLocationLine(models.Model):
         store=True,
     )
 
+    # Every method that adds or subtracts quantities by location filters the
+    # lines by location_id and expects at most one record.
+    _location_uniq = models.Constraint(
+        "UNIQUE(stock_alter_location_id, location_id)",
+        "This location is already in the other locations of the product.",
+    )
+
     @api.model_create_multi
     def create(self, vals_list):
         records = super().create(vals_list)

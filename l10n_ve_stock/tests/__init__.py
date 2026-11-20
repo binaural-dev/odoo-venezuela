@@ -16,3 +16,4 @@ from . import test_alter_location_actions
 from . import test_alter_location_moves
 from . import test_physical_locations_sync
 from . import test_physical_relocation
+from . import test_alter_location_unique
