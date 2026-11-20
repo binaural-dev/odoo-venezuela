@@ -54,12 +54,21 @@ class RetentionFlowHelpers:
             "description": "Prueba", "minimum_monthly": 0, "minimum_annual": 0,
         })
 
-    def _form_document(self, move_type, retention_type, amount):
-        """Factura o nota de credito creada con `Form` en `doc_date`."""
+    def _form_document(
+        self, move_type, retention_type, amount, company=None, journal=None, product=None
+    ):
+        """Factura o nota de credito creada con `Form` en `doc_date`. Con `company`
+        (p. ej. una sucursal) el `Form` corre con esa empresa activa; `journal` y
+        `product` reemplazan a los de la casa matriz."""
         is_supplier = move_type.startswith("in_")
-        journal = self.purchase_journal if is_supplier else self.sale_journal
-        product = self.product_islr_one if retention_type == "islr" else self.product_iva
-        with Form(self.env["account.move"].with_context(
+        journal = journal or (self.purchase_journal if is_supplier else self.sale_journal)
+        product = product or (
+            self.product_islr_one if retention_type == "islr" else self.product_iva
+        )
+        move_model = self.env["account.move"]
+        if company:
+            move_model = move_model.with_company(company)
+        with Form(move_model.with_context(
             default_move_type=move_type, default_journal_id=journal.id,
         )) as form:
             form.partner_id = self.partner_pnr_75
@@ -114,18 +123,22 @@ class RetentionFlowHelpers:
         debit.with_context(move_action_post_alert=True).action_post()
         return debit
 
-    def _retention_from_form(self, retention_type, document):
+    def _retention_from_form(self, retention_type, document, company=None):
         """Retencion creada con `Form` desde la accion de su menu. IVA carga
         solo sus lineas al elegir el contacto (facturas y notas de credito);
         lo que no se carga solo (nota de debito, ISLR, municipal) se agrega
-        como linea, igual que en la vista."""
+        como linea, igual que en la vista. Con `company` el `Form` corre con esa
+        empresa activa."""
         side = "client" if document.move_type.startswith("out_") else "supplier"
         action = self.env.ref(
             f"l10n_ve_payment_extension.action_retention_{retention_type}_{side}"
         ).read()[0]
         ctx = safe_eval(action.get("context", "{}"))
         view = f"l10n_ve_payment_extension.view_retention_{retention_type}_form_l10n_ve_payment_extension"
-        with Form(self.env[action["res_model"]].with_context(ctx), view=view) as form:
+        retention_model = self.env[action["res_model"]]
+        if company:
+            retention_model = retention_model.with_company(company)
+        with Form(retention_model.with_context(ctx), view=view) as form:
             form.partner_id = document.partner_id
             form.date_accounting = self.accounting_date
             if side == "client":
