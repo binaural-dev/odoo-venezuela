@@ -203,6 +203,30 @@ class AccountMove(models.Model):
         for move in self:
             move.can_edit_tax_totals = can_edit
 
+    def _is_tax_totals_rounding_gap(self, delta_amount):
+        """Whether a tax gap between the form and the booked tax is only rounding.
+
+        In a document whose currency is worth less than the company currency
+        (e.g. an invoice in Bs with the company in USD), the server books each
+        tax line from its company-currency amount rounded to cents and converts
+        it back, so the booked tax can be a few document units away from the tax
+        computed in the document currency (16% of 1,000,000 Bs is 160,000.00 and
+        it books 159,997.20). The form sends the right one. Such a gap is not a
+        manual edit when it is within the edit tolerance expressed in the company
+        currency and converted with the invoice rate. When the document currency
+        is the company currency, or is worth more than it, the scaled tolerance
+        is not larger than the tolerance itself and nothing changes.
+        """
+        self.ensure_one()
+        currency = self.currency_id
+        if not currency or currency == self.company_id.currency_id:
+            return False
+        rate = self.invoice_currency_rate or 1.0
+        if rate <= 1.0:
+            return False
+        rounding_tolerance = self.company_id.tax_totals_edit_tolerance * rate
+        return currency.compare_amounts(abs(delta_amount), rounding_tolerance) <= 0
+
     def _inverse_tax_totals(self):
         """Gates the pencil-edit's actual write: only
         `group_fiscal_config_support` may change a tax group's amount,
@@ -232,6 +256,11 @@ class AccountMove(models.Model):
                     ) * sign
                     delta_amount = old_amount_currency - tax_group['tax_amount_currency']
                     if move.currency_id.is_zero(delta_amount):
+                        continue
+                    if move._is_tax_totals_rounding_gap(delta_amount):
+                        # Not a manual edit: the form sends the tax computed in the
+                        # document currency and the server booked it through
+                        # company-currency cents. Apply the form's amount.
                         continue
                     if not move.can_edit_tax_totals:
                         raise UserError(_(
