@@ -123,11 +123,7 @@
                         <span t-field="o.partner_bank_id"/>
                     </t>
                 </div>
-                <div class="col-6" t-if="o.journal_id.default_account_id">
-                    <strong>Cuenta Emisora: </strong>
-                    <span t-field="o.journal_id.default_account_id"/>
                 </div>
-            </div>
 
             <div class="row">
                 <div class="col-12 my-2">
