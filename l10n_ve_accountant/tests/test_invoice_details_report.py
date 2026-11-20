@@ -86,7 +86,7 @@ class TestInvoiceDetailsReport(TransactionCase):
             "company_ids": [Command.set([self.company.id])], "reconcile": reconcile,
         })
 
-    def _invoice(self, currency, price_unit, quantity=1.0, discount=0.0, move_type="out_invoice"):
+    def _invoice(self, currency, price_unit, quantity=1.0, discount=0.0, move_type="out_invoice", tax=None):
         invoice = self.env["account.move"].create({
             "move_type": move_type,
             "partner_id": self.partner.id,
@@ -97,7 +97,7 @@ class TestInvoiceDetailsReport(TransactionCase):
             "invoice_line_ids": [Command.create({
                 "product_id": self.product.id, "quantity": quantity, "price_unit": price_unit,
                 "discount": discount, "account_id": self.acc_inc.id,
-                "tax_ids": [Command.set([self.tax_16.id])],
+                "tax_ids": [Command.set([(tax or self.tax_16).id])],
             })],
         })
         invoice._post()
@@ -270,6 +270,83 @@ class TestInvoiceDetailsReport(TransactionCase):
         html = self.env["ir.actions.report"]._render_qweb_html(self.REPORT, wizard.ids)[0].decode()
         self.assertIn("header_invoices", html)
         self.assertNotIn("header_payments", html)
+
+    # ------------------------------------------------------------------
+    # cotejo de totales contra las facturas (ticket 16382, validacion)
+    # ------------------------------------------------------------------
+    def _reconciliation_invoices(self):
+        """Reproduce el rango validado: VEF, USD y EUR, precios con y sin impuesto
+        incluido, descuento y una nota de credito."""
+        eur = self.env.ref("base.EUR")
+        eur.active = True
+        self.env["res.currency.rate"].search(
+            [("currency_id", "=", eur.id), ("name", "=", self.today)]
+        ).unlink()
+        self.env["res.currency.rate"].create({
+            "name": self.today, "currency_id": eur.id,
+            "company_id": self.company.id, "rate": 1.0 / 420.0,
+        })
+        self.pricelists[eur] = self.env["product.pricelist"].create(
+            {"name": "PL EUR", "currency_id": eur.id}
+        )
+        tax_inc = self.tax_16.copy({"name": "IVA 16% incluido", "price_include_override": "tax_included"})
+        return self.env["account.move"].concat(
+            self._invoice(eur, 360.0),
+            self._invoice(self.usd, 646.88),
+            self._invoice(self.usd, 650.5, discount=10.0),
+            self._invoice(self.usd, 100.0, tax=tax_inc),
+            self._invoice(self.usd, 646.88, discount=5.0, tax=tax_inc),
+            self._invoice(self.ves, 10000.0, tax=tax_inc),
+            self._invoice(self.ves, 15000.0),
+            self._invoice(self.usd, 40.0, move_type="out_refund"),
+            self._invoice(self.ves, 2500.0, move_type="out_refund", tax=tax_inc),
+        )
+
+    def test_report_totals_match_invoices(self):
+        """Cada renglon, cada subtotal por moneda y el total en VEF del reporte deben
+        cuadrar contra los importes de las propias facturas (fuente independiente:
+        `amount_untaxed`, `amount_tax`, `amount_total` y sus versiones `_signed`)."""
+        moves = self._reconciliation_invoices()
+        report = self._report_values()["invoices"]
+        journal = str(self.journal.id)
+
+        # 1) Renglon por renglon: base, impuesto y neto de la factura.
+        for move in moves:
+            detail = move.detailed_amounts
+            self.assertAlmostEqual(detail["gross_discount_amount"], move.amount_untaxed, delta=0.01, msg=move.name)
+            self.assertAlmostEqual(detail["taxes_amount"], move.amount_tax, delta=0.01, msg=move.name)
+            self.assertAlmostEqual(move.tax_totals["total_amount_currency"], move.amount_total, delta=0.01, msg=move.name)
+            self.assertAlmostEqual(
+                detail["gross_discount_amount"] + detail["taxes_amount"], move.amount_total, delta=0.02, msg=move.name
+            )
+            self.assertAlmostEqual(
+                detail["gross_amount"] - detail["discount_amount"], detail["gross_discount_amount"], delta=0.01, msg=move.name
+            )
+
+        # 2) Subtotales por tipo y moneda, en la moneda del documento.
+        for move_type in ("out_invoice", "out_refund"):
+            sign = 1 if move_type == "out_invoice" else -1
+            by_currency = report[journal]["totals_" + move_type]
+            for currency in moves.filtered(lambda m: m.move_type == move_type).currency_id:
+                group = moves.filtered(lambda m: m.move_type == move_type and m.currency_id == currency)
+                got = by_currency[currency.id]
+                self.assertEqual(got["total_items"], len(group), currency.name)
+                self.assertAlmostEqual(got["gross_discount_amount"], sign * sum(group.mapped("amount_untaxed")), delta=0.02, msg=currency.name)
+                self.assertAlmostEqual(got["taxes_amount"], sign * sum(group.mapped("amount_tax")), delta=0.02, msg=currency.name)
+                self.assertAlmostEqual(got["total_amount"], sign * sum(group.mapped("amount_total")), delta=0.02, msg=currency.name)
+
+        # 3) Total general en moneda de la compania = suma de lo contabilizado en VEF.
+        company = report["totals"]
+        self.assertEqual(company["total_items"], len(moves))
+        self.assertAlmostEqual(company["gross_discount_amount"], sum(moves.mapped("amount_untaxed_signed")), delta=0.05)
+        self.assertAlmostEqual(company["taxes_amount"], sum(moves.mapped("amount_tax_signed")), delta=0.05)
+        self.assertAlmostEqual(company["total_amount"], sum(moves.mapped("amount_total_signed")), delta=0.05)
+        self.assertAlmostEqual(
+            company["gross_amount"] - company["discount_amount"], company["gross_discount_amount"], delta=0.05
+        )
+        self.assertAlmostEqual(
+            company["gross_discount_amount"] + company["taxes_amount"], company["total_amount"], delta=0.05
+        )
 
     # ------------------------------------------------------------------
     # pagos
