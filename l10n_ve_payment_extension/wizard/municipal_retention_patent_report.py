@@ -72,23 +72,15 @@ class MunicipalRetentionPatentReport(models.TransientModel):
         invoice_lines = self.env["account.move.line"].search(domain)
 
         invoice_lines = invoice_lines.filtered(lambda l: l.price_unit > 0)
-        usd_currency = self.env.ref("base.USD")
-        company_currency = self.env.company.currency_id
 
         nc_financial = 0
         nd_financial = 0
 
         for line in invoice_lines:
             if line.move_id.move_type == "out_refund":
-                if company_currency == usd_currency:
-                    nc_financial += line.foreign_subtotal
-                else:
-                    nc_financial += line.price_subtotal
+                nc_financial += self._get_line_amount_in_bs(line)
             if line.move_id.move_type == "out_invoice":
-                if company_currency == usd_currency:
-                    nd_financial += line.foreign_subtotal
-                else:
-                    nd_financial += line.price_subtotal
+                nd_financial += self._get_line_amount_in_bs(line)
 
         data = table.values.tolist()
         col3 = len(columns2) - 1
@@ -137,6 +129,19 @@ class MunicipalRetentionPatentReport(models.TransientModel):
         workbook.close()
         return result.getvalue()
 
+    def _get_line_amount_in_bs(self, line):
+        """Return the untaxed amount of a customer invoice or credit note line in bolivares.
+
+        The amount is positive for the document's own direction, as the report adds invoices and
+        credit notes in separate columns. A company in dollars keeps the alternate subtotal, which
+        is already in bolivares. Any other company takes the line balance in its own currency, so
+        a document issued in dollars or euros counts at the rate of its own journal entry instead
+        of adding its foreign amount as if it were bolivares.
+        """
+        if self.env.company.currency_id == self.env.ref("base.USD"):
+            return line.foreign_subtotal
+        return line.balance * line.move_id.direction_sign
+
     def _get_xlsx_file_domain(self):
         return [
             ("move_id.invoice_date_display", ">=", self.date_start),
@@ -153,16 +158,9 @@ class MunicipalRetentionPatentReport(models.TransientModel):
         invoice_lines = invoice_lines.filtered(lambda l: any(l.ciu_id))
 
         groups = {}
-        usd_currency = self.env.ref("base.USD")
-        company_currency = self.env.company.currency_id
 
         for line in invoice_lines:
-            price_subtotal = 0
-
-            if company_currency == usd_currency:
-                price_subtotal = line.foreign_subtotal
-            else:
-                price_subtotal = line.price_subtotal
+            price_subtotal = self._get_line_amount_in_bs(line)
             ciu = line.ciu_id
             if not ((ciu.name, line.product_id.categ_id.name) in groups.keys()):
                 groups[ciu.name, line.product_id.categ_id.name] = {
