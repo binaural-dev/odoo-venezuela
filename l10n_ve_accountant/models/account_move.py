@@ -1362,11 +1362,14 @@ class AccountMove(models.Model):
                 account_analytic_by_line_id[line_id.id] = ""
                 continue
 
-            account_analytic_ids_ids = [
-                int(analytic_id) for analytic_id in line_id.analytic_distribution.keys()
-            ]
+            # Para casos "("12","9")".
+            account_analytic_ids = list(dict.fromkeys(
+                int(analytic_id)
+                for key in line_id.analytic_distribution
+                for analytic_id in key.split(",")
+            ))
             account_analytic_ids = self.env["account.analytic.account"].browse(
-                account_analytic_ids_ids
+                account_analytic_ids
             )
 
             if not account_analytic_ids:
