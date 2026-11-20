@@ -140,9 +140,9 @@ class TestAccountMoveExtended(ForeignRateFixture, TransactionCase):
             }
         )
 
-    # --- _check_price_in_zero ---
-
         self._set_foreign_rates([fields.Date.today() - timedelta(days=5)])
+
+    # --- _check_price_in_zero ---
 
     def test_price_in_zero(self):
         self.company.max_product_invoice = 10

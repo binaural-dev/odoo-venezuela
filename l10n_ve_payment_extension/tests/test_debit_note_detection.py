@@ -274,8 +274,8 @@ class TestDebitNoteDetection(RetentionFlowHelpers, RetentionTestCommon):
     # ------------------------------------------------------------------ #
     # PDF estandar y formato libre
     # ------------------------------------------------------------------ #
-    def _pdf_title(self, document):
-        content, _ = self.env["ir.actions.report"]._render_qweb_html(PDF_REF, document.ids)
+    def _pdf_title(self, document, lang=None):
+        content, _ = self.env["ir.actions.report"].with_context(lang=lang or self.env.lang)._render_qweb_html(PDF_REF, document.ids)
         return " ".join(lxml_html.fromstring(content).xpath("string(//h2)").split())
 
     def test_60_standard_pdf_title(self):
@@ -286,6 +286,18 @@ class TestDebitNoteDetection(RetentionFlowHelpers, RetentionTestCommon):
         self.assertTrue(self._pdf_title(debit).startswith("Vendor Debit Note"))
         self.assertTrue(self._pdf_title(credit).startswith("Vendor Credit Note"))
 
+    def test_62_standard_pdf_title_es_ve(self):
+        """En es_VE la factura de proveedor normal sigue con su titulo en espanol (el reemplazo del
+        titulo de `account` no la deja en ingles) y la nota de debito sale rotulada."""
+        self.env["res.lang"]._activate_lang("es_VE")
+        self.env["ir.module.module"].search([("name", "=", "l10n_ve_invoice")])._update_translations(["es_VE"], overwrite=True)
+        invoice = self._document("in_invoice", "iva")
+        debit = self._document("in_debit", "iva")
+        # El PDF se imprime en el idioma del contacto.
+        invoice.partner_id.lang = "es_VE"
+        self.assertEqual(self._pdf_title(invoice, "es_VE").split(" ")[:3], ["Factura", "de", "proveedor"])
+        self.assertTrue(self._pdf_title(debit, "es_VE").startswith("Nota de débito de proveedor"))
+
     def test_61_free_form_title(self):
         invoice = self._document("out_invoice", "iva")
         debit = self._document("out_debit", "iva")
@@ -294,3 +306,77 @@ class TestDebitNoteDetection(RetentionFlowHelpers, RetentionTestCommon):
             content, _ = self.env["ir.actions.report"]._render_qweb_html(FREE_FORM_REF, document.ids)
             text = unicodedata.normalize("NFC", " ".join(lxml_html.fromstring(content).text_content().split()))
             self.assertIn(unicodedata.normalize("NFC", title), text, document.name)
+
+    # ------------------------------------------------------------------ #
+    # Fecha propia de la nota de debito
+    # ------------------------------------------------------------------ #
+    def test_70_debit_note_date_is_its_own(self):
+        """El comprobante y el TXT imprimen la fecha de la nota, no la de su factura de origen."""
+        debit = self._document("in_debit", "iva", debit_date=self.accounting_date)
+        origin = debit.debit_origin_id
+        self.assertNotEqual(debit.invoice_date_display, origin.invoice_date_display)
+        retention = self._retention_from_form("iva", debit)
+        tds = self._row_for(self._voucher_rows(retention), debit)
+        self.assertEqual(tds[0], debit.invoice_date_display.strftime("%d/%m/%Y"))
+        self.assertNotEqual(tds[0], origin.invoice_date_display.strftime("%d/%m/%Y"))
+        row = {r["Número de documento"]: r for r in self.IvaWizard._retention_iva(retention)}[debit.name]
+        self.assertEqual(row["Fecha de factura"], debit.invoice_date_display.strftime("%Y-%m-%d"))
+
+    # ------------------------------------------------------------------ #
+    # Nota de credito en un diario is_debit: sale como nota de credito
+    # ------------------------------------------------------------------ #
+    def test_31_credit_note_in_is_debit_journal(self):
+        self.purchase_journal.is_debit = True
+        credit = self._document("in_refund", "iva")
+        self.assertTrue(credit.journal_id.is_debit)
+        retention = self._retention_from_form("iva", credit)
+        tds = self._row_for(self._voucher_rows(retention), credit)
+        self.assertEqual((tds[COL_INVOICE], tds[COL_DEBIT], tds[COL_CREDIT], tds[COL_TYPE]),
+                         ("--", "--", credit.name, "03-REG"))
+        row = {r["Número de documento"]: r for r in self.IvaWizard._retention_iva(retention)}[credit.name]
+        self.assertEqual(row["Tipo de documento"], "03")
+        line = next(l for l in self._purchase_book() if credit.name == l["credit_note_number"])
+        self.assertEqual((line["move_type"], line["transaction_type"], line["debit_note_number"] or "--"),
+                         ("NC", "03-REG", "--"))
+
+    # ------------------------------------------------------------------ #
+    # Libro de ventas
+    # ------------------------------------------------------------------ #
+    def _sale_book(self):
+        wizard = self.env["wizard.accounting.reports"].create({
+            "report": "sale",
+            "company_id": self.company.id,
+            "date_from": fields.Date.subtract(self.accounting_date, days=30),
+            "date_to": self.accounting_date,
+        })
+        return wizard.parse_sale_book_data()
+
+    def _sale_line(self, lines, document):
+        line = next((l for l in lines if document.name in (
+            l["invoice_number"], l["debit_note_number"], l["credit_note_number"])), None)
+        self.assertTrue(line, "El libro de ventas no tiene %s" % document.name)
+        return line
+
+    def test_51_sale_book_native_debit_note(self):
+        invoice = self._document("out_invoice", "iva")
+        debit = self._document("out_debit", "iva")
+        credit = self._document("out_refund", "iva")
+        lines = self._sale_book()
+        line = self._sale_line(lines, invoice)
+        self.assertEqual((line["move_type"], line["transaction_type"], line["number_invoice_affected"]),
+                         ("FAC", "01-REG", "--"))
+        line = self._sale_line(lines, debit)
+        self.assertEqual((line["move_type"], line["transaction_type"], line["debit_note_number"],
+                          line["invoice_number"], line["number_invoice_affected"]),
+                         ("ND", "02-REG", debit.name, "--", debit.debit_origin_id.name))
+        line = self._sale_line(lines, credit)
+        self.assertEqual((line["move_type"], line["transaction_type"]), ("NC", "03-REG"))
+
+    def test_52_sale_book_debit_note_in_is_debit_journal(self):
+        """Nota de debito de cliente en un diario dedicado `is_debit`, sin factura de origen."""
+        self.sale_journal.is_debit = True
+        debit = self._document("out_invoice", "iva")
+        self.assertFalse(debit.debit_origin_id)
+        line = self._sale_line(self._sale_book(), debit)
+        self.assertEqual((line["move_type"], line["transaction_type"], line["debit_note_number"]),
+                         ("ND", "02-REG", debit.name))

@@ -189,7 +189,7 @@
 
                         <!-- 2 Número de Factura -->
                         <td class="ret-num">
-                            <t t-if="line.move_id.move_type in ['out_invoice','out_contingence','in_invoice'] and not line.move_id._is_debit_note()">
+                            <t t-if="line.move_id.move_type in ['out_invoice','out_contingence','in_invoice'] and not (line.move_id and line.move_id._is_debit_note())">
                                 <span t-esc="line.move_id.name"/>
                             </t>
                             <t t-else="">--</t>
@@ -200,7 +200,7 @@
 
                         <!-- 4 Nota de Débito -->
                         <td class="ret-num">
-                            <t t-if="line.move_id._is_debit_note()"><span t-esc="line.move_id.name"/></t><t t-else="">--</t>
+                            <t t-if="(line.move_id and line.move_id._is_debit_note())"><span t-esc="line.move_id.name"/></t><t t-else="">--</t>
                         </td>
 
                         <!-- 5 Nota de Crédito -->
@@ -211,7 +211,7 @@
                         <!-- 6 Tipo de Transacción -->
                         <td class="ret-num">
                             <t t-if="line.move_id.move_type in ('out_invoice','in_invoice') and line.move_id.state == 'posted'">
-                                <t t-if="line.move_id._is_debit_note()">02-REG</t><t t-else="">01-REG</t>
+                                <t t-if="(line.move_id and line.move_id._is_debit_note())">02-REG</t><t t-else="">01-REG</t>
                             </t>
                         <t t-elif="line.move_id.move_type in ('out_debit','in_debit') and line.move_id.state == 'posted'">02-REG</t>
                         <t t-elif="line.move_id.move_type in ('out_refund','in_refund') and line.move_id.state == 'posted'">03-REG</t>
@@ -222,7 +222,7 @@
                         <!-- 7 Factura afectada -->
                         <td class="ret-num">
                             <t t-if="line.move_id.move_type in ('in_refund','out_refund') and line.move_id.reversed_entry_id"><span t-esc="line.move_id.reversed_entry_id.name"/></t>
-                            <t t-elif="line.move_id._is_debit_note()"><span t-esc="line.move_id.debit_origin_id.name"/></t>
+                            <t t-elif="(line.move_id and line.move_id._is_debit_note())"><span t-esc="line.move_id.debit_origin_id.name"/></t>
                             <t t-else="">--</t>
                         </td>
 
