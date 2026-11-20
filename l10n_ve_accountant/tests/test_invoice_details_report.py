@@ -156,6 +156,16 @@ class TestInvoiceDetailsReport(TransactionCase):
         # IVA 16% sobre 135: antes salia 0 por leer claves inexistentes.
         self.assertAlmostEqual(amounts["taxes_amount"], 21.6, places=2)
 
+    def test_detailed_amounts_price_included_tax(self):
+        """Con impuesto de precio incluido la base es el total / 1,16, no el total."""
+        self.tax_16.price_include_override = "tax_included"
+        invoice = self._invoice(self.usd, 100.0)
+        amounts = invoice.detailed_amounts
+        self.assertAlmostEqual(amounts["gross_amount"], 86.21, places=2)
+        self.assertAlmostEqual(amounts["gross_discount_amount"], 86.21, places=2)
+        self.assertAlmostEqual(amounts["taxes_amount"], 13.79, places=2)
+        self.assertAlmostEqual(invoice.tax_totals["total_amount_currency"], 100.0, places=2)
+
     # ------------------------------------------------------------------
     # get_sale_details / render
     # ------------------------------------------------------------------
