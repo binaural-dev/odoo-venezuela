@@ -234,6 +234,19 @@ class StockPicking(models.Model):
                     account=location.valuation_account_id.display_name,
                     location=location.display_name,
                 ))
+            elif (
+                is_real_time
+                and self.company_id.donation_expense_account_ids
+                and location.valuation_account_id not in self.company_id.donation_expense_account_ids
+            ):
+                errors.append(_(
+                    "The Stock Valuation Account %(account)s of the destination location "
+                    "%(location)s is not a donation expense account. Set one of them "
+                    "(%(accounts)s) in Inventory > Configuration > Locations.",
+                    account=location.valuation_account_id.display_name,
+                    location=location.display_name,
+                    accounts=", ".join(self.company_id.donation_expense_account_ids.mapped("display_name")),
+                ))
         return errors
 
     def _get_donation_receipt_config_errors(self):

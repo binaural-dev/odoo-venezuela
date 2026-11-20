@@ -36,8 +36,8 @@
                     <td style="width: 50%;">
                         <p>
                             <span class="fw-bold">Company Name: </span><span t-out="o.company_id.name" /><br />
-                            <span class="fw-bold">Tax ID: </span><span t-out="o.company_id.vat or ''" /><br />
-                            <span class="fw-bold">Fiscal Address: </span><span t-out="o.company_id.street or ''" /><t t-if="o.company_id.city"><span t-out="', ' + o.company_id.city" /></t><br />
+                            <span class="fw-bold">Tax ID: </span><span t-out="o.company_id.partner_id._get_donation_vat()" /><br />
+                            <span class="fw-bold">Fiscal Address: </span><span t-out="o.company_id.partner_id._get_donation_address()" /><br />
                             <span class="fw-bold">Phone: </span><span t-out="o.company_id.phone or ''" />
                         </p>
                     </td>
@@ -63,11 +63,11 @@
                         </p>
                         <p>
                             <span class="fw-bold">Tax ID / ID Number: </span>
-                            <span t-out="((beneficiary.commercial_partner_id.prefix_vat or '') + '-' + beneficiary.commercial_partner_id.vat) if beneficiary and beneficiary.commercial_partner_id.vat else '____________________'" />
+                            <span t-out="(beneficiary and beneficiary._get_donation_vat()) or '____________________'" />
                         </p>
                         <p>
                             <span class="fw-bold">Address: </span>
-                            <span t-out="(beneficiary and (beneficiary.contact_address or beneficiary.street)) or '____________________'" />
+                            <span t-out="(beneficiary and beneficiary._get_donation_address()) or '____________________'" />
                         </p>
                         <p t-if="beneficiary and beneficiary.phone">
                             <span class="fw-bold">Phone: </span>
@@ -126,7 +126,7 @@
             <!-- ===== LEGAL TEXT ===== -->
             <p id="donation_receipt_legal" class="receipt-legal">
                 By means of this receipt, <strong><span t-out="o.company_id.name" /></strong>, Tax ID
-                <strong><span t-out="o.company_id.vat or ''" /></strong>, certifies having given to
+                <strong><span t-out="o.company_id.partner_id._get_donation_vat()" /></strong>, certifies having given to
                 <strong><span t-out="beneficiary.name or '____________________'" /></strong> the donation described herein, as a pure, simple and irrevocable donation.
             </p>
 

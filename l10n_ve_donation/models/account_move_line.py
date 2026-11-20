@@ -13,7 +13,18 @@ class AccountMoveLine(models.Model):
         the creation values is not computed."""
         lines = super().create(vals_list)
         lines.move_id._fill_donation_entry_line_partner()
+        lines.move_id._mark_donation_received_from_statement()
         return lines
+
+    def write(self, vals):
+        """Reconciling a bank statement line changes the account of its
+        suspense line: if it becomes a received donations account, the entry
+        is a donation received (see
+        `account.move._mark_donation_received_from_statement()`)."""
+        res = super().write(vals)
+        if vals.keys() & {"account_id", "debit", "credit", "balance", "amount_currency"}:
+            self.move_id._mark_donation_received_from_statement()
+        return res
 
     @api.constrains('account_id', 'display_type')
     def _check_payable_receivable(self):

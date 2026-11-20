@@ -10,7 +10,10 @@ class TestStockMove(TestDonationCommon):
     """Valuation journal entry of an outgoing donation delivery
     (`_get_account_move_line_vals` / `_create_account_move`). The donation
     mark and the forcing of the line partner only apply to
-    `is_donation and not sale_id and outgoing` pickings."""
+    `is_donation and not sale_id and outgoing` pickings.
+
+    Covers: REQ-DON-005, REQ-DON-030.
+    """
 
     @classmethod
     def setUpClass(cls):
@@ -89,7 +92,7 @@ class TestStockMove(TestDonationCommon):
         picking.action_assign()
         picking.move_ids.write({"quantity": 1, "picked": True})
         picking.button_validate()
-        self.assertFalse(picking.move_ids._is_donation_delivery_move())
+        self.assertFalse(picking.move_ids._is_donation_move())
         for entry in picking.move_ids.account_move_id:
             self.assertFalse(entry.is_donation)
 
@@ -158,7 +161,7 @@ class TestStockMove(TestDonationCommon):
         picking.with_context(default_is_donation=True).button_validate()
         self.assertTrue(self._entry(picking).is_donation)
 
-    def test_09_receipt_and_sale_pickings_are_not_donation_deliveries(self):
+    def test_09_reception_without_accounts_and_sale_pickings_are_not_donation_moves(self):
         receipt_type = self.env["stock.picking.type"].create({
             "name": "Donation Receipt Move Test",
             "code": "incoming",
@@ -180,7 +183,11 @@ class TestStockMove(TestDonationCommon):
                 "location_dest_id": self.warehouse_donation.lot_stock_id.id,
             })],
         })
-        self.assertFalse(receipt.move_ids._is_donation_delivery_move())
+        # Without received donations accounts the reception is a regular one;
+        # with them, its entry is the one of a donation.
+        self.assertFalse(receipt.move_ids._is_donation_move())
+        self.company.donation_income_account_ids = self.account_income
+        self.assertTrue(receipt.move_ids._is_donation_move())
 
         order = self.env["sale.order"].create({
             "partner_id": self.partner.id,
@@ -193,7 +200,7 @@ class TestStockMove(TestDonationCommon):
         })
         delivery_of_sale = self._create_donation_picking()
         delivery_of_sale.sale_id = order
-        self.assertFalse(delivery_of_sale.move_ids._is_donation_delivery_move())
+        self.assertFalse(delivery_of_sale.move_ids._is_donation_move())
 
     def test_10_valuation_entry_has_no_donation_receipt(self):
         """The valuation entry of a donation delivery is marked as donation

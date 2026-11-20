@@ -13,7 +13,10 @@ class TestStockReturnPicking(TestDonationCommon):
     The wizard is exercised through its real entry point
     (`action_create_returns`, which calls `_create_return`), with a non-zero
     quantity on a line, so that the refusal is proven to come from the
-    donation rule and not from the wizard having nothing to return."""
+    donation rule and not from the wizard having nothing to return.
+
+    Covers: REQ-DON-007.
+    """
 
     def _storable_product(self, name):
         return self.env["product.product"].create({

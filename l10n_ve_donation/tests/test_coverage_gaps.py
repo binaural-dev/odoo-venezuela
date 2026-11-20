@@ -6,6 +6,7 @@ from .common import TestDonationCommon
 
 @tagged('l10n_ve_donation', 'coverage_gaps', '-at_install', 'post_install')
 class TestCoverageGaps(TestDonationCommon):
+    """Covers: REQ-DON-010, REQ-DON-012, REQ-DON-013."""
 
     def test_01_product_line_donation_success(self):
         """product_line_donation returns invoice lines grouped by tax."""
