@@ -703,9 +703,17 @@ class AccountMoveLine(models.Model):
 
             total_currency = sum(product_lines.mapped('amount_currency'))
             rate_date = move.invoice_date or move.date or fields.Date.context_today(move)
+            if move.currency_id == move.company_id.currency_foreign_id:
+                # See AccountMove._distribute_invoice_real_portion: when the
+                # invoice currency IS the company's foreign currency, the
+                # foreign -> company multiplier lives in `foreign_rate`, not
+                # `foreign_inverse_rate`.
+                custom_rate = move.foreign_rate or 0.0
+            else:
+                custom_rate = move.foreign_inverse_rate or 0.0
             expected = cc.round(move.currency_id._convert(
                 total_currency, cc, move.company_id, rate_date,
-                custom_rate=move.foreign_inverse_rate or 0.0,
+                custom_rate=custom_rate,
             ))
             actual = sum(product_lines.mapped('balance'))
             diff = cc.round(expected - actual)
@@ -716,6 +724,20 @@ class AccountMoveLine(models.Model):
             self._adjust_product_distribution(
                 product_lines, diff, cc, move,
             )
+
+    @api.model
+    def _max_safe_units(self, cur_bal, sign, currency):
+        """Units of `sign` direction that `cur_bal` can absorb without its
+        balance crossing zero (see `AccountMove._max_safe_units`): growing
+        further from zero is always safe (``None``); shrinking towards it
+        is capped at exactly reaching zero, never past it, since overshoot
+        flips the line's balance sign relative to its (untouched)
+        amount_currency and trips
+        `account_move_line_check_amount_currency_balance_sign`.
+        """
+        if cur_bal == 0 or (cur_bal > 0) == (sign > 0):
+            return None
+        return int(abs(cur_bal) / currency.rounding + 1e-6)
 
     @api.model
     def _adjust_product_distribution(
@@ -732,20 +754,49 @@ class AccountMoveLine(models.Model):
         remaining_units = round(abs_diff / cc.rounding)
         n = len(sorted_ids)
 
+        units_map = {}
         for i, line_id in enumerate(sorted_ids):
-            if remaining_units <= 0:
-                break
             cur_bal = bal_map[line_id]
+            if remaining_units <= 0:
+                units_map[line_id] = 0
+                continue
             if i < n - 1:
                 ratio = abs(cur_bal) / total_abs
                 share = cc.round(ratio * abs_diff)
                 units = round(share / cc.rounding)
-                if units > remaining_units:
-                    units = remaining_units
+                units = min(units, remaining_units)
             else:
                 units = remaining_units
-            new_balance = cc.round(cur_bal + sign * units * cc.rounding)
-            product_lines.browse(line_id).balance = new_balance
+            safe_cap = self._max_safe_units(cur_bal, sign, cc)
+            if safe_cap is not None:
+                units = min(units, safe_cap)
+            units_map[line_id] = units
             remaining_units -= units
+
+        if remaining_units > 0:
+            for line_id in sorted_ids:
+                if remaining_units <= 0:
+                    break
+                cur_bal = bal_map[line_id]
+                safe_cap = self._max_safe_units(cur_bal, sign, cc)
+                room = remaining_units if safe_cap is None else max(0, safe_cap - units_map[line_id])
+                extra = min(remaining_units, room)
+                if extra:
+                    units_map[line_id] += extra
+                    remaining_units -= extra
+
+        if remaining_units > 0:
+            _logger.warning(
+                "Real portion (product lines): %s %s of %s %s could not be "
+                "distributed across %s without flipping a line's sign; "
+                "left unassigned.",
+                remaining_units, cc.rounding, abs_diff, cc.name, product_lines.ids,
+            )
+
+        for line_id, units in units_map.items():
+            if not units:
+                continue
+            new_balance = cc.round(bal_map[line_id] + sign * units * cc.rounding)
+            product_lines.browse(line_id).balance = new_balance
 
         move.real_portion_count += 1
