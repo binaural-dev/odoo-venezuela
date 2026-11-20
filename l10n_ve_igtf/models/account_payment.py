@@ -67,7 +67,13 @@ class AccountPaymentIgtf(models.Model):
                     else:
                         fechas_lista = set(rec.invoices_origin_ids.mapped('invoice_date'))
                         vals0_bal = vals[0].get('debit', 0.0) - vals[0].get('credit', 0.0)
-                        if abs(total_base_residual) - abs(vals0_bal) <= 0.1 and len(fechas_lista) == 1 and rec.date in fechas_lista:
+                        comp_curr = rec.company_id.currency_id
+                        if (
+                            not comp_curr.is_zero(total_base_residual)
+                            and abs(total_base_residual) - abs(vals0_bal) <= 0.1
+                            and len(fechas_lista) == 1
+                            and rec.date in fechas_lista
+                        ):
                             if rec.partner_type == "customer":
                                 vals[0].update({"debit": total_base_residual, "credit": 0.0})
                                 vals[1].update({"debit": 0.0, "credit": total_base_residual})
@@ -135,6 +141,9 @@ class AccountPaymentIgtf(models.Model):
 
             invoice_residual = sum(rec.invoices_origin_ids.mapped('amount_residual_signed'))
             residual_abs = abs(invoice_residual) if invoice_residual else 0.0
+
+            if comp_curr.is_zero(invoice_residual) and not comp_curr.is_zero(current):
+                continue
 
             expected = -invoice_residual if invoice_residual else 0.0
 
