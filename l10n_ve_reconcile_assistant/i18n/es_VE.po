@@ -1,0 +1,510 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* l10n_ve_reconcile_assistant
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0+e-20261023\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-11-09 02:22+0000\n"
+"PO-Revision-Date: 2026-11-09 02:22+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: es_VE\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: l10n_ve_reconcile_assistant
+#. odoo-python
+#: code:addons/l10n_ve_reconcile_assistant/wizard/l10n_ve_reconcile_assistant.py:0
+msgid "%(origin)s: %(crossed)s are crossed out of %(total)s; %(left)s remain"
+msgstr "%(origin)s: se cruzan %(crossed)s de %(total)s; quedan %(left)s"
+
+#. module: l10n_ve_reconcile_assistant
+#. odoo-python
+#: code:addons/l10n_ve_reconcile_assistant/wizard/l10n_ve_reconcile_assistant.py:0
+msgid "%(origins)s against %(invoices)s"
+msgstr "%(origins)s contra %(invoices)s"
+
+#. module: l10n_ve_reconcile_assistant
+#. odoo-python
+#: code:addons/l10n_ve_reconcile_assistant/wizard/l10n_ve_reconcile_assistant.py:0
+msgid "%s invoices"
+msgstr "%s facturas"
+
+#. module: l10n_ve_reconcile_assistant
+#. odoo-python
+#: code:addons/l10n_ve_reconcile_assistant/wizard/l10n_ve_reconcile_assistant.py:0
+msgid "1 advance"
+msgstr "1 anticipo"
+
+#. module: l10n_ve_reconcile_assistant
+#. odoo-python
+#: code:addons/l10n_ve_reconcile_assistant/wizard/l10n_ve_reconcile_assistant.py:0
+msgid "1 invoice"
+msgstr "1 factura"
+
+#. module: l10n_ve_reconcile_assistant
+#. odoo-python
+#: code:addons/l10n_ve_reconcile_assistant/wizard/l10n_ve_reconcile_assistant.py:0
+msgid "1 payment"
+msgstr "1 pago"
+
+#. module: l10n_ve_reconcile_assistant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_reconcile_assistant.l10n_ve_reconcile_assistant_view_form
+msgid "<strong>Combination not allowed.</strong>"
+msgstr "<strong>Combinación no permitida.</strong>"
+
+#. module: l10n_ve_reconcile_assistant
+#: model:ir.model.fields.selection,name:l10n_ve_reconcile_assistant.selection__l10n_ve_reconcile_assistant__case__advance
+msgid "Advance to invoices"
+msgstr "Anticipo a facturas"
+
+#. module: l10n_ve_reconcile_assistant
+#. odoo-python
+#: code:addons/l10n_ve_reconcile_assistant/models/account_move_line.py:0
+msgid "All lines must be posted and not reconciled."
+msgstr "Todas las líneas deben estar publicadas y sin conciliar."
+
+#. module: l10n_ve_reconcile_assistant
+#. odoo-python
+#: code:addons/l10n_ve_reconcile_assistant/models/account_move_line.py:0
+msgid "An advance can only be applied against an invoice."
+msgstr "Un anticipo solo se puede aplicar contra una factura."
+
+#. module: l10n_ve_reconcile_assistant
+#. odoo-python
+#: code:addons/l10n_ve_reconcile_assistant/models/account_move_line.py:0
+msgid ""
+"An advance can only be applied against receivable or payable accounts of an "
+"invoice, not against another account."
+msgstr ""
+"Un anticipo solo se puede aplicar contra cuentas por cobrar o por pagar de "
+"una factura, no contra otra cuenta."
+
+#. module: l10n_ve_reconcile_assistant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_reconcile_assistant.l10n_ve_reconcile_assistant_view_form
+msgid "An advance cross entry is created for each pair, in the order shown."
+msgstr "Se crea un cruce de anticipo por cada par, en el orden indicado."
+
+#. module: l10n_ve_reconcile_assistant
+#: model:ir.model.fields,field_description:l10n_ve_reconcile_assistant.field_l10n_ve_reconcile_assistant__item_ids
+msgid "Application"
+msgstr "Aplicación"
+
+#. module: l10n_ve_reconcile_assistant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_reconcile_assistant.l10n_ve_reconcile_assistant_view_form
+msgid "Application, in this order (drag the rows to change it)"
+msgstr "Aplicación, en este orden (arrastre las filas para cambiarlo)"
+
+#. module: l10n_ve_reconcile_assistant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_reconcile_assistant.l10n_ve_reconcile_assistant_view_form
+msgid "Applied: payment or advance"
+msgstr "Se aplica: pago o anticipo"
+
+#. module: l10n_ve_reconcile_assistant
+#: model:ir.model.fields,field_description:l10n_ve_reconcile_assistant.field_l10n_ve_reconcile_assistant_item__apply_amount
+msgid "Apply Amount"
+msgstr "Monto a aplicar"
+
+#. module: l10n_ve_reconcile_assistant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_reconcile_assistant.l10n_ve_reconcile_assistant_view_form
+msgid "Available"
+msgstr "Disponible"
+
+#. module: l10n_ve_reconcile_assistant
+#: model:ir.model.fields.selection,name:l10n_ve_reconcile_assistant.selection__l10n_ve_reconcile_assistant__case__blocked
+msgid "Blocked"
+msgstr "Bloqueado"
+
+#. module: l10n_ve_reconcile_assistant
+#: model:ir.model.fields,field_description:l10n_ve_reconcile_assistant.field_l10n_ve_reconcile_assistant__blocked_reason
+msgid "Blocked Reason"
+msgstr "Motivo del bloqueo"
+
+#. module: l10n_ve_reconcile_assistant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_reconcile_assistant.l10n_ve_reconcile_assistant_view_form
+msgid "Cancel"
+msgstr "Cancelar"
+
+#. module: l10n_ve_reconcile_assistant
+#: model:ir.model.fields,field_description:l10n_ve_reconcile_assistant.field_l10n_ve_reconcile_assistant__case
+msgid "Case"
+msgstr "Caso"
+
+#. module: l10n_ve_reconcile_assistant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_reconcile_assistant.l10n_ve_reconcile_assistant_view_form
+msgid "Conditions"
+msgstr "Condiciones"
+
+#. module: l10n_ve_reconcile_assistant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_reconcile_assistant.l10n_ve_reconcile_assistant_view_form
+msgid "Conv. date"
+msgstr "F. conversión"
+
+#. module: l10n_ve_reconcile_assistant
+#: model:ir.model.fields,field_description:l10n_ve_reconcile_assistant.field_l10n_ve_reconcile_assistant_item__conversion_date
+msgid "Conversion Date"
+msgstr "Fecha de conversión"
+
+#. module: l10n_ve_reconcile_assistant
+#: model:ir.model.fields,field_description:l10n_ve_reconcile_assistant.field_l10n_ve_reconcile_assistant__create_uid
+#: model:ir.model.fields,field_description:l10n_ve_reconcile_assistant.field_l10n_ve_reconcile_assistant_item__create_uid
+msgid "Created by"
+msgstr "Creado por"
+
+#. module: l10n_ve_reconcile_assistant
+#: model:ir.model.fields,field_description:l10n_ve_reconcile_assistant.field_l10n_ve_reconcile_assistant__create_date
+#: model:ir.model.fields,field_description:l10n_ve_reconcile_assistant.field_l10n_ve_reconcile_assistant_item__create_date
+msgid "Created on"
+msgstr "Creado el"
+
+#. module: l10n_ve_reconcile_assistant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_reconcile_assistant.l10n_ve_reconcile_assistant_view_form
+msgid "Crossed"
+msgstr "Se cruza"
+
+#. module: l10n_ve_reconcile_assistant
+#: model:ir.model.fields,field_description:l10n_ve_reconcile_assistant.field_l10n_ve_reconcile_assistant_item__currency_id
+#: model:ir.model.fields,field_description:l10n_ve_reconcile_assistant.field_l10n_ve_reconcile_assistant_item__origin_currency_id
+msgid "Currency"
+msgstr "Moneda"
+
+#. module: l10n_ve_reconcile_assistant
+#: model:ir.model.fields,field_description:l10n_ve_reconcile_assistant.field_account_move__display_name
+#: model:ir.model.fields,field_description:l10n_ve_reconcile_assistant.field_account_move_line__display_name
+#: model:ir.model.fields,field_description:l10n_ve_reconcile_assistant.field_l10n_ve_reconcile_assistant__display_name
+#: model:ir.model.fields,field_description:l10n_ve_reconcile_assistant.field_l10n_ve_reconcile_assistant_item__display_name
+msgid "Display Name"
+msgstr "Nombre para mostrar"
+
+#. module: l10n_ve_reconcile_assistant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_reconcile_assistant.l10n_ve_reconcile_assistant_view_form
+msgid "Entry"
+msgstr "Asiento"
+
+#. module: l10n_ve_reconcile_assistant
+#: model:ir.model.fields,field_description:l10n_ve_reconcile_assistant.field_account_move__id
+#: model:ir.model.fields,field_description:l10n_ve_reconcile_assistant.field_account_move_line__id
+#: model:ir.model.fields,field_description:l10n_ve_reconcile_assistant.field_l10n_ve_reconcile_assistant__id
+#: model:ir.model.fields,field_description:l10n_ve_reconcile_assistant.field_l10n_ve_reconcile_assistant_item__id
+msgid "ID"
+msgstr "ID"
+
+#. module: l10n_ve_reconcile_assistant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_reconcile_assistant.l10n_ve_reconcile_assistant_view_form
+msgid "IGTF"
+msgstr "IGTF"
+
+#. module: l10n_ve_reconcile_assistant
+#. odoo-python
+#: code:addons/l10n_ve_reconcile_assistant/wizard/l10n_ve_reconcile_assistant.py:0
+msgid "IGTF journal"
+msgstr "Diario con IGTF"
+
+#. module: l10n_ve_reconcile_assistant
+#: model:ir.model.fields,field_description:l10n_ve_reconcile_assistant.field_l10n_ve_reconcile_assistant_item__igtf_amount
+msgid "Igtf Amount"
+msgstr "Monto IGTF"
+
+#. module: l10n_ve_reconcile_assistant
+#: model:ir.model.fields,field_description:l10n_ve_reconcile_assistant.field_l10n_ve_reconcile_assistant_item__invoice_id
+#: model_terms:ir.ui.view,arch_db:l10n_ve_reconcile_assistant.l10n_ve_reconcile_assistant_view_form
+msgid "Invoice"
+msgstr "Factura"
+
+#. module: l10n_ve_reconcile_assistant
+#: model:ir.model.fields,field_description:l10n_ve_reconcile_assistant.field_l10n_ve_reconcile_assistant__invoice_line_ids
+msgid "Invoices to pay"
+msgstr "Facturas por pagar"
+
+#. module: l10n_ve_reconcile_assistant
+#: model:ir.model,name:l10n_ve_reconcile_assistant.model_account_move
+#: model:ir.model.fields,field_description:l10n_ve_reconcile_assistant.field_l10n_ve_reconcile_assistant_item__origin_move_id
+msgid "Journal Entry"
+msgstr "Asiento contable"
+
+#. module: l10n_ve_reconcile_assistant
+#: model:ir.model,name:l10n_ve_reconcile_assistant.model_account_move_line
+msgid "Journal Item"
+msgstr "Apunte contable"
+
+#. module: l10n_ve_reconcile_assistant
+#. odoo-python
+#: code:addons/l10n_ve_reconcile_assistant/wizard/l10n_ve_reconcile_assistant.py:0
+msgid "Keeps the value in foreign currency"
+msgstr "Mantiene el valor en divisa"
+
+#. module: l10n_ve_reconcile_assistant
+#: model:ir.model.fields,field_description:l10n_ve_reconcile_assistant.field_l10n_ve_reconcile_assistant__write_uid
+#: model:ir.model.fields,field_description:l10n_ve_reconcile_assistant.field_l10n_ve_reconcile_assistant_item__write_uid
+msgid "Last Updated by"
+msgstr "Última actualización por"
+
+#. module: l10n_ve_reconcile_assistant
+#: model:ir.model.fields,field_description:l10n_ve_reconcile_assistant.field_l10n_ve_reconcile_assistant__write_date
+#: model:ir.model.fields,field_description:l10n_ve_reconcile_assistant.field_l10n_ve_reconcile_assistant_item__write_date
+msgid "Last Updated on"
+msgstr "Última actualización el"
+
+#. module: l10n_ve_reconcile_assistant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_reconcile_assistant.l10n_ve_reconcile_assistant_view_form
+msgid "Offered"
+msgstr "Ofrecido"
+
+#. module: l10n_ve_reconcile_assistant
+#. odoo-python
+#: code:addons/l10n_ve_reconcile_assistant/models/account_move_line.py:0
+msgid ""
+"One of the lines belongs to a debit/credit note of IGTF or of the exchange "
+"difference. Such notes are reconciled from their own document to keep the "
+"date and rate of the payment."
+msgstr ""
+"Una de las líneas pertenece a una nota de débito/crédito de IGTF o del "
+"diferencial cambiario. Esas notas se concilian desde su propio documento "
+"para conservar la fecha y la tasa del pago."
+
+#. module: l10n_ve_reconcile_assistant
+#. odoo-python
+#: code:addons/l10n_ve_reconcile_assistant/models/account_move_line.py:0
+msgid ""
+"One of the lines belongs to an advance cross entry. Crosses are reconciled "
+"and undone from the invoice, since doing it here would break the link with "
+"the origin payment."
+msgstr ""
+"Una de las líneas pertenece a un asiento de cruce de anticipo. Los cruces se"
+" concilian y se deshacen desde la factura, ya que hacerlo aquí rompería el "
+"vínculo con el pago origen."
+
+#. module: l10n_ve_reconcile_assistant
+#: model:ir.model.fields,field_description:l10n_ve_reconcile_assistant.field_account_move_line__l10n_ve_open_amount
+msgid "Open amount"
+msgstr "Monto abierto"
+
+#. module: l10n_ve_reconcile_assistant
+#: model:ir.model.fields,field_description:l10n_ve_reconcile_assistant.field_l10n_ve_reconcile_assistant_item__origin_applied
+msgid "Origin Applied"
+msgstr "Cruzado del origen"
+
+#. module: l10n_ve_reconcile_assistant
+#: model:ir.model.fields,field_description:l10n_ve_reconcile_assistant.field_l10n_ve_reconcile_assistant_item__origin_before
+msgid "Origin Before"
+msgstr "Saldo del origen antes"
+
+#. module: l10n_ve_reconcile_assistant
+#: model:ir.model.fields,field_description:l10n_ve_reconcile_assistant.field_l10n_ve_reconcile_assistant_item__origin_conditions
+msgid "Origin Conditions"
+msgstr "Condiciones del origen"
+
+#. module: l10n_ve_reconcile_assistant
+#: model:ir.model.fields,field_description:l10n_ve_reconcile_assistant.field_l10n_ve_reconcile_assistant_item__origin_line_id
+msgid "Origin Line"
+msgstr "Línea de origen"
+
+#. module: l10n_ve_reconcile_assistant
+#: model:ir.model.fields,field_description:l10n_ve_reconcile_assistant.field_l10n_ve_reconcile_assistant_item__origin_remaining
+msgid "Origin Remaining"
+msgstr "Saldo restante del origen"
+
+#. module: l10n_ve_reconcile_assistant
+#: model:ir.model.fields,field_description:l10n_ve_reconcile_assistant.field_l10n_ve_reconcile_assistant__origin_summary
+msgid "Origin Summary"
+msgstr "Resumen por origen"
+
+#. module: l10n_ve_reconcile_assistant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_reconcile_assistant.l10n_ve_reconcile_assistant_view_form
+msgid "Origin before"
+msgstr "Saldo antes"
+
+#. module: l10n_ve_reconcile_assistant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_reconcile_assistant.l10n_ve_reconcile_assistant_view_form
+msgid "Origin left"
+msgstr "Saldo origen"
+
+#. module: l10n_ve_reconcile_assistant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_reconcile_assistant.l10n_ve_reconcile_assistant_view_form
+msgid "Paid: invoices"
+msgstr "Se paga: facturas"
+
+#. module: l10n_ve_reconcile_assistant
+#: model:ir.model.fields.selection,name:l10n_ve_reconcile_assistant.selection__l10n_ve_reconcile_assistant__case__payment
+msgid "Payment to invoices"
+msgstr "Pago a facturas"
+
+#. module: l10n_ve_reconcile_assistant
+#: model:ir.model.fields,field_description:l10n_ve_reconcile_assistant.field_l10n_ve_reconcile_assistant__origin_line_ids
+msgid "Payments and advances"
+msgstr "Pagos y anticipos"
+
+#. module: l10n_ve_reconcile_assistant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_reconcile_assistant.l10n_ve_reconcile_assistant_view_form
+msgid "Pending"
+msgstr "Pendiente"
+
+#. module: l10n_ve_reconcile_assistant
+#: model:ir.model.fields,field_description:l10n_ve_reconcile_assistant.field_l10n_ve_reconcile_assistant_item__pending_after
+msgid "Pending After"
+msgstr "Pendiente después"
+
+#. module: l10n_ve_reconcile_assistant
+#: model:ir.model.fields,field_description:l10n_ve_reconcile_assistant.field_l10n_ve_reconcile_assistant__pending_warning
+msgid "Pending Warning"
+msgstr "Aviso de pendiente"
+
+#. module: l10n_ve_reconcile_assistant
+#: model:ir.model.fields,help:l10n_ve_reconcile_assistant.field_account_move_line__l10n_ve_open_amount
+msgid ""
+"Pending amount of the line, always positive, in the currency of the line."
+msgstr ""
+"Monto pendiente de la línea, siempre positivo, en la moneda de la línea."
+
+#. module: l10n_ve_reconcile_assistant
+#: model:ir.model.fields,field_description:l10n_ve_reconcile_assistant.field_l10n_ve_reconcile_assistant_item__rate
+msgid "Rate"
+msgstr "Tasa"
+
+#. module: l10n_ve_reconcile_assistant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_reconcile_assistant.l10n_ve_reconcile_assistant_view_form
+msgid "Reconcile"
+msgstr "Conciliar"
+
+#. module: l10n_ve_reconcile_assistant
+#. odoo-python
+#: code:addons/l10n_ve_reconcile_assistant/wizard/l10n_ve_reconcile_assistant.py:0
+#: model_terms:ir.ui.view,arch_db:l10n_ve_reconcile_assistant.l10n_ve_reconcile_assistant_view_form
+msgid "Reconcile documents"
+msgstr "Conciliar documentos"
+
+#. module: l10n_ve_reconcile_assistant
+#: model:ir.model,name:l10n_ve_reconcile_assistant.model_l10n_ve_reconcile_assistant
+msgid "Reconciliation assistant"
+msgstr "Asistente de conciliación"
+
+#. module: l10n_ve_reconcile_assistant
+#: model:ir.model,name:l10n_ve_reconcile_assistant.model_l10n_ve_reconcile_assistant_item
+msgid "Reconciliation assistant line"
+msgstr "Línea del asistente de conciliación"
+
+#. module: l10n_ve_reconcile_assistant
+#: model:ir.model.fields,field_description:l10n_ve_reconcile_assistant.field_l10n_ve_reconcile_assistant__scenario_label
+msgid "Scenario Label"
+msgstr "Descripción de lo que se cruza"
+
+#. module: l10n_ve_reconcile_assistant
+#. odoo-python
+#: code:addons/l10n_ve_reconcile_assistant/models/account_move_line.py:0
+msgid ""
+"Select a single payment or advance to apply against one or several invoices."
+" To pay an invoice with several payments, reconcile each payment on its own:"
+" each payment converts only what is left of it and each advance creates its "
+"own cross entries, so with more than one origin the result would depend on "
+"the order."
+msgstr ""
+"Seleccione un único pago o anticipo para aplicar contra una o varias "
+"facturas. Para pagar una factura con varios pagos, concilie cada pago por "
+"separado: cada pago convierte solo lo que le queda y cada anticipo crea sus "
+"propios asientos de cruce, así que con más de un origen el resultado "
+"dependería del orden."
+
+#. module: l10n_ve_reconcile_assistant
+#: model:ir.model.fields,field_description:l10n_ve_reconcile_assistant.field_l10n_ve_reconcile_assistant__line_ids
+msgid "Selected items"
+msgstr "Apuntes seleccionados"
+
+#. module: l10n_ve_reconcile_assistant
+#: model:ir.model.fields,field_description:l10n_ve_reconcile_assistant.field_l10n_ve_reconcile_assistant_item__sequence
+msgid "Sequence"
+msgstr "Secuencia"
+
+#. module: l10n_ve_reconcile_assistant
+#. odoo-python
+#: code:addons/l10n_ve_reconcile_assistant/models/account_move_line.py:0
+msgid "The lines belong to different companies."
+msgstr "Las líneas pertenecen a compañías distintas."
+
+#. module: l10n_ve_reconcile_assistant
+#. odoo-python
+#: code:addons/l10n_ve_reconcile_assistant/models/account_move_line.py:0
+msgid "The lines belong to different partners."
+msgstr "Las líneas pertenecen a socios distintos."
+
+#. module: l10n_ve_reconcile_assistant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_reconcile_assistant.l10n_ve_reconcile_assistant_view_form
+msgid ""
+"The payment is applied to the invoices one by one, as from the invoice."
+msgstr "El pago se aplica a las facturas una por una, como desde la factura."
+
+#. module: l10n_ve_reconcile_assistant
+#. odoo-python
+#: code:addons/l10n_ve_reconcile_assistant/models/account_move_line.py:0
+msgid ""
+"The payments and the invoices do not go in opposite directions (for example "
+"a payment received against a vendor bill)."
+msgstr ""
+"Los pagos y las facturas no van en sentidos opuestos (por ejemplo un pago "
+"recibido contra una factura de proveedor)."
+
+#. module: l10n_ve_reconcile_assistant
+#. odoo-python
+#: code:addons/l10n_ve_reconcile_assistant/wizard/l10n_ve_reconcile_assistant.py:0
+msgid "The selection changed since the assistant was opened. Open it again."
+msgstr "La selección cambió desde que se abrió el asistente. Ábralo de nuevo."
+
+#. module: l10n_ve_reconcile_assistant
+#. odoo-python
+#: code:addons/l10n_ve_reconcile_assistant/wizard/l10n_ve_reconcile_assistant.py:0
+msgid "The selection is not a payment or advance against invoices."
+msgstr "La selección no es un pago o anticipo contra facturas."
+
+#. module: l10n_ve_reconcile_assistant
+#. odoo-python
+#: code:addons/l10n_ve_reconcile_assistant/wizard/l10n_ve_reconcile_assistant.py:0
+msgid "There is no amount available to apply %(origin)s to: %(invoice)s"
+msgstr "No hay monto disponible para aplicar %(origin)s a: %(invoice)s"
+
+#. module: l10n_ve_reconcile_assistant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_reconcile_assistant.l10n_ve_reconcile_assistant_view_form
+msgid "To invoice"
+msgstr "A la factura"
+
+#. module: l10n_ve_reconcile_assistant
+#: model:ir.model.fields,help:l10n_ve_reconcile_assistant.field_l10n_ve_reconcile_assistant_item__origin_remaining
+msgid "What is left of the payment or advance after this row."
+msgstr "Lo que queda del pago o anticipo después de esta fila."
+
+#. module: l10n_ve_reconcile_assistant
+#: model:ir.model.fields,help:l10n_ve_reconcile_assistant.field_l10n_ve_reconcile_assistant_item__origin_before
+msgid ""
+"What the payment or advance has before this row. Each invoice converts only "
+"what is left of it, with its own date and rate rule, so the amount offered "
+"changes with the order."
+msgstr ""
+"Lo que tiene el pago o anticipo antes de esta fila. Cada factura convierte "
+"solo lo que queda de él, con su propia regla de fecha y tasa, así que el "
+"monto ofrecido cambia con el orden."
+
+#. module: l10n_ve_reconcile_assistant
+#: model:ir.model.fields,help:l10n_ve_reconcile_assistant.field_l10n_ve_reconcile_assistant_item__origin_applied
+msgid ""
+"What this row takes from the payment or advance, in its own currency and "
+"including the IGTF of the cross entry."
+msgstr ""
+"Lo que esta fila toma del pago o anticipo, en su propia moneda e incluyendo "
+"el IGTF del asiento de cruce."
+
+#. module: l10n_ve_reconcile_assistant
+#: model:ir.model.fields,field_description:l10n_ve_reconcile_assistant.field_l10n_ve_reconcile_assistant_item__widget_amount
+msgid "Widget Amount"
+msgstr "Monto del widget"
+
+#. module: l10n_ve_reconcile_assistant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_reconcile_assistant.l10n_ve_reconcile_assistant_view_form
+msgid "With this order some invoices keep an amount pending."
+msgstr "Con este orden algunas facturas quedan con un monto pendiente."
+
+#. module: l10n_ve_reconcile_assistant
+#: model:ir.model.fields,field_description:l10n_ve_reconcile_assistant.field_l10n_ve_reconcile_assistant_item__wizard_id
+msgid "Wizard"
+msgstr "Asistente"

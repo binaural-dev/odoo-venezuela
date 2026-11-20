@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="l10n_ve_reconcile_assistant_view_form" model="ir.ui.view">
+        <field name="name">l10n_ve.reconcile.assistant.form</field>
+        <field name="model">l10n_ve.reconcile.assistant</field>
+        <field name="arch" type="xml">
+            <form string="Reconcile documents">
+                <field name="case" invisible="1"/>
+                <field name="pending_warning" invisible="1" force_save="1"/>
+                <div class="alert alert-danger" role="alert" invisible="case != 'blocked'">
+                    <strong>Combination not allowed.</strong>
+                    <field name="blocked_reason" readonly="1"/>
+                </div>
+                <div class="alert alert-info" role="status" invisible="case == 'blocked'">
+                    <h4 class="mb-1"><field name="scenario_label" force_save="1"/></h4>
+                    <div invisible="case != 'payment'">The payment is applied to the invoices one by one, as from the invoice.</div>
+                    <div invisible="case != 'advance'">An advance cross entry is created for each pair, in the order shown.</div>
+                    <field name="origin_summary" readonly="1" nolabel="1" class="d-block mt-1 fw-bold" style="white-space: pre-line;"/>
+                </div>
+                <div class="alert alert-warning" role="alert" invisible="not pending_warning">
+                    With this order some invoices keep an amount pending.
+                </div>
+                <group invisible="case == 'blocked'">
+                    <group string="Applied: payment or advance">
+                        <field name="origin_line_ids" nolabel="1" colspan="2" readonly="1">
+                            <list>
+                                <field name="move_name" string="Entry"/>
+                                <field name="date"/>
+                                <field name="l10n_ve_open_amount" string="Available"/>
+                                <field name="currency_id" column_invisible="1"/>
+                            </list>
+                        </field>
+                    </group>
+                    <group string="Paid: invoices">
+                        <field name="invoice_line_ids" nolabel="1" colspan="2" readonly="1">
+                            <list>
+                                <field name="move_name" string="Invoice"/>
+                                <field name="date"/>
+                                <field name="l10n_ve_open_amount" string="Pending"/>
+                                <field name="currency_id" column_invisible="1"/>
+                            </list>
+                        </field>
+                    </group>
+                </group>
+                <separator string="Application, in this order (drag the rows to change it)" invisible="case == 'blocked'"/>
+                <field name="item_ids" invisible="case == 'blocked'" nolabel="1">
+                    <list editable="bottom" create="false" delete="false">
+                        <field name="sequence" widget="handle"/>
+                        <field name="currency_id" column_invisible="1"/>
+                        <field name="origin_line_id" column_invisible="1" force_save="1"/>
+                        <field name="origin_move_id" column_invisible="1"/>
+                        <field name="invoice_id" width="140px" force_save="1"/>
+                        <field name="conversion_date" string="Conv. date" force_save="1"/>
+                        <field name="rate" force_save="1"/>
+                        <field name="widget_amount" string="Offered" force_save="1" optional="hide"/>
+                        <field name="apply_amount" string="To invoice" force_save="1"/>
+                        <field name="igtf_amount" string="IGTF" force_save="1"/>
+                        <field name="origin_currency_id" column_invisible="1"/>
+                        <field name="origin_before" string="Origin before" force_save="1"/>
+                        <field name="origin_applied" string="Crossed" force_save="1"/>
+                        <field name="origin_remaining" string="Origin left" force_save="1"/>
+                        <field name="pending_after" string="Pending" force_save="1"/>
+                        <field name="origin_conditions" string="Conditions" force_save="1" optional="hide"/>
+                    </list>
+                </field>
+                <footer>
+                    <button string="Reconcile" name="action_confirm" type="object" class="btn-primary"
+                            invisible="case == 'blocked'" data-hotkey="q"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel" data-hotkey="x"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>
