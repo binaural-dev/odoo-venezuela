@@ -99,3 +99,34 @@ class ResPartner(models.Model):
     def _compute_is_foreign_partner(self):
         # Only adds type_person_id to the dependencies of l10n_ve_tax_payer.
         super()._compute_is_foreign_partner()
+
+    @api.onchange("taxpayer_type")
+    def _onchange_taxpayer_type_withholding_type(self):
+        """Keeps the withholding type coherent with the taxpayer type (ticket 16339):
+
+        - A special taxpayer gets the 75% withholding type by default.
+        - Any other taxpayer type has no withholding type, but it is only cleared
+          for a partner that is a customer and not a supplier.
+        The IVA retentions of a supplier read the withholding type whatever its
+        taxpayer type is, so it is never defaulted nor cleared for them. A partner
+        that is neither a customer nor a supplier yet (a new contact created from
+        the contacts app, a purchase order or a vendor bill: ``supplier_rank`` is
+        only raised when its first invoice is posted) keeps the field as it is, so
+        a supplier is never left without a way to fill it.
+        The partner of a company is left as it is: its withholding type comes from
+        the company configuration.
+        """
+        withholding_75 = self.env.ref(
+            "l10n_ve_payment_extension.account_withholding_type_75",
+            raise_if_not_found=False,
+        )
+        for partner in self:
+            if partner._is_company_partner():
+                continue
+            if partner.supplier_rank > 0:
+                continue
+            if partner.taxpayer_type == "special":
+                if not partner.withholding_type_id and withholding_75:
+                    partner.withholding_type_id = withholding_75
+            elif partner.customer_rank > 0:
+                partner.withholding_type_id = False
