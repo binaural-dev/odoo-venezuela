@@ -154,3 +154,57 @@ class TestPaymentRegisterPartialIgtf(IGTFTestCommonSaleBook):
         self.assertAlmostEqual(payment.amount, residual, 2)
         self._assert_igtf_residual(payment, residual * 0.03)
         self.assertEqual(invoice.payment_state, "paid")
+
+    def _create_installment_invoice_usd(self, amount):
+        """Invoice with two open installments: 30% now and the balance in 60 days."""
+        payment_term = self.env["account.payment.term"].create({
+            "name": "30% Now, Balance 60 Days",
+            "line_ids": [
+                Command.create({"value": "percent", "value_amount": 30.0, "nb_days": 0}),
+                Command.create({"value": "percent", "value_amount": 70.0, "nb_days": 60}),
+            ],
+        })
+        invoice = self._create_invoice_usd(amount)
+        invoice.invoice_payment_term_id = payment_term
+        invoice.with_context(move_action_post_alert=True).action_post()
+        self.assertEqual(len(invoice.line_ids.filtered(lambda l: l.display_type == "payment_term")), 2)
+        return invoice
+
+    def test_partial_amount_of_invoice_with_installments(self):
+        """Regression (ticket 16535): with an invoice of several open installments the
+        payments are grouped and the amount must be editable to pay part of it."""
+        invoice = self._create_installment_invoice_usd(120.0)
+        action_data = invoice.action_register_payment()
+        with Form(
+            self.env["account.payment.register"].with_context(**action_data["context"])
+        ) as pay_form:
+            pay_form.journal_id = self.bank_journal_usd
+            self.assertTrue(pay_form.can_group_payments)
+            self.assertTrue(pay_form.group_payment)
+            # Form raises if the field is readonly in the view.
+            pay_form.amount = 50.0
+        wizard = pay_form.record
+        self.assertAlmostEqual(wizard.igtf_amount, 1.5, 2)
+
+        payment = self.env["account.payment"].browse(wizard.action_create_payments().get("res_id"))
+        self.assertAlmostEqual(payment.amount, 50.0, 2)
+        self.assertAlmostEqual(payment.igtf_amount, 1.5, 2)
+        self._assert_igtf_residual(payment, 1.5)
+        self.assertAlmostEqual(invoice.amount_residual, 70.0, 2)
+
+    def test_partial_grouped_amount_of_several_invoices_counts_igtf_once(self):
+        """A partial amount grouped for several invoices takes the IGTF of the amount
+        paid only once, not once per invoice."""
+        invoices = self._create_invoice_usd(100.0) + self._create_invoice_usd(100.0)
+        invoices.with_context(move_action_post_alert=True).action_post()
+        action_data = invoices.action_register_payment()
+        with Form(
+            self.env["account.payment.register"].with_context(**action_data["context"])
+        ) as pay_form:
+            pay_form.journal_id = self.bank_journal_usd
+            pay_form.group_payment = True
+            pay_form.amount = 150.0
+        wizard = pay_form.record
+        self.assertAlmostEqual(
+            wizard.igtf_amount, 4.5, 2, "The IGTF must be 3% of the 150.00 paid, not of 150.00 per invoice."
+        )

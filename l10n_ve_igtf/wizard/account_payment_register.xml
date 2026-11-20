@@ -36,16 +36,16 @@
 
                 <xpath expr="//label[@for='amount']" position="attributes">
                     <attribute name="invisible"/> 
-                    <attribute name="readonly">not can_edit_wizard or can_group_payments</attribute>
+                    <attribute name="readonly">not can_edit_wizard or (can_group_payments and not group_payment)</attribute>
                 </xpath>
 
                 <xpath expr="//div[@name='amount_div']" position="attributes">
                     <attribute name="invisible"/> 
-                    <attribute name="readonly">not can_edit_wizard or can_group_payments</attribute>
+                    <attribute name="readonly">not can_edit_wizard or (can_group_payments and not group_payment)</attribute>
                 </xpath>
                 
                 <xpath expr="//div[@name='amount_div']/field[@name='amount']" position="attributes">
-                    <attribute name="readonly">not can_edit_wizard or can_group_payments</attribute>
+                    <attribute name="readonly">not can_edit_wizard or (can_group_payments and not group_payment)</attribute>
                     <attribute name="force_save">1</attribute>
                 </xpath>
             </field>

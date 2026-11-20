@@ -92,10 +92,27 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         self.ensure_one()
         total_igtf_amount = 0.0
         if self.is_igtf:
-            for invoice in self.get_moves():
+            utils = self.env["l10n_ve_igtf.utils"]
+            # With grouped payments the amount is shared by all the invoices: each one
+            # takes the IGTF only of the part of the amount that is left for it, so a
+            # partial amount does not count the IGTF once per invoice.
+            remaining = self.amount
+            moves = sorted(self.get_moves(), key=lambda m: (m.invoice_date_due or m.date, m.id))
+            for invoice in moves:
+                if self.currency_id.compare_amounts(remaining, 0.0) <= 0:
+                    break
                 total_igtf_amount += self.calculate_igtf_for_payment(
-                    invoice, self.amount, self.currency_id, self.payment_date,
+                    invoice, remaining, self.currency_id, self.payment_date,
                 )
+                residual = utils._convert_to_external_currency(
+                    self.currency_id,
+                    utils._convert_to_company_currency(
+                        invoice.currency_id, invoice.amount_residual,
+                        self.payment_date, self.company_id,
+                    ),
+                    self.payment_date, self.company_id,
+                )
+                remaining -= abs(residual)
         total_igtf_amount = abs(total_igtf_amount)
         self.igtf_amount = total_igtf_amount
         self.igtf_to_show = total_igtf_amount
