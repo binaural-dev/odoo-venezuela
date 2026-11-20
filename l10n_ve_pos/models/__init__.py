@@ -20,3 +20,4 @@ from . import res_currency
 from . import account_tax
 from . import product_category
 from . import account_partial_reconcile
+from . import account_bank_statement_line

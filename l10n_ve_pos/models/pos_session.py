@@ -324,7 +324,10 @@ class PosSession(models.Model):
         The method must have settings for the currency
         (``pos.payment.method.currency``) with both cross journals: a foreign
         currency without them is skipped in silence - that configuration is
-        incomplete, not wrong. ``use_suspense`` must match whatever will be
+        incomplete, not wrong. The cash whose ``cross_journal`` is a cash
+        journal of its currency does not cross either: it is booked there when
+        it is paid (``pos.payment.method._get_foreign_cash_journal``).
+        ``use_suspense`` must match whatever will be
         passed to ``_create_cross_move_for`` - see
         ``_get_cross_transitory_account``.
 
@@ -354,9 +357,25 @@ class PosSession(models.Model):
             and settings.cross_journal
         ):
             return False
+        if self._get_foreign_cash_journal(payment_method, currency):
+            # The cash of that currency is already booked in its cash journal
+            # (``pos.payment.method._create_cash_payment_line``): nothing to cross.
+            return False
         if not use_suspense:
             return bool(self._get_cross_transitory_account(payment_method))
         return self._cross_move_suspense_accounts_ready(payment_method, currency)
+
+    def _get_foreign_cash_journal(self, payment_method, currency):
+        """Cash journal where this session books the cash that
+        ``payment_method`` takes in ``currency``
+        (``pos.payment.method._get_foreign_cash_journal``): only in a register
+        in the company currency, for a currency other than the register's.
+        Registers in another currency keep their cash in the journal of the
+        method."""
+        self.ensure_one()
+        if not self.is_in_company_currency or not currency or currency == self.currency_id:
+            return self.env["account.journal"]
+        return payment_method._get_foreign_cash_journal(currency)
 
     def _cross_move_suspense_accounts_ready(self, payment_method, currency):
         """Whether both suspense accounts of a ``use_suspense=True`` cross move

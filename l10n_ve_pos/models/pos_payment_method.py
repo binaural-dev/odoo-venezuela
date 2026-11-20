@@ -1,3 +1,5 @@
+from math import copysign
+
 from odoo import models, fields, api, _
 from odoo.tools import float_compare
 
@@ -38,6 +40,30 @@ class PosPaymentMethod(models.Model):
             lambda setting: setting.currency_id == currency
         )[:1]
 
+    def _get_foreign_cash_journal(self, currency):
+        """Cash journal that receives the cash this method takes in ``currency``.
+
+        It is the ``cross_journal`` of the currency settings when this is the
+        cash method and that journal is a cash journal in ``currency`` or in the
+        company currency: the cash paid in dollars goes to «Efectivo $» and the
+        one paid in euros to «Efectivo EUR», as Odoo 19 booked it with a cash
+        method per currency. Empty otherwise, and then the cash goes to the
+        journal of the method and its cross move runs at the closing.
+        """
+        self.ensure_one()
+        journal = self._get_currency_settings(currency).cross_journal if currency else False
+        if (
+            self.type != "cash"
+            or not journal
+            or journal.type != "cash"
+            or journal == self.journal_id
+        ):
+            return self.env["account.journal"]
+        company_currency = journal.company_id.currency_id
+        if (journal.currency_id or company_currency) not in (currency | company_currency):
+            return self.env["account.journal"]
+        return journal
+
     @api.model
     def _load_pos_data_fields(self, config):
         res = super()._load_pos_data_fields(config)
@@ -45,6 +71,70 @@ class PosPaymentMethod(models.Model):
             if name not in res:
                 res.append(name)
         return res
+
+    def _create_cash_payment_line(
+        self, session, amount, account=None, message=None, partner=None,
+        foreign_currency=None, amount_currency=None,
+    ):
+        """Cash paid in a foreign currency goes to the cash journal of that
+        currency (``_get_foreign_cash_journal``) instead of the journal of the
+        method, so «Efectivo Bs.» only holds bolivares.
+
+        Same line as the core, out of the cash statement of the session (that
+        one is the main drawer, in bolivares):
+
+        - in a journal in the currency paid (dollars in «Efectivo $») the line
+          is in that currency and its exact bolivares go to the company columns
+          (``pos_company_amount``): ``l10n_ve_accountant`` accepts no line in
+          another currency in that journal;
+        - in a journal in the company currency the line is in bolivares, like
+          the bank payments (R-126): the alternate amount is stamped by
+          ``_create_payment_line``.
+
+        Either way the receivable line settles the invoice in bolivares
+        without leaving an amount in another currency behind. Registers in
+        another currency keep the core flow.
+        """
+        currency = self.env["res.currency"].browse(foreign_currency or [])
+        journal = session._get_foreign_cash_journal(self, currency)
+        if not journal or not amount_currency:
+            return super()._create_cash_payment_line(
+                session, amount, account, message, partner, foreign_currency, amount_currency
+            )
+        company_currency = session.company_id.currency_id
+        profit_account = self.journal_id.profit_account_id
+        loss_account = self.journal_id.loss_account_id
+        destination_account = account or (profit_account if amount > 0 else loss_account)
+        session_ref = message or _(
+            "%(payment_method)s POS session %(session)s",
+            payment_method=self.name,
+            session=session.name,
+        )
+        vals = {
+            "amount": amount,
+            "company_id": session.company_id.id,
+            "journal_id": journal.id,
+            "date": fields.Date.context_today(self),
+            "partner_id": partner.id if partner else None,
+            "pos_session_id": session.id,
+            "counterpart_account_id": destination_account.id,
+            "payment_ref": session_ref,
+        }
+        if (journal.currency_id or company_currency) != company_currency:
+            vals.update({
+                "amount": copysign(abs(amount_currency), amount),
+                "pos_company_amount": amount,
+            })
+        statement_line = (
+            self.env["account.bank.statement.line"]
+            .with_context(no_retrieve_partner=True)
+            .sudo()
+            .create(vals)
+        )
+        statement_line.move_id.ref = session_ref
+        return statement_line.move_id.line_ids.filtered(
+            lambda line, acc=destination_account: line.account_id == acc,
+        )
 
     def _create_bank_payment_line(
         self, session, amount, account=None, message=None, partner=None,

@@ -38,7 +38,10 @@ class PosPaymentMethodCurrency(models.Model):
         "account.journal",
         domain=[("type", "in", ("bank", "cash"))],
         check_company=True,
-        help="Journal that receives the payments made in this currency.",
+        help="Journal that receives the payments made in this currency. In the "
+        "cash method, a cash journal in this currency or in the company currency "
+        "receives the cash when it is paid; any other journal receives it through "
+        "the cross move of the closing.",
     )
 
     _unique_method_currency = models.Constraint(
