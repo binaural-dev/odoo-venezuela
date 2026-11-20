@@ -107,11 +107,6 @@ msgid "<strong>Revisado por</strong>"
 msgstr ""
 
 #. module: l10n_ve_accountant
-#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
-msgid "<strong>Total Sales</strong>"
-msgstr "Total de Ventas"
-
-#. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.move_action_post_alert_wizard
 msgid "Accept"
 msgstr "Aceptar"
@@ -1530,6 +1525,16 @@ msgstr "Total Crédito Alterno"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_move_line_tree
 msgid "Total Foreign Debit"
 msgstr "Total Débito Alterno"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
+msgid "Total Payments ("
+msgstr "Total de Pagos ("
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
+msgid "Total Sales ("
+msgstr "Total de Ventas ("
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__total_taxed
