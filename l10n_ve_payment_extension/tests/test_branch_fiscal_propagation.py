@@ -102,6 +102,7 @@ class TestBranchFiscalPropagation(TransactionCase):
     def _set_branch_person_without_constraint(self, person):
         """Simulate legacy data: a value configured by hand on the branches."""
         partners = (self.branch | self.grandchild).partner_id
+        self.env.flush_all()  # pending ORM writes would overwrite the raw SQL below
         self.env.cr.execute(
             "UPDATE res_partner SET type_person_id = %s WHERE id IN %s",
             (person.id, tuple(partners.ids)),

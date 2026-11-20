@@ -96,6 +96,7 @@ class TestBranchIslrCustomerFlows(RetentionFlowHelpers, RetentionTestCommon):
     def _clear_branch_fiscal_fields(self):
         """Branch contact without the fiscal data, as before the fix. Direct SQL because
         the constraint of the contact (rightly) forbids it."""
+        self.env.flush_all()  # pending ORM writes would overwrite the raw SQL below
         self.env.cr.execute(
             "UPDATE res_partner SET type_person_id = NULL, withholding_type_id = NULL,"
             " taxpayer_type = NULL WHERE id = %s",
