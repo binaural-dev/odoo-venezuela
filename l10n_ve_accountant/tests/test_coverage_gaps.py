@@ -875,6 +875,97 @@ class TestCoverageGaps(TransactionCase):
             sum(v["foreign_amount"] for v in all_vals), -line.foreign_balance, places=2
         )
 
+    def test_36f_round_analytic_distribution_line_foreign_amount(self):
+        """_round_analytic_distribution_line: foreign_amount se redondea y su
+        error se reparte, de modo que la suma queda exacta (33,33/33,33/33,34
+        de 1,00 en moneda alterna: 0,33 x 3 sumaba 0,99)."""
+        invoice, line = self._draft_with_distribution({})
+        vals = [
+            {"amount": 16.665, "foreign_amount": 0.3333},
+            {"amount": 16.665, "foreign_amount": 0.3333},
+            {"amount": 16.670, "foreign_amount": 0.3334},
+        ]
+        line._round_analytic_distribution_line(vals)
+        self.assertAlmostEqual(sum(v["amount"] for v in vals), 50.0, places=2)
+        self.assertAlmostEqual(sum(v["foreign_amount"] for v in vals), 1.0, places=2)
+
+    def _skip_without_foreign_amount_field(self):
+        """foreign_amount de account.analytic.line lo define binaural_analytic,
+        que no es dependencia de este modulo: sin el, publicar con
+        distribucion analitica no puede crear las lineas."""
+        if "foreign_amount" not in self.env["account.analytic.line"]._fields:
+            self.skipTest("account.analytic.line.foreign_amount requiere binaural_analytic")
+
+    def _post_amounts(self, price, distribution):
+        """Publica una factura en USD de `price` con la distribucion dada y
+        devuelve (linea, lineas analiticas ordenadas por id)."""
+        self._skip_without_foreign_amount_field()
+        invoice = self._create_invoice(self.currency_usd, price, tax=False)
+        line = invoice.invoice_line_ids[0]
+        line.analytic_distribution = distribution
+        invoice.with_context(move_action_post_alert=True).action_post()
+        return line, line.analytic_line_ids.sorted("id")
+
+    def _assert_sums_match_line(self, line, analytic, check_amount=True):
+        """La suma de las lineas analiticas cuadra con la linea, al centavo.
+        `amount` lo reparte el core: solo se afirma cuando el caso no depende
+        de como el core trata un reparto que suma 99,999 %."""
+        if check_amount:
+            self.assertAlmostEqual(sum(analytic.mapped("amount")), -line.balance, places=2)
+        self.assertAlmostEqual(
+            sum(analytic.mapped("foreign_amount")), -line.foreign_balance, places=2
+        )
+
+    def test_36g_posted_analytic_sums_one_usd_three_accounts(self):
+        """Publicada: 1,00 USD en 33,33/33,33/33,34 suma 1,00 (no 0,99)."""
+        acc_a, acc_a2, acc_a3, _acc_b = self._create_analytic_accounts()
+        line, analytic = self._post_amounts(1.0, {
+            str(acc_a.id): 33.33, str(acc_a2.id): 33.33, str(acc_a3.id): 33.34,
+        })
+        self.assertEqual(len(analytic), 3)
+        self._assert_sums_match_line(line, analytic)
+
+    def test_36h_posted_analytic_sums_one_cent_two_accounts(self):
+        """Publicada: 0,01 USD en 50/50 suma 0,01 (no 0,02)."""
+        acc_a, acc_a2, _acc_a3, _acc_b = self._create_analytic_accounts()
+        line, analytic = self._post_amounts(0.01, {str(acc_a.id): 50, str(acc_a2.id): 50})
+        self._assert_sums_match_line(line, analytic)
+
+    def test_36i_posted_analytic_sums_combined_keys(self):
+        """Publicada: clave combinada al 100% y al 70% cuadran al centavo."""
+        acc_a, _acc_a2, _acc_a3, acc_b = self._create_analytic_accounts()
+        key = "%s,%s" % (acc_a.id, acc_b.id)
+        line, analytic = self._post_amounts(1.0, {key: 100})
+        self._assert_sums_match_line(line, analytic)
+        line, analytic = self._post_amounts(1.0, {key: 70})
+        self.assertAlmostEqual(
+            sum(analytic.mapped("foreign_amount")), -line.foreign_balance * 0.7, places=2
+        )
+
+    def test_36j_posted_analytic_foreign_follows_amount_line_by_line(self):
+        """Publicada: 33,333 x 3 (suma 99,999 ~ 100): cada foreign_amount sigue
+        a su amount (misma proporcion foreign_balance/balance) con a lo sumo un
+        centavo de diferencia por el redondeo, y la suma cuadra."""
+        acc_a, acc_a2, acc_a3, _acc_b = self._create_analytic_accounts()
+        line, analytic = self._post_amounts(1.0, {
+            str(acc_a.id): 33.333, str(acc_a2.id): 33.333, str(acc_a3.id): 33.333,
+        })
+        self._assert_sums_match_line(line, analytic, check_amount=False)
+        rounding = line.foreign_currency_id.rounding
+        for analytic_line in analytic:
+            expected = analytic_line.amount * line.foreign_balance / line.balance
+            self.assertLessEqual(
+                abs(analytic_line.foreign_amount - expected), rounding + 1e-9
+            )
+
+    def test_17d_account_analytic_by_line_id_missing_account(self):
+        """_account_analytic_by_line_id: un id inexistente en la clave no
+        lanza MissingError; se ignora."""
+        acc_a, _acc_a2, _acc_a3, _acc_b = self._create_analytic_accounts()
+        invoice, line = self._draft_with_distribution({"%s,999999" % acc_a.id: 100})
+        result = invoice._account_analytic_by_line_id(line)
+        self.assertEqual(result[line.id], acc_a.code)
+
     # ═══════════════════════════════════════════════════════════════
     # account_move.py - _compute_detailed_amounts sin tax_totals
     # ═══════════════════════════════════════════════════════════════
