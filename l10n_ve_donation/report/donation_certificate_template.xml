@@ -25,8 +25,8 @@
                     <div>
                         <p class="m-0">
                             <span class="fw-bold">Company Name: </span><span t-out="o.company_id.name" /><br />
-                            <span class="fw-bold">Tax ID: </span><span t-out="o.company_id.vat or ''" /><br />
-                            <span class="fw-bold">Fiscal Address: </span><span t-out="o.company_id.street or ''" /><t t-if="o.company_id.city"><span t-out="', ' + o.company_id.city" /></t><br />
+                            <span class="fw-bold">Tax ID: </span><span t-out="o.company_id.partner_id._get_donation_vat()" /><br />
+                            <span class="fw-bold">Fiscal Address: </span><span t-out="o.company_id.partner_id._get_donation_address()" /><br />
                             <span class="fw-bold">Phone: </span><span t-out="o.company_id.phone or ''" />
                         </p>
                     </div>
@@ -45,11 +45,11 @@
                 <div class="col-12">
                     <p style="text-align: justify; line-height: 2; font-size: 14px;">
                         <span id="donation_certificate_legal">
-                            I, ______________________________________________________________________, of Venezuelan nationality, of legal age, holder of Identity Card No. _________________________, acting on behalf of <strong><span t-out="o.company_id.name" /></strong>, commercial company registered in the Commercial Registry __________________________________________________, on ___/___/____, under No. _______, Volume _______, and registered in the Tax Information Registry (R.I.F.) under No. <strong><span t-out="o.company_id.vat or '__________________'" /></strong>, sufficiently empowered for this act as shown in ____________________________________________________________________________________________,
+                            I, ______________________________________________________________________, of Venezuelan nationality, of legal age, holder of Identity Card No. _________________________, acting on behalf of <strong><span t-out="o.company_id.name" /></strong>, commercial company registered in the Commercial Registry __________________________________________________, on ___/___/____, under No. _______, Volume _______, and registered in the Tax Information Registry (R.I.F.) under No. <strong><span t-out="o.company_id.partner_id._get_donation_vat() or '__________________'" /></strong>, sufficiently empowered for this act as shown in ____________________________________________________________________________________________,
                         </span>
                         by this document I declare that on behalf of my principal I receive as a DONATION, purely and simply, perfectly and irrevocably, from <strong><span t-out="donor.name or '__________________'" /></strong>, holder of Tax ID / Identity Card No.
-                        <strong><span t-out="((donor.commercial_partner_id.prefix_vat or '') + '-' + donor.commercial_partner_id.vat) if donor and donor.commercial_partner_id.vat else '__________________'" /></strong>, with address at
-                        <strong><span t-out="(donor and (donor.contact_address or donor.street)) or '__________________'" /></strong>, phone <strong><span t-out="(donor and (donor.phone or donor.mobile)) or '__________________'" /></strong>,
+                        <strong><span t-out="(donor and donor._get_donation_vat()) or '__________________'" /></strong>, with address at
+                        <strong><span t-out="(donor and donor._get_donation_address()) or '__________________'" /></strong>, phone <strong><span t-out="(donor and (donor.phone or donor.mobile)) or '__________________'" /></strong>,
                         <t t-if="donation_line_data">the following goods:</t>
                         <t t-else="">the sum of
                             <strong><span t-out="amounts['amount']" t-options="{'widget': 'monetary', 'display_currency': amounts['currency']}" /></strong><t t-if="amounts['equivalent_currency']">, equivalent to

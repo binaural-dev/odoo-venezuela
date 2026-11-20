@@ -5,14 +5,14 @@
         <field name="model">account.move</field>
         <field name="inherit_id" ref="account.view_move_form" />
         <field name="arch" type="xml">
-            <xpath expr="//button[@name='button_draft']" position="attributes">
-                <attribute name="invisible">is_donation and state != 'draft' or move_type != 'entry'</attribute>
-            </xpath>
+            <!-- The standard condition of Odoo is kept (only posted entries
+                 that are not reversed yet) and only the donation entries are
+                 hidden to who is not a Donation Manager. -->
             <xpath expr="//button[@name='%(account.action_view_account_move_reversal)d']" position="attributes">
-                <attribute name="invisible">(is_donation and not can_reverse_donation_move)and state != 'draft' or move_type != 'entry'</attribute>
+                <attribute name="invisible">move_type != 'entry' or state != 'posted' or payment_state == 'reversed' or (is_donation and not can_reverse_donation_move)</attribute>
             </xpath>
             <button name="button_draft" position="attributes">
-                <attribute name="invisible">move_type in ['out_invoice', 'out_refund'] or state == 'draft' or is_donation</attribute>
+                <attribute name="invisible">not show_reset_to_draft_button or move_type in ['out_invoice', 'out_refund'] or state == 'draft' or is_donation</attribute>
             </button>
             <xpath expr="//form//header" position="inside">
                 <button

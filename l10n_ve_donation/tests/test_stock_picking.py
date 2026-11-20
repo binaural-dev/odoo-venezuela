@@ -10,7 +10,10 @@ from .common import TestDonationCommon
 class TestDonationStockPicking(TestDonationCommon):
     """`is_donation` and the donation rules that `l10n_ve_donation` adds to
     `stock.picking`: menu default, transfer reason, validation, delivery
-    configuration errors and the cost of the delivery receipt."""
+    configuration errors and the cost of the delivery receipt.
+
+    Covers: REQ-DON-001, REQ-DON-002, REQ-DON-003, REQ-DON-004, REQ-DON-006, REQ-DON-017, REQ-DON-019, REQ-DON-032.
+    """
 
     @classmethod
     def setUpClass(cls):
@@ -220,6 +223,42 @@ class TestDonationStockPicking(TestDonationCommon):
         self.assertIn(b"Medication for the clinic", html)
         # The detail of the goods is the shared product table, with its total.
         self.assertIn(b"Total at cost", html)
+
+    def test_receipt_documents_use_the_venezuelan_formats(self):
+        # REQ-DON-032
+        """RIF with its prefix, the whole address (state and zip, no name
+        repeated) and the amounts of the table with the format of the
+        language: the documents showed «21232157-1», «CANDELARIA», «Name 45
+        Valencia CB 2006», «10.0» and «5000.00 Bs.F»."""
+        venezuela = self.env.ref("base.ve")
+        state = self.env["res.country.state"].search([("country_id", "=", venezuela.id)], limit=1) \
+            or self.env["res.country.state"].create(
+                {"name": "Test State", "code": "TS", "country_id": venezuela.id}
+            )
+        self.company.partner_id.write({
+            "prefix_vat": "J", "vat": "123456789", "street": "Av. Principal 1", "city": "Caracas",
+            "state_id": state.id, "zip": "1010", "country_id": venezuela.id,
+        })
+        self.partner.write({
+            "street": "Calle 45", "city": "Valencia", "state_id": state.id, "zip": "2001",
+            "country_id": venezuela.id,
+        })
+        picking = self._create_donation_picking(quantity=2.0, partner=self.partner, validate=True)
+        html, _ = self.env["ir.actions.report"]._render_qweb_html(
+            "l10n_ve_donation.donation_receipt_template_stock_picking", picking.ids
+        )
+        html = html.decode()
+        self.assertIn("J-123456789", html)
+        self.assertIn(f"Av. Principal 1, Caracas, {state.name}, 1010, Venezuela", html)
+        self.assertIn(f"Calle 45, Valencia, {state.name}, 2001, Venezuela", html)
+        self.assertNotIn(f"{self.partner.name} Calle 45", html)
+        currency = self.company.currency_id
+        for amount in (15.0, 30.0):
+            self.assertIn(
+                str(self.env["ir.qweb.field.monetary"].value_to_html(amount, {"display_currency": currency})),
+                html,
+            )
+        self.assertNotIn("30.00 " + currency.symbol, html)
 
     def test_delivery_receipt_amounts_come_from_the_cost_of_the_goods(self):
         picking = self._create_donation_picking(quantity=2.0, partner=self.partner, validate=True)

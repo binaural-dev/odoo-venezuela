@@ -9,6 +9,12 @@ class AccountMove(models.Model):
     _inherit = "account.move"
 
     is_donation = fields.Boolean(string="Is Donation", tracking=True)
+    donation_marked_from_statement = fields.Boolean(
+        copy=False,
+        help="Technical field: the donation mark was set automatically because the entry of a "
+        "bank statement line was reconciled against a received donations account. Only those "
+        "marks are removed again when the entry stops being a donation received.",
+    )
 
     can_reverse_donation_move = fields.Boolean(compute="_compute_can_reverse_donation_move")
 
@@ -82,7 +88,14 @@ class AccountMove(models.Model):
         beneficiary (see sale_order.py), invoice lines are expected and
         allowed to follow it, exactly like any regular sale."""
         for move in self:
-            if not move.is_donation or move.move_type != "entry" or move._is_incoming_donation():
+            # The entry of a bank statement line takes the contact of the statement
+            # line in its lines: it is not asked to have the company partner.
+            if (
+                not move.is_donation
+                or move.move_type != "entry"
+                or move.statement_line_id
+                or move._is_incoming_donation()
+            ):
                 continue
             company_partner = move.company_id.partner_id or self.env.company.partner_id
             for line in move.line_ids.filtered(lambda l: l.partner_id):
@@ -148,6 +161,14 @@ class AccountMove(models.Model):
             ))
         if self.reversed_entry_id:
             raise UserError(self._get_donation_reversal_error())
+        if self.is_stock_valuation_entry:
+            pickings = self.stock_move_ids.picking_id
+            raise UserError(_(
+                "This entry is the stock valuation of a donation reception and has no donation "
+                "certificate. Print the Donation Certificate from the donation picking: "
+                "%(pickings)s.",
+                pickings=", ".join(pickings.mapped("name")) or "-",
+            ))
         if self.state != "posted":
             raise UserError(_("The Donation Certificate is printed once the entry is posted."))
         return self.env.ref("l10n_ve_donation.action_donation_certificate_account_move").report_action(self)
@@ -190,7 +211,8 @@ class AccountMove(models.Model):
     def _get_donation_concept_lines(self):
         """Descriptions of the concept of the receipt of a money donation:
         the debit lines that are not cash, bank or receivable/payable
-        accounts (the expense of the donation), without repeating them."""
+        accounts (the expense of the donation), without repeating them. When
+        there is no text, the concept is "Donation"."""
         self.ensure_one()
         liquidity_and_partner_types = ("asset_cash", "asset_receivable", "liability_payable")
         names = []
@@ -200,7 +222,10 @@ class AccountMove(models.Model):
             name = (line.name or "").strip()
             if name and name != self.ref and name not in names:
                 names.append(name)
-        return names
+        # A line without a label of its own (or one that is the reference,
+        # which is already printed as the observation) leaves no text: the
+        # concept is the donation itself and not an empty line.
+        return names or [_("Donation")]
 
     def _get_donation_amounts(self):
         """Amounts of the donation for its documents: the total debit and
@@ -231,8 +256,8 @@ class AccountMove(models.Model):
         in `foreign_inverse_rate`. So the bolivars per unit of the other
         currency are `foreign_rate` when the company currency is the
         bolivar (alternate currency USD) and `foreign_inverse_rate` when the
-        alternate currency is the bolivar (company currency USD, as in
-        Higea). Returns `currency`, `amount`, `equivalent_currency`,
+        alternate currency is the bolivar (company currency USD).
+        Returns `currency`, `amount`, `equivalent_currency`,
         `equivalent_amount` and `rate`; the equivalent is `False` when the
         entry has no alternate amount or rate."""
         result = {
@@ -265,9 +290,80 @@ class AccountMove(models.Model):
         checked here and not in `action_post`, so that it also covers the
         posting that does not go through it (the automatic posting of the
         draft entries). Before posting, while the entry is a draft."""
-        for move in self.filtered(lambda m: m.state == "draft" and m._is_incoming_donation()):
+        # The entry of a bank statement line is not asked for the donor: the
+        # extract is the source of the entry and it is reconciled without one.
+        for move in self.filtered(
+            lambda m: m.state == "draft" and not m.statement_line_id and m._is_incoming_donation()
+        ):
             move._check_incoming_donation_before_post()
+        for move in self.filtered(lambda m: m.state == "draft" and m._is_outgoing_money_donation()):
+            move._check_donation_expense_account()
         return super()._post(soft=soft)
+
+    def _mark_donation_received_from_statement(self):
+        """The entry of a bank statement line whose lines CREDIT a received
+        donations account is a donation received: it is marked as donation,
+        so that it offers its certificate, without restoring the entry to
+        draft to mark it. The mark is written to the entry as it is (posted),
+        and the donor is not required here: the reconciliation must not fail
+        because of it, the certificate shows the donor that the lines carry.
+
+        It is evaluated again each time the lines change (reconciling,
+        changing the account, undoing the reconciliation): the marks set here
+        (`donation_marked_from_statement`) are removed when the entry stops
+        being a donation received, and the ones set by a person are left
+        alone. A payment to the donor (a debit to the income account) is not
+        a donation received."""
+        to_mark = self.browse()
+        to_unmark = self.browse()
+        for move in self.filtered(
+            lambda m: m.statement_line_id and m.move_type == "entry" and not m.reversed_entry_id
+        ):
+            income_accounts = move.company_id.donation_income_account_ids
+            received = bool(income_accounts) and sum(
+                line.credit - line.debit
+                for line in move.line_ids
+                if line.account_id in income_accounts
+            ) > 0
+            if received and not move.is_donation:
+                to_mark |= move
+            elif not received and move.is_donation and move.donation_marked_from_statement:
+                to_unmark |= move
+        # One write per batch, without the "manually modified" flag of the core.
+        if to_mark:
+            to_mark.with_context(skip_is_manually_modified=True).write(
+                {"is_donation": True, "donation_marked_from_statement": True}
+            )
+        if to_unmark:
+            to_unmark.with_context(skip_is_manually_modified=True).write(
+                {"is_donation": False, "donation_marked_from_statement": False}
+            )
+
+    def _is_outgoing_money_donation(self):
+        """A manual entry marked as donation that is not a donation received,
+        nor the valuation entry of a picking, nor the reversal of another
+        entry: the donation given in money."""
+        self.ensure_one()
+        return bool(
+            self.is_donation
+            and self.move_type == "entry"
+            and not self.reversed_entry_id
+            and not self.stock_move_ids
+            and not self._is_incoming_donation()
+        )
+
+    def _check_donation_expense_account(self):
+        """When the company lists its donation expense accounts, a donation
+        given in money has to use one of them. Without accounts there is no
+        restriction. Checked before posting, while the entry is a draft."""
+        self.ensure_one()
+        accounts = self.company_id.donation_expense_account_ids
+        if accounts and not (accounts & self.line_ids.account_id):
+            raise UserError(_(
+                "A donation given in money must have a journal item on one of the donation "
+                "expense accounts: %(accounts)s.",
+                accounts=", ".join(accounts.mapped("display_name")),
+            ))
 
     def action_post(self):
         # Only the invoices that are posted by this call get a credit note:
@@ -308,7 +404,33 @@ class AccountMove(models.Model):
         res = super().write(vals)
         if vals.get("is_donation"):
             self._fill_donation_entry_line_partner()
+        if "line_ids" in vals:
+            # Lines replaced or deleted (e.g. undoing a bank reconciliation).
+            self._mark_donation_received_from_statement()
         return res
+
+    def _check_donation_entry_manager(self, include_statement_entries=True):
+        """Only the Donation Manager reverses or resets to draft a donation
+        entry. The buttons are hidden for the others, but a list action or an
+        RPC call reaches the same methods: it is checked here too. The entry
+        of a bank statement line is not asked to reset to draft (the bank
+        reconciliation does it), and what runs as superuser is not restricted."""
+        if self.env.su or self.env.user.has_group("l10n_ve_donation.group_donation_manager"):
+            return
+        entries = self.filtered(
+            lambda m: m.is_donation and m.move_type == "entry"
+            and (include_statement_entries or not m.statement_line_id)
+        )
+        if entries:
+            raise UserError(_(
+                "Only the Donation Manager can reverse or reset to draft a donation entry: "
+                "%(entries)s.",
+                entries=", ".join(entries.mapped("display_name")),
+            ))
+
+    def button_draft(self):
+        self._check_donation_entry_manager(include_statement_entries=False)
+        return super().button_draft()
 
     def _fill_donation_entry_line_partner(self, marking=False):
         """The journal items of a donation entry carry the company partner
@@ -351,6 +473,7 @@ class AccountMove(models.Model):
         ('type' & 'reversed_entry_id' are computed in the method).
         :return: An account.move recordset, reverse of the current self.
         """
+        self._check_donation_entry_manager()
         donation_moves = self.filtered(lambda move: move.is_donation and move.move_type != "entry")
         if donation_moves:
             reverse_moves = self.env['account.move']
@@ -368,6 +491,10 @@ class AccountMove(models.Model):
                 move_vals = {
                     "move_type": "out_refund",
                     "journal_id": move.journal_id.id,
+                    # The lines take the amounts of the invoice, in its own
+                    # currency: without it the note is created in the one of
+                    # the company and a 100 USD invoice is reversed by 100 Bs.
+                    "currency_id": move.currency_id.id,
                     "date": default_values.get("date", fields.Date.context_today(self)),
                     "invoice_date": move.invoice_date,
                     "ref": default_values.get("ref", move.ref),

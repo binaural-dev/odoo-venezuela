@@ -10,7 +10,10 @@ from .common import TestDonationCommon
 class TestDonationSaleOrder(TestDonationCommon):
     """`is_donation` on `sale.order`: the contact is NOT forced to the
     company (the header keeps the real donor/beneficiary), the document is
-    an invoice and the warehouse is the donation one of the company."""
+    an invoice and the warehouse is the donation one of the company.
+
+    Covers: REQ-DON-010, REQ-DON-011, REQ-DON-015.
+    """
 
     @classmethod
     def setUpClass(cls):

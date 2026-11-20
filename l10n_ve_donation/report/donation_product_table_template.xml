@@ -33,18 +33,18 @@
                 <tr t-foreach="donation_line_data" t-as="row">
                     <td t-out="row['line'].product_id.default_code or ''" />
                     <td t-out="row['line'].product_id.name" />
-                    <td class="text-end" t-out="row['line'].quantity" />
+                    <td class="text-end" t-out="row['line'].quantity" t-options="{'widget': 'float', 'decimal_precision': 'Product Unit'}" />
                     <td t-out="row['line'].product_uom_id.name" />
                     <td t-out="row['line'].lot_id.name or ''" />
                     <td><span t-if="row.get('expiration_date')" t-out="row['expiration_date']" /></td>
-                    <td class="text-end"><span t-out="'%.2f' % row['unit_cost']" /> <span t-out="donation_cost_currency.symbol" /></td>
-                    <td class="text-end"><span t-out="'%.2f' % row['total_value']" /> <span t-out="donation_cost_currency.symbol" /></td>
+                    <td class="text-end"><span t-out="row['unit_cost']" t-options="{'widget': 'monetary', 'display_currency': donation_cost_currency}" /></td>
+                    <td class="text-end"><span t-out="row['total_value']" t-options="{'widget': 'monetary', 'display_currency': donation_cost_currency}" /></td>
                 </tr>
             </tbody>
             <tfoot>
                 <tr>
                     <td colspan="7" class="text-end"><strong>Total at cost</strong></td>
-                    <td class="text-end"><strong><span t-out="'%.2f' % donation_grand_total" /> <span t-out="donation_cost_currency.symbol" /></strong></td>
+                    <td class="text-end"><strong><span t-out="donation_grand_total" t-options="{'widget': 'monetary', 'display_currency': donation_cost_currency}" /></strong></td>
                 </tr>
             </tfoot>
         </table>
