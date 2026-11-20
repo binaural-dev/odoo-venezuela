@@ -7,9 +7,10 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Technical",
-    "version": "19.0.1.0.2",
+    "version": "19.0.1.0.4",
     "depends": ["base", "web"],
     "auto_install": False,
+    "pre_init_hook": "pre_init_hook",
     "data": ["security/ir.model.access.csv", "views/res_config_settings_views.xml"],
     "assets": {
         "web.assets_backend": [
