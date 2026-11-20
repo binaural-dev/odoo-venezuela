@@ -191,6 +191,7 @@
                     <strong t-out="tc['formatted_total_amount']"></strong>
                 </div>
             </div>
+            <t t-if="p_journals_ids">
             <div class="border-bottoms spaces">
                 <strong>Payments</strong>
             </div>
@@ -221,6 +222,7 @@
                     </p>
                 </div>
             </div>
+            </t>
             <t t-foreach="p_journals_ids" t-as="journal_id">
                 <t t-set="journal" t-value="str(journal_id['id'])"/>
                 <t t-if="payments.get(journal,False)">
