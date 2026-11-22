@@ -1,0 +1,90 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* l10n_ve_rate_systray
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 17.0\n"
+"Report-Msgid-Bugs-To: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: l10n_ve_rate_systray
+#: model:ir.model.fields,field_description:l10n_ve_rate_systray.field_res_company__show_rate_systray
+#: model:ir.model.fields,field_description:l10n_ve_rate_systray.field_res_config_settings__show_rate_systray
+msgid "Show Rate in Top Bar"
+msgstr "Mostrar tasa en la barra superior"
+
+#. module: l10n_ve_rate_systray
+#: model:ir.model.fields,help:l10n_ve_rate_systray.field_res_company__show_rate_systray
+#: model:ir.model.fields,help:l10n_ve_rate_systray.field_res_config_settings__show_rate_systray
+msgid ""
+"Shows the latest exchange rate of the selected currency in the top bar of the "
+"backend: green when it is today's rate, red when it is from a previous date "
+"or there is no rate."
+msgstr ""
+"Muestra la última tasa de la moneda seleccionada en la barra superior del "
+"backend: en verde si es la tasa de hoy, en rojo si es de una fecha anterior "
+"o no hay tasa."
+
+#. module: l10n_ve_rate_systray
+#: model_terms:ir.ui.view,arch_db:l10n_ve_rate_systray.res_config_settings_l10n_ve_rate_systray
+msgid ""
+"Show the latest exchange rate in the top bar: green when it is today's rate,"
+" red when it is from a previous date or missing"
+msgstr ""
+"Muestra la última tasa en la barra superior: en verde si es la tasa de hoy,"
+" en rojo si es de una fecha anterior o no hay tasa"
+
+#. module: l10n_ve_rate_systray
+#. odoo-javascript
+#: code:addons/l10n_ve_rate_systray/static/src/currency_rate_badge/currency_rate_badge.js:0
+msgid "There is no %(currency)s/%(foreign)s rate loaded"
+msgstr "No hay tasa %(currency)s/%(foreign)s cargada"
+
+#. module: l10n_ve_rate_systray
+#. odoo-javascript
+#: code:addons/l10n_ve_rate_systray/static/src/currency_rate_badge/currency_rate_badge.js:0
+msgid "%(currency)s/%(foreign)s rate of %(date)s"
+msgstr "Tasa %(currency)s/%(foreign)s del %(date)s"
+
+#. module: l10n_ve_rate_systray
+#. odoo-javascript
+#: code:addons/l10n_ve_rate_systray/static/src/currency_rate_badge/currency_rate_badge.js:0
+msgid "today's rate is not loaded"
+msgstr "no hay tasa cargada para hoy"
+
+#. module: l10n_ve_rate_systray
+#. odoo-javascript
+#: code:addons/l10n_ve_rate_systray/static/src/currency_rate_badge/currency_rate_badge.xml:0
+msgid "No rate"
+msgstr "Sin tasa"
+
+#. module: l10n_ve_rate_systray
+#. odoo-javascript
+#: code:addons/l10n_ve_rate_systray/static/src/currency_rate_badge/currency_rate_badge.xml:0
+msgid "Rate"
+msgstr "Tasa"
+
+#. module: l10n_ve_rate_systray
+#: model:ir.model.fields,field_description:l10n_ve_rate_systray.field_res_company__rate_systray_currency_id
+#: model:ir.model.fields,field_description:l10n_ve_rate_systray.field_res_config_settings__rate_systray_currency_id
+msgid "Currency to Show"
+msgstr "Moneda a mostrar"
+
+#. module: l10n_ve_rate_systray
+#: model:ir.model.fields,help:l10n_ve_rate_systray.field_res_company__rate_systray_currency_id
+#: model:ir.model.fields,help:l10n_ve_rate_systray.field_res_config_settings__rate_systray_currency_id
+msgid ""
+"Currency whose rate against the company currency is shown in the top bar "
+"(e.g. USD for a company in VES)."
+msgstr ""
+"Moneda cuya tasa frente a la moneda de la compañía se muestra en la barra "
+"superior (p. ej. USD para una compañía en VES)."
+
+#. module: l10n_ve_rate_systray
+#: model_terms:ir.ui.view,arch_db:l10n_ve_rate_systray.res_config_settings_l10n_ve_rate_systray
+msgid "Exchange Rate in Top Bar"
+msgstr "Tasa en la barra superior"
