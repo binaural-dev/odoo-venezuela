@@ -82,3 +82,39 @@ class TestSystrayRate(TransactionCase):
 
         self.assertTrue(data["is_today"])
         self.assertAlmostEqual(data["rate"], 950.0, places=4)
+
+    def test_rate_is_shown_as_weak_currency_per_strong_one(self):
+        """Si la moneda elegida es la débil (compañía en USD que muestra Bs), la
+        tasa se expresa en esa moneda: Bs por USD, no USD por Bs."""
+        self.env["res.currency.rate"].create(
+            {
+                "currency_id": self.usd.id,
+                "company_id": self.company.id,
+                "name": self.today,
+                "rate": 950.0,  # 950 unidades de la moneda elegida por 1 de la compañía
+            }
+        )
+
+        data = self.env["res.currency.rate"].get_systray_rate()
+
+        self.assertAlmostEqual(data["rate"], 950.0, places=4)
+        self.assertEqual(data["currency"], self.usd.name)
+        self.assertEqual(data["foreign_currency"], self.company.currency_id.name)
+
+    def test_default_currency_depends_on_company_currency(self):
+        usd = self.env.ref("base.USD")
+        vef = self.env.ref("base.VEF")
+        vef.active = True
+        company_usd = self.env["res.company"].create({"name": "Test USD", "currency_id": usd.id})
+        company_vef = self.env["res.company"].create({"name": "Test VEF", "currency_id": vef.id})
+
+        self.assertEqual(company_usd.rate_systray_currency_id, vef)
+        self.assertEqual(company_vef.rate_systray_currency_id, usd)
+
+    def test_chosen_currency_is_kept(self):
+        eur = self.env.ref("base.EUR")
+        self.company.rate_systray_currency_id = eur
+
+        self.company._compute_rate_systray_currency_id()
+
+        self.assertEqual(self.company.rate_systray_currency_id, eur)
