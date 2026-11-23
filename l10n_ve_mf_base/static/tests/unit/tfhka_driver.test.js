@@ -1605,6 +1605,116 @@ describe("TFHKA - resultado verificado del documento", () => {
         expect(verified.invoiceNumber).toBe("456");
     });
 
+    test("Una NC o ND que sigue abierta después del ACK del 7 queda por verificar sin mirar S1", async () => {
+        // La máquina acepta el "7" (ACK por defecto del mock) pero sigue en
+        // transacción: con pagos el "7" no anula el documento (manual TFHKA).
+        const cases = [
+            { docType: "credit_note", s1: { lastNCNumber: 1234, serialMachine: SERIAL }, number: 1234 },
+            {
+                docType: "debit_note",
+                s1: { long: true, lastDebitNoteNumber: 20, serialMachine: SERIAL },
+                number: 20,
+            },
+        ];
+        for (const { docType, s1, number } of cases) {
+            const driver = await connectedDriver();
+            driver.connection.setStatus({ fiscalTransactionInProgress: true });
+            driver.connection.setResponseHandler(s1Reads([s1]));
+
+            const open = await driver.verifyDocument({
+                docType,
+                before: { number, salesSubtotal: null, dailyClosureCounter: 0, serial: SERIAL },
+                paymentSent: true,
+                closeAcked: false,
+            });
+
+            // Con el mismo número en S1 concluía "no impresa" y dejaba reimprimir.
+            expect(open.printed).toBe(null);
+            expect(open.reason).toBe("document_open");
+            expect(sentCommands(driver)).toInclude("7");
+            expect(sentCommands(driver)).not.toInclude("S1");
+        }
+    });
+
+    test("Una NC que el 7 deja en reposo se mide con S1 como antes", async () => {
+        const verification = {
+            docType: "credit_note",
+            before: { number: 1234, salesSubtotal: null, dailyClosureCounter: 0, serial: SERIAL },
+            paymentSent: true,
+            closeAcked: false,
+        };
+        const closingWith7 = (driver) => (command) => {
+            if (command === "7") {
+                driver.connection.setStatus({ fiscalTransactionInProgress: false });
+            }
+            return undefined;
+        };
+
+        let driver = await connectedDriver();
+        driver.connection.setStatus({ fiscalTransactionInProgress: true });
+        driver.connection.setResponseHandler(
+            s1Reads([{ lastNCNumber: 1234, serialMachine: SERIAL }], closingWith7(driver))
+        );
+        const notPrinted = await driver.verifyDocument(verification);
+        expect(notPrinted.printed).toBe(false);
+        expect(sentCommands(driver)).toInclude("S1");
+
+        driver = await connectedDriver();
+        driver.connection.setStatus({ fiscalTransactionInProgress: true });
+        driver.connection.setResponseHandler(
+            s1Reads([{ lastNCNumber: 1235, serialMachine: SERIAL }], closingWith7(driver))
+        );
+        const unknown = await driver.verifyDocument(verification);
+        expect(unknown.printed).toBe(null);
+        expect(unknown.reason).toBe("unattributable");
+    });
+
+    test("Una NC que no responde después del 7 queda sin respuesta, sin mirar S1", async () => {
+        const driver = await connectedDriver();
+        driver.connection.setStatus({ fiscalTransactionInProgress: true });
+        driver.connection.setResponseHandler(s1Reads([{ lastNCNumber: 1234, serialMachine: SERIAL }]));
+        const getStatus = driver.getStatus.bind(driver);
+        let muted = false;
+        driver.getStatus = async () => (muted ? null : getStatus());
+        const abort = driver.abortTransaction.bind(driver);
+        driver.abortTransaction = async () => {
+            const closed = await abort();
+            muted = true;
+            return closed;
+        };
+
+        const result = await driver.verifyDocument({
+            docType: "credit_note",
+            before: { number: 1234, salesSubtotal: null, dailyClosureCounter: 0, serial: SERIAL },
+            paymentSent: true,
+            closeAcked: false,
+        });
+
+        expect(result.printed).toBe(null);
+        expect(result.reason).toBe("no_response");
+        expect(sentCommands(driver)).not.toInclude("S1");
+    });
+
+    test("Una factura que sigue abierta después del ACK del 7 se mide con S1 como siempre", async () => {
+        const driver = await connectedDriver();
+        driver.connection.setStatus({ fiscalTransactionInProgress: true });
+        driver.connection.setResponseHandler(
+            s1Reads([{ lastInvoiceNumber: 456, salesSubtotal: 1592758, serialMachine: SERIAL }])
+        );
+
+        const verified = await driver.verifyDocument({
+            docType: "invoice",
+            before: { number: 455, salesSubtotal: "100000", dailyClosureCounter: 0, serial: SERIAL },
+            paymentSent: true,
+            closeAcked: false,
+        });
+
+        // Las facturas no cambian: S1 ya cuenta la factura abierta desde el pago.
+        expect(sentCommands(driver)).toInclude("7");
+        expect(verified.printed).toBe(true);
+        expect(verified.invoiceNumber).toBe("456");
+    });
+
     test("Una nota de débito toma la foto con el S1 de 16 campos", async () => {
         const driver = await connectedDriver();
         driver.connection.setResponseHandler(

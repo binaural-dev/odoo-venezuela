@@ -348,3 +348,76 @@ class TestPosOrderPrintVerification(TransactionCase):
         body = self.order.message_ids[:1].body
         self.assertIn("printed it as number 505", body)
         self.assertNotIn("keeps", body)
+
+    # Segunda revisión del PR: la resolución del PdV hace los mismos chequeos
+    # que el asistente antes de escribir un número.
+
+    def _assert_manual_review(self, result, reason_part):
+        self.assertIsInstance(result, dict)
+        self.assertTrue(result.get("manual_review"))
+        self.assertIn(reason_part, result.get("reason"))
+        self.assertFalse(self.order.mf_invoice_number)
+        self.assertFalse(self.order.fiscal_machine)
+        self.assertEqual(self.order.mf_print_verification, self.verification)
+
+    def test_23_resolve_rejects_number_of_other_order(self):
+        """El PdV no le pone al pedido el número de otro documento de esa máquina."""
+        other = self._other_order()
+        other.write_mf_invoice_data("00000505", "Z7C7046254", "138")
+        self._flag()
+        before = set(self.order.message_ids.ids)
+        resolved = {"printed": True, "invoiceNumber": "505", "serial": "Z7C7046254", "reportZ": 138}
+        result = self.env["pos.order"].mf_resolve_print_verification(self.order.uuid, resolved)
+        self._assert_manual_review(result, other.display_name)
+        # Queda el rastro, con la foto, y el pedido sigue para el asistente.
+        message = self.order.message_ids.filtered(lambda m: m.id not in before)
+        self.assertEqual(len(message), 1)
+        self.assertIn("not applied", message.body)
+        self.assertIn("505", message.body)
+        self.assertIn("504", message.body)
+        self.assertEqual(other.mf_invoice_number, "00000505")
+
+        # Resuelto a mano con el número correcto, como siempre.
+        self._wizard(
+            result="printed", mf_invoice_number="506", fiscal_machine="Z7C7046254"
+        ).action_confirm()
+        self.assertEqual(self.order.mf_invoice_number, "506")
+        self.assertFalse(self.order.mf_print_verification)
+
+    def test_24_resolve_rejects_other_printer_and_old_number(self):
+        """El número solo pudo salir en la máquina de la foto y después de su número."""
+        Order = self.env["pos.order"]
+        self._flag()
+        resolved = {"printed": True, "invoiceNumber": "505", "serial": "Z7C0000001", "reportZ": 1}
+        self._assert_manual_review(
+            Order.mf_resolve_print_verification(self.order.uuid, resolved), "Z7C7046254"
+        )
+        for number in ("504", "00000504", "3"):
+            resolved = {"printed": True, "invoiceNumber": number, "serial": "Z7C7046254", "reportZ": 138}
+            self._assert_manual_review(Order.mf_resolve_print_verification(self.order.uuid, resolved), "504")
+
+    def test_25_resolve_without_serial_checks_the_reading_printer(self):
+        """Sin serial en la respuesta, el número se busca en la máquina de la foto."""
+        self._other_order().write_mf_invoice_data("505", "Z7C7046254", "138")
+        self._flag()
+        result = self.env["pos.order"].mf_resolve_print_verification(
+            self.order.uuid, {"printed": True, "invoiceNumber": "505"}
+        )
+        self._assert_manual_review(result, "505")
+
+    def test_26_resolve_checks_only_what_it_writes(self):
+        """'No emitido', un número que el pedido ya tenía o un pedido que no
+        está en el servidor siguen como antes: no se escribe ningún número."""
+        Order = self.env["pos.order"]
+        self._other_order().write_mf_invoice_data("505", "Z7C7046254", "138")
+        self._flag()
+        self.assertIs(Order.mf_resolve_print_verification(self.order.uuid, {"printed": False}), True)
+        self.assertFalse(self.order.mf_print_verification)
+
+        self.order.write_mf_invoice_data("504", "Z7C7046254", "138")
+        self._flag()
+        resolved = {"printed": True, "invoiceNumber": "505", "serial": "Z7C7046254", "reportZ": 138}
+        self.assertIs(Order.mf_resolve_print_verification(self.order.uuid, resolved), True)
+        self.assertEqual(self.order.mf_invoice_number, "504")
+
+        self.assertIs(Order.mf_resolve_print_verification("no-such-uuid", resolved), False)
