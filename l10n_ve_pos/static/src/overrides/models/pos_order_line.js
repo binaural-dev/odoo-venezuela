@@ -95,8 +95,13 @@ patch(PosOrderline.prototype, {
     _get_raw_foreign_unit_price() {
       // Unrounded foreign unit price. Used internally by helpers that need
       // full precision before doing money-level rounding.
+      //
+      // Un precio NEGATIVO también se convierte, con su signo: las líneas
+      // [DISC] del descuento global de `pos_discount` (y cualquier otra línea
+      // de precio negativo) quedaban con foreign_price = 0 y la factura salía
+      // con el alterno sin descontar (ticket 16547).
       const baseUnitPrice = Number(this.price_unit || 0);
-      if (!Number.isFinite(baseUnitPrice) || baseUnitPrice <= 0) {
+      if (!Number.isFinite(baseUnitPrice) || baseUnitPrice === 0) {
         return 0;
       }
       if (this._is_order_in_foreign_currency()) {
@@ -165,11 +170,11 @@ patch(PosOrderline.prototype, {
     get_foreign_unit_price() {
       const dp = this._foreignUnitPriceDp();
       const stored = Number(this.foreign_price);
-      if (this.foreign_price != null && Number.isFinite(stored) && stored > 0) {
+      if (this.foreign_price != null && Number.isFinite(stored) && stored !== 0) {
         return parseFloat(round_di(stored, dp).toFixed(dp));
       }
       const baseUnitPrice = Number(this.price_unit || 0);
-      if (!Number.isFinite(baseUnitPrice) || baseUnitPrice <= 0) {
+      if (!Number.isFinite(baseUnitPrice) || baseUnitPrice === 0) {
         return 0;
       }
       const raw = this._get_raw_foreign_unit_price();
