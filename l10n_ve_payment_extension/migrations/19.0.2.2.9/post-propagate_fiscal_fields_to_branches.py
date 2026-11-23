@@ -15,9 +15,9 @@ How to revert: not possible, the previous values of the branches are only kept i
 
 A warning is logged for every branch value that differs from the root and is overwritten, and
 for every branch that keeps a value because the root has that field empty. In that last case
-the branch is left inconsistent on purpose, so the value configured by hand is not lost: the
-constraint on branch partners will reject writes of that field on the branch until the root
-company contact is configured (its message says where to do it).
+the branch keeps the value configured by hand, so it is not lost: a field empty on the root is
+neither copied, nor compared by the constraint on branch partners, nor overwritten later by the
+propagation of other fields. Configure the root company contact to unify it.
 
 Task: ticket 16438
 """
@@ -60,7 +60,6 @@ def migrate(cr, version):
                         root.name,
                         getattr(partner[fname], "display_name", partner[fname]),
                     )
-        if with_value:
-            partner.with_context(
-                l10n_ve_skip_branch_fiscal_check=True
-            )._l10n_ve_propagate_fiscal_fields_to_branches(with_value)
+        partner._l10n_ve_propagate_fiscal_fields_to_branches(
+            partner._l10n_ve_root_fiscal_values(), branches=branches
+        )

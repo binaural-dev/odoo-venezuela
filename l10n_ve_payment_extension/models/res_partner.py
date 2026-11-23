@@ -43,38 +43,57 @@ class ResPartner(models.Model):
         """Fiscal fields that branches inherit from their root company partner."""
         return ["type_person_id", "withholding_type_id", "taxpayer_type"]
 
-    def _l10n_ve_propagate_fiscal_fields_to_branches(self, fnames=None):
-        """Copy the synced fiscal fields of a root company partner to its branches.
+    def _l10n_ve_root_fiscal_values(self):
+        """Synced fiscal fields that this root company partner has set, in write format.
 
-        :param fnames: fields to copy, all the synced fields by default.
+        A field empty on the root is left out: it must not replace the value of a branch.
         """
-        fnames = fnames or self._l10n_ve_branch_synced_fields()
-        Company = self.env["res.company"].sudo().with_context(active_test=False)
-        for root in Company.search([("partner_id", "in", self.ids), ("parent_id", "=", False)]):
-            branches = Company.search([("id", "child_of", root.id), ("id", "!=", root.id)])
-            branches.partner_id.write({
-                fname: self._fields[fname].convert_to_write(root.partner_id[fname], root.partner_id)
-                for fname in fnames
-            })
+        self.ensure_one()
+        return {
+            fname: self._fields[fname].convert_to_write(self[fname], self)
+            for fname in self._l10n_ve_branch_synced_fields()
+            if self[fname]
+        }
+
+    def _l10n_ve_propagate_fiscal_fields_to_branches(self, values, branches=None):
+        """Write on the branches the fiscal values written on a root company partner.
+
+        Only the synced fields present in ``values`` are written, so a field that was not
+        touched on the root is not touched on the branches either.
+
+        :param values: fields to write, in write format (many2one as id)
+        :param branches: ``res.company`` records to write on. By default, every branch
+            (any level, archived too) of the root companies whose partner is in ``self``.
+        """
+        synced = self._l10n_ve_branch_synced_fields()
+        values = {fname: value for fname, value in values.items() if fname in synced}
+        if not values:
+            return
+        if branches is None:
+            Company = self.env["res.company"].sudo().with_context(active_test=False)
+            roots = Company.search([("partner_id", "in", self.ids), ("parent_id", "=", False)])
+            branches = Company.search(
+                [("id", "child_of", roots.ids), ("id", "not in", roots.ids)]
+            )
+        branches.sudo().partner_id.write(values)
 
     def _fields_sync(self, values):
         super()._fields_sync(values)
-        if values.keys() & set(self._l10n_ve_branch_synced_fields()):
-            self._l10n_ve_propagate_fiscal_fields_to_branches()
+        self._l10n_ve_propagate_fiscal_fields_to_branches(values)
 
     @api.constrains(lambda self: self._l10n_ve_branch_synced_fields())
     def _l10n_ve_check_branch_fiscal_fields(self):
-        """Branch partners must keep the fiscal values of their root company partner."""
-        if self.env.context.get("l10n_ve_skip_branch_fiscal_check"):
-            # Only the migration sets it: it leaves the branch values that the root cannot
-            # replace (empty on the root) and must still be able to write the other fields.
-            return
+        """Branch partners must keep the fiscal values of their root company partner.
+
+        A field empty on the root is not compared: the root has no value to impose there.
+        """
         branches = self.env["res.company"].sudo().with_context(active_test=False).search(
             [("partner_id", "in", self.ids), ("parent_id", "!=", False)]
         )
         for branch in branches:
+            root_partner = branch.root_id.partner_id
             for fname in self._l10n_ve_branch_synced_fields():
-                if branch.partner_id[fname] != branch.root_id.partner_id[fname]:
+                if root_partner[fname] and branch.partner_id[fname] != root_partner[fname]:
                     raise ValidationError(
                         _(
                             "The field %(field)s of a branch cannot differ from its root "
