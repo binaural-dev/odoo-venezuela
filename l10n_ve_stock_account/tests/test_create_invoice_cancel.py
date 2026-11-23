@@ -87,9 +87,11 @@ class TestCancelInvoiceFromPicking(StockAccountTestCommon):
         self.assertTrue(picking.show_create_invoice)
 
     def test_cancel_reverts_qty_invoiced(self):
-        """Cancelling the invoice must bring qty_invoiced back down."""
+        """Cancelling the invoice must bring qty_invoiced and invoice_status back down,
+        without creating stock moves, and allow re-invoicing the delivery."""
         picking = self._create_sale_order(qty=22.0)
         line = picking.sale_id.order_line
+        move_count_before = len(picking.move_ids)
         invoice = picking.create_invoice()
         self._post(invoice)
         self.assertEqual(line.qty_invoiced, 22.0)
@@ -97,6 +99,14 @@ class TestCancelInvoiceFromPicking(StockAccountTestCommon):
         invoice.button_cancel()
 
         self.assertEqual(line.qty_invoiced, 0.0)
+        self.assertEqual(picking.sale_id.invoice_status, "to invoice")
+        self.assertEqual(len(picking.move_ids), move_count_before)
+        self.assertEqual(picking.state, "done")
+
+        new_invoice = picking.create_invoice()
+        self.assertTrue(new_invoice)
+        self.assertEqual(picking.state_guide_dispatch, "invoiced")
+        self.assertEqual(line.qty_invoiced, 22.0)
 
     def test_cancel_draft_invoice_also_reverts(self):
         """The invoice doesn't need to be posted for the revert to apply."""
@@ -108,11 +118,37 @@ class TestCancelInvoiceFromPicking(StockAccountTestCommon):
 
         self.assertEqual(picking.state_guide_dispatch, "to_invoice")
         self.assertEqual(line.qty_invoiced, 0.0)
+        self.assertEqual(picking.sale_id.invoice_status, "to invoice")
+
+    def test_unlink_draft_invoice_reverts_guide_and_order(self):
+        """Deleting (unlink) a draft invoice created from a picking must revert
+        state_guide_dispatch, qty_invoiced, and invoice_status without touching stock moves."""
+        picking = self._create_sale_order(qty=22.0)
+        line = picking.sale_id.order_line
+        move_count_before = len(picking.move_ids)
+        invoice = picking.create_invoice()
+        self.assertEqual(picking.state_guide_dispatch, "invoiced")
+        self.assertFalse(picking.show_create_invoice)
+        self.assertEqual(line.qty_invoiced, 22.0)
+
+        invoice.unlink()
+
+        self.assertEqual(picking.state_guide_dispatch, "to_invoice")
+        self.assertTrue(picking.show_create_invoice)
+        self.assertEqual(line.qty_invoiced, 0.0)
+        self.assertEqual(picking.sale_id.invoice_status, "to invoice")
+        self.assertEqual(len(picking.move_ids), move_count_before)
+        self.assertEqual(picking.state, "done")
+
+        new_invoice = picking.create_invoice()
+        self.assertTrue(new_invoice)
+        self.assertEqual(picking.state_guide_dispatch, "invoiced")
 
     def test_cancel_keeps_partial_state_with_other_valid_invoice(self):
         """If another non-cancelled invoice still links to the guide, it
-        should land on 'invoiced_partial' instead of 'to_invoice'."""
-        picking = self._create_sale_order()
+        should land on 'invoiced_partial' and keep qty_invoiced covered by it."""
+        picking = self._create_sale_order(qty=22.0)
+        line = picking.sale_id.order_line
         invoice = picking.create_invoice()
         self._post(invoice)
 
@@ -121,4 +157,47 @@ class TestCancelInvoiceFromPicking(StockAccountTestCommon):
 
         invoice.button_cancel()
 
+        self.assertEqual(picking.state_guide_dispatch, "invoiced_partial")
+        self.assertEqual(line.qty_invoiced, 22.0)
+        self.assertEqual(picking.sale_id.invoice_status, "invoiced")
+
+    def test_cancel_one_of_two_created_invoices_keeps_remaining_qty(self):
+        """When two invoices are created from the same picking, cancelling one
+        reverts only its share and leaves qty_invoiced covering the remaining one;
+        cancelling the last one drops qty_invoiced back to 0."""
+        picking = self._create_sale_order(qty=22.0)
+        line = picking.sale_id.order_line
+        invoice_1 = picking.create_invoice()
+        invoice_2 = picking.create_invoice()
+        self._post(invoice_2)
+        self.assertEqual(line.qty_invoiced, 44.0)
+
+        invoice_1.button_cancel()
+
+        self.assertEqual(picking.state_guide_dispatch, "invoiced_partial")
+        self.assertEqual(line.qty_invoiced, 22.0)
+        self.assertEqual(picking.sale_id.invoice_status, "invoiced")
+
+        invoice_2.button_cancel()
+
+        self.assertEqual(picking.state_guide_dispatch, "to_invoice")
+        self.assertTrue(picking.show_create_invoice)
+        self.assertEqual(line.qty_invoiced, 0.0)
+        self.assertEqual(picking.sale_id.invoice_status, "to invoice")
+
+    def test_unlink_cancelled_invoice_does_not_double_revert(self):
+        """Unlinking an already-cancelled invoice must not subtract qty_invoiced again."""
+        picking = self._create_sale_order(qty=22.0)
+        line = picking.sale_id.order_line
+        invoice_1 = picking.create_invoice()
+        invoice_2 = picking.create_invoice()
+        self._post(invoice_2)
+
+        invoice_1.button_cancel()
+        self.assertEqual(line.qty_invoiced, 22.0)
+        self.assertEqual(picking.state_guide_dispatch, "invoiced_partial")
+
+        invoice_1.unlink()
+
+        self.assertEqual(line.qty_invoiced, 22.0)
         self.assertEqual(picking.state_guide_dispatch, "invoiced_partial")

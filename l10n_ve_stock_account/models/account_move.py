@@ -21,6 +21,31 @@ class AccountMove(models.Model):
             list_guide_number = [picking.guide_number for picking in record.picking_ids]
             record.guide_number = "/".join(list_guide_number)
 
+    def _get_picking_revert_data(self):
+        """Capture linked pickings and invoiced quantities per product before
+        the move is cancelled or unlinked (only for moves not yet cancelled)."""
+        revert_data = []
+        for move in self:
+            if move.transfer_ids and move.state != "cancel":
+                qty_by_product = {}
+                for line in move.invoice_line_ids:
+                    if line.product_id:
+                        qty_by_product[line.product_id.id] = (
+                            qty_by_product.get(line.product_id.id, 0.0) + line.quantity
+                        )
+                revert_data.append((move.id, move.transfer_ids, qty_by_product))
+        return revert_data
+
+    def _apply_picking_revert(self, revert_data):
+        """Revert dispatch-guide state and sale order invoiced quantities for
+        moves that were just cancelled or deleted."""
+        for move_id, pickings, qty_by_product in revert_data:
+            pickings._revert_guide_dispatch_state(move_id)
+            pickings._revert_order_sale_invoiced(
+                cancelled_invoice=move_id,
+                cancelled_qty_by_product=qty_by_product,
+            )
+
     def button_cancel(self):
         """Revert the dispatch-guide invoicing state created by `create_invoice`.
 
@@ -31,11 +56,21 @@ class AccountMove(models.Model):
         as "Invoiced" and the sale order permanently "Fully Invoiced" with no way
         to re-invoice the delivery. Mirror the creation-time side effects here.
         """
-        pickings_by_move = {move: move.transfer_ids for move in self if move.transfer_ids}
+        revert_data = self._get_picking_revert_data()
         res = super().button_cancel()
-        for move, pickings in pickings_by_move.items():
-            pickings._revert_guide_dispatch_state(move)
-            pickings._revert_order_sale_invoiced()
+        self._apply_picking_revert(revert_data)
+        return res
+
+    def unlink(self):
+        """Revert dispatch-guide invoicing state when a linked invoice is deleted.
+
+        Draft invoices created from a picking can be deleted directly without
+        calling `button_cancel()`; capture linked pickings before `super().unlink()`
+        removes the records and revert their state right after deletion succeeds.
+        """
+        revert_data = self._get_picking_revert_data()
+        res = super().unlink()
+        self._apply_picking_revert(revert_data)
         return res
 
     def _get_tax_grouped_lines(self):

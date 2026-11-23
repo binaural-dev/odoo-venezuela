@@ -502,30 +502,89 @@ class StockPicking(models.Model):
                 for line in picking.sale_id.order_line:
                     line.write({"qty_invoiced": line.qty_invoiced + line.qty_delivered})
 
-    def _revert_order_sale_invoiced(self):
+    def _get_remaining_valid_invoices(self, cancelled_invoice=None):
+        """Return non-cancelled invoices still linked to this picking, excluding
+        `cancelled_invoice` (recordset or int ID)."""
+        self.ensure_one()
+        excluded_id = (
+            cancelled_invoice.id
+            if hasattr(cancelled_invoice, "id")
+            else cancelled_invoice
+        )
+        domain = [
+            ("transfer_ids", "in", self.id),
+            ("state", "!=", "cancel"),
+        ]
+        if excluded_id:
+            domain.append(("id", "!=", excluded_id))
+        return self.env["account.move"].search(domain)
+
+    def _revert_order_sale_invoiced(
+        self, cancelled_invoice=None, cancelled_qty_by_product=None
+    ):
         """Reverse what `_update_order_sale_invoiced` added for this picking.
 
         `_update_order_sale_invoiced` bumps `qty_invoiced` by hand (outside the
-        native invoicing flow), so cancelling the invoice never recomputes it on
-        its own: it has to be subtracted back by the same amount it was added.
+        native invoicing flow), so cancelling or deleting the invoice never
+        recomputes it on its own. When other valid invoices still exist on the
+        picking (`remaining_invoices`), avoid subtracting quantities still covered
+        by those active invoices.
         """
         for picking in self:
-            if picking.sale_id:
+            if not picking.sale_id:
+                continue
+            remaining_invoices = picking._get_remaining_valid_invoices(cancelled_invoice)
+            if not remaining_invoices:
                 for line in picking.sale_id.order_line:
                     line.write({
                         "qty_invoiced": max(line.qty_invoiced - line.qty_delivered, 0.0)
                     })
+                continue
+
+            for line in picking.sale_id.order_line:
+                remaining_qty = sum(
+                    remaining_invoices.invoice_line_ids.filtered(
+                        lambda inv_line: inv_line.product_id == line.product_id
+                    ).mapped("quantity")
+                )
+                picking_moves = picking.move_ids.filtered(
+                    lambda move: move.sale_line_id == line and move.state == "done"
+                )
+                picking_delivered = (
+                    sum(picking_moves.mapped("quantity"))
+                    if picking_moves
+                    else line.qty_delivered
+                )
+                if cancelled_qty_by_product is not None:
+                    cancelled_qty = cancelled_qty_by_product.get(
+                        line.product_id.id, 0.0
+                    )
+                elif hasattr(cancelled_invoice, "invoice_line_ids"):
+                    cancelled_qty = sum(
+                        cancelled_invoice.invoice_line_ids.filtered(
+                            lambda inv_line: inv_line.product_id == line.product_id
+                        ).mapped("quantity")
+                    )
+                else:
+                    cancelled_qty = picking_delivered
+
+                uncovered_qty = max(picking_delivered - remaining_qty, 0.0)
+                over_invoiced_qty = max(line.qty_invoiced - line.qty_delivered, 0.0)
+                to_subtract = min(cancelled_qty, uncovered_qty + over_invoiced_qty)
+                if to_subtract:
+                    line.write({
+                        "qty_invoiced": max(line.qty_invoiced - to_subtract, 0.0)
+                    })
 
     def _revert_guide_dispatch_state(self, cancelled_invoice):
         """Set `state_guide_dispatch` back to a state consistent with the
-        invoices that remain valid after `cancelled_invoice` was cancelled."""
+        invoices that remain valid after `cancelled_invoice` was cancelled or deleted."""
         for picking in self:
-            remaining_invoices = picking.invoice_ids.filtered(
-                lambda move: move.id != cancelled_invoice.id and move.state != "cancel"
-            )
+            remaining_invoices = picking._get_remaining_valid_invoices(cancelled_invoice)
             picking.state_guide_dispatch = (
                 "invoiced_partial" if remaining_invoices else "to_invoice"
             )
+        self.invalidate_recordset(["invoice_ids", "invoice_count"])
 
     def _get_invoice_lines_for_invoice(self, from_picking_line=False):
         self.ensure_one()
