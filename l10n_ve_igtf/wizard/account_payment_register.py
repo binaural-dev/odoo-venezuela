@@ -175,7 +175,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                     if move_id.journal_id.is_purchase_international:
                         continue
                     if (
-                        payment.partner_id._check_igtf_apply_improved(move_id.move_type)
+                        payment.partner_id._check_igtf_apply_improved(move_id.move_type, move_id.company_id)
                         and payment.currency_id != self.env.ref("base.VEF") and not move_id.debit_origin_id
                     ):
                         payment.is_igtf = True
@@ -508,11 +508,9 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             account.move: Move object
         """
         
-        advance_account_id = (
-            payment.partner_id.default_advance_customer_account_id.id
-            if payment.partner_type == "customer"
-            else payment.partner_id.default_advance_supplier_account_id.id
-        )
+        advance_account_id = payment.partner_id._l10n_ve_get_advance_account(
+            payment.company_id, payment.partner_type
+        ).id
 
         partner_account_id = (
             payment.partner_id.property_account_receivable_id.id
@@ -554,7 +552,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                 
             move_to_reconcile_with_payment_difference = self.env["account.move"].create(
                 {
-                    "journal_id": self.env.company.advance_payment_igtf_journal_id.id,
+                    "journal_id": payment.company_id.advance_payment_igtf_journal_id.id,
                     "date": payment.date,
                     "partner_id": payment.partner_id.id,
                     "vat": payment.partner_id.vat,

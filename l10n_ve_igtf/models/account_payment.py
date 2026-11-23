@@ -84,21 +84,19 @@ class AccountPaymentAndIgtf(models.Model):
         "partner_id", "partner_type",  "is_advance_payment"
     )
     def _compute_destination_account_id(self):
-
+        """Anticipo: cuenta de anticipos del contacto para la compañía del pago
+        (res.partner._l10n_ve_get_advance_account); el resto sigue al core."""
+        advances = self.browse()
         for payment in self:
-            if payment.partner_id:
-                customer_account = payment.partner_id.default_advance_customer_account_id.id
-                supplier_account = payment.partner_id.default_advance_supplier_account_id.id
-
-                if payment.is_advance_payment:
-                    if payment.partner_type == "customer" and customer_account:
-                        payment.destination_account_id = customer_account 
-                        return
-                    elif payment.partner_type == "supplier" and supplier_account:
-                        payment.destination_account_id = supplier_account
-                        return
-                
-                return super(AccountPaymentAndIgtf, self)._compute_destination_account_id()
+            if not (payment.partner_id and payment.is_advance_payment):
+                continue
+            account = payment.partner_id._l10n_ve_get_advance_account(
+                payment.company_id, payment.partner_type
+            )
+            if account:
+                payment.destination_account_id = account
+                advances |= payment
+        return super(AccountPaymentAndIgtf, self - advances)._compute_destination_account_id()
 
     def _seek_for_lines(self):
         """Helper used to dispatch the journal items between:
@@ -211,11 +209,9 @@ class AccountPaymentAndIgtf(models.Model):
         
     def _create_igtf_moves_in_payments(self, vals, write_off_line_vals = False):
         
-        igtf_account = (
-            self.partner_id.default_advance_customer_account_id.id
-            if self.partner_type == "customer"
-            else  self.partner_id.default_advance_supplier_account_id.id
-        )
+        igtf_account = self.partner_id._l10n_ve_get_advance_account(
+            self.company_id, self.partner_type
+        ).id
         if self.env.context.get("from_pos", False):
             return
 
