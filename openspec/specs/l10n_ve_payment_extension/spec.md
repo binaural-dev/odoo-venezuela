@@ -685,6 +685,95 @@ Al escribir `condition_withholding_id` en `res.company`, el sistema DEBE (MUST) 
 - **WHEN** se escribe la condición de retención en una compañía sin partner asociado
 - **THEN** la escritura se completa sin propagar el valor
 
+### Requirement: Tipo de persona permitido según el tipo de contacto
+
+El dominio de `type_person_id` en el formulario del contacto DEBE (MUST) ofrecer solo los tipos de persona activos que corresponden a `is_company`, calculados en `allowed_type_person_ids`: una persona (`is_company` falso) solo puede ser `PN Residente` o `PN No Residente`; una compañía solo puede ser alguno de los demás tipos, todos personas jurídicas (`PJ Domiciliada`, `PJ No Domiciliada`, `Instituciones Financieras No Domiciliadas`, `Otras PJ No Domiciliada` y `PJ Empresa Emisora De Radio Domiciliada`). Al cambiar `is_company`, el `onchange` DEBE (MUST) vaciar `type_person_id` si el tipo elegido deja de estar permitido.
+
+#### Scenario: Contacto de tipo persona
+
+- **WHEN** se abre el selector de tipo de persona de un contacto con `is_company` falso
+- **THEN** solo se ofrecen `PN Residente` y `PN No Residente`
+
+#### Scenario: Contacto de tipo compañía
+
+- **WHEN** se abre el selector de tipo de persona de un contacto con `is_company` verdadero
+- **THEN** se ofrecen los cinco tipos de persona jurídica y no los dos de persona natural
+
+#### Scenario: Cambio de persona a compañía
+
+- **WHEN** un contacto con tipo `PN Residente` cambia a compañía
+- **THEN** `type_person_id` queda vacío
+
+### Requirement: Tipo de contribuyente según el tipo de persona
+
+El campo `taxpayer_type` del contacto DEBE (MUST) ofrecer solo `ordinary` y `formal` cuando el tipo de persona es `PN Residente` (`allowed_taxpayer_types`, aplicado con el widget `filterable_selection`), y al elegir `PN Residente` con contribuyente `special` el `onchange` DEBE (MUST) pasarlo a `ordinary`. Para un tipo de persona no residente (`PN No Residente`, `PJ No Domiciliada`, `Instituciones Financieras No Domiciliadas` y `Otras PJ No Domiciliada`) el campo DEBE (MUST) ocultarse y quedar en `ordinary` al elegir el tipo, y una restricción (`_check_non_resident_taxpayer_type`) DEBE (MUST) rechazar el guardado de un no residente con contribuyente `special`, también por importación o API. El contacto de la propia compañía no se modifica por estas reglas.
+
+#### Scenario: PN Residente no ofrece contribuyente especial
+
+- **WHEN** el tipo de persona del contacto es `PN Residente`
+- **THEN** el selector de tipo de contribuyente ofrece solo `ordinary` y `formal`
+
+#### Scenario: Elegir PN Residente con contribuyente especial
+
+- **WHEN** un contacto con contribuyente `special` cambia su tipo de persona a `PN Residente`
+- **THEN** `taxpayer_type` pasa a `ordinary`
+
+#### Scenario: Tipo de persona no residente
+
+- **WHEN** se elige un tipo de persona no residente
+- **THEN** el campo de contribuyente se oculta y `taxpayer_type` queda en `ordinary`
+
+#### Scenario: No residente con contribuyente especial
+
+- **WHEN** se guarda un contacto no residente con `taxpayer_type` en `special`
+- **THEN** se lanza un `ValidationError` indicando que un contacto no residente no puede ser contribuyente especial
+
+### Requirement: Tipo de retención por defecto del contacto según la tabla de retención de IVA
+
+El método `_apply_default_withholding_type`, disparado por el `onchange` de `type_person_id` y de `taxpayer_type`, DEBE (MUST) fijar `withholding_type_id` según la tabla de retención de IVA validada por funcional en la tarea 86944: no se propone ningún valor mientras el contacto no tenga tipo de persona; con contribuyente `formal` queda vacío porque no cobra IVA; un tipo de persona no residente tiene siempre 100 %; `PN Residente` tiene 100 % por defecto; cualquier otro residente (`PJ Domiciliada` y `PJ Empresa Emisora De Radio Domiciliada`) tiene 75 % por defecto. Un valor ya elegido (75 % o 100 %) DEBE (MUST) conservarse al cambiar el tipo de persona o de contribuyente, salvo para un no residente o un contribuyente `formal`. El contacto de la propia compañía NO DEBE (MUST NOT) modificarse, porque su tipo de retención viene de la configuración de la compañía. La regla vive en el formulario: la creación por importación o API no ejecuta los `onchange`.
+
+En la vista, `withholding_type_id` DEBE (MUST) ocultarse únicamente con contribuyente `formal`, ser obligatorio para un contribuyente `special` residente y para `PN Residente` (siempre que no sea el contacto de la compañía, donde es de solo lectura) y opcional en el resto.
+
+#### Scenario: Contacto nuevo sin tipo de persona
+
+- **WHEN** se abre un contacto nuevo y todavía no se elige el tipo de persona
+- **THEN** `withholding_type_id` queda vacío
+
+#### Scenario: PJ Domiciliada con contribuyente ordinario o especial
+
+- **WHEN** un contacto con tipo `PJ Domiciliada` tiene contribuyente `ordinary` o `special` y el campo está vacío
+- **THEN** `withholding_type_id` toma el valor de 75 % y el campo es visible y editable a 100 %
+
+#### Scenario: Contribuyente formal
+
+- **WHEN** un contacto residente tiene contribuyente `formal`
+- **THEN** `withholding_type_id` queda vacío y el campo se oculta
+
+#### Scenario: PN Residente
+
+- **WHEN** un contacto de tipo `PN Residente` con contribuyente `ordinary` tiene el campo vacío
+- **THEN** `withholding_type_id` toma el valor de 100 % y el campo es obligatorio
+
+#### Scenario: Tipo de persona no residente
+
+- **WHEN** se elige un tipo de persona no residente
+- **THEN** `withholding_type_id` queda en 100 %, aunque tuviera otro valor, para que la retención de IVA de sus facturas pueda generarse
+
+#### Scenario: Valor elegido a mano
+
+- **WHEN** un contacto `PJ Domiciliada` con 100 % elegido a mano pasa de contribuyente `special` a `ordinary`
+- **THEN** `withholding_type_id` se conserva en 100 %
+
+#### Scenario: Del contribuyente formal al ordinario
+
+- **WHEN** un contacto `PJ Domiciliada` pasa de contribuyente `formal` a `ordinary`
+- **THEN** `withholding_type_id`, vacío, vuelve a tomar el valor por defecto de 75 %
+
+#### Scenario: Contacto de la propia compañía
+
+- **WHEN** se evalúa el contacto de la propia compañía
+- **THEN** `withholding_type_id` no se modifica y el campo es de solo lectura
+
 ### Requirement: Los montos de una línea de retención de IVA de proveedor deben ser de solo lectura
 
 El sistema SHALL mostrar `invoice_total`, `invoice_amount`, `iva_amount` y `retention_amount` como campos de solo lectura (con su valor preservado al guardar, vía `force_save`) en cada línea de `account.retention.line` cuando la retención (`account.retention.type`) sea de proveedor (`in_invoice`, `in_refund` o `in_debit`).
