@@ -221,3 +221,39 @@ describe("l10n_ve_pos discount line setQuantity (bloqueo, comparte _numberFromIn
         expect(typeof result).toBe("object");
     });
 });
+
+// Ticket 16547: la línea [DISC] del descuento global tiene precio NEGATIVO y
+// `_get_raw_foreign_unit_price` devolvía 0 para todo precio <= 0, así que se
+// sincronizaba con foreign_price = 0 y la factura quedaba con el alterno sin
+// descontar. El precio foráneo debe conservar el signo.
+describe("l10n_ve_pos foreign_price de la línea de descuento (ticket 16547)", () => {
+    // Base en Bs, alterna en USD a 500: el PdV convierte con el multiplicador
+    // 1 / 500.
+    const order = { localToForeign: (amount) => amount * 0.002 };
+
+    test("la línea de descuento guarda el precio foráneo negativo", () => {
+        const line = makeDiscountLine({ order_id: order });
+        line.setUnitPrice(-1350);
+        expect(line.price_unit).toBe(-1350);
+        expect(line.foreign_price).toBe(-2.7);
+        expect(line.get_foreign_unit_price()).toBe(-2.7);
+    });
+
+    test("monto positivo coaccionado a negativo: el foráneo sigue el signo", () => {
+        const line = makeDiscountLine({ order_id: order });
+        line.setUnitPrice(1800);
+        expect(line.price_unit).toBe(-1800);
+        expect(line.foreign_price).toBe(-3.6);
+    });
+
+    test("sin foreign_price guardado, el unitario foráneo se calcula del precio negativo", () => {
+        const line = makeDiscountLine({ order_id: order, price_unit: -1350, foreign_price: 0 });
+        expect(line.get_foreign_unit_price()).toBe(-2.7);
+    });
+
+    test("precio en cero sigue dando foráneo en cero", () => {
+        const line = makeDiscountLine({ order_id: order });
+        line.setUnitPrice(0);
+        expect(line.foreign_price).toBe(0);
+    });
+});
