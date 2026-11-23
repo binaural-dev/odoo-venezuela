@@ -55,7 +55,7 @@ class AccountPaymentRegister(models.TransientModel):
                 if currency_id == payment.company_id.currency_id.id:
                     currency_id = payment.company_id.foreign_currency_id.id
                 
-                rate_values = Rate.compute_rate(
+                rate_values = Rate.with_company(payment.company_id).compute_rate(
                     currency_id, payment.payment_date
                 )
                 payment.foreign_rate_display = rate_values.get("foreign_rate", 0.0)
@@ -91,7 +91,7 @@ class AccountPaymentRegister(models.TransientModel):
             if not bool(payment.currency_id):
                 return
             currency_to_use = payment.currency_id.id if payment.currency_id != payment.company_id.currency_id else payment.company_id.foreign_currency_id.id
-            rate_values = Rate.compute_rate(
+            rate_values = Rate.with_company(payment.company_id).compute_rate(
                 currency_to_use, payment._get_conversion_date()
             )
             payment.foreign_rate = rate_values.get("foreign_rate", 0.0)
@@ -125,7 +125,7 @@ class AccountPaymentRegister(models.TransientModel):
         for payment in self:
             if not bool(payment.payment_date):
                 return
-            rate_values = Rate.compute_rate(
+            rate_values = Rate.with_company(payment.company_id).compute_rate(
                 payment.foreign_currency_id.id, payment._get_conversion_date()
             )
             payment.update(rate_values)

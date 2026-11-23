@@ -409,7 +409,9 @@ class SaleOrder(models.Model):
                 if not sale.foreign_rate_date:
                     sale.foreign_rate_date = rate_date
                 continue
-            rate_values = Rate.compute_rate(sale.foreign_currency_id.id, rate_date)
+            rate_values = Rate.with_company(sale.company_id).compute_rate(
+                sale.foreign_currency_id.id, rate_date
+            )
             sale.foreign_rate = rate_values.get("foreign_rate", 0)
             sale.foreign_inverse_rate = rate_values.get("foreign_inverse_rate", 0)
             # La tasa se recalculo: la fecha acompana al valor nuevo.
@@ -513,7 +515,7 @@ class SaleOrder(models.Model):
         precision = self.env["decimal.precision"].precision_get("Tasa")
         for sale in res:
             Rate = self.env["res.currency.rate"]
-            rate_values = Rate.compute_rate(
+            rate_values = Rate.with_company(sale.company_id).compute_rate(
                 sale.foreign_currency_id.id,
                 sale._l10n_ve_rate_date(),
             )
@@ -703,7 +705,7 @@ class SaleOrder(models.Model):
                 and float_is_zero(order.foreign_rate, precision_rounding=order.currency_id.rounding)
             ):
                 rate_date = order._l10n_ve_rate_date()
-                self.env["res.currency.rate"].compute_rate(
+                self.env["res.currency.rate"].with_company(order.company_id).compute_rate(
                     order.foreign_currency_id.id, rate_date, raise_if_not_found=True
                 )
 

@@ -791,7 +791,7 @@ class AccountMove(models.Model):
             # diferible (ver _is_rate_deferrable) puede no tener tasa todavia: se busca sin
             # lanzar y, si no hay, no se publica el mensaje. El resto sigue lanzando.
             deferrable = move._is_rate_deferrable()
-            rate_values = Rate.compute_rate(
+            rate_values = Rate.with_company(move.company_id).compute_rate(
                 move.foreign_currency_id.id,
                 rate_date,
                 raise_if_not_found=not deferrable,
@@ -1289,7 +1289,7 @@ class AccountMove(models.Model):
             # Un asiento manual en borrador puede quedar sin tasa (se calcula al publicar,
             # ver _post); el resto exige la tasa exacta y lanza si no existe.
             deferrable = move._is_rate_deferrable() and move.state == "draft"
-            rate_values = Rate.compute_rate(
+            rate_values = Rate.with_company(move.company_id).compute_rate(
                 move.foreign_currency_id.id,
                 rate_date,
                 raise_if_not_found=not deferrable,

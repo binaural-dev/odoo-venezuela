@@ -22,6 +22,10 @@
                                 </div>
                             </div>
                         </setting>
+                        <setting name="l10n_ve_require_daily_rate_setting"
+                                 help="Without a rate of the day, use the most recent previous rate instead of raising an error.">
+                            <field name="l10n_ve_require_daily_rate"/>
+                        </setting>
                     </block>
                 </xpath>
             </field>
