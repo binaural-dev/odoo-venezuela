@@ -9,13 +9,18 @@ de su compañía raíz, los campos `type_person_id`, `withholding_type_id` y
 `taxpayer_type`:
 
 - Al escribir cualquiera de esos campos en el contacto de una compañía
-  raíz, el sistema SHALL escribir el mismo valor en los contactos de todas
-  sus sucursales (descendientes, activas o archivadas).
-- Al crear una sucursal, el sistema SHALL aplicar a su contacto los valores
-  del contacto de la raíz.
+  raíz, el sistema SHALL escribir en los contactos de todas sus sucursales
+  (descendientes, activas o archivadas) solo los campos que se escribieron,
+  con el mismo valor, incluido el vaciado explícito de un campo. Los
+  campos que no se escribieron NO SHALL tocarse en las sucursales.
+- Al crear una sucursal, el sistema SHALL aplicar al contacto de esa
+  sucursal los campos que tienen valor en el contacto de la raíz, y NO SHALL
+  tocar los contactos de las demás sucursales.
 - El sistema SHALL bloquear con `ValidationError` (vía `@api.constrains`)
   cualquier escritura que deje en el contacto de una sucursal un valor
-  distinto al de su raíz, indicando que se edite en la compañía raíz.
+  distinto al de su raíz, indicando que se edite en la compañía raíz. Un
+  campo vacío en la raíz NO SHALL compararse: la raíz no tiene valor que
+  imponer en él.
 
 #### Scenario: Cambiar el tipo de persona en la matriz lo propaga
 
@@ -39,6 +44,37 @@ de su compañía raíz, los campos `type_person_id`, `withholding_type_id` y
 - **WHEN** se crea una sucursal con esa raíz como padre
 - **THEN** el contacto de la sucursal tiene los tres valores de la raíz
 
+#### Scenario: Escribir un campo en la matriz no toca los demás en las sucursales
+
+- **GIVEN** una raíz con `type_person_id` vacío y sucursales que conservan
+  su propio `type_person_id`
+- **WHEN** se escribe `withholding_type_id` en el contacto de la raíz
+- **THEN** las sucursales tienen el nuevo `withholding_type_id`
+- **AND** conservan su `type_person_id`
+
+#### Scenario: Crear una sucursal no toca las existentes
+
+- **GIVEN** una raíz con `type_person_id` vacío y sucursales que conservan
+  su propio `type_person_id`
+- **WHEN** se crea una sucursal nueva con esa raíz como padre
+- **THEN** la sucursal nueva tiene los campos con valor en la raíz
+- **AND** las sucursales existentes conservan su `type_person_id`
+
+#### Scenario: Vaciar un campo en la matriz lo vacía en las sucursales
+
+- **GIVEN** una raíz con `withholding_type_id` configurado y sus sucursales
+- **WHEN** se vacía `withholding_type_id` en el contacto de la raíz
+- **THEN** los contactos de las sucursales quedan con `withholding_type_id`
+  vacío
+
+#### Scenario: La constraint no compara los campos vacíos en la raíz
+
+- **GIVEN** una raíz con `type_person_id` vacío y una sucursal que conserva
+  su propio `type_person_id`
+- **WHEN** se escribe en el contacto de la sucursal un `taxpayer_type` igual
+  al de la raíz
+- **THEN** la escritura se acepta
+
 ### Requirement: La migración iguala las sucursales a su raíz
 
 La migración 19.0.2.2.9 SHALL escribir en los contactos de las sucursales
@@ -51,9 +87,9 @@ conserve un valor no vacío porque la raíz tiene ese campo vacío (con el
 campo, el valor y la raíz, indicando que debe configurarse la matriz).
 
 Con los campos vacíos en la raíz la sucursal queda distinta a su raíz a
-propósito: la constraint rechazará después las escrituras de ese campo en
-la sucursal hasta que se configure el contacto de la matriz, y su mensaje
-indica dónde hacerlo.
+propósito. Ese valor se respeta en todo el módulo: ni la propagación de
+otros campos, ni la creación de otras sucursales, ni la constraint lo
+tocan, hasta que se configure el contacto de la matriz.
 
 #### Scenario: Raíz con valor y sucursal con otro valor
 
@@ -85,3 +121,27 @@ tipo de persona de la sucursal es el de su raíz.
 - **WHEN** se evalúa `_get_islr_type_person_id()` de una línea ISLR de
   cliente con la sucursal como `company_id`
 - **THEN** devuelve el `type_person_id` de la raíz
+
+#### Scenario: Retención automática al publicar la factura
+
+- **GIVEN** una raíz con los tres campos configurados y la sucursal como
+  empresa activa
+- **WHEN** se publica una factura de venta con un concepto de ISLR y se
+  genera la retención automática
+- **THEN** el total de la factura, el % de base, el % de tarifa y el monto
+  retenido son distintos de 0 e iguales a los que da la compañía raíz
+
+#### Scenario: Retención manual desde su vista
+
+- **GIVEN** una raíz con los tres campos configurados y la sucursal como
+  empresa activa
+- **WHEN** se crea la retención ISLR de cliente con `action_retention_islr_client`
+  y su vista
+- **THEN** el total de la factura, el % de base, el % de tarifa y el monto
+  retenido son distintos de 0 e iguales a los que da la compañía raíz
+
+#### Scenario: Sin datos propagados la retención queda en 0
+
+- **GIVEN** una sucursal sin `type_person_id` ni `withholding_type_id`
+- **WHEN** se generan las retenciones ISLR de cliente de los dos flujos
+- **THEN** el monto retenido queda en 0 (control del bug original)
