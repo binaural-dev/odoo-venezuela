@@ -29,6 +29,7 @@
         "views/pos_payment_views.xml",
         "views/res_partner_views.xml",
         "views/report_saledetails.xml",
+        "views/pos_order_report_views.xml",
         "security/res_group.xml",
         "wizard/payment_report.xml",
         "report/payment_report.xml",

@@ -368,6 +368,7 @@ msgstr "Cambio alterno"
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_order__foreign_currency_id
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_payment__foreign_currency_id
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_session__foreign_currency_id
+#: model:ir.model.fields,field_description:l10n_ve_pos.field_report_pos_order__foreign_currency_id
 msgid "Foreign Currency"
 msgstr "Moneda alterna"
 
@@ -1264,3 +1265,25 @@ msgstr ""
 #: code:addons/l10n_ve_pos/static/src/overrides/services/pos_store.js:0
 msgid "ordered %(requested)s, on hand %(available)s"
 msgstr "pedido %(requested)s, a mano %(available)s"
+
+#. module: l10n_ve_pos
+#: model:ir.model.fields,field_description:l10n_ve_pos.field_report_pos_order__foreign_untaxed_total
+msgid "Foreign Untaxed Total"
+msgstr "Subtotal alterno"
+
+#. module: l10n_ve_pos
+#: model:ir.model.fields,field_description:l10n_ve_pos.field_report_pos_order__foreign_total_billed
+msgid "Foreign Total Billed"
+msgstr "Total alterno"
+
+#. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/report/pos_order_report.py:0
+msgid "Subtotal %s"
+msgstr "Subtotal %s"
+
+#. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/report/pos_order_report.py:0
+msgid "Total %s"
+msgstr "Total %s"
