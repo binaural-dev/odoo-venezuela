@@ -960,3 +960,19 @@ msgstr ""
 msgid "Free Form"
 msgstr "Forma Libre"
 
+
+#. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/models/ir_sequence.py:0
+msgid ""
+"There is already an active invoice correlative sequence for the company %s. "
+"Only one is allowed."
+msgstr ""
+"Ya existe una secuencia de correlativo de factura activa para la compañía "
+"%s. Solo se permite una."
+
+#. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/models/ir_sequence.py:0
+msgid "(no company)"
+msgstr "(sin compañía)"

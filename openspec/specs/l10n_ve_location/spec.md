@@ -8,7 +8,7 @@ Aporta la división político-territorial de Venezuela: modelos maestros de ciud
 
 ### Requirement: Catálogo de ciudades único por estado y país
 
-El modelo `res.country.city` DEBE (MUST) exigir nombre, país y estado, e impedir vía constraint SQL `name_uniq` (`unique (name, country_id, state_id)`) registrar dos ciudades con el mismo nombre para el mismo estado y país.
+El modelo `res.country.city` DEBE (MUST) exigir nombre, país y estado, e impedir vía `models.Constraint` `_name_uniq` (`UNIQUE (name, country_id, state_id)`; en Odoo 19 `_sql_constraints` ya no se lee) registrar dos ciudades con el mismo nombre para el mismo estado y país.
 
 #### Scenario: Ciudad duplicada
 
