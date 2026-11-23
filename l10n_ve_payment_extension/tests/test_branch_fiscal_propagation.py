@@ -182,11 +182,15 @@ class TestBranchFiscalPropagation(TransactionCase):
         self._set_root_values(self.person_a, self.wh_a, "special")
         name = self.branch.partner_id.name
         root_partner = self.root.partner_id
+        # The root changes without propagating, so the branches are behind it.
+        self._write_on_root_without_propagation({"withholding_type_id": self.wh_b.id})
         root_partner._l10n_ve_propagate_fiscal_fields_to_branches(
             {"name": "Other name", "withholding_type_id": self.wh_b.id}
         )
         self.assertEqual(self.branch.partner_id.name, name)
         self.assertEqual(self.branch.partner_id.withholding_type_id, self.wh_b)
+        # With nothing to write the branches are left as they are.
+        self._write_on_root_without_propagation({"withholding_type_id": self.wh_a.id})
         root_partner._l10n_ve_propagate_fiscal_fields_to_branches({})
         self.assertEqual(self.branch.partner_id.withholding_type_id, self.wh_b)
 
