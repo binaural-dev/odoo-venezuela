@@ -1,6 +1,6 @@
 # Capacidad `l10n_ve_donation` · estado vigente
 
-Fuente de verdad del comportamiento actual del módulo (versión `19.0.3.0.2`, Odoo 19). Cada
+Fuente de verdad del comportamiento actual del módulo (versión `19.0.3.0.3`, Odoo 19). Cada
 requisito tiene un REQ-ID estable y sus escenarios Dado/Cuando/Entonces; los tests los citan por
 ese ID. El historial de cada cambio (por qué, cómo y con qué verificación) está en
 `openspec/changes/archive/`:
@@ -414,7 +414,12 @@ El asiento de una línea de extracto bancario (`statement_line_id`) que se conci
 Los documentos DEBEN (MUST) mostrar el RIF con su prefijo (`res.partner._get_donation_vat`, del contacto comercial), la dirección completa sin repetir el nombre y con el estado por su nombre (`_get_donation_address`: calle, ciudad, estado, código postal y país) para la empresa, el donante y el beneficiario, y las cantidades y montos de la tabla con el formato del idioma y de la moneda. El concepto del Recibo de dinero DEBE (MUST) ser «Donación» cuando las líneas no tienen un texto propio (distinto de la referencia). El Certificado DEBE (MUST) salir en tamaño carta y el Recibo en media carta; la migración cambia el formato del Certificado solo en las bases donde sigue en A4 (el registro es `noupdate`), sin tocar uno que se eligió a propósito.
 
 ### Requirement: REQ-DON-033 · Nota de crédito de una venta de donación en moneda extranjera
-La nota de crédito automática de una factura de donación DEBE (MUST) tener la moneda de la factura: una factura de 100 USD queda revertida por una nota de 100 USD, conciliada y sin saldo por cobrar.
+La nota de crédito automática de una factura de donación DEBE (MUST) tener la moneda de la factura: una factura de 100 USD queda revertida por una nota de 100 USD, conciliada y sin saldo por cobrar. Cuando el módulo de tarifas de factura (`account_invoice_pricelist`) está instalado, la nota DEBE (MUST) conservar también la tarifa de la factura (`pricelist_id`) y no la del cliente, que puede estar en otra moneda (un cliente compra en las dos): ese módulo exige que la tarifa y el documento de venta tengan la misma divisa y, con la tarifa del cliente, la confirmación de la factura de donación fallaba con «La tarifa y la factura deben tener la misma divisa».
+
+#### Scenario: Cliente con la tarifa en otra moneda
+- **Dado** un cliente con la tarifa en bolívares y una factura de donación en USD con su tarifa en USD (o al revés)
+- **Cuando** se confirma la factura
+- **Entonces** se crea y se publica la nota de crédito en USD con la tarifa en USD, la factura queda revertida y no sale el error de divisa; los cuatro cruces de tarifa del cliente y moneda de la venta funcionan igual
 
 ### Requirement: REQ-DON-034 · Botones del asiento y grupo Gestor
 «Revertir asiento» DEBE (MUST) conservar la condición estándar de Odoo (solo asientos manuales publicados que no estén revertidos) y ocultarse además en los asientos de donación a quien no es Gestor. «Restablecer a borrador» DEBE (MUST) conservar la condición estándar (`show_reset_to_draft_button`) y ocultarse además en las facturas de venta y en los asientos de donación. El grupo Gestor de Donaciones DEBE (MUST) tener un privilegio propio («Donaciones», en la categoría de Contabilidad): un selector independiente del de Contabilidad en la pestaña de permisos, para que guardar la ficha del usuario con otro nivel no lo quite y para que se pueda asignar sin modo desarrollador (un grupo sin privilegio solo se dibuja en ese modo). El registro no es `noupdate` y la migración mueve el grupo al privilegio nuevo en las bases existentes; el administrador se agrega al grupo al instalar el módulo (`post_init_hook`) y no en cada actualización.

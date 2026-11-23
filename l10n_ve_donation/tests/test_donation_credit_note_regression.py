@@ -237,6 +237,59 @@ class TestDonationCreditNoteRegression(StockAccountTestCommon):
         self.assertEqual(invoice.amount_residual, 0.0)
         self.assertEqual(invoice.payment_state, "reversed")
 
+    def test_donation_credit_note_keeps_the_pricelist_of_the_invoice(self):
+        # REQ-DON-033
+        """The invoice of a donation and its automatic credit note have the
+        same pricelist and currency, whatever the pricelist of the customer:
+        `account_invoice_pricelist` asks a sales document to have the currency
+        of its pricelist, and the note took the pricelist of the customer while
+        it took the currency of the invoice. The module skips that check in
+        the tests (`config["test_enable"]`): `force_check_currecy` turns it on."""
+        partner = self.company.partner_id
+        pricelists = {
+            currency: self.env["product.pricelist"].create(
+                {"name": f"Pricelist {currency.name}", "currency_id": currency.id}
+            )
+            for currency in (self.currency_vef, self.currency_usd)
+        }
+        for customer_currency, invoice_currency in (
+            (self.currency_vef, self.currency_usd),
+            (self.currency_usd, self.currency_vef),
+            (self.currency_usd, self.currency_usd),
+            (self.currency_vef, self.currency_vef),
+        ):
+            with self.subTest(customer=customer_currency.name, invoice=invoice_currency.name):
+                partner.property_product_pricelist = pricelists[customer_currency]
+                invoice = self.env["account.move"].create({
+                    "move_type": "out_invoice",
+                    "is_donation": True,
+                    "partner_id": partner.id,
+                    "journal_id": self.journal.id,
+                    "currency_id": invoice_currency.id,
+                    "pricelist_id": pricelists[invoice_currency].id,
+                    "invoice_date": fields.Date.today(),
+                    "invoice_date_display": fields.Date.today(),
+                    "invoice_line_ids": [
+                        Command.create({
+                            "product_id": self.regular_product.id,
+                            "quantity": 1,
+                            "price_unit": 100.0,
+                        })
+                    ],
+                })
+                self.assertIsInstance(
+                    invoice.with_context(force_check_currecy=True).action_post(), dict
+                )
+                invoice.with_context(move_action_post_alert=True, force_check_currecy=True).action_post()
+                credit_note = self.env["account.move"].search([
+                    ("reversed_entry_id", "=", invoice.id),
+                    ("move_type", "=", "out_refund"),
+                ], limit=1)
+                self.assertEqual(credit_note.state, "posted")
+                self.assertEqual(credit_note.currency_id, invoice_currency)
+                self.assertEqual(credit_note.pricelist_id, invoice.pricelist_id)
+                self.assertEqual(invoice.payment_state, "reversed")
+
     def test_donation_credit_note_posted_later_without_context_key(self):
         """A donation credit note left in draft (e.g. created by
         `_reverse_moves`) is posted later, in a separate call that no

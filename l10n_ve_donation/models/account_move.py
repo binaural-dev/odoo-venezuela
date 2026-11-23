@@ -503,6 +503,13 @@ class AccountMove(models.Model):
                     "is_donation": True,
                     "invoice_line_ids": invoice_line_vals,
                 }
+                # `account_invoice_pricelist` asks a sales document to have the currency
+                # of its pricelist, and it takes the pricelist from the customer: a note
+                # in the currency of the invoice with the pricelist of the customer
+                # (which can be in another one, a customer buys in both) is rejected.
+                # The note keeps the pricelist of the invoice, so that both agree.
+                if "pricelist_id" in move._fields and move.pricelist_id:
+                    move_vals["pricelist_id"] = move.pricelist_id.id
                 # The exemption from the origin validation of
                 # `l10n_ve_invoice` is decided by the stored `is_donation`
                 # (see `_l10n_ve_skip_refund_origin_validation()`), not by a
