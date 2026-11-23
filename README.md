@@ -9,7 +9,7 @@ En Binaural C.A., estamos comprometidos con el desarrollo de herramientas que im
 - Promover la colaboración y la mejora colectiva a través del trabajo conjunto de empresas, desarrolladores y usuarios.
 
 ## ¿Cómo Realizar Aportes?
-
+ 
 Si deseas contribuir a esta localización, a continuación te explicamos cómo puedes hacerlo:
 
 ### 1. Reportar Bugs
