@@ -15,6 +15,7 @@
     "data": [
         "security/ir.model.access.csv",
         "security/res_group.xml",
+        "data/decimal_precision.xml",
         "views/pos_config.xml",
         "views/pos_order.xml",
         "views/pos_session.xml",
@@ -24,6 +25,7 @@
         "wizard/wizard_sales_book.xml",
         "wizard/pos_order_mf_verification_wizard.xml",
         "views/res_config_settings.xml",
+        "views/decimal_precision.xml",
     ],
     "assets": {
         "point_of_sale._assets_pos": [

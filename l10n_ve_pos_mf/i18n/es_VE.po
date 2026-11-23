@@ -781,3 +781,25 @@ msgstr "La máquina fiscal tiene un documento abierto que no se pudo cerrar al v
 #: code:addons/l10n_ve_pos_mf/models/pos_order.py:0
 msgid "the fiscal printer did not print it, and the order keeps the fiscal number %(kept)s it already had"
 msgstr "la máquina fiscal no lo emitió, y el pedido conserva el número fiscal %(kept)s que ya tenía"
+
+#. module: l10n_ve_pos_mf
+#. odoo-python
+#: code:addons/l10n_ve_pos_mf/models/decimal_precision.py:0
+msgid "Fiscal price precision"
+msgstr "Precisión del precio fiscal"
+
+#. module: l10n_ve_pos_mf
+#. odoo-python
+#: code:addons/l10n_ve_pos_mf/models/decimal_precision.py:0
+msgid ""
+"Fiscal documents only accept %(fiscal_digits)s decimals in the unit price. "
+"With %(digits)s decimals in %(precision)s, the amounts in Odoo may not match "
+"the fiscal document.\n"
+"\n"
+"The change will be recorded in the history of this precision."
+msgstr ""
+"Los documentos fiscales solo admiten %(fiscal_digits)s decimales en el precio "
+"unitario. Con %(digits)s decimales en %(precision)s, los montos de Odoo "
+"pueden no cuadrar con el documento fiscal.\n"
+"\n"
+"El cambio quedará registrado en el historial de esta precisión."

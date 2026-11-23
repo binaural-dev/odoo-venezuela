@@ -1,10 +1,12 @@
 
 from odoo import fields
-from odoo.tests import TransactionCase, tagged
+from odoo.tests import tagged
 from odoo.exceptions import ValidationError
 
+from .common import ForeignRateTransactionCase
+
 @tagged("post_install", "-at_install", "l10n_ve_invoice")
-class TestInvoiceTaxConstraint(TransactionCase):
+class TestInvoiceTaxConstraint(ForeignRateTransactionCase):
     def setUp(self):
         super(TestInvoiceTaxConstraint, self).setUp()
         self.company = self.env.ref("base.main_company")

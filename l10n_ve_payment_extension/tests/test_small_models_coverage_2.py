@@ -2,6 +2,8 @@ from odoo.tests import tagged
 from odoo import fields
 from odoo.exceptions import ValidationError
 from odoo.tests.common import TransactionCase
+from odoo.tools import mute_logger
+from psycopg2 import IntegrityError
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -35,8 +37,11 @@ class TestSmallModels2(TransactionCase):
 
     def test_04_economic_branch_constraint(self):
         self.env["economic.branch"].create({"name": "UNIQUE_BRANCH_3"})
-        with self.assertRaises(ValidationError):
-            self.env["economic.branch"].create({"name": "UNIQUE_BRANCH_3"})
+        # the unique constraint of the database fires before the python one
+        with self.assertRaises(Exception) as caught, mute_logger("odoo.sql_db"):
+            with self.env.cr.savepoint():
+                self.env["economic.branch"].create({"name": "UNIQUE_BRANCH_3"})
+        self.assertIsInstance(caught.exception, (ValidationError, IntegrityError))
         _logger.info("========= test_04 passed =========")
 
     def test_05_payment_concept_line_unique_code_constraint(self):
