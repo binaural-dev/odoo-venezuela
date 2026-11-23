@@ -77,7 +77,7 @@ de su compañía raíz, los campos `type_person_id`, `withholding_type_id` y
 
 ### Requirement: La migración iguala las sucursales a su raíz
 
-La migración 19.0.2.2.9 SHALL escribir en los contactos de las sucursales
+La migración 19.0.2.2.10 SHALL escribir en los contactos de las sucursales
 existentes los valores del contacto de su raíz, sobrescribiendo los que
 tuvieran, solo para los campos que tienen valor en la raíz. Un campo vacío
 en la raíz NO SHALL tocarse en ninguna sucursal, para no borrar valores

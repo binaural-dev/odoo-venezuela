@@ -43,7 +43,7 @@ esos datos no deben configurarse por separado en cada sucursal.
   - `create()` (multi): al crear una sucursal, aplica a su contacto, y solo
     al suyo, los valores que tiene la raíz (el core solo copia campos de
     `res.company`).
-- `l10n_ve_payment_extension/migrations/19.0.2.2.9/`: iguala los contactos
+- `l10n_ve_payment_extension/migrations/19.0.2.2.10/`: iguala los contactos
   de las sucursales existentes a los de su raíz, sobrescribiendo lo que
   tuvieran, pero solo los campos que tienen valor en la raíz: un campo
   vacío en la raíz no se toca en las sucursales. Se deja un `warning` por

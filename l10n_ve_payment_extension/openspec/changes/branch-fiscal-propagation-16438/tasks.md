@@ -18,7 +18,7 @@
       (`_fields_sync` + helper con `values` y `branches`)
 - [x] 2.2 Constraint para contactos de sucursales
 - [x] 2.3 `res.company.create` aplica los valores a la sucursal nueva
-- [x] 2.4 Migración 19.0.2.2.9 (solo propaga los campos con valor en la raíz;
+- [x] 2.4 Migración 19.0.2.2.10 (solo propaga los campos con valor en la raíz;
       conserva los de la sucursal si la raíz está vacía y deja un warning)
 
 ## 3. Pruebas
@@ -30,7 +30,7 @@
       tocar las existentes, el vaciado en la matriz y la constraint con
       raíz vacía (`test_h` a `test_n`, incluye sucursales archivadas y alta múltiple)
 - [x] 3.2 Correr la suite en CI sobre la rama del PR (verde sobre
-      `80902eeed`; se repite sobre el commit de esta ronda)
+      `3d4a1965b`)
 - [ ] 3.3 Validar en el staging de Daiko con SUCURSAL CARACAS y VALENCIA
       (no bloquea el merge: requiere el versionado antes de pasar a
       implementación; mientras tanto se validó en una instancia local)
