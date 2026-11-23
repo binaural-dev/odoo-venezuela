@@ -63,44 +63,14 @@ class PosOrderMfVerificationWizard(models.TransientModel):
                 raise UserError(_("Enter the fiscal number and the fiscal printer serial."))
             if not (number.isascii() and number.isdigit()):
                 raise UserError(_("The fiscal number must contain only digits."))
-            # El documento solo pudo salir en la máquina de la foto, y con un
-            # número posterior al que tenía antes de imprimirlo: un error de
-            # tipeo en el serial también esquivaría el chequeo de duplicados.
-            before = verification.get("before") or {}
-            expected_serial = (before.get("serial") or "").strip()
-            if expected_serial and serial != expected_serial:
-                raise UserError(
-                    _(
-                        "The document could only be printed on the fiscal printer %(expected)s, "
-                        "the one connected when it was printed.",
-                        expected=expected_serial,
-                    )
-                )
-            last_number = before.get("number")
-            if isinstance(last_number, int) and int(number) <= last_number:
-                raise UserError(
-                    _(
-                        "The fiscal number must be greater than %(last)s, the last number of the "
-                        "fiscal printer before printing this order.",
-                        last=last_number,
-                    )
-                )
-            # El número sugerido es el siguiente al de la foto, y a este
-            # asistente llegan justo los casos en que la máquina emitió algo
-            # más en el medio: ese número puede ser de otro documento.
-            doc_type = verification.get("docType") or order._mf_fiscal_document_type()
-            owner = order._mf_fiscal_number_owner(number, serial, doc_type)
-            if owner:
-                raise UserError(
-                    _(
-                        "The fiscal number %(number)s of the fiscal printer %(serial)s already "
-                        "belongs to %(owner)s. Check on the fiscal printer which document "
-                        "belongs to this order.",
-                        number=number,
-                        serial=serial,
-                        owner=owner,
-                    )
-                )
+            # La máquina de la foto, un número posterior al de la foto y que no
+            # sea de otro documento: a este asistente llegan justo los casos en
+            # que la máquina emitió algo más en el medio, y el número sugerido
+            # puede ser de otro documento. Los mismos chequeos que la
+            # resolución del PdV.
+            problem = order._mf_check_fiscal_number(number, serial, verification)
+            if problem:
+                raise UserError(problem)
             order.write_mf_invoice_data(number, serial, reportz)
         order._mf_log_print_verification(verification, printed, number, serial, reportz, manual=True)
         order.mf_print_verification = False
