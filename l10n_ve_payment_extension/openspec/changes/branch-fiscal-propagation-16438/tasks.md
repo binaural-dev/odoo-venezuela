@@ -31,9 +31,19 @@
       raíz vacía (`test_h` a `test_n`, incluye sucursales archivadas y alta múltiple)
 - [x] 3.2 Correr la suite en CI sobre la rama del PR (verde sobre
       `3d4a1965b`)
-- [ ] 3.3 Validar en el staging de Daiko con SUCURSAL CARACAS y VALENCIA
-      (no bloquea el merge: requiere el versionado antes de pasar a
-      implementación; mientras tanto se validó en una instancia local)
+- [ ] 3.2b Tests de la migración 19.0.2.2.10 (`test_migration_branch_fiscal.py`):
+      los cinco estados raíz/sucursal en cada campo, una pérdida = un warning
+      y una nota en el chatter, sucursales ya alineadas, archivadas y de varios
+      niveles, varias raíces aisladas, idempotencia, resto de datos del
+      contacto intactos, escritura posterior sin `ValidationError` y carpeta
+      de migración no mayor a la versión del manifest
+- [ ] 3.3 Validación de la migración: cubierta por la matriz de 3.2b, porque
+      el resultado depende solo del valor de la raíz y de la sucursal en cada
+      campo y esa matriz agota los casos. Lo que se sobrescribe queda en el
+      log, en el historial y en una nota del contacto de la sucursal.
+- [ ] 3.4 Antes de actualizar Daiko (paso del despliegue, no del merge): correr
+      la consulta de solo lectura de la sección "Despliegue" de `proposal.md`
+      y revisar las filas `se sobrescribe` de SUCURSAL CARACAS y VALENCIA
 
 ## 4. Fuera de alcance
 

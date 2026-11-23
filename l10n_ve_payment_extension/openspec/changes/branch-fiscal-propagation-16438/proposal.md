@@ -71,6 +71,41 @@ esos datos no deben configurarse por separado en cada sucursal.
 - No se agrega comodidad de UI (campos en solo lectura): la constraint ya
   garantiza la regla.
 
+## Despliegue
+
+- La migración 19.0.2.2.10 sobrescribe en las sucursales los valores que la
+  matriz tiene configurados. Lo que se sobrescribe queda en tres sitios: un
+  `warning` del log, el historial de cambios del contacto y una nota en el
+  chatter del contacto de la sucursal con el valor anterior y el nuevo, de
+  modo que se puede restaurar a mano.
+- Una sucursal comparte el RIF de su matriz, así que es el mismo
+  contribuyente y tiene el mismo tipo de persona, de retención y de
+  contribuyente. Que una sucursal figure como `ordinary` es el valor por
+  defecto del campo, no una decisión de negocio.
+- Antes de actualizar una base con sucursales conviene correr esta consulta de
+  solo lectura, que lista qué hará la migración por sucursal y campo
+  (`se completa`, `se sobrescribe` o `se conserva`). Solo importan las filas
+  `se sobrescribe`: son las únicas donde la sucursal pierde un valor propio.
+
+```sql
+SELECT r.name AS matriz, b.name AS sucursal, f.campo, f.sucursal AS valor_sucursal, f.matriz AS valor_matriz,
+       CASE WHEN f.matriz IS NULL THEN 'se conserva'
+            WHEN f.sucursal IS NULL THEN 'se completa'
+            ELSE 'se sobrescribe' END AS accion
+FROM res_company b
+JOIN res_company r ON r.id = split_part(b.parent_path, '/', 1)::int
+JOIN res_partner pb ON pb.id = b.partner_id
+JOIN res_partner pr ON pr.id = r.partner_id
+CROSS JOIN LATERAL (VALUES
+    ('type_person_id', pb.type_person_id::text, pr.type_person_id::text),
+    ('withholding_type_id', pb.withholding_type_id::text, pr.withholding_type_id::text),
+    ('taxpayer_type', pb.taxpayer_type::text, pr.taxpayer_type::text)
+) AS f(campo, sucursal, matriz)
+WHERE b.parent_id IS NOT NULL
+  AND f.sucursal IS DISTINCT FROM f.matriz
+ORDER BY r.name, b.name, f.campo;
+```
+
 ## Impact
 
 - Overrides nuevos: `res.partner._fields_sync` y `res.company.create`.
