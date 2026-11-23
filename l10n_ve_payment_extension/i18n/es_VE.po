@@ -444,6 +444,18 @@ msgid "Allowed Lines Move"
 msgstr "Apuntes permitidas"
 
 #. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_partner__allowed_taxpayer_types
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_users__allowed_taxpayer_types
+msgid "Allowed Taxpayer Types"
+msgstr "Tipos de contribuyente permitidos"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_partner__allowed_type_person_ids
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_users__allowed_type_person_ids
+msgid "Allowed Type Persons"
+msgstr "Tipos de persona permitidos"
+
+#. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__related_amount_subtract_fees
 msgid "Amount subtract tariffs"
 msgstr "Sustraendo"
@@ -1280,6 +1292,18 @@ msgstr ""
 #: model:ir.model.fields.selection,name:l10n_ve_payment_extension.selection__account_retention__type_retention__islr
 msgid "ISLR"
 msgstr ""
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_partner__is_natural_resident_person
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_users__is_natural_resident_person
+msgid "Is Natural Resident Person"
+msgstr "Es persona natural residente"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_partner__is_non_resident_person
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_users__is_non_resident_person
+msgid "Is Non Resident Person"
+msgstr "Es persona no residente"
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_partner__islr_account
