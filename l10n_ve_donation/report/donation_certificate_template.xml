@@ -130,7 +130,11 @@
                 <t t-call="web.basic_layout">
                     <div class="page">
                         <t t-set="donor" t-value="o._get_donation_counterparty()" />
-                        <t t-set="certificate_date" t-value="o.invoice_date or o.date" />
+                        <!-- The accounting date of the entry is the date of its rate (the
+                             amounts are computed with it); `invoice_date` is the day the entry
+                             was reconciled or registered, which is another one for a line of the
+                             bank extract of a previous day. -->
+                        <t t-set="certificate_date" t-value="o.date" />
                         <t t-set="amounts" t-value="o._get_donation_amounts()" />
                         <t t-set="donation_line_data" t-value="False" />
                         <t t-call="l10n_ve_donation.donation_certificate_body" />

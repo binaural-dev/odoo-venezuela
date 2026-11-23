@@ -1,6 +1,6 @@
 # Capacidad `l10n_ve_donation` · estado vigente
 
-Fuente de verdad del comportamiento actual del módulo (versión `19.0.3.0.1`, Odoo 19). Cada
+Fuente de verdad del comportamiento actual del módulo (versión `19.0.3.0.2`, Odoo 19). Cada
 requisito tiene un REQ-ID estable y sus escenarios Dado/Cuando/Entonces; los tests los citan por
 ese ID. El historial de cada cambio (por qué, cómo y con qué verificación) está en
 `openspec/changes/archive/`:
@@ -289,12 +289,17 @@ Antes de publicar, `_check_incoming_donation_before_post` (punto de extensión) 
 - **Entonces** falla con un mensaje que indica el donante y el asiento sigue en borrador
 
 ### Requirement: REQ-DON-023 · Certificado de donación recibida en dinero
-El certificado del asiento (`l10n_ve_donation.action_donation_certificate_account_move`) DEBE (MUST) declarar la recepción de "la suma de" el monto (REQ-DON-026) del donante (nombre, RIF o cédula del contacto comercial, domicilio y teléfono, `_get_donation_counterparty`: la cabecera o el contacto de las líneas), con descripción del uso y tipo de donativo en blanco, destino de la donación, fecha y firmas. Los elementos `donation_certificate_legal` (datos del representante legal de la compañía) y `donation_certificate_extra` DEBEN (MUST) existir como puntos de extensión.
+El certificado del asiento (`l10n_ve_donation.action_donation_certificate_account_move`) DEBE (MUST) declarar la recepción de "la suma de" el monto (REQ-DON-026) del donante (nombre, RIF o cédula del contacto comercial, domicilio y teléfono, `_get_donation_counterparty`: la cabecera o el contacto de las líneas), con descripción del uso y tipo de donativo en blanco, destino de la donación, fecha y firmas. Los elementos `donation_certificate_legal` (datos del representante legal de la compañía) y `donation_certificate_extra` DEBEN (MUST) existir como puntos de extensión. La fecha del certificado, y la de la tasa que dice, DEBE (MUST) ser la fecha contable del asiento (`date`, la de su tasa), no `invoice_date`: en el asiento de una línea de extracto de un día anterior, `invoice_date` es el día en que se concilió y no corresponde a la tasa impresa.
 
 #### Scenario: Certificado al donante
 - **Dado** una donación recibida en dinero, publicada
 - **Cuando** se imprime el certificado
 - **Entonces** muestra al donante con su RIF y domicilio, la suma recibida y no menciona bienes
+
+#### Scenario: Línea de extracto de un día anterior
+- **Dado** una línea de extracto del 19/11 conciliada el 20/11 contra una cuenta de donaciones recibidas, con fecha contable 19/11
+- **Cuando** se imprime el certificado
+- **Entonces** dice «tasa BCV del día 19/11/2026», con la tasa de ese día y su monto en USD, y la fecha de cierre es la misma; no sale el 20/11
 
 ### Requirement: REQ-DON-024 · Recepción de donaciones de mercancía
 Cuando la compañía tiene cuentas de donaciones recibidas (REQ-DON-020), una recepción de donación sin pedido (`is_donation`, entrante) DEBE (MUST) tener al donante ("Recibir de") para validarse; sin cuentas la recepción valida como antes, sin donante ni configuración contable. Con productos de valoración automatizada, `_get_donation_receipt_config_errors` (punto de extensión) DEBE (MUST) exigir, solo cuando la compañía tiene cuentas de donaciones recibidas, que el origen sea una ubicación de tipo Pérdida de inventario y que su cuenta de valoración sea una de ellas: el asiento de valoración (core 19: crédito = cuenta de la ubicación de origen cuando la tiene) queda Debe inventario / Haber ingreso por donación. Una entrega de donación NO DEBE (MUST NOT) tener como destino una ubicación cuya cuenta sea de donaciones recibidas. Un picking nuevo abierto desde la tarjeta de un tipo de donación queda marcado como donación.

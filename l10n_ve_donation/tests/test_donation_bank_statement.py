@@ -1,3 +1,6 @@
+import re
+from datetime import timedelta
+
 from odoo import Command, fields
 from odoo.tests import tagged
 
@@ -34,10 +37,10 @@ class TestDonationFromBankStatement(TestDonationCommon):
             "suspense_account_id": cls.account_suspense.id,
         })
 
-    def _statement_line(self, amount=1000.0, partner=True):
+    def _statement_line(self, amount=1000.0, partner=True, date=None):
         return self.env["account.bank.statement.line"].create({
             "journal_id": self.journal_bank.id,
-            "date": fields.Date.today(),
+            "date": date or fields.Date.today(),
             "payment_ref": "Gift of the donor",
             "partner_id": self.donor.id if partner else False,
             "amount": amount,
@@ -135,3 +138,33 @@ class TestDonationFromBankStatement(TestDonationCommon):
         income.with_context(skip_readonly_check=True).write({"account_id": self.account_income.id})
         income.with_context(skip_readonly_check=True).write({"account_id": self.account_expense.id})
         self.assertTrue(move.is_donation)
+
+    def test_10_the_certificate_of_a_line_of_a_previous_day_prints_its_date(self):
+        # REQ-DON-031
+        """The line of the extract is from yesterday and it is reconciled
+        today: the entry keeps the date of the line (`date`, the one of its
+        rate) and the certificate has to say that day, with the rate of that
+        day. It printed `invoice_date` (the day it was reconciled) next to the
+        rate of the day of the line."""
+        today = fields.Date.today()
+        yesterday = today - timedelta(days=1)
+        self.env["res.currency.rate"].create({
+            "currency_id": self.env.ref("base.USD").id,
+            "company_id": self.company.id,
+            "name": yesterday,
+            "rate": 1.0 / 400.0,
+        })
+        statement_line = self._statement_line(date=yesterday)
+        move = statement_line.move_id
+        self._reconcile_against(statement_line, self.account_income)
+        # The entry keeps the date of the line, and the day it was reconciled
+        # (today) is the one that `invoice_date` carries.
+        self.assertEqual(move.date, yesterday)
+        self.assertEqual(move.invoice_date, today)
+        self.assertEqual(move._get_donation_amounts()["rate"], 400.0)
+
+        report = self.env.ref("l10n_ve_donation.action_donation_certificate_account_move")
+        html, _report_type = report._render_qweb_html(report.report_name, move.ids)
+        text = " ".join(re.sub(r"<[^>]+>", " ", html.decode()).split())
+        self.assertIn(f"rate of the day {yesterday.strftime('%d/%m/%Y')}", text)
+        self.assertNotIn(today.strftime("%d/%m/%Y"), text)
