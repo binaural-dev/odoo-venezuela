@@ -18,3 +18,7 @@ class ResConfigSettings(models.TransientModel):
         related="company_id.foreign_currency_id",
         readonly=False,
     )
+    l10n_ve_require_daily_rate = fields.Boolean(
+        related="company_id.l10n_ve_require_daily_rate",
+        readonly=False,
+    )

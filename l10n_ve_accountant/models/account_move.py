@@ -792,7 +792,7 @@ class AccountMove(models.Model):
                 rate_date = move.date or fields.Date.context_today(move)
             else:
                 rate_date = move.invoice_date or move.date or fields.Date.context_today(move)
-            rate_values = Rate.compute_rate(move.foreign_currency_id.id, rate_date)
+            rate_values = Rate.with_company(move.company_id).compute_rate(move.foreign_currency_id.id, rate_date)
             last_foreign_rate = rate_values.get("foreign_rate", 0)
             if move.manually_set_rate and float_compare(
                 move.foreign_rate, last_foreign_rate, precision_digits=precision
@@ -1227,7 +1227,7 @@ class AccountMove(models.Model):
                 move.foreign_rate = origin.foreign_rate
                 move.foreign_inverse_rate = origin.foreign_inverse_rate
                 continue
-            rate_values = Rate.compute_rate(move.foreign_currency_id.id, rate_date)
+            rate_values = Rate.with_company(move.company_id).compute_rate(move.foreign_currency_id.id, rate_date)
             move.foreign_rate = rate_values.get("foreign_rate", 0)
             move.foreign_inverse_rate = rate_values.get("foreign_inverse_rate", 0)
 

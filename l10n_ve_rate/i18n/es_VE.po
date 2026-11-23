@@ -111,3 +111,30 @@ msgstr "No hay una tasa asignada para %(currency)s al %(date)s, configúrela."
 #: code:addons/l10n_ve_rate/models/res_currency_rate.py:0
 msgid "There is no rate assigned, please configure one."
 msgstr "No hay una tasa asignada, configúrela."
+
+#. module: l10n_ve_rate
+#: model:ir.model.fields,field_description:l10n_ve_rate.field_res_company__l10n_ve_require_daily_rate
+#: model:ir.model.fields,field_description:l10n_ve_rate.field_res_config_settings__l10n_ve_require_daily_rate
+msgid "Require Rate of the Day"
+msgstr "Exigir tasa del día"
+
+#. module: l10n_ve_rate
+#: model:ir.model.fields,help:l10n_ve_rate.field_res_company__l10n_ve_require_daily_rate
+#: model:ir.model.fields,help:l10n_ve_rate.field_res_config_settings__l10n_ve_require_daily_rate
+msgid ""
+"If checked, documents need a rate dated exactly on their date and an error "
+"is raised when there is none. If unchecked, the most recent previous rate is"
+" used instead (for example, Friday's rate on a weekend)."
+msgstr ""
+"Si está marcado, los documentos necesitan una tasa con su fecha exacta y se "
+"muestra un error si no existe. Si no está marcado, se usa la tasa anterior "
+"más reciente (por ejemplo, la del viernes en un fin de semana)."
+
+#. module: l10n_ve_rate
+#: model_terms:ir.ui.view,arch_db:l10n_ve_rate.res_config_settings_l10n_ve_rate
+msgid ""
+"Without a rate of the day, use the most recent previous rate instead of "
+"raising an error."
+msgstr ""
+"Sin tasa del día, usar la tasa anterior más reciente en lugar de mostrar un "
+"error."

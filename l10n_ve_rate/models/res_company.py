@@ -14,6 +14,13 @@ class ResCompany(models.Model):
         string="Foreign Currency",
         help="Foreign currency for the company",
     )
+    l10n_ve_require_daily_rate = fields.Boolean(
+        string="Require Rate of the Day",
+        default=True,
+        help="If checked, documents need a rate dated exactly on their date and an error "
+        "is raised when there is none. If unchecked, the most recent previous rate is "
+        "used instead (for example, Friday's rate on a weekend).",
+    )
 
     def write(self, vals):
         before_currency = self.foreign_currency_id
