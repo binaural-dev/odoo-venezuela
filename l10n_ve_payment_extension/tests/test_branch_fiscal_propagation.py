@@ -147,6 +147,72 @@ class TestBranchFiscalPropagation(TransactionCase):
         ]
         self.assertEqual(len(kept), 2, logs.output)
 
+    def _set_branches_keeping_own_person(self):
+        """Root with a value in every field but the person type, which the branches keep."""
+        self._set_root_values(self.person_a, self.wh_a, "special")
+        self.root.partner_id.write({"type_person_id": False})
+        self._set_branch_person_without_constraint(self.person_b)
+
+    def test_h_root_edit_only_propagates_the_written_fields(self):
+        self._set_branches_keeping_own_person()
+        self.root.partner_id.write({"withholding_type_id": self.wh_b.id})
+        for company in (self.branch, self.grandchild):
+            self.assertEqual(company.partner_id.withholding_type_id, self.wh_b)
+            self.assertEqual(
+                company.partner_id.type_person_id,
+                self.person_b,
+                "A field that was not written on the root must not be touched on the branches.",
+            )
+
+    def test_i_new_branch_does_not_touch_existing_branches(self):
+        self._set_branches_keeping_own_person()
+        new_branch = self._create_company("Branch New", self.root)
+        self._assert_values(new_branch.partner_id, self.env["type.person"], self.wh_a, "special")
+        for company in (self.branch, self.grandchild):
+            self.assertEqual(company.partner_id.type_person_id, self.person_b)
+
+    def test_j_clearing_a_field_on_the_root_clears_it_on_the_branches(self):
+        self._set_root_values(self.person_a, self.wh_a, "special")
+        self.root.partner_id.write({"withholding_type_id": False})
+        for company in (self.branch, self.grandchild):
+            self.assertFalse(company.partner_id.withholding_type_id)
+            self.assertEqual(company.partner_id.type_person_id, self.person_a)
+
+    def test_k_propagation_only_writes_the_synced_fields(self):
+        self._set_root_values(self.person_a, self.wh_a, "special")
+        name = self.branch.partner_id.name
+        root_partner = self.root.partner_id
+        root_partner._l10n_ve_propagate_fiscal_fields_to_branches(
+            {"name": "Other name", "withholding_type_id": self.wh_b.id}
+        )
+        self.assertEqual(self.branch.partner_id.name, name)
+        self.assertEqual(self.branch.partner_id.withholding_type_id, self.wh_b)
+        root_partner._l10n_ve_propagate_fiscal_fields_to_branches({})
+        self.assertEqual(self.branch.partner_id.withholding_type_id, self.wh_b)
+
+    def test_l_constraint_ignores_the_fields_empty_on_the_root(self):
+        self._set_branches_keeping_own_person()
+        self.branch.partner_id.write({"taxpayer_type": "special"})
+        with self.assertRaises(ValidationError):
+            self.branch.partner_id.write({"withholding_type_id": self.wh_b.id})
+
+    def test_m_archived_branches_also_receive_the_values(self):
+        self.branch.active = False
+        self._set_root_values(self.person_a, self.wh_a, "special")
+        self._assert_values(self.branch.partner_id, self.person_a, self.wh_a, "special")
+        self._assert_values(self.grandchild.partner_id, self.person_a, self.wh_a, "special")
+
+    def test_n_several_branches_created_at_once_inherit_their_root_values(self):
+        self._set_root_values(self.person_a, self.wh_a, "formal")
+        new_branches = self.env["res.company"].create(
+            [
+                dict(self.company_vals, name="Branch New 1", parent_id=self.root.id),
+                dict(self.company_vals, name="Branch New 2", parent_id=self.branch.id),
+            ]
+        )
+        for company in new_branches:
+            self._assert_values(company.partner_id, self.person_a, self.wh_a, "formal")
+
     def test_f_customer_islr_type_person_from_branch(self):
         self._set_root_values(self.person_a, self.wh_a, "special")
         retention = self.env["account.retention"].new(
