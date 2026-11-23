@@ -6,9 +6,7 @@
         <field name="inherit_id" ref="l10n_ve_igtf.view_form_move_inherited_binaural_advance_payment" />
         <field name="arch" type="xml">
 
-            <!-- Despues de la alerta de pendientes de la nota de credito de cliente, tomada por su
-                 condicion y no por posicion (un alert-info de otro modulo antes de ella corria el indice). -->
-            <xpath expr="//div[hasclass('alert', 'alert-info')][contains(@invisible, &quot;move_type != 'out_refund'&quot;) and contains(@invisible, 'invoice_has_outstanding')]" position="after">
+            <xpath expr="//div[hasclass('alert', 'alert-info') and contains(@invisible, 'invoice_has_outstanding') and contains(@invisible, &quot;move_type != 'in_refund'&quot;)]" position="after">
                 <field name="has_pending_igtf_debit_note" invisible="1"/>
                 <div groups="account.group_account_invoice,account.group_account_readonly"
                          class="alert alert-warning" role="alert"

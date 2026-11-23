@@ -767,6 +767,17 @@ class AccountMove(models.Model):
             if move.move_type in ["out_refund", "in_refund"] and move.reversed_entry_id:
                 move.foreign_rate = move.reversed_entry_id.foreign_rate
                 move.foreign_inverse_rate = move.reversed_entry_id.foreign_inverse_rate
+            # Reverso de un asiento: hereda la tasa del original igual que en
+            # _compute_rate_for_documents, aunque su fecha no tenga tasa. Se omite la consulta
+            # de abajo (que lanzaria) y el mensaje de tasa manual no aplica.
+            if (
+                move.move_type == "entry"
+                and move.reversed_entry_id
+                and move.reversed_entry_id._has_foreign_rate()
+            ):
+                move.foreign_rate = move.reversed_entry_id.foreign_rate
+                move.foreign_inverse_rate = move.reversed_entry_id.foreign_inverse_rate
+                continue
             Rate = self.env["res.currency.rate"]
             # La tasa de un asiento (entry) es la de su fecha contable (`date`), como en
             # _compute_rate_for_documents; invoice_date no es su fecha de tasa y trae el "hoy"
@@ -776,7 +787,17 @@ class AccountMove(models.Model):
                 rate_date = move.date or fields.Date.context_today(move)
             else:
                 rate_date = move.invoice_date or move.date or fields.Date.context_today(move)
-            rate_values = Rate.compute_rate(move.foreign_currency_id.id, rate_date)
+            # Esta consulta solo alimenta el mensaje de chatter de abajo. Un asiento manual
+            # diferible (ver _is_rate_deferrable) puede no tener tasa todavia: se busca sin
+            # lanzar y, si no hay, no se publica el mensaje. El resto sigue lanzando.
+            deferrable = move._is_rate_deferrable()
+            rate_values = Rate.compute_rate(
+                move.foreign_currency_id.id,
+                rate_date,
+                raise_if_not_found=not deferrable,
+            )
+            if deferrable and move.foreign_currency_id and not rate_values:
+                continue
             last_foreign_rate = rate_values.get("foreign_rate", 0)
             if move.manually_set_rate and float_compare(
                 move.foreign_rate, last_foreign_rate, precision_digits=precision
@@ -1176,6 +1197,51 @@ class AccountMove(models.Model):
         self.ensure_one()
         return False
 
+    def _is_rate_deferrable(self):
+        """Hook: True si el documento puede quedar sin tasa en borrador y calcularla al
+        publicar; False si la exige exacta desde que se crea.
+
+        Regla: facturas, notas, recibos y pagos exigen siempre la tasa exacta de su fecha.
+        Solo un asiento manual (`move_type == 'entry'`) se puede crear en borrador con fecha
+        futura o sin tasa (queda con `foreign_rate` en 0); al publicar, `_post` recalcula la
+        tasa exacta de `date` y lanza UserError si no existe.
+
+        No son diferibles, aunque sean `entry`, los asientos que genera otro proceso y que
+        deben tener tasa desde su creacion:
+        - asiento de pago (`origin_payment_id`);
+        - asiento de extracto bancario (`statement_line_id`, o el contexto
+          `is_statement_line`: el core crea el asiento con ese contexto y escribe
+          `statement_line_id` DESPUES, ver account.bank.statement.line);
+        - asiento de inventario (`stock_move_ids`, solo si stock_account esta instalado);
+        - asiento de sesion de PdV (`pos_session_ids`, solo si point_of_sale esta instalado);
+        - reverso (`reversed_entry_id`): hereda la tasa del original;
+        - asiento de diferencia cambiaria (`l10n_ve_exchange_foreign_diff_entry`) o del
+          diario de diferencia cambiaria de la compania: sus lineas no usan la tasa de
+          cabecera (`_skip_foreign_compute`)."""
+        self.ensure_one()
+        if self.move_type != "entry":
+            return False
+        if (
+            self.origin_payment_id
+            or self.statement_line_id
+            or self.env.context.get("is_statement_line")
+            or self.reversed_entry_id
+            or self.l10n_ve_exchange_foreign_diff_entry
+        ):
+            return False
+        # campos de modulos opcionales (stock_account / point_of_sale)
+        if "stock_move_ids" in self._fields and self.stock_move_ids:
+            return False
+        if "pos_session_ids" in self._fields and self.pos_session_ids:
+            return False
+        return not self._is_exchange_journal_entry()
+
+    def _is_exchange_journal_entry(self):
+        """True si el asiento esta en el diario de diferencia cambiaria de la compania."""
+        self.ensure_one()
+        exchange_journal = self.company_id.currency_exchange_journal_id
+        return bool(exchange_journal and self.journal_id == exchange_journal)
+
     def _get_rate_date(self):
         """Fecha con la que se busca la tasa: la Rate Date en facturas (la fecha contable de
         respaldo) y la fecha contable en asientos, cuyo invoice_date solo trae el "hoy"."""
@@ -1211,7 +1277,27 @@ class AccountMove(models.Model):
                 move.foreign_rate = origin.foreign_rate
                 move.foreign_inverse_rate = origin.foreign_inverse_rate
                 continue
-            rate_values = Rate.compute_rate(move.foreign_currency_id.id, rate_date)
+            # Reverso de un asiento: mantiene la tasa del original (no la de su propia fecha).
+            if (
+                move.move_type == "entry"
+                and move.reversed_entry_id
+                and move.reversed_entry_id._has_foreign_rate()
+            ):
+                move.foreign_rate = move.reversed_entry_id.foreign_rate
+                move.foreign_inverse_rate = move.reversed_entry_id.foreign_inverse_rate
+                continue
+            # Un asiento manual en borrador puede quedar sin tasa (se calcula al publicar,
+            # ver _post); el resto exige la tasa exacta y lanza si no existe.
+            deferrable = move._is_rate_deferrable() and move.state == "draft"
+            rate_values = Rate.compute_rate(
+                move.foreign_currency_id.id,
+                rate_date,
+                raise_if_not_found=not deferrable,
+            )
+            if deferrable and move.foreign_currency_id and not rate_values:
+                move.foreign_rate = 0
+                move.foreign_inverse_rate = 0
+                continue
             move.foreign_rate = rate_values.get("foreign_rate", 0)
             move.foreign_inverse_rate = rate_values.get("foreign_inverse_rate", 0)
 
@@ -1519,6 +1605,134 @@ class AccountMove(models.Model):
                         )
                     )
         return super().action_post()
+
+    def _post(self, soft=True):
+        """EXTENDS core. Override justificado: es el unico punto por el que pasan
+        action_post, el cron `_autopost_draft_entries` y cualquier publicacion
+        programatica, y es donde un asiento manual diferido (creado en borrador sin tasa o
+        con fecha futura, ver `_is_rate_deferrable`) debe recibir la tasa exacta de su
+        fecha. Un onchange/depends/constrains no puede hacerlo: no corren al publicar.
+
+        Antes del super: recalcula la tasa exacta de `date` de los asientos diferibles que
+        se publican hoy. Con `soft=True` los de fecha futura solo se programan (no se
+        recalcula nada). No se recalcula una tasa manual ya cargada (p. ej. cuotas de
+        depreciacion) ni la de un asiento que ya se publico antes y volvio a borrador
+        (conserva la tasa con la que se confirmo). Lanza UserError si no existe la tasa
+        exacta.
+
+        Despues del super: red de seguridad. Un asiento que quedo publicado sin tasa (p. ej.
+        porque una fecha de periodo bloqueado movio `date` dentro del core a un dia sin
+        tasa, o porque es un asiento de inventario/PdV que el core vincula despues de
+        crearlo) revierte la transaccion con UserError."""
+        today = fields.Date.context_today(self)
+        for move in self:
+            if soft and move.date > today:
+                continue
+            if not move.foreign_currency_id or not move._is_rate_deferrable():
+                continue
+            if move.manually_set_rate and move._has_foreign_rate():
+                continue
+            if move.posted_before and move._has_foreign_rate():
+                continue
+            move._apply_exact_rate_on_post()
+        res = super()._post(soft)
+        for move in self.filtered(lambda m: m.state == "posted"):
+            # Cualquier asiento (no solo los diferibles): el de inventario y el de sesion de
+            # PdV se crean sin vinculo (el core escribe stock_move_ids/pos_session_ids
+            # DESPUES de crearlos), asi que al crearse eran diferibles y aqui ya no lo son.
+            # Se excluyen los de diferencia cambiaria, cuyas lineas no usan la tasa de
+            # cabecera. Facturas, notas, recibos y pagos no se tocan: exigieron la tasa al
+            # crearse.
+            if (
+                move.move_type == "entry"
+                and move.foreign_currency_id
+                and not move.l10n_ve_exchange_foreign_diff_entry
+                and not move._is_exchange_journal_entry()
+                and not move._has_foreign_rate()
+            ):
+                raise UserError(
+                    _(
+                        "The entry %(name)s cannot be posted without an exchange rate "
+                        "for its accounting date (%(date)s). Create the rate for that "
+                        "date and try again.",
+                        name=move.display_name,
+                        date=format_date(self.env, move.date),
+                    )
+                )
+        return res
+
+    def _apply_exact_rate_on_post(self):
+        """Recalcula la tasa exacta de la fecha del asiento (`_get_rate_date`) y, solo si
+        cambio, la escribe y fuerza el recalculo de foreign_debit/foreign_credit de sus
+        lineas (como `_set_foreign`: add_to_compute, no asignacion directa).
+
+        Se busca con la compania del asiento (`with_company`) porque desde el cron
+        `_autopost_draft_entries` la compania activa es la del usuario del cron, no la del
+        asiento, y las tasas se buscan en la compania activa y su raiz."""
+        self.ensure_one()
+        rate_values = (
+            self.env["res.currency.rate"]
+            .with_company(self.company_id)
+            .compute_rate(
+                self.foreign_currency_id.id,
+                self._get_rate_date() or fields.Date.context_today(self),
+                raise_if_not_found=True,
+            )
+        )
+        precision = self.env["decimal.precision"].precision_get("Tasa")
+        new_rate = rate_values.get("foreign_rate", 0)
+        if not float_compare(self.foreign_rate, new_rate, precision_digits=precision):
+            return
+        old_rate = self.foreign_rate
+        self.write(
+            {
+                "foreign_rate": new_rate,
+                "foreign_inverse_rate": rate_values.get("foreign_inverse_rate", 0),
+            }
+        )
+        lines = self.line_ids
+        self.env.add_to_compute(lines._fields["foreign_debit"], lines)
+        self.env.add_to_compute(lines._fields["foreign_credit"], lines)
+        if not self.manually_set_rate:
+            # con tasa manual write() ya publica la nota "The rate has been updated"
+            self.message_post(
+                body=_(
+                    "The rate has been updated from %(last_rate)s to %(rate)s ",
+                    last_rate=old_rate,
+                    rate=new_rate,
+                )
+            )
+
+    @api.onchange("date")
+    def _onchange_date_rate_warning(self):
+        """Aviso no bloqueante: un asiento manual sin tasa para su fecha se puede guardar
+        en borrador y la tasa se calcula al publicar."""
+        self.ensure_one()
+        if (
+            not self.date
+            or not self.foreign_currency_id
+            or not self._is_rate_deferrable()
+        ):
+            return None
+        rate_values = (
+            self.env["res.currency.rate"]
+            .with_company(self.company_id)
+            .compute_rate(
+                self.foreign_currency_id.id, self.date, raise_if_not_found=False
+            )
+        )
+        if rate_values:
+            return None
+        return {
+            "warning": {
+                "title": _("Rate not found"),
+                "message": _(
+                    "There is no rate for the date %(date)s; it will be calculated "
+                    "when the entry is posted.",
+                    date=format_date(self.env, self.date),
+                ),
+            }
+        }
 
     @api.depends(
         "invoice_line_ids",

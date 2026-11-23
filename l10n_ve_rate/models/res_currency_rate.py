@@ -11,7 +11,13 @@ class ResCurrencyRate(models.Model):
     _inherit = "res.currency.rate"
 
     @api.model
-    def compute_rate(self, foreign_currency_id, rate_date, raise_if_not_found=True):
+    def compute_rate(
+        self,
+        foreign_currency_id,
+        rate_date,
+        raise_if_not_found=True,
+        use_last_rate=False,
+    ):
         """
         Compute the rate and inverse rate for the given currency and date.
 
@@ -39,10 +45,22 @@ class ResCurrencyRate(models.Model):
             returning {}. Defaults to True: every search that finds no rate for
             rate_date must stop with "no rate assigned". Pass False only from
             a call site that can deliberately work without a rate.
+        use_last_rate : bool
+            Whether, when there is no rate dated exactly rate_date, the most recent
+            rate dated before rate_date (greatest name <= rate_date) is used instead.
+            Defaults to False (exact date only). If no earlier rate exists either,
+            the behaviour is the same as when use_last_rate is False (UserError or {}
+            according to raise_if_not_found).
 
-        La tasa se busca SOLO para la fecha exacta `rate_date`: no se usa la más
-        cercana, ni la anterior, ni la posterior. Si la moneda no tiene un registro
-        con esa fecha, se considera "no encontrada".
+        Por defecto la tasa se busca SOLO para la fecha exacta `rate_date`: no se usa
+        la más cercana, ni la anterior, ni la posterior. Si la moneda no tiene un
+        registro con esa fecha, se considera "no encontrada".
+
+        Con `use_last_rate=True`, si no hay tasa de la fecha exacta se toma la última
+        anterior (la de mayor fecha <= `rate_date`) para la misma moneda, recorriendo
+        las compañías en el mismo orden (activa y luego raíz). Nunca se usa una tasa
+        posterior ni se devuelve 1.0 como sustituto: sin ninguna tasa anterior se
+        mantiene el comportamiento original.
 
         Las tasas solo existen en la compañía principal (Odoo 19 no permite tasas en
         sucursales nativas). Se busca primero en la compañía activa y, si no hay
@@ -93,6 +111,20 @@ class ResCurrencyRate(models.Model):
             )
             if rate:
                 break
+
+        if not rate and use_last_rate:
+            for company_id in company_ids:
+                rate = rate.search(
+                    [
+                        ("currency_id", "=", foreign_currency_id),
+                        ("company_id", "=", company_id),
+                        ("name", "<=", rate_date),
+                    ],
+                    order="name desc",
+                    limit=1,
+                )
+                if rate:
+                    break
 
         if not rate:
             if foreign_currency_id == company.currency_id.id:

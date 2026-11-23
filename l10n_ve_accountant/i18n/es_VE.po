@@ -2173,3 +2173,28 @@ msgstr ""
 "No puede confirmar un pago con un importe de 0.0. Si el pago se convirtió a "
 "%(currency)s, el importe convertido es menor a la unidad mínima de la moneda "
 "(%(rounding)s) y se redondeó a cero."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+msgid ""
+"The entry %(name)s cannot be posted without an exchange rate for its "
+"accounting date (%(date)s). Create the rate for that date and try again."
+msgstr ""
+"El asiento %(name)s no se puede publicar sin una tasa de cambio para su "
+"fecha contable (%(date)s). Cree la tasa de esa fecha e intente de nuevo."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+msgid "Rate not found"
+msgstr "Tasa no encontrada"
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+msgid ""
+"There is no rate for the date %(date)s; it will be calculated when the entry "
+"is posted."
+msgstr ""
+"No hay tasa para la fecha %(date)s; se calculará al publicar el asiento."
