@@ -25,7 +25,7 @@ Instancia con `enterprise-19.0`, `odoo-venezuela`, `integra-addons` y `third-par
 
 ## Resultado
 
-**220 tests, 0 fallos, 0 errores** en toda la suite del módulo; pre-commit (`.po`, pylint
+**221 tests, 0 fallos, 0 errores** en toda la suite del módulo; pre-commit (`.po`, pylint
 opcional y obligatorio) pasa.
 
 Los ajustes de la validación funcional (REQ-DON-029 a 034) se prueban en archivos nuevos o
@@ -72,6 +72,10 @@ certificado. Los tests de cada corrección fallan sin ella.
 - El hook de la marca del extracto reevalúa cada cambio de líneas de los asientos de extracto
   (consulta las cuentas de donaciones recibidas de la compañía).
 
+- La restricción de `account_invoice_pricelist` (tarifa y factura con la misma divisa) no corre en los
+  tests (`config["test_enable"]`): el test de la tarifa de la nota de crédito la activa con el contexto
+  `force_check_currecy`.
+
 ## Lo no verificado
 
 - Los PDF no se renderizaron con wkhtmltopdf: los tests renderizan el HTML.
@@ -79,7 +83,7 @@ certificado. Los tests de cada corrección fallan sin ella.
   (`_compute_donation_amounts`) y con el cuerpo del certificado, no con un asiento real de otra
   compañía.
 - La interfaz se recorrió en una base de pruebas; falta la validación funcional del consultor.
-- La versión del manifest es `19.0.3.0.2`; la migración `migrations/19.0.3.0.1/post-migration.py`
+- La versión del manifest es `19.0.3.0.3`; la migración `migrations/19.0.3.0.1/post-migration.py`
   mueve el grupo Gestor a su privilegio propio y pasa el formato del Certificado a carta si sigue en
   A4, en las bases que ya tienen el módulo (el privilegio se probó en una copia de una base instalada;
   la migración completa, con tests de la función).
@@ -97,7 +101,7 @@ certificado. Los tests de cada corrección fallan sin ella.
 
 - [x] Ajustes de la validación funcional (REQ-DON-029 a 034) con sus tests.
 - [x] Revisión del código con las reglas de Binaural; hallazgos corregidos (queda I3).
-- [ ] Commits, push y revalidación de Producto en el staging con la versión `19.0.3.0.2`.
+- [ ] Commits, push y revalidación de Producto en el staging con la versión `19.0.3.0.3`.
 - [ ] Vincular el PR a la tarea 86967 y aprobar el código por el dueño técnico de la vertical.
 - [ ] Producto: H8, H13, el RIF sin prefijo en otros módulos, el caso T04 y las mejoras C4 y C6.
 - [ ] Líder técnico: permiso de `account.move` del grupo Gestor (I3).

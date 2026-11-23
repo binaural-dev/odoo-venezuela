@@ -1,6 +1,6 @@
 {
     "name": "Venezuela - Donaciones",
-    "version": "19.0.3.0.2",
+    "version": "19.0.3.0.3",
     "category": "Accounting/Accounting",
     "summary": "Venezuela - Donaciones",
     "author": "binaural-dev",
