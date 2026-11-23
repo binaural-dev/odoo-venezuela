@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 
 from psycopg2 import IntegrityError
 
@@ -326,3 +326,135 @@ class TestBranchOwnCurrencyAndRate(TransactionCase):
         result = Rate.compute_rate(self.usd.id, date(2023, 6, 1))
 
         self.assertAlmostEqual(result["foreign_rate"], 1 / 0.025)
+
+
+@tagged("post_install", "-at_install", "l10n_ve_rate")
+class TestComputeRateUseLastRate(TransactionCase):
+    """`use_last_rate=True`: sin tasa de la fecha exacta se usa la ultima anterior."""
+
+    def setUp(self):
+        super().setUp()
+        self.company = self.env.company
+        self.company.currency_id = self.env.ref("base.VEF")
+        self.usd = self.env.ref("base.USD")
+        self.Rate = self.env["res.currency.rate"]
+        self.Rate.search([
+            ("currency_id", "=", self.usd.id),
+            ("company_id", "=", self.company.id),
+        ]).unlink()
+        self.old = self._create_rate(self.company, date(2023, 1, 2), 0.02)
+        self.last = self._create_rate(self.company, date(2023, 1, 6), 0.025)
+
+    def _create_rate(self, company, day, rate_value):
+        return self.Rate.with_company(company).create({
+            "currency_id": self.usd.id,
+            "company_id": company.id,
+            "name": day,
+            "rate": rate_value,
+        })
+
+    def test_exact_date_wins_over_last_rate(self):
+        result = self.Rate.compute_rate(self.usd.id, date(2023, 1, 2), use_last_rate=True)
+
+        self.assertEqual(result["foreign_rate"], self.old.inverse_company_rate)
+        self.assertEqual(result["foreign_inverse_rate"], self.old.company_rate)
+
+    def test_weekend_uses_most_recent_previous_rate(self):
+        result = self.Rate.compute_rate(self.usd.id, date(2023, 1, 8), use_last_rate=True)
+
+        self.assertEqual(result["foreign_rate"], self.last.inverse_company_rate)
+        self.assertEqual(result["foreign_inverse_rate"], self.last.company_rate)
+
+    def test_between_two_rates_uses_the_earlier_one(self):
+        result = self.Rate.compute_rate(self.usd.id, date(2023, 1, 4), use_last_rate=True)
+
+        self.assertEqual(result["foreign_rate"], self.old.inverse_company_rate)
+
+    def test_future_date_uses_most_recent_existing_rate(self):
+        result = self.Rate.compute_rate(self.usd.id, date(2099, 1, 1), use_last_rate=True)
+
+        self.assertEqual(result["foreign_rate"], self.last.inverse_company_rate)
+
+    def test_never_uses_a_later_rate(self):
+        """Antes de la primera tasa no hay anterior: no se toma la posterior."""
+        with self.assertRaisesRegex(UserError, "no rate assigned"):
+            self.Rate.compute_rate(self.usd.id, date(2023, 1, 1), use_last_rate=True)
+
+    def test_no_previous_rate_raises(self):
+        self.Rate.search([("currency_id", "=", self.usd.id)]).unlink()
+
+        with self.assertRaisesRegex(UserError, "no rate assigned"):
+            self.Rate.compute_rate(self.usd.id, date(2023, 1, 8), use_last_rate=True)
+
+    def test_no_previous_rate_returns_empty_when_raise_is_disabled(self):
+        result = self.Rate.compute_rate(
+            self.usd.id, date(2023, 1, 1), raise_if_not_found=False, use_last_rate=True
+        )
+
+        self.assertEqual(result, {})
+
+    def test_company_currency_is_one(self):
+        self.Rate.search([("currency_id", "=", self.usd.id)]).unlink()
+        self.company.currency_id = self.usd
+
+        result = self.Rate.compute_rate(self.usd.id, date(2023, 1, 8), use_last_rate=True)
+
+        self.assertEqual(result, {"foreign_rate": 1.0, "foreign_inverse_rate": 1.0})
+
+    def test_datetime_rate_date(self):
+        result = self.Rate.compute_rate(
+            self.usd.id, datetime(2023, 1, 8, 15, 0), use_last_rate=True
+        )
+
+        self.assertEqual(result["foreign_rate"], self.last.inverse_company_rate)
+
+    def test_default_stays_exact(self):
+        """Sin `use_last_rate` el comportamiento exacto no cambia."""
+        with self.assertRaisesRegex(UserError, "no rate assigned"):
+            self.Rate.compute_rate(self.usd.id, date(2023, 1, 8))
+        self.assertEqual(
+            self.Rate.compute_rate(self.usd.id, date(2023, 1, 8), raise_if_not_found=False),
+            {},
+        )
+
+    def test_branch_resolves_last_rate_of_parent(self):
+        parent = self.env["res.company"].create({
+            "name": "Matriz Last Rate",
+            "currency_id": self.env.ref("base.VEF").id,
+            "foreign_currency_id": self.usd.id,
+        })
+        branch = self.env["res.company"].create({
+            "name": "Sucursal Last Rate",
+            "parent_id": parent.id,
+            "currency_id": self.env.ref("base.VEF").id,
+        })
+        parent_rate = self._create_rate(parent, date(2023, 1, 6), 0.05)
+
+        result = self.Rate.with_company(branch).compute_rate(
+            self.usd.id, date(2023, 1, 8), use_last_rate=True
+        )
+
+        self.assertEqual(result["foreign_rate"], parent_rate.inverse_company_rate)
+
+    def test_branch_without_any_previous_rate_in_hierarchy(self):
+        parent = self.env["res.company"].create({
+            "name": "Matriz Sin Tasa",
+            "currency_id": self.env.ref("base.VEF").id,
+            "foreign_currency_id": self.usd.id,
+        })
+        branch = self.env["res.company"].create({
+            "name": "Sucursal Sin Tasa",
+            "parent_id": parent.id,
+            "currency_id": self.env.ref("base.VEF").id,
+        })
+        self._create_rate(parent, date(2023, 2, 1), 0.05)  # solo posterior
+
+        Rate = self.Rate.with_company(branch)
+        self.assertEqual(
+            Rate.compute_rate(
+                self.usd.id, date(2023, 1, 8), raise_if_not_found=False, use_last_rate=True
+            ),
+            {},
+        )
+        with self.assertRaisesRegex(UserError, "no rate assigned"):
+            Rate.compute_rate(self.usd.id, date(2023, 1, 8), use_last_rate=True)

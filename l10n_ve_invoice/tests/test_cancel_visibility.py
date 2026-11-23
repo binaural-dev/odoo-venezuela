@@ -1,11 +1,13 @@
 import datetime
 from contextlib import contextmanager
 from unittest.mock import patch
-from odoo.tests import TransactionCase, tagged
+from odoo.tests import tagged
 from odoo import fields, Command
 
+from .common import ForeignRateTransactionCase
+
 @tagged("post_install", "-at_install", "l10n_ve_invoice")
-class TestCancelVisibility(TransactionCase):
+class TestCancelVisibility(ForeignRateTransactionCase):
 
     def setUp(self):
         super(TestCancelVisibility, self).setUp()
