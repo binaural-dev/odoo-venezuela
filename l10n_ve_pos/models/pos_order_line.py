@@ -1,6 +1,6 @@
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
-from odoo.tools import float_compare
+from odoo.tools import float_compare, float_round
 
 
 class PosOrderLine(models.Model):
@@ -36,7 +36,58 @@ class PosOrderLine(models.Model):
             original = line.refunded_orderline_id
             if original and not line.foreign_price and original.foreign_price:
                 line.foreign_price = original.foreign_price
+        lines._sync_global_discount_foreign_price()
         return lines
+
+    def write(self, vals):
+        res = super().write(vals)
+        if {"price_unit", "foreign_price", "product_id", "order_id"} & vals.keys():
+            self._sync_global_discount_foreign_price()
+        return res
+
+    def _is_global_discount_line(self):
+        """La línea es del producto de descuento global de ``pos_discount``.
+
+        ``discount_product_id`` es un campo de ``pos_discount``, que no es
+        dependencia de ``l10n_ve_pos``: en una base sin ``pos_discount``
+        instalado, ``pos.config`` no lo tiene.
+        """
+        self.ensure_one()
+        config = self.order_id.config_id
+        if "discount_product_id" not in config._fields:
+            return False
+        discount_product = config.discount_product_id
+        return bool(discount_product) and self.product_id == discount_product
+
+    def _sync_global_discount_foreign_price(self):
+        """Fija ``foreign_price`` de las líneas del descuento global a la tasa
+        de la orden (ticket 16547).
+
+        En el PdV, ``pos_discount`` crea esas líneas con precio negativo y, cada
+        vez que cambia la orden, les reasigna ``price_unit`` directo, sin pasar
+        por el ``setUnitPrice`` de ``l10n_ve_pos`` (única vía que calcula
+        ``foreign_price`` en el frontend). Así la línea llegaba con
+        ``foreign_price`` en 0 o con el de un monto anterior, y la factura
+        (``pos.order._get_invoice_lines_values`` copia ``foreign_price`` a la
+        línea contable) quedaba con el alterno sin descontar.
+
+        El servidor manda: ``foreign_price = price_unit × tasa``, con la tasa
+        de la orden o, en un reembolso, la de la venta original (la misma que
+        usan sus pagos, ver ``pos.order._get_payment_foreign_rate``), redondeado
+        a la precisión "Foreign Product Price" como en el PdV. Las líneas que
+        reembolsan otra línea (``refunded_orderline_id``) conservan el precio
+        foráneo de la original.
+        """
+        precision = self.env["decimal.precision"].precision_get("Foreign Product Price")
+        for line in self:
+            if line.refunded_orderline_id or not line._is_global_discount_line():
+                continue
+            rate = line.order_id._get_payment_foreign_rate()
+            if not rate:
+                continue
+            foreign_price = float_round(line.price_unit * rate, precision_digits=precision)
+            if float_compare(line.foreign_price, foreign_price, precision_digits=precision):
+                line.foreign_price = foreign_price
 
     @api.model
     def _load_pos_data_fields(self, config):
@@ -128,14 +179,7 @@ class PosOrderLine(models.Model):
         precision = self.env["decimal.precision"].precision_get("Product Price")
         for line in self:
             order = line.order_id
-            config = order.config_id
-            # `discount_product_id` is a `pos_discount` field, not a
-            # `l10n_ve_pos` dependency: on a DB without `pos_discount`
-            # installed, `pos.config` doesn't have it at all.
-            if "discount_product_id" not in config._fields:
-                continue
-            discount_product = config.discount_product_id
-            if not discount_product or line.product_id != discount_product:
+            if not line._is_global_discount_line():
                 continue
             if float_compare(line.price_unit, 0.0, precision_digits=precision) <= 0:
                 continue
