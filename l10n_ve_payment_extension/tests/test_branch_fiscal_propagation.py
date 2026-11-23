@@ -72,7 +72,7 @@ class TestBranchFiscalPropagation(TransactionCase):
             os.path.dirname(__file__),
             "..",
             "migrations",
-            "19.0.2.2.9",
+            "19.0.2.2.10",
             "post-propagate_fiscal_fields_to_branches.py",
         )
         spec = importlib.util.spec_from_file_location("migration_branch_fiscal", path)
@@ -81,7 +81,7 @@ class TestBranchFiscalPropagation(TransactionCase):
         return module
 
     def _run_migration(self):
-        self._load_migration().migrate(self.env.cr, "19.0.2.2.8")
+        self._load_migration().migrate(self.env.cr, "19.0.2.2.9")
         self.env.invalidate_all()
 
     def _write_on_root_without_propagation(self, vals):
@@ -114,7 +114,7 @@ class TestBranchFiscalPropagation(TransactionCase):
         self._set_branch_person_without_constraint(self.person_b)
         migration = self._load_migration()
         with self.assertLogs(migration._logger, level="WARNING") as logs:
-            migration.migrate(self.env.cr, "19.0.2.2.8")
+            migration.migrate(self.env.cr, "19.0.2.2.9")
         self.env.invalidate_all()
         for company in (self.branch, self.grandchild):
             self.assertEqual(company.partner_id.type_person_id, self.person_a)
@@ -128,7 +128,7 @@ class TestBranchFiscalPropagation(TransactionCase):
         self._write_on_root_without_propagation({"withholding_type_id": self.wh_b.id})
         migration = self._load_migration()
         with self.assertLogs(migration._logger, level="WARNING") as logs:
-            migration.migrate(self.env.cr, "19.0.2.2.8")
+            migration.migrate(self.env.cr, "19.0.2.2.9")
         self.env.invalidate_all()
         for company in (self.branch, self.grandchild):
             self.assertEqual(
