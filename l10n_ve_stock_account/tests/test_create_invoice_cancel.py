@@ -201,3 +201,50 @@ class TestCancelInvoiceFromPicking(StockAccountTestCommon):
 
         self.assertEqual(line.qty_invoiced, 22.0)
         self.assertEqual(picking.state_guide_dispatch, "invoiced_partial")
+
+    def test_cancel_then_button_draft_and_post_restores_invoiced_state(self):
+        """Resetting a cancelled picking invoice to draft and posting it again
+        must restore the guide and sale order to invoiced so it cannot be billed twice."""
+        picking = self._create_sale_order(qty=22.0)
+        line = picking.sale_id.order_line
+        move_count_before = len(picking.move_ids)
+        invoice = picking.create_invoice()
+        self._post(invoice)
+
+        invoice.button_cancel()
+        self.assertEqual(picking.state_guide_dispatch, "to_invoice")
+        self.assertEqual(line.qty_invoiced, 0.0)
+        self.assertEqual(picking.sale_id.invoice_status, "to invoice")
+        self.assertTrue(picking.show_create_invoice)
+
+        invoice.button_draft()
+
+        self.assertEqual(invoice.state, "draft")
+        self.assertEqual(picking.state_guide_dispatch, "invoiced")
+        self.assertEqual(line.qty_invoiced, 22.0)
+        self.assertEqual(picking.sale_id.invoice_status, "invoiced")
+        self.assertFalse(picking.show_create_invoice)
+
+        self._post(invoice)
+
+        self.assertEqual(invoice.state, "posted")
+        self.assertEqual(picking.state_guide_dispatch, "invoiced")
+        self.assertEqual(line.qty_invoiced, 22.0)
+        self.assertEqual(picking.sale_id.invoice_status, "invoiced")
+        self.assertFalse(picking.show_create_invoice)
+        self.assertEqual(len(picking.move_ids), move_count_before)
+
+    def test_button_draft_from_posted_does_not_double_count_qty_invoiced(self):
+        """Resetting a posted (non-cancelled) invoice to draft must not add qty_delivered again."""
+        picking = self._create_sale_order(qty=22.0)
+        line = picking.sale_id.order_line
+        invoice = picking.create_invoice()
+        self._post(invoice)
+        self.assertEqual(line.qty_invoiced, 22.0)
+
+        invoice.button_draft()
+
+        self.assertEqual(invoice.state, "draft")
+        self.assertEqual(picking.state_guide_dispatch, "invoiced")
+        self.assertEqual(line.qty_invoiced, 22.0)
+        self.assertEqual(picking.sale_id.invoice_status, "invoiced")

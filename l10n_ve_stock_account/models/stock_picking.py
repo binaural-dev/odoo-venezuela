@@ -576,6 +576,14 @@ class StockPicking(models.Model):
                         "qty_invoiced": max(line.qty_invoiced - to_subtract, 0.0)
                     })
 
+    def _reapply_guide_invoicing_state(self):
+        """Restore `state_guide_dispatch` and sale-order `qty_invoiced` when a
+        cancelled invoice linked to these pickings is reset to draft."""
+        for picking in self:
+            picking.write({"state_guide_dispatch": "invoiced"})
+            picking._update_order_sale_invoiced()
+        self.invalidate_recordset(["invoice_ids", "invoice_count"])
+
     def _revert_guide_dispatch_state(self, cancelled_invoice):
         """Set `state_guide_dispatch` back to a state consistent with the
         invoices that remain valid after `cancelled_invoice` was cancelled or deleted."""

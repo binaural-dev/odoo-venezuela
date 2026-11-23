@@ -61,6 +61,25 @@ class AccountMove(models.Model):
         self._apply_picking_revert(revert_data)
         return res
 
+    def button_draft(self):
+        """Re-apply dispatch-guide and sale-order invoicing state when a
+        cancelled picking-linked invoice is reset to draft.
+
+        Cancelling a picking-linked invoice reverts `state_guide_dispatch` and
+        `qty_invoiced`. If that cancelled invoice is later reset to draft so it
+        can be posted again, it becomes an active invoice on the picking once
+        more and must restore the invoiced state to prevent duplicate billing.
+        """
+        pickings_per_move = [
+            move.transfer_ids
+            for move in self
+            if move.transfer_ids and move.state == "cancel"
+        ]
+        res = super().button_draft()
+        for pickings in pickings_per_move:
+            pickings._reapply_guide_invoicing_state()
+        return res
+
     def unlink(self):
         """Revert dispatch-guide invoicing state when a linked invoice is deleted.
 
