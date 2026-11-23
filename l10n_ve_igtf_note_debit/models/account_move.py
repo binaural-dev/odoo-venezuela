@@ -234,7 +234,7 @@ class AccountMove(models.Model):
         is_igtf_journal = (
             payment.journal_id.is_igtf
             if (
-                self.partner_id._check_igtf_apply_improved(self.move_type)
+                self.partner_id._check_igtf_apply_improved(self.move_type, self.company_id)
                 and not self.journal_id.is_purchase_international
             )
             else False
@@ -364,7 +364,7 @@ class AccountMove(models.Model):
         is_igtf_journal = (
             payment.journal_id.is_igtf
             if (
-                self.partner_id._check_igtf_apply_improved(self.move_type)
+                self.partner_id._check_igtf_apply_improved(self.move_type, self.company_id)
                 and not self.journal_id.is_purchase_international
             )
             else False
@@ -386,9 +386,8 @@ class AccountMove(models.Model):
         ])
         advance_line = advance_line.account_id[:1]
         if not advance_line:
-            advance_line = (
-                self.partner_id.default_advance_customer_account_id if is_customer
-                else self.partner_id.default_advance_supplier_account_id
+            advance_line = self.partner_id._l10n_ve_get_advance_account(
+                self.company_id, "customer" if is_customer else "supplier"
             )
 
         if is_customer:
@@ -424,7 +423,7 @@ class AccountMove(models.Model):
             force_balance=force_balance,
         )
 
-        advance_journal = self.env.company.advance_payment_igtf_journal_id
+        advance_journal = self.company_id.advance_payment_igtf_journal_id
         move = self.env["account.move"].create({
             "journal_id": advance_journal.id,
             "date": conversion_date if not payment.keep_alter_value_vef else payment.date,
