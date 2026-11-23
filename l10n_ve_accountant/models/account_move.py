@@ -1297,20 +1297,21 @@ class AccountMove(models.Model):
 
         The `@api.depends` above is kept (needed for `foreign_rate`,
         specific to this project) but the call itself is delegated
-        directly, with no per-record context.
-
-        En una factura en borrador el nucleo calcula amount_residual a partir
-        de tax_totals (account.move._compute_amount). Los resumenes de esta
-        localizacion leen montos de la factura mientras arman tax_totals
-        (l10n_ve_accountant: el total en Bs; l10n_ve_igtf: bi_igtf,
-        payment_state, amount_total), y esa lectura calcula el saldo con
-        tax_totals todavia vacio: queda en 0 y la factura en borrador, como
-        pagada, aunque su linea por cobrar siga pendiente. Por eso, ya armado
-        tax_totals, se vuelven a calcular el saldo y el estado de pago de las
-        facturas en borrador."""
+        directly, with no per-record context."""
         super()._compute_tax_totals()
+        # Draft invoice: core computes amount_residual from tax_totals
+        # (account.move._compute_amount). The summaries of this localization
+        # read amounts of the invoice while building tax_totals
+        # (l10n_ve_accountant: the total in Bs; l10n_ve_igtf: bi_igtf,
+        # payment_state, amount_total), so that read computes the residual with
+        # tax_totals still empty: it is stored as 0 and the draft shows as
+        # "Paid" although its receivable line is still pending. Now that
+        # tax_totals is built, recompute only the drafts left wrong.
         drafts = self.filtered(
-            lambda move: move.state == 'draft' and move.is_invoice(include_receipts=True)
+            lambda move: move.state == 'draft'
+            and move.is_invoice(include_receipts=True)
+            and not move.currency_id.is_zero(move.amount_total)
+            and move.currency_id.is_zero(move.amount_residual)
         )
         if drafts:
             for field_name in ('amount_residual', 'amount_residual_signed', 'payment_state'):
