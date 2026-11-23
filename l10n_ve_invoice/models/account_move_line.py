@@ -87,6 +87,15 @@ class AccountMoveLine(models.Model):
             return 0.0
         return (self.discount_fixed / gross_subtotal) * 100.0
 
+    def _get_effective_discount_percent(self):
+        """With a fixed-amount discount the native `discount` (%) is 0, so
+        the % that really applies is the exact equivalent of discount_fixed.
+        Feeds every place l10n_ve_accountant rebuilds line amounts by hand
+        (e.g. the discount column of the Sales Details report)."""
+        if self._uses_discount_fixed():
+            return self._get_exact_discount_percentage()
+        return super()._get_effective_discount_percent()
+
     @api.constrains("discount_fixed", "price_unit", "quantity")
     def _check_discount_fixed_not_exceeding_subtotal(self):
         precision = self.env["decimal.precision"].precision_get("Product Price")

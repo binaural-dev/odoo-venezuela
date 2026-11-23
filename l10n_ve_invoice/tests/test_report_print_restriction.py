@@ -1,11 +1,13 @@
-from odoo.tests import TransactionCase, tagged
+from odoo.tests import tagged
 from odoo import fields, Command
 from odoo.exceptions import UserError
 from unittest.mock import patch
 
+from .common import ForeignRateTransactionCase
+
 
 @tagged("post_install", "-at_install", "l10n_ve_invoice")
-class TestReportPrintRestriction(TransactionCase):
+class TestReportPrintRestriction(ForeignRateTransactionCase):
 
     def setUp(self):
         super().setUp()
