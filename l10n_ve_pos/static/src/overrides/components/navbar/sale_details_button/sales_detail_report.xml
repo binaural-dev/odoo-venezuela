@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+
+    <!--
+        report.point_of_sale.report_saledetails.get_sale_details está sobreescrito en
+        l10n_ve_pos (report/report_saledetails.py) y devuelve:
+          - products: lista PLANA de productos (el nativo devuelve categorías con 'products')
+          - sin refund_products
+          - currency: registro res.currency (el nativo devuelve un dict con total_paid)
+          - total_paid / foreign_total_paid / payments[].f_total
+        Esta herencia adapta el ticket del POS a esa estructura y soporta también la
+        forma nativa (categorías) para no romperse si el backend cambia.
+    -->
+    <t t-name="l10n_ve_pos.SaleDetailsReport" t-inherit="point_of_sale.SaleDetailsReport" t-inherit-mode="extension" owl="1">
+
+        <xpath expr="//t[@t-foreach='products']" position="replace">
+            <t t-foreach="products or []" t-as="item" t-key="item_index">
+                <t t-foreach="item.products or [item]" t-as="line" t-key="line_index">
+                    <div class="responsive-price">
+                        <t t-esc="(line.product_name or '').substr(0,20)" />
+                        <span class="pos-receipt-right-align">
+                            <t t-esc="Math.round(line.quantity * Math.pow(10, pos.dp['Product Unit of Measure'])) / Math.pow(10, pos.dp['Product Unit of Measure'])" />
+                            <t t-if="line.uom !== 'Units'">
+                                <t t-esc="line.uom" />
+                            </t>
+                            x
+                            <t t-esc="formatCurrency(line.price_unit, false)" />
+                        </span>
+                    </div>
+                    <t t-if="line.discount">
+                        <div class="pos-receipt-left-padding">Discount: <t t-esc="line.discount" />%</div>
+                    </t>
+                </t>
+            </t>
+        </xpath>
+
+        <xpath expr="//t[@t-foreach='refund_products']" position="replace">
+            <t t-foreach="refund_products or []" t-as="item" t-key="item_index">
+                <t t-foreach="item.products or [item]" t-as="line" t-key="line_index">
+                    <div class="responsive-price">
+                        <t t-esc="(line.product_name or '').substr(0,20)" />
+                        <span class="pos-receipt-right-align">
+                            <t t-esc="Math.round(line.quantity * Math.pow(10, pos.dp['Product Unit of Measure'])) / Math.pow(10, pos.dp['Product Unit of Measure'])" />
+                            <t t-if="line.uom !== 'Units'">
+                                <t t-esc="line.uom" />
+                            </t>
+                            x
+                            <t t-esc="formatCurrency(line.price_unit, false)" />
+                        </span>
+                    </div>
+                    <t t-if="line.discount">
+                        <div class="pos-receipt-left-padding">Discount: <t t-esc="line.discount" />%</div>
+                    </t>
+                </t>
+            </t>
+        </xpath>
+
+        <xpath expr="//div[@t-foreach='payments']" position="replace">
+            <t t-set="formatForeign" t-value="pos.foreign_currency and pos.env and pos.env.utils and pos.env.utils.formatForeignCurrency" />
+            <div t-foreach="payments or []" t-as="payment" t-key="payment_index">
+                <t t-esc="payment.name" />
+                <span t-esc="formatCurrency(payment.total, false)" class="pos-receipt-right-align"/>
+                <div t-if="formatForeign and payment.f_total" class="pos-receipt-left-padding">
+                    <span t-esc="formatForeign(payment.f_total)" class="pos-receipt-right-align"/>
+                </div>
+            </div>
+        </xpath>
+
+        <xpath expr="//div[@t-foreach='taxes']" position="attributes">
+            <attribute name="t-foreach">taxes or []</attribute>
+        </xpath>
+
+        <xpath expr="//span[@t-esc='formatCurrency(currency.total_paid, false)']" position="replace">
+            <span t-esc="formatCurrency(total_paid !== undefined ? total_paid : (currency and currency.total_paid) or 0, false)" class="pos-receipt-right-align"/>
+            <div t-if="formatForeign and foreign_total_paid">
+                Foreign Total:
+                <span t-esc="formatForeign(foreign_total_paid)" class="pos-receipt-right-align"/>
+            </div>
+        </xpath>
+
+    </t>
+
+</templates>
