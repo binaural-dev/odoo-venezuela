@@ -62,10 +62,19 @@ class ResCurrencyRate(models.Model):
         posterior ni se devuelve 1.0 como sustituto: sin ninguna tasa anterior se
         mantiene el comportamiento original.
 
+        Si la compañía tiene desactivado "Exigir tasa del día"
+        (`l10n_ve_require_daily_rate`), siempre se comporta como `use_last_rate=True`.
+
         Las tasas solo existen en la compañía principal (Odoo 19 no permite tasas en
         sucursales nativas). Se busca primero en la compañía activa y, si no hay
         resultado en ella, en su raíz (`root_id`): una sucursal resuelve así la tasa
-        de la matriz.
+        de la matriz. La compañía activa debe ser la del documento: quien llama desde
+        un registro usa `with_company(registro.company_id)`, porque con varias
+        compañías seleccionadas `env.company` es la del selector, no la del documento.
+
+        La fecha es la del usuario (zona horaria del contexto o del usuario). Si no
+        hay ninguna (procesos sin usuario con zona), se usa la de la compañía y, en
+        último caso, America/Caracas, nunca la UTC del servidor.
 
         Raises
         ------
@@ -89,12 +98,14 @@ class ResCurrencyRate(models.Model):
         # Un Datetime (p. ej. date_order) esta en UTC: se pasa a la fecha del usuario
         # (context_today) y no a su .date() UTC, que a las 8 pm de Caracas ya es el dia
         # siguiente. Sin fecha se usa el "hoy" del usuario, no el del servidor.
-        if isinstance(rate_date, datetime):
-            rate_date = fields.Date.context_today(self, rate_date)
-        elif not rate_date:
-            rate_date = fields.Date.context_today(self)
-
         company = self.env.company
+        local = self._l10n_ve_with_local_tz(company)
+        if isinstance(rate_date, datetime):
+            rate_date = fields.Date.context_today(local, rate_date)
+        elif not rate_date:
+            rate_date = fields.Date.context_today(local)
+
+        use_last_rate = use_last_rate or not company.l10n_ve_require_daily_rate
         # las tasas solo viven en la compañía raíz (res.currency.rate._check_company_id);
         # la compañía activa va primero para que una tasa propia gane a la de la matriz
         company_ids = list(dict.fromkeys((company | company.root_id).ids))
@@ -152,6 +163,16 @@ class ResCurrencyRate(models.Model):
                 "foreign_rate": rate.inverse_company_rate,
                 "foreign_inverse_rate": rate.company_rate,
             }
+
+    @api.model
+    def _l10n_ve_with_local_tz(self, company):
+        """`self` con una zona horaria para calcular la fecha local: la del contexto o
+        la del usuario si existen; si no, la de la compañía y, en último caso,
+        America/Caracas. Sin zona, `context_today` usa UTC y, desde las 8 pm de
+        Venezuela, devuelve el día siguiente, que todavía no tiene tasa."""
+        if self.env.context.get("tz") or self.env.user.tz:
+            return self
+        return self.with_context(tz=company.partner_id.tz or "America/Caracas")
 
     @api.model
     def compute_inverse_rate(self, rate):

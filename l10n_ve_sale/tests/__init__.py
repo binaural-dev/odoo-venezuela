@@ -16,3 +16,4 @@ from . import test_server_date_vs_user_tz
 from . import test_sale_order_rate_tz
 from . import test_sale_order_rate_date_form
 from . import test_alternate_totals_block
+from . import test_sale_order_rate_company
