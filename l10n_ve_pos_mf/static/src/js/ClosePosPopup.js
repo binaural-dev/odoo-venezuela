@@ -19,6 +19,29 @@ patch(ClosePosPopup.prototype, {
     return this.pos.getFiscalPrinter?.() || window.fiscalPrinter || null;
   },
 
+  /**
+   * En Odoo 17 este popup se confirma con Enter (AbstractAwaitablePopup
+   * escucha keyup en toda la ventana) y el confirm() nativo cierra la sesión
+   * sin imprimir el Reporte Z. Tras pulsar "Reporte X" el foco queda en ese
+   * botón, así que un Enter (o un lector que envía Enter) cerraba la sesión
+   * sin Z y el POS abría otra al volver (ticket 16649).
+   * Enter queda deshabilitado aquí; Escape sigue funcionando.
+   */
+  _onWindowKeyup(event) {
+    if (event.key === "Enter" || event.key === this.props.confirmKey) {
+      return;
+    }
+    return super._onWindowKeyup(event);
+  },
+
+  /**
+   * Cualquier confirmación del popup pasa por el flujo fiscal (pedidos sin
+   * facturar → Reporte Z → cierre), nunca por el cierre nativo sin Z.
+   */
+  async confirm() {
+    return await this.closeSessionAndPrintZ();
+  },
+
   async generate_report_x() {
     if (this.state.isPrintingReport) {
       return;
@@ -51,6 +74,8 @@ patch(ClosePosPopup.prototype, {
       });
     } finally {
       this.state.isPrintingReport = false;
+      // Sin foco en el botón, un Enter posterior no vuelve a imprimir el X.
+      document.activeElement?.blur?.();
     }
   },
 
