@@ -25,3 +25,4 @@ from . import test_igtf_zero_amount_payment
 from . import test_igtf_refund_payment_sign
 
 from . import test_advance_account_company
+from . import test_payments_widget_view_button

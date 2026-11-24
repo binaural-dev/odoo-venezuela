@@ -58,8 +58,15 @@ class AccountMove(models.Model):
 
     # RECONCILED PAYMENTS and advances ON INVOICE
     @api.depends('move_type', 'line_ids.amount_residual')
+    @api.depends_context('uid')
     def _compute_payments_widget_reconciled_info(self):
-        
+        """Reemplaza al del core (account) sin llamar a super(). Cualquier valor nuevo del core en
+        cada pago hay que agregarlo aquí: el widget (account_payment.xml) lo usa.
+
+        can_open_move (core desde odoo/odoo#302668): el botón "Ver" del pago solo se muestra si
+        es True. Mismo criterio del core: quien puede leer la contabilidad lo ve siempre; un
+        usuario de facturación, solo para pagos y facturas."""
+        can_read_accounting = self.env.user.has_group('account.group_account_readonly')
         for move in self:
             payments_widget_vals = {'title': _('Less Payment'), 'outstanding': False, 'content': []}
 
@@ -96,6 +103,9 @@ class AccountMove(models.Model):
                         'ref': reconciliation_ref,
                         # these are necessary for the views to change depending on the values
                         'is_exchange': reconciled_partial['is_exchange'],
+                        'can_open_move': can_read_accounting
+                            or bool(counterpart_line.move_id.origin_payment_id)
+                            or counterpart_line.move_id.is_invoice(include_receipts=True),
                         'amount_company_currency': formatLang(self.env, abs(counterpart_line.balance), currency_obj=counterpart_line.company_id.currency_id),
                         'amount_foreign_currency': foreign_currency and formatLang(self.env, abs(counterpart_line.amount_currency), currency_obj=foreign_currency)
                     })
