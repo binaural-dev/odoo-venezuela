@@ -58,8 +58,15 @@ class AccountMove(models.Model):
 
     # RECONCILED PAYMENTS and advances ON INVOICE
     @api.depends('move_type', 'line_ids.amount_residual')
+    @api.depends_context('uid')
     def _compute_payments_widget_reconciled_info(self):
-        
+        """Reemplaza al del core (account) sin llamar a super(). Cualquier valor nuevo del core en
+        cada pago hay que agregarlo aquí: el widget (account_payment.xml) lo usa.
+
+        can_open_move (core desde odoo/odoo#302668): el botón "Ver" del pago solo se muestra si
+        es True. Mismo criterio del core: quien puede leer la contabilidad lo ve siempre; un
+        usuario de facturación, solo para pagos y facturas."""
+        can_read_accounting = self.env.user.has_group('account.group_account_readonly')
         for move in self:
             payments_widget_vals = {'title': _('Less Payment'), 'outstanding': False, 'content': []}
 
@@ -96,6 +103,9 @@ class AccountMove(models.Model):
                         'ref': reconciliation_ref,
                         # these are necessary for the views to change depending on the values
                         'is_exchange': reconciled_partial['is_exchange'],
+                        'can_open_move': can_read_accounting
+                            or bool(counterpart_line.move_id.origin_payment_id)
+                            or counterpart_line.move_id.is_invoice(include_receipts=True),
                         'amount_company_currency': formatLang(self.env, abs(counterpart_line.balance), currency_obj=counterpart_line.company_id.currency_id),
                         'amount_foreign_currency': foreign_currency and formatLang(self.env, abs(counterpart_line.amount_currency), currency_obj=foreign_currency)
                     })
@@ -367,7 +377,7 @@ class AccountMove(models.Model):
         is_igtf_journal = (
             payment.journal_id.is_igtf
             if (
-                self.partner_id._check_igtf_apply_improved(self.move_type)
+                self.partner_id._check_igtf_apply_improved(self.move_type, self.company_id)
                 and not self.journal_id.is_purchase_international
             )
             else False
@@ -393,10 +403,9 @@ class AccountMove(models.Model):
         advance_line = advance_line.account_id[:1]
 
         if not advance_line:
-            if is_customer: # O usa tu lógica de partner_type
-                advance_line = self.partner_id.default_advance_customer_account_id
-            else:
-                advance_line = self.partner_id.default_advance_supplier_account_id
+            advance_line = self.partner_id._l10n_ve_get_advance_account(
+                self.company_id, "customer" if is_customer else "supplier"
+            )
         
         advance_val = False
         counter_part_val = False
@@ -468,7 +477,7 @@ class AccountMove(models.Model):
             )
                
         # --- Entry Creation ---
-        advance_journal = self.env.company.advance_payment_igtf_journal_id
+        advance_journal = self.company_id.advance_payment_igtf_journal_id
         
         return self.env["account.move"].create({
             "journal_id": advance_journal.id,
@@ -621,10 +630,9 @@ class AccountMove(models.Model):
 
         if not advance_line:
             
-            if is_customer: # use your partner_type logic
-                advance_line = self.partner_id.default_advance_customer_account_id
-            else:
-                advance_line = self.partner_id.default_advance_supplier_account_id
+            advance_line = self.partner_id._l10n_ve_get_advance_account(
+                self.company_id, "customer" if is_customer else "supplier"
+            )
                 
 
         original_advance_lines = payment_move.line_ids.filtered(
@@ -1029,7 +1037,9 @@ class AccountMove(models.Model):
                         new_f_debit = current_f_debit + igtf_line.foreign_debit
                         new_f_credit = current_f_credit + igtf_line.foreign_credit
                     
-                    advance_account = payment_move.partner_id.default_advance_customer_account_id.id if current_credit > 0 else  payment_move.partner_id.default_advance_supplier_account_id.id
+                    advance_account = payment_move.partner_id._l10n_ve_get_advance_account(
+                        payment_move.company_id, "customer" if current_credit > 0 else "supplier"
+                    ).id
                     
                     line_vals = {
                         'debit': new_debit,
