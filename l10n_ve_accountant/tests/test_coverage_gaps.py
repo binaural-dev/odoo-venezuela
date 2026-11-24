@@ -900,7 +900,7 @@ class TestCoverageGaps(TransactionCase):
         """Publica una factura en USD de `price` con la distribucion dada y
         devuelve (linea, lineas analiticas ordenadas por id)."""
         self._skip_without_foreign_amount_field()
-        invoice = self._create_invoice(self.currency_usd, price, tax=False)
+        invoice = self._create_invoice(self.currency_usd, price)
         line = invoice.invoice_line_ids[0]
         line.analytic_distribution = distribution
         invoice.with_context(move_action_post_alert=True).action_post()
