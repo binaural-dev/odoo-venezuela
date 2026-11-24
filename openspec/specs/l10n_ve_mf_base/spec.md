@@ -341,6 +341,12 @@ El driver DEBE (MUST) exponer `printReportX()` (comando `I0X`, consulta sin cerr
 - **WHEN** la máquina no está en reposo al empezar o S1 no responde
 - **THEN** no hay foto y el resultado es el de siempre
 
+#### Scenario: Falla después de un pago sin foto (riesgo aceptado)
+
+- **GIVEN** que no hubo foto porque la máquina no estaba en reposo al empezar o S1 no respondió
+- **WHEN** la impresión falla después de enviar un pago
+- **THEN** el resultado es el de siempre, sin `printed`, y el PdV deja el pedido pendiente: sin foto no hay contra qué verificarlo
+
 ### Requirement: Falla antes de enviar pagos
 
 Si la impresión falla sin haber enviado ningún pago (comandos `2XX…`, `1XX` o `199`), el driver DEBE (MUST) devolver `printed: false` sin consultar nada más: sin pagos el documento no pudo quedar comprometido.

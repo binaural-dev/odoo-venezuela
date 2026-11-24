@@ -42,7 +42,8 @@ decimales).
 
 ## Non-goals
 
-- Volver a llenar la cola local desde el servidor (revisión de SaulOrte, punto 3): a decidir.
+- Volver a llenar la cola local desde el servidor (revisión de SaulOrte, punto 3): no se hace;
+  queda como limitación conocida (change `ta-85447-limitaciones-conocidas`).
 - "Falla sin foto" después de un pago: sigue como riesgo documentado en el diseño de la 85447.
 - Chequear el número que llega con la sincronización de una orden que todavía no estaba en el
   servidor: es el camino de toda orden impresa, fuera de este PR.

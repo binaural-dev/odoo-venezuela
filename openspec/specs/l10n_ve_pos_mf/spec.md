@@ -777,6 +777,12 @@ Antes de imprimir cualquier documento (una venta o un pedido pendiente), el PdV 
 - **WHEN** dos bases de datos se abren en el mismo navegador y dominio
 - **THEN** cada una tiene su propia cola local (la clave lleva el nombre de la base)
 
+#### Scenario: Cola local perdida (limitación conocida)
+
+- **GIVEN** un pedido por verificar cuya entrada de la cola local se perdió (almacenamiento del navegador borrado, otro navegador u otra PC)
+- **WHEN** se valida la siguiente venta
+- **THEN** la venta se imprime sin verificar ese pedido; el pedido conserva la marca, no se reimprime y queda para el asistente, que rechaza un número que ya es de otro documento
+
 ### Requirement: Pedido que la verificación no resuelve
 
 Con `printed: null`, el PdV DEBE (MUST) actuar según `reason`: con `no_response` o `document_open` el pedido sigue en la cola y el documento nuevo NO DEBE (MUST NOT) imprimirse (queda pendiente); con `other_printer` el pedido sigue en la cola y se imprime; con `unattributable`, una falla de la verificación o una entrada dañada, el pedido sale de la cola, se avisa y queda para revisión manual, sin frenar la venta.
