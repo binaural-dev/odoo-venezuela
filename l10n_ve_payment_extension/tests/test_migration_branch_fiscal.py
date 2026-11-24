@@ -221,7 +221,7 @@ class TestMigrationBranchFiscal(TransactionCase):
         self._migrate()
         for company in (self.branch, self.grandchild):
             partner = company.partner_id.with_context(skip_sellers_validate=True)
-            partner.write({"name": "Renamed after migration"})
+            partner.write({"name": f"Renamed {company.id} after migration"})
             partner.write({"type_person_id": self.person_a.id, "taxpayer_type": "special"})
 
     def test_i_the_migration_folder_is_not_ahead_of_the_manifest_version(self):
