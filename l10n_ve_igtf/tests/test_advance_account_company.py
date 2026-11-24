@@ -121,9 +121,28 @@ class TestAdvanceAccountCompany(TransactionCase):
         )
 
     def test_igtf_apply_uses_document_company(self):
+        self.company_a.taxpayer_type = "ordinary"
         self.company_b.taxpayer_type = "special"
         partner = self.env["res.partner"].create({"name": "Sin cuenta", "company_id": False})
-        partner.default_advance_customer_account_id = False
-        self.company_a.advance_customer_account_id = False
         self.assertFalse(partner._check_igtf_apply_improved("out_invoice", self.company_a))
         self.assertTrue(partner._check_igtf_apply_improved("out_invoice", self.company_b))
+
+    def test_igtf_apply_without_advance_account(self):
+        """El IGTF depende solo del tipo de contribuyente, no de que haya cuenta de anticipo
+        en el contacto ni en la compañía."""
+        self.company_b.write({
+            "taxpayer_type": "special",
+            "advance_customer_account_id": False,
+            "advance_supplier_account_id": False,
+        })
+        partner = self.env["res.partner"].create({
+            "name": "Sin cuenta", "company_id": False, "taxpayer_type": "formal",
+        })
+        partner.write({
+            "default_advance_customer_account_id": False,
+            "default_advance_supplier_account_id": False,
+        })
+        self.assertTrue(partner._check_igtf_apply_improved("out_invoice", self.company_b))
+        self.assertTrue(partner._check_igtf_apply_improved("in_invoice", self.company_b))
+        partner.taxpayer_type = "ordinary"
+        self.assertFalse(partner._check_igtf_apply_improved("in_invoice", self.company_b))
