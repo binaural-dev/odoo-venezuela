@@ -64,12 +64,17 @@ Un diario con `is_igtf` activo DEBE (MUST) tener moneda asignada y distinta de V
 
 ### Requirement: Aplicabilidad del IGTF según tipo de contribuyente
 
-`_check_igtf_apply_improved` de `res.partner` DEBE (MUST) determinar si aplica IGTF: en documentos de venta (`out_invoice`/`out_refund`) aplica cuando la compañía es contribuyente `special` o `formal` y el partner tiene cuenta de anticipo de cliente; en documentos de compra (`in_invoice`/`in_refund`) aplica cuando el `taxpayer_type` del proveedor es `special` o `formal` y el partner tiene cuenta de anticipo de proveedor; en cualquier otro caso no aplica.
+`_check_igtf_apply_improved(invoice_type, company=None)` de `res.partner` DEBE (MUST) determinar si aplica IGTF según el tipo de contribuyente: en documentos de venta (`out_invoice`/`out_refund`) aplica cuando la compañía del documento es contribuyente `special` o `formal`; en documentos de compra (`in_invoice`/`in_refund`) aplica cuando el `taxpayer_type` del proveedor es `special` o `formal`; en cualquier otro caso no aplica. La compañía DEBE (MUST) ser la del documento cuando se pasa; si no, la del partner o, en su defecto, la compañía activa. El resultado NO DEBE (MUST NOT) depender de que haya cuenta de anticipo configurada en el partner o en la compañía: esa cuenta solo se usa para el excedente del pago.
 
 #### Scenario: Venta de compañía contribuyente especial
 
-- **WHEN** se evalúa una factura de cliente y la compañía es contribuyente especial
-- **THEN** el método devuelve verdadero si el partner tiene cuenta de anticipo de cliente
+- **WHEN** se evalúa una factura de cliente y la compañía del documento es contribuyente especial
+- **THEN** el método devuelve verdadero, haya o no cuenta de anticipo de cliente
+
+#### Scenario: Compañía activa distinta a la del documento
+
+- **WHEN** se evalúa una factura de una compañía contribuyente especial mientras la compañía activa es ordinaria
+- **THEN** el método devuelve verdadero, porque decide la compañía del documento
 
 #### Scenario: Compra a proveedor ordinario
 

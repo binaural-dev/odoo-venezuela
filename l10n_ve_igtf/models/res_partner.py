@@ -43,18 +43,20 @@ class ResPartner(models.Model):
         return company.advance_customer_account_id if customer else company.advance_supplier_account_id
 
     def _check_igtf_apply_improved(self, invoice_type, company=None):
+        """Indica si el IGTF aplica a un documento de este contacto según el tipo de
+        contribuyente: en ventas el de la compañía del documento, en compras el del proveedor.
+
+        No depende de que haya cuenta de anticipo (del contacto o de la compañía): esa cuenta
+        solo se usa para el excedente del pago (ver ``_l10n_ve_get_advance_account``).
+
+        :param invoice_type: move_type del documento.
+        :param company: res.company del documento; si no se pasa, la del contacto o la activa.
+        """
         for rec in self:
-            company = company or self.company_id or self.env.company
-            company_taxpayer_type = company.taxpayer_type
-            
-            # 2. Manejo de Ventas (out_invoice)
-            if invoice_type in ["out_invoice","out_refund"] and rec._l10n_ve_get_advance_account(company, "customer"):
-                return company_taxpayer_type in ['special','formal']
-                
-            # 3. Manejo de Compras (in_invoice)
-            elif invoice_type in ["in_invoice","in_refund"] and rec._l10n_ve_get_advance_account(company, "supplier"):
-                partner_taxpayer_type = rec.taxpayer_type
-                
-                return partner_taxpayer_type in ['special','formal']
-                
+            doc_company = company or rec.company_id or self.env.company
+            if invoice_type in ["out_invoice", "out_refund"]:
+                return doc_company.taxpayer_type in ["special", "formal"]
+            if invoice_type in ["in_invoice", "in_refund"]:
+                return rec.taxpayer_type in ["special", "formal"]
             return False
+        return False
