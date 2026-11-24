@@ -43,6 +43,9 @@ class ResPartner(models.Model):
         company_id = self.env.company.id
         return company_id
 
+    def _default_prefix_vat(self):
+        return "J" if self.env.context.get("default_is_company") else "V"
+
     prefix_vat = fields.Selection(
         [
             ("V", "V"),
@@ -53,10 +56,30 @@ class ResPartner(models.Model):
             ("C", "C"),
         ],
         string="Prefix VAT",
-        default="V",
+        default=_default_prefix_vat,
         help="Prefix of the VAT number",
         tracking=True,
     )
+
+    allowed_prefix_vat = fields.Json(
+        compute="_compute_allowed_prefix_vat",
+        string="Allowed Prefix VAT",
+    )
+
+    @api.depends("is_company")
+    def _compute_allowed_prefix_vat(self):
+        """A company is J (legal), G (government) or C (communal);
+        a person is V (Venezuelan), E (foreigner) or P (passport)."""
+        for partner in self:
+            partner.allowed_prefix_vat = (
+                ["J", "G", "C"] if partner.is_company else ["V", "E", "P"]
+            )
+
+    @api.onchange("is_company")
+    def _onchange_is_company_prefix_vat(self):
+        for partner in self:
+            if partner.prefix_vat not in partner.allowed_prefix_vat:
+                partner.prefix_vat = partner.allowed_prefix_vat[0]
 
     @api.constrains("name")
     def _check_name_immutable(self):

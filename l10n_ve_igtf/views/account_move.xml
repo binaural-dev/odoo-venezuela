@@ -15,8 +15,9 @@
                 <field name="origin_payment_advanced_payment_id" readonly="1" />
             </xpath>
 
-
-            <xpath expr="//div[hasclass('alert', 'alert-info')][1]" position="replace">
+            <!-- Avisos de pendientes ubicados por su condicion y no por posicion: otros modulos
+                 (binaural_purchase, l10n_ve_sale) agregan avisos alert-info antes (ticket 16602). -->
+            <xpath expr="//div[hasclass('alert', 'alert-info') and contains(@invisible, 'invoice_has_outstanding') and contains(@invisible, &quot;move_type not in ('out_invoice', 'out_receipt')&quot;)]" position="replace">
                 <div groups="account.group_account_invoice,account.group_account_readonly"
                         class="alert alert-info" role="alert"
                         invisible="state != 'posted' or move_type not in ('out_invoice', 'out_receipt') or not invoice_has_outstanding or payment_state not in ('not_paid', 'partial')">
@@ -26,7 +27,7 @@
                 </div>
             </xpath>
 
-            <xpath expr="//div[hasclass('alert', 'alert-info')][2]" position="replace">
+            <xpath expr="//div[hasclass('alert', 'alert-info') and contains(@invisible, 'invoice_has_outstanding') and contains(@invisible, &quot;move_type not in ('in_invoice', 'in_receipt')&quot;)]" position="replace">
                 <div groups="account.group_account_invoice,account.group_account_readonly"
                          class="alert alert-info" role="alert"
                          invisible="state != 'posted' or move_type not in ('in_invoice', 'in_receipt') or not invoice_has_outstanding or payment_state not in ('not_paid', 'partial')">
@@ -36,7 +37,7 @@
                     </div>
             </xpath>
 
-            <xpath expr="//div[hasclass('alert', 'alert-info')][3]" position="replace">
+            <xpath expr="//div[hasclass('alert', 'alert-info') and contains(@invisible, 'invoice_has_outstanding') and contains(@invisible, &quot;move_type != 'out_refund'&quot;)]" position="replace">
                 <div groups="account.group_account_invoice,account.group_account_readonly"
                          class="alert alert-info" role="alert"
                          invisible="state != 'posted' or move_type != 'out_refund' or not invoice_has_outstanding or payment_state not in ('not_paid', 'partial')">
@@ -45,7 +46,7 @@
                         <a class="alert-link" href="#outstanding" role="button" invisible="not (invoice_outstanding_credits_debits_widget_advance_payment and invoice_outstanding_credits_debits_widget)">outstanding debits and advances</a></bold> listed below for this customer.
                     </div>
             </xpath>
-            <xpath expr="//div[hasclass('alert', 'alert-info')][3]" position="replace">
+            <xpath expr="//div[hasclass('alert', 'alert-info') and contains(@invisible, 'invoice_has_outstanding') and contains(@invisible, &quot;move_type != 'in_refund'&quot;)]" position="replace">
                 <div groups="account.group_account_invoice,account.group_account_readonly"
                          class="alert alert-info" role="alert"
                          invisible="state != 'posted' or move_type != 'in_refund' or not invoice_has_outstanding or payment_state not in ('not_paid', 'partial')">

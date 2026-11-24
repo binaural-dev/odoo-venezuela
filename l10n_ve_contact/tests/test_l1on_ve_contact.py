@@ -173,3 +173,34 @@ class TestResPartner(TransactionCase):
         user = self._create_user("name_editor", with_group=True)
         self.partner.with_user(user).write({"name": "Renamed By Group"})
         self.assertEqual(self.partner.name, "Renamed By Group")
+
+    def test_allowed_prefix_vat_by_contact_type(self):
+        # Task 87829: a person is V, E or P; a company is J, G or C.
+        person = self.env["res.partner"].new({"is_company": False})
+        company = self.env["res.partner"].new({"is_company": True})
+        self.assertEqual(person.allowed_prefix_vat, ["V", "E", "P"])
+        self.assertEqual(company.allowed_prefix_vat, ["J", "G", "C"])
+
+    def test_changing_contact_type_fixes_the_prefix_vat(self):
+        partner = self.env["res.partner"].new({"is_company": True, "prefix_vat": "V"})
+        partner._onchange_is_company_prefix_vat()
+        self.assertEqual(partner.prefix_vat, "J")
+        partner.is_company = False
+        partner._onchange_is_company_prefix_vat()
+        self.assertEqual(partner.prefix_vat, "V")
+
+    def test_changing_contact_type_keeps_an_allowed_prefix_vat(self):
+        for is_company, prefix in ((True, "G"), (True, "C"), (False, "E"), (False, "P")):
+            partner = self.env["res.partner"].new(
+                {"is_company": is_company, "prefix_vat": prefix}
+            )
+            partner._onchange_is_company_prefix_vat()
+            self.assertEqual(partner.prefix_vat, prefix)
+
+    def test_default_prefix_vat_follows_the_contact_type_of_the_action(self):
+        partner_model = self.env["res.partner"]
+        self.assertEqual(partner_model.default_get(["prefix_vat"])["prefix_vat"], "V")
+        defaults = partner_model.with_context(default_is_company=True).default_get(
+            ["prefix_vat"]
+        )
+        self.assertEqual(defaults["prefix_vat"], "J")

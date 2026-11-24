@@ -514,7 +514,7 @@ En líneas municipales, al asignar la actividad económica el sistema DEBE (MUST
 
 ### Requirement: Catálogo de actividades económicas válido
 
-El modelo `economic.activity` DEBE (MUST) exigir alícuota mayor que cero y unicidad del código por municipio (constraints SQL `aliquot_mayor_cero` y `code_uniq`); el ramo económico (`economic.branch`) DEBE (MUST) tener nombre único.
+El modelo `economic.activity` DEBE (MUST) exigir alícuota mayor que cero y unicidad del código por municipio (`models.Constraint` `_aliquot_mayor_cero` y `_code_uniq`; en Odoo 19 `_sql_constraints` ya no se lee); el ramo económico (`economic.branch`) DEBE (MUST) tener nombre único.
 
 #### Scenario: Actividad duplicada en el municipio
 
@@ -523,7 +523,7 @@ El modelo `economic.activity` DEBE (MUST) exigir alícuota mayor que cero y unic
 
 ### Requirement: Código de concepto de pago único
 
-Cada línea de concepto de pago (`payment.concept.line`) DEBE (MUST) tener un código único a nivel de sistema (constraint SQL `unique_code` sobre `code`, campo obligatorio), y exige tipo de persona (limitado a los activos) y concepto de pago asociado (limitado a los de estado activo, con `ondelete="cascade"`). Un porcentaje de base imponible mayor a 100 no se rechaza con error: un aviso de onchange lo devuelve a 0.
+Cada línea de concepto de pago (`payment.concept.line`) DEBE (MUST) tener un código único a nivel de sistema (`models.Constraint` `_unique_code` sobre `code`, campo obligatorio), y exige tipo de persona (limitado a los activos) y concepto de pago asociado (limitado a los de estado activo, con `ondelete="cascade"`). Un porcentaje de base imponible mayor a 100 no se rechaza con error: un aviso de onchange lo devuelve a 0.
 
 #### Scenario: Código repetido
 
@@ -685,6 +685,95 @@ Al escribir `condition_withholding_id` en `res.company`, el sistema DEBE (MUST) 
 - **WHEN** se escribe la condición de retención en una compañía sin partner asociado
 - **THEN** la escritura se completa sin propagar el valor
 
+### Requirement: Tipo de persona permitido según el tipo de contacto
+
+El dominio de `type_person_id` en el formulario del contacto DEBE (MUST) ofrecer solo los tipos de persona activos que corresponden a `is_company`, calculados en `allowed_type_person_ids`: una persona (`is_company` falso) solo puede ser `PN Residente` o `PN No Residente`; una compañía solo puede ser alguno de los demás tipos, todos personas jurídicas (`PJ Domiciliada`, `PJ No Domiciliada`, `Instituciones Financieras No Domiciliadas`, `Otras PJ No Domiciliada` y `PJ Empresa Emisora De Radio Domiciliada`). Al cambiar `is_company`, el `onchange` DEBE (MUST) vaciar `type_person_id` si el tipo elegido deja de estar permitido.
+
+#### Scenario: Contacto de tipo persona
+
+- **WHEN** se abre el selector de tipo de persona de un contacto con `is_company` falso
+- **THEN** solo se ofrecen `PN Residente` y `PN No Residente`
+
+#### Scenario: Contacto de tipo compañía
+
+- **WHEN** se abre el selector de tipo de persona de un contacto con `is_company` verdadero
+- **THEN** se ofrecen los cinco tipos de persona jurídica y no los dos de persona natural
+
+#### Scenario: Cambio de persona a compañía
+
+- **WHEN** un contacto con tipo `PN Residente` cambia a compañía
+- **THEN** `type_person_id` queda vacío
+
+### Requirement: Tipo de contribuyente según el tipo de persona
+
+El campo `taxpayer_type` del contacto DEBE (MUST) ofrecer solo `ordinary` y `formal` cuando el tipo de persona es `PN Residente` (`allowed_taxpayer_types`, aplicado con el widget `filterable_selection`), y al elegir `PN Residente` con contribuyente `special` el `onchange` DEBE (MUST) pasarlo a `ordinary`. Para un tipo de persona no residente (`PN No Residente`, `PJ No Domiciliada`, `Instituciones Financieras No Domiciliadas` y `Otras PJ No Domiciliada`) el campo DEBE (MUST) ocultarse y quedar en `ordinary` al elegir el tipo, y una restricción (`_check_non_resident_taxpayer_type`) DEBE (MUST) rechazar el guardado de un no residente con contribuyente `special`, también por importación o API. El contacto de la propia compañía no se modifica por estas reglas.
+
+#### Scenario: PN Residente no ofrece contribuyente especial
+
+- **WHEN** el tipo de persona del contacto es `PN Residente`
+- **THEN** el selector de tipo de contribuyente ofrece solo `ordinary` y `formal`
+
+#### Scenario: Elegir PN Residente con contribuyente especial
+
+- **WHEN** un contacto con contribuyente `special` cambia su tipo de persona a `PN Residente`
+- **THEN** `taxpayer_type` pasa a `ordinary`
+
+#### Scenario: Tipo de persona no residente
+
+- **WHEN** se elige un tipo de persona no residente
+- **THEN** el campo de contribuyente se oculta y `taxpayer_type` queda en `ordinary`
+
+#### Scenario: No residente con contribuyente especial
+
+- **WHEN** se guarda un contacto no residente con `taxpayer_type` en `special`
+- **THEN** se lanza un `ValidationError` indicando que un contacto no residente no puede ser contribuyente especial
+
+### Requirement: Tipo de retención por defecto del contacto según la tabla de retención de IVA
+
+El método `_apply_default_withholding_type`, disparado por el `onchange` de `type_person_id` y de `taxpayer_type`, DEBE (MUST) fijar `withholding_type_id` según la tabla de retención de IVA validada por funcional en la tarea 86944: no se propone ningún valor mientras el contacto no tenga tipo de persona; con contribuyente `formal` queda vacío porque no cobra IVA; un tipo de persona no residente tiene siempre 100 %; `PN Residente` tiene 100 % por defecto; cualquier otro residente (`PJ Domiciliada` y `PJ Empresa Emisora De Radio Domiciliada`) tiene 75 % por defecto. Un valor ya elegido (75 % o 100 %) DEBE (MUST) conservarse al cambiar el tipo de persona o de contribuyente, salvo para un no residente o un contribuyente `formal`. El contacto de la propia compañía NO DEBE (MUST NOT) modificarse, porque su tipo de retención viene de la configuración de la compañía. La regla vive en el formulario: la creación por importación o API no ejecuta los `onchange`.
+
+En la vista, `withholding_type_id` DEBE (MUST) ocultarse únicamente con contribuyente `formal`, ser obligatorio para un contribuyente `special` residente y para `PN Residente` (siempre que no sea el contacto de la compañía, donde es de solo lectura) y opcional en el resto.
+
+#### Scenario: Contacto nuevo sin tipo de persona
+
+- **WHEN** se abre un contacto nuevo y todavía no se elige el tipo de persona
+- **THEN** `withholding_type_id` queda vacío
+
+#### Scenario: PJ Domiciliada con contribuyente ordinario o especial
+
+- **WHEN** un contacto con tipo `PJ Domiciliada` tiene contribuyente `ordinary` o `special` y el campo está vacío
+- **THEN** `withholding_type_id` toma el valor de 75 % y el campo es visible y editable a 100 %
+
+#### Scenario: Contribuyente formal
+
+- **WHEN** un contacto residente tiene contribuyente `formal`
+- **THEN** `withholding_type_id` queda vacío y el campo se oculta
+
+#### Scenario: PN Residente
+
+- **WHEN** un contacto de tipo `PN Residente` con contribuyente `ordinary` tiene el campo vacío
+- **THEN** `withholding_type_id` toma el valor de 100 % y el campo es obligatorio
+
+#### Scenario: Tipo de persona no residente
+
+- **WHEN** se elige un tipo de persona no residente
+- **THEN** `withholding_type_id` queda en 100 %, aunque tuviera otro valor, para que la retención de IVA de sus facturas pueda generarse
+
+#### Scenario: Valor elegido a mano
+
+- **WHEN** un contacto `PJ Domiciliada` con 100 % elegido a mano pasa de contribuyente `special` a `ordinary`
+- **THEN** `withholding_type_id` se conserva en 100 %
+
+#### Scenario: Del contribuyente formal al ordinario
+
+- **WHEN** un contacto `PJ Domiciliada` pasa de contribuyente `formal` a `ordinary`
+- **THEN** `withholding_type_id`, vacío, vuelve a tomar el valor por defecto de 75 %
+
+#### Scenario: Contacto de la propia compañía
+
+- **WHEN** se evalúa el contacto de la propia compañía
+- **THEN** `withholding_type_id` no se modifica y el campo es de solo lectura
+
 ### Requirement: Los montos de una línea de retención de IVA de proveedor deben ser de solo lectura
 
 El sistema SHALL mostrar `invoice_total`, `invoice_amount`, `iva_amount` y `retention_amount` como campos de solo lectura (con su valor preservado al guardar, vía `force_save`) en cada línea de `account.retention.line` cuando la retención (`account.retention.type`) sea de proveedor (`in_invoice`, `in_refund` o `in_debit`).
@@ -796,6 +885,69 @@ Las fechas por defecto de los wizards de retención IVA e ISLR DEBEN (MUST) eval
 
 - **WHEN** se abre el wizard de retención IVA o ISLR
 - **THEN** el rango por defecto es el del mes actual del usuario
+
+### Requirement: Las diferencias de precisión entre monedas al cerrar una factura en moneda extranjera se registran en diferencial cambiario
+
+Cuando una retención (IVA, ISLR o Municipal; sobre facturas, notas de crédito o notas de débito, de cliente o de proveedor) recae sobre un documento en moneda extranjera, el sistema DEBE (MUST) comparar el monto retenido (moneda de la compañía) contra lo adeudado del documento llevando los montos a la moneda del documento con `_convert()` a la fecha del documento (la fecha de la tasa manda; si la tasa de esa fecha cambia, el proceso es regresar el documento a borrador y volver a fijar la fecha para que recalcule). Si esa diferencia, en cualquiera de los dos sentidos (excedente o faltante), es redondeo entre monedas (ver las dos reglas del siguiente requisito), el sistema DEBE (MUST) tratarla como redondeo entre monedas: aceptar la retención y declarar la diferencia exacta como línea de `write_off` en el MISMO asiento del pago de retención, de modo que el documento quede en cero y conciliado por completo en ambas monedas. Si no se cumple ninguna de las dos reglas, el sistema DEBE (MUST) tratarla como un monto real: un excedente se rechaza (`action_post`, `check_retention_amount`) y un faltante deja el saldo abierto sin writeoff. En un documento en moneda de la compañía la comparación SIGUE siendo estricta.
+
+La cuenta y el signo del writeoff dependen de la dirección del pago de retención (`inbound`: cliente, nota de crédito de proveedor y nota de débito de cliente; `outbound`: proveedor, nota de crédito de cliente y nota de débito de proveedor): en `inbound` el excedente es crédito a la cuenta de ganancia por diferencial cambiario y el faltante es débito a la de pérdida; en `outbound` el excedente es débito a pérdida y el faltante es crédito a ganancia. Si la cuenta que corresponde no está configurada en la compañía, el sistema DEBE (MUST) detener la emisión con un error que nombre esa cuenta, en vez de dejar un residual silencioso en la cuenta por cobrar/pagar.
+
+#### Scenario: Excedente por redondeo en factura de cliente en dólares
+
+- **GIVEN** una factura de cliente en moneda extranjera con adeudado de 45.600 VES
+- **WHEN** se emite una retención por 45.600,01 VES
+- **THEN** la retención se emite y el pago lleva una línea de writeoff de 0,01 VES (crédito a ganancia)
+- **AND** la factura queda en 0 VES / 0 USD, pagada y conciliada
+
+#### Scenario: Faltante por redondeo en factura de cliente en dólares
+
+- **GIVEN** la misma factura
+- **WHEN** se emite una retención por 45.599,99 VES
+- **THEN** el pago lleva una línea de writeoff de 0,01 VES (débito a pérdida)
+- **AND** la factura queda en 0 VES / 0 USD, pagada y conciliada, sin polvo en VES
+
+#### Scenario: Faltante real
+
+- **WHEN** la diferencia equivale a un centavo de la moneda del documento
+- **THEN** no se crea writeoff y la factura queda en estado parcial con ese saldo
+
+### Requirement: El monto de la retención de IVA y la tolerancia de redondeo entre monedas se calculan en un solo lugar
+
+El monto de la retención de IVA en moneda de compañía DEBE (MUST) calcularse únicamente con `account.retention.compute_iva_retention_amount(monto_impuesto, porcentaje)`: lo usan la carga de líneas (`compute_retention_lines_data`), la línea de retención (`_apply_iva_tax_group_values`) y los portales, que pasan su propio porcentaje. Un cambio en la regla de cálculo DEBE (MUST) propagarse a todos.
+
+La diferencia entre lo retenido y lo adeudado, en moneda de compañía, DEBE (MUST) tratarse como redondeo entre monedas únicamente por `account.move._retention_difference_within_currency_precision`, con `_convert()` a la fecha del documento y estas dos reglas (cualquiera de ellas):
+
+1. `abs(diff) <= _retention_amount_tolerance()`: el mayor paso de la moneda de compañía que, llevado a la moneda del documento, queda por debajo de medio centavo de esa moneda.
+2. La retención, llevada a la moneda del documento, cierra la deuda comercial (`amount_residual`) a la precisión de esa moneda Y `abs(diff) <= _retention_max_accepted_difference()` (menos de un centavo completo de la moneda del documento).
+
+Ambos límites son 0 en documentos en moneda de compañía (comparación estricta). El redondeo entre monedas SOLO aplica cuando la moneda de la compañía es el bolívar (VEF/VES, `is_venezuelan_bolivar()`); en otra moneda base la comparación es estricta y no se declara diferencia. Las cuentas de ganancia y pérdida por diferencial se toman de la compañía de la factura (`move.company_id`), no de la compañía activa. Los portales DEBEN (MUST) usar esos mismos métodos.
+
+Los valores alternos `foreign_*` de las líneas de retención son heredados: no se usan en cálculos. Cualquier cifra alterna de una retención que se muestre DEBE (MUST) ser referencial y salir de convertir el monto en moneda de compañía con `currency._convert()`.
+
+#### Scenario: Cambio en la regla de cálculo del monto
+
+- **WHEN** se modifica `compute_iva_retention_amount`
+- **THEN** las líneas cargadas por `compute_retention_lines_data` y por la línea de retención usan el nuevo cálculo
+
+#### Scenario: Diferencia dentro y fuera de la tolerancia
+
+- **WHEN** la retención difiere de lo adeudado por una cantidad menor o igual a `_retention_amount_tolerance()` en una factura en moneda extranjera
+- **THEN** la diferencia se trata como redondeo y se lleva a diferencial cambiario
+- **AND** una diferencia mayor (un paso más de la moneda de compañía) se trata como diferencia real salvo que se cumpla la regla 2
+
+#### Scenario: La regla 2 respeta su tope
+
+- **WHEN** la retención cierra la deuda comercial en la moneda del documento pero la diferencia supera `_retention_max_accepted_difference()`
+- **THEN** la diferencia se trata como monto real y no se lleva a diferencial cambiario
+
+### Requirement: Tasa editada tras crear la factura bloquea las reglas de redondeo
+
+Cuando `_retention_difference_within_currency_precision` tenga que evaluar una diferencia no nula sobre un documento en moneda extranjera, el sistema DEBE (MUST) comparar la tasa de la fecha del documento con `invoice_currency_rate` y lanzar `UserError` si difieren, tanto al crear/editar las líneas de la retención como al emitirla. Sin diferencia, o en moneda de compañía, no se revisa nada.
+
+#### Scenario: Tasa del día editada después de confirmar la factura
+- **GIVEN** una factura en USD confirmada con una tasa y la tasa de su fecha editada después
+- **WHEN** la retención tiene una diferencia contra el pendiente
+- **THEN** el sistema lanza `UserError` indicando que la tasa registrada difiere de la de la factura y que se corrija la factura o la tasa registrada
 
 ### Requirement: El importe alterno del pago de una retención usa la fecha de tasa de su asiento
 

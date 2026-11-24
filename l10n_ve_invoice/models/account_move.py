@@ -597,33 +597,101 @@ class AccountMove(models.Model):
                         limit=1,
                     )
                 elif move.move_type in ("in_invoice", "in_refund"):
-                    # Unlike sales, the control number of a vendor bill is
-                    # assigned by the vendor's own numbering, so uniqueness
-                    # is scoped per vendor, not company-wide.
-                    repeated_moves = AccountMove.search(
-                        base_domain
-                        + [
-                            ("move_type", "in", ("in_invoice", "in_refund")),
-                            (
-                                "commercial_partner_id",
-                                "=",
-                                move.commercial_partner_id.id,
-                            ),
-                        ],
-                        limit=1,
-                    )
+                    repeated_moves = move._get_repeated_vendor_bill()
                 else:
                     repeated_moves = AccountMove
 
                 if repeated_moves:
-                    raise ValidationError(
-                        _(
-                            "The control number %(correlative)s is already in use "
-                            "by the confirmed invoice %(invoice)s.",
-                            correlative=move.correlative,
-                            invoice=repeated_moves.name,
-                        )
-                    )
+                    move._raise_repeated_correlative(repeated_moves)
+
+    @api.constrains("name")
+    def _check_vendor_correlative_on_name(self):
+        """A vendor bill is a duplicate only when the invoice number matches too,
+        so the check also runs when the invoice number changes. It is kept apart
+        from ``_check_correlative`` so that the contingency rules do not run
+        every time the number of a draft is assigned."""
+        for move in self:
+            if (
+                move.correlative
+                and not move.is_contingency
+                and move.move_type in ("in_invoice", "in_refund")
+            ):
+                repeated_move = move._get_repeated_vendor_bill()
+                if repeated_move:
+                    move._raise_repeated_correlative(repeated_move)
+
+    def _get_repeated_vendor_bill(self):
+        """Return a posted vendor document that duplicates this one, if any.
+
+        The control number of a vendor bill is assigned by the vendor's own
+        numbering, and fiscal-machine bills can repeat it across different
+        bills of the same vendor. A document is only a duplicate when the
+        vendor, the invoice number (``name``) and the control number all
+        match. Only posted documents count, so drafts and cancelled ones
+        never block.
+
+        The vendor numbers its invoices regardless of which branch receives
+        them, and branches share the fiscal identity of the main company, so
+        the whole company tree is searched. The search is done with ``sudo``
+        because a user restricted to one branch cannot see the documents of
+        the others, and the duplicate would go unnoticed.
+        """
+        self.ensure_one()
+        return self.env["account.move"].sudo().search(
+            [
+                ("id", "!=", self.id),
+                ("company_id", "child_of", self.company_id.root_id.id),
+                ("correlative", "=", self.correlative),
+                ("state", "=", "posted"),
+                ("move_type", "in", ("in_invoice", "in_refund")),
+                ("commercial_partner_id", "=", self.commercial_partner_id.id),
+                ("name", "=", self.name),
+            ],
+            limit=1,
+        )
+
+    def _raise_repeated_correlative(self, repeated_move):
+        raise ValidationError(
+            _(
+                "The control number %(correlative)s is already in use "
+                "by the confirmed invoice %(invoice)s.",
+                correlative=self.correlative,
+                invoice=repeated_move.name,
+            )
+        )
+
+    def _check_vendor_correlative_before_post(self):
+        """Validate vendor duplicates when the documents are confirmed.
+
+        ``_check_correlative`` only runs when the control number or the invoice
+        number is written, so bills created as drafts and confirmed later
+        skipped the check. It runs before the posting so that this message,
+        and not the database unique index, is the one the user gets. Documents
+        confirmed together are compared against each other too. Drafts without
+        an invoice number (``/``) are numbered by the sequence at posting and
+        cannot repeat.
+        """
+        batch = {}
+        for move in self:
+            if (
+                move.is_contingency
+                or not move.correlative
+                or move.name in (False, "/")
+                or move.move_type not in ("in_invoice", "in_refund")
+            ):
+                continue
+            repeated_move = move._get_repeated_vendor_bill()
+            if not repeated_move:
+                key = (
+                    move.company_id.root_id.id,
+                    move.commercial_partner_id.id,
+                    move.name,
+                    move.correlative,
+                )
+                repeated_move = batch.setdefault(key, move)
+                if repeated_move == move:
+                    continue
+            move._raise_repeated_correlative(repeated_move)
 
     @api.depends("journal_id")
     def _compute_is_debit_journal(self):
@@ -732,6 +800,7 @@ class AccountMove(models.Model):
             return self
 
         draft_moves._check_refund_against_origin()
+        draft_moves._check_vendor_correlative_before_post()
         res = super(AccountMove, draft_moves)._post(soft)
 
         for move in res:
@@ -798,7 +867,9 @@ class AccountMove(models.Model):
             [
                 ("code", "=", "invoice.correlative"),
                 ("company_id", "=", self.env.company.id),
-            ]
+            ],
+            order="id",
+            limit=1,
         )
         if not correlative:
             correlative = sequence.create(

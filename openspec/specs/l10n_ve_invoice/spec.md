@@ -20,6 +20,25 @@ Al publicar (`_post`) una factura de venta sin `correlative`, el sistema DEBE (M
 - **WHEN** la compañía tiene tipo de impresión `fiscal`
 - **THEN** la publicación no asigna número de control
 
+### Requirement: Una sola secuencia de número de control activa por compañía
+
+El sistema DEBE (MUST) impedir (`check_sequence_exists`, `ValidationError`) que una compañía tenga más de una secuencia `ir.sequence` activa con código `invoice.correlative`, tanto al crearla como al editarla o reactivarla; la validación cuenta con `sudo()` para ignorar la regla multicompañía, no aplica a otros códigos ni a secuencias inactivas ni a otra compañía. Como defensa para bases migradas que ya tengan duplicados, `get_sequence` DEBE (MUST) tomar la secuencia más antigua de la compañía en lugar de fallar con "Expected singleton".
+
+#### Scenario: Segunda secuencia activa en la misma compañía
+
+- **WHEN** se crea o reactiva una secuencia `invoice.correlative` y la compañía ya tiene otra activa
+- **THEN** la operación es rechazada con un `ValidationError`
+
+#### Scenario: Secuencia inactiva o de otra compañía
+
+- **WHEN** se crea una secuencia `invoice.correlative` inactiva, o activa en otra compañía
+- **THEN** la operación es aceptada
+
+#### Scenario: Base migrada con secuencias duplicadas
+
+- **WHEN** se publica una factura en una compañía que ya tiene dos secuencias `invoice.correlative` activas
+- **THEN** `get_sequence` usa la secuencia más antigua y no lanza error
+
 ### Requirement: Series de facturación por diario
 
 Cuando la compañía activa `group_sales_invoicing_series`, el número de control DEBE (MUST) obtenerse de la secuencia `series_correlative_sequence_id` configurada en el diario de la factura, lanzando un error si el diario no la tiene; activar o desactivar la opción en ajustes activa/desactiva la secuencia `series.invoice.correlative`.
@@ -38,7 +57,7 @@ Cuando la compañía activa `group_sales_invoicing_series`, el número de contro
 
 El sistema DEBE (MUST) impedir que un documento de venta (`out_invoice`/`out_refund`) de un diario no de contingencia lleve un `correlative` que ya use otro documento de venta **publicado** de la misma compañía (constraint `_check_correlative`). La validación se aplica cualquiera sea el estado del documento que se guarda: solo el documento con el que se compara debe estar en `posted`.
 
-La misma constraint también DEBE (MUST) impedir que un documento de compra (`in_invoice`/`in_refund`) lleve un `correlative` (número de control asignado por el proveedor) que ya use otro documento de compra **publicado** del mismo proveedor comercial (`commercial_partner_id`) de la misma compañía. A diferencia de ventas, donde el `correlative` es la numeración fiscal propia de la compañía y la unicidad se valida a nivel de `company_id`, en compras cada proveedor asigna su propia numeración, por lo que la unicidad se valida por `(company_id, commercial_partner_id, correlative)`. Ventas y compras se validan por separado: un mismo `correlative` puede coincidir entre una factura de venta y una de compra sin conflicto.
+La misma constraint también DEBE (MUST) impedir que un documento de compra (`in_invoice`/`in_refund`) lleve un `correlative` (número de control asignado por el proveedor) que ya use otro documento de compra **publicado** del mismo proveedor comercial (`commercial_partner_id`) de la misma compañía **o de cualquier sucursal de la misma compañía matriz** **y con el mismo número de factura (`name`)**. A diferencia de ventas, donde el `correlative` es la numeración fiscal propia de la compañía y la unicidad se valida a nivel de `company_id`, en compras cada proveedor asigna su propia numeración, y las facturas de máquina fiscal pueden repetir el número de control entre facturas distintas del mismo proveedor, por lo que la unicidad se valida por `(árbol de compañías de la matriz, commercial_partner_id, name, correlative)`: el proveedor numera sus facturas sin importar qué sucursal las recibe y las sucursales comparten la identidad fiscal de la matriz. La búsqueda DEBE (MUST) hacerse con `sudo()` para que un usuario restringido a una sucursal detecte el duplicado cargado en otra. Las ventas siguen validándose por compañía. Solo cuentan los documentos publicados: borradores y cancelados no bloquean. La validación DEBE (MUST) correr también al confirmar el documento (`_check_vendor_correlative_before_post`, que corre en `_post` antes de publicar), para que dos borradores idénticos no entren como duplicados exactos al confirmarse, sin importar cuándo se escribió el número de control, ni aun confirmados en un mismo lote; así el mensaje es el de esta validación y no el del índice único de la base. Los borradores sin número de factura (`/`) reciben el número de la secuencia al publicarse y no se comparan. No aplica a diarios de contingencia ni cambia la regla de ventas. Ventas y compras se validan por separado: un mismo `correlative` puede coincidir entre una factura de venta y una de compra sin conflicto.
 
 #### Scenario: Número de control repetido
 
@@ -50,10 +69,30 @@ La misma constraint también DEBE (MUST) impedir que un documento de compra (`in
 - **WHEN** el `correlative` solo coincide con el de otro documento en borrador
 - **THEN** el guardado se permite
 
-#### Scenario: Número de control de proveedor repetido
+#### Scenario: Duplicado exacto de proveedor
 
-- **WHEN** se guarda una factura de proveedor cuyo `correlative` ya está en uso por otra factura publicada del mismo proveedor comercial
+- **WHEN** se guarda o confirma una factura de proveedor cuyo `name` y `correlative` ya están en uso por otra factura publicada del mismo proveedor comercial
 - **THEN** se lanza un error de validación indicando el número y la factura que lo usa
+
+#### Scenario: Mismo número de control con otro número de factura
+
+- **WHEN** se confirma una factura de proveedor con el mismo `correlative` que una publicada del mismo proveedor pero con distinto `name` (serial de máquina fiscal repetido)
+- **THEN** la factura se confirma sin error
+
+#### Scenario: Borradores idénticos confirmados después
+
+- **WHEN** dos borradores del mismo proveedor con el mismo `name` y `correlative` se confirman uno tras otro, o juntos
+- **THEN** la confirmación del segundo (o la del lote) es rechazada
+
+#### Scenario: Misma factura en otra sucursal
+
+- **WHEN** se guarda o confirma una factura de proveedor con el mismo `name` y `correlative` que otra publicada del mismo proveedor en otra sucursal de la misma matriz, aunque el usuario no tenga acceso a esa sucursal
+- **THEN** se lanza un error de validación indicando la factura existente
+
+#### Scenario: Factura cancelada
+
+- **WHEN** la factura con el mismo proveedor, `name` y `correlative` está cancelada
+- **THEN** no cuenta como duplicado y la nueva se confirma
 
 #### Scenario: Mismo número de control, proveedores distintos
 
@@ -163,6 +202,13 @@ Un `discount_fixed` que alcance o supere el subtotal bruto de la línea (`price_
 
 - **WHEN** una línea sin impuestos tiene precio unitario $333,33 y descuento fijo $25,55 (cuyo % equivalente, 7.6651...%, no es exacto a 2 decimales)
 - **THEN** la Base Imponible queda en $307,78 exactos, sin el arrastre de redondeo que produciría convertir primero a un `discount` (%) de 2 decimales
+
+#### Scenario: Descuento efectivo de la línea con descuento fijo
+
+- **GIVEN** la compañía en modo `amount` y una línea de 3 × $50,00 con descuento fijo de $15,00
+- **WHEN** `l10n_ve_accountant` reconstruye montos de la línea con `_get_effective_discount_percent()` (por ejemplo, el Detalle de ventas)
+- **THEN** el porcentaje es el equivalente exacto del descuento fijo (10%), no el `discount` nativo (0)
+- **AND** el Detalle de ventas muestra Bruto $150,00, Descuento $15,00 y Base $135,00
 
 #### Scenario: `price_unit * quantity` en cero
 

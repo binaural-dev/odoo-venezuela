@@ -54,6 +54,11 @@ El sistema DEBE (MUST) calcular `foreign_rate` y `foreign_inverse_rate` de cada 
 - **WHEN** un documento tiene `manually_set_rate` en verdadero
 - **THEN** el recálculo automático no modifica su tasa
 
+#### Scenario: Tasa manual sin valor útil
+
+- **WHEN** un documento tiene `manually_set_rate` en verdadero pero su `foreign_rate` es cero, o un residuo menor a la precisión `Tasa` (6 decimales)
+- **THEN** se trata como "sin tasa" y se calcula por la Rate Date; la comparación contra la tasa vigente para avisar un cambio manual usa esa misma precisión
+
 #### Scenario: Documento con fecha sin tasa cargada
 
 - **WHEN** se crea o contabiliza un documento cuya fecha de tasa no tiene registro de tasa para la moneda alterna, aunque existan tasas de otras fechas
@@ -1039,7 +1044,6 @@ La fecha tasa (`invoice_date`, "Rate Date") es la única que determina la tasa d
 
 - **WHEN** se activa o desactiva el ajuste de la compañía
 - **THEN** ninguna factura existente (borrador o publicada) cambia su tasa
-
 ### Requirement: Segundo bloque de totales con la moneda alterna cuando el documento está en la moneda de la compañía
 
 El widget `account-tax-ves-totals-field` (segundo bloque de totales de la pestaña principal, debajo del nativo) DEBE (MUST) mostrar los montos de `tax_totals` según la moneda del documento: si `currency_id` es distinta de la moneda de la compañía muestra los montos en VES (`*_currency_ves`); si `currency_id` es la moneda de la compañía muestra los montos en la moneda alterna (`foreign_currency_id`: claves `*_foreign_currency` de subtotal, Total G de cada grupo de impuestos, impuesto y total), formateados con esa moneda. Si el documento está en la moneda de la compañía y la compañía no tiene `foreign_currency_id`, el bloque NO DEBE (MUST NOT) mostrarse. En la vista de factura el grupo contenedor (`o_ve_invoice_totals`) solo se oculta con `currency_id == company_currency_id and not foreign_currency_id`. El widget solo presenta los montos que `_get_tax_totals_summary` ya calcula; no los recalcula (ti-85450). El bloque alterno NO DEBE (MUST NOT) mostrar ningún monto adeudado: el formulario no incluye `amount_residual_company` ("residual amount" / "Importe adeudado" en la moneda de la compañía), con el documento en cualquier moneda. El único monto adeudado visible es el nativo (`amount_residual`). Motivo: `amount_residual_company` está en la moneda de la compañía (VEF) y no corresponde a los montos alternos que calcula `tax_totals` (moneda de referencia), ni necesariamente a la moneda del documento; por ejemplo, con un documento en EUR el bloque alterno está en USD, `amount_residual_company` en VEF y `amount_residual` en EUR, tres monedas distintas, por lo que no se usa en este bloque.
@@ -1068,3 +1072,47 @@ El widget `account-tax-ves-totals-field` (segundo bloque de totales de la pesta�
 - **WHEN** se abre la pestaña principal
 - **THEN** el bloque inferior no se muestra
 
+### Requirement: El asiento de base efectivo trae el monto alterno en todas sus líneas
+
+Con la base efectivo activa, el asiento que genera el core al conciliar el pago de una factura (`tax_cash_basis_origin_move_id`) DEBE (MUST) traer el monto alterno (`foreign_debit`, `foreign_credit` y `foreign_balance`) en todas sus líneas, incluidas las de impuesto. Sus líneas `tax` copian el `display_type` de la factura pero nacen con `foreign_balance = 0`, por lo que NO DEBEN (MUST NOT) valorarse con ese saldo: se valoran por `amount_currency` o por la tasa, como el resto de los asientos que no son factura. Las facturas conservan su cálculo.
+
+#### Scenario: Cobro de una factura con impuesto exigible al pagar
+
+- **WHEN** se cobra una factura de 100 USD + 16% de IVA con impuesto exigible al pagar, a tasa 889,5754
+- **THEN** el asiento de base efectivo tiene 4 líneas con monto alterno: base 100 USD (débito y crédito) e IVA 16 USD (débito en la cuenta transitoria y crédito en la definitiva)
+- **AND** el asiento cuadra en bolívares y en moneda alterna
+
+#### Scenario: Cobro parcial
+
+- **WHEN** se cobra el 50% de la factura
+- **THEN** el asiento de base efectivo mueve 8 USD de IVA, también en moneda alterna
+
+### Requirement: El Detalle de ventas agrupa por moneda y cierra en la moneda de la compañía
+
+El reporte Detalle de ventas (`account.invoices.details`) DEBE (MUST) poder imprimirse con facturas y pagos en cualquier combinación de monedas. `_compute_detailed_amounts` DEBE (MUST) formatear cada factura con su propia moneda aunque el campo se calcule por lote. Facturas y pagos se agrupan por moneda dentro de cada plazo y diario; cada grupo lleva su subtotal en esa moneda, sin convertir. El reporte DEBE (MUST) cerrar con el total general de ventas y de pagos en la moneda de la compañía, convertido con la tasa de cada documento (`tax_totals['total_amount']` y `amount_company_currency_signed`). NO DEBE (MUST NOT) sumar montos de monedas distintas en un mismo total. Los pagos incluidos son los publicados (`in_process` y `paid`). Los impuestos y el total de cada documento se leen de `tax_totals` (`tax_amount_currency`, `total_amount_currency`) y `gross_discount_amount` es el bruto menos el descuento.
+
+#### Scenario: Facturas en VEF y USD en el mismo período
+
+- **GIVEN** dos facturas en VEF y dos en USD con IVA 16% publicadas el mismo día
+- **WHEN** se imprime el Detalle de ventas
+- **THEN** el reporte no falla con `Expected singleton`
+- **AND** hay un grupo por moneda, cada uno con su subtotal en esa moneda
+- **AND** la última fila "Total Sales" está en la moneda de la compañía y suma cada factura con su tasa
+
+#### Scenario: Pagos en distintas monedas
+
+- **GIVEN** pagos publicados de 2.320 Bs.F, 100 USD y 30 USD en el mismo diario
+- **WHEN** se imprime el Detalle de ventas
+- **THEN** el diario muestra un subtotal de 130 USD y otro de 2.320 Bs.F
+- **AND** "Total Payments" está en la moneda de la compañía y suma los tres con su tasa
+
+#### Scenario: Pago en borrador
+
+- **WHEN** existe un pago en borrador en el período
+- **THEN** no aparece en el reporte
+
+#### Scenario: Lote con un asiento sin totales
+
+- **GIVEN** un asiento contable (sin `tax_totals`) y una factura en el mismo recordset, el asiento primero
+- **WHEN** se calcula `detailed_amounts` sobre el lote
+- **THEN** el asiento queda con `detailed_amounts` vacío y la factura se calcula igual

@@ -444,6 +444,18 @@ msgid "Allowed Lines Move"
 msgstr "Apuntes permitidas"
 
 #. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_partner__allowed_taxpayer_types
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_users__allowed_taxpayer_types
+msgid "Allowed Taxpayer Types"
+msgstr "Tipos de contribuyente permitidos"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_partner__allowed_type_person_ids
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_users__allowed_type_person_ids
+msgid "Allowed Type Persons"
+msgstr "Tipos de persona permitidos"
+
+#. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__related_amount_subtract_fees
 msgid "Amount subtract tariffs"
 msgstr "Sustraendo"
@@ -733,6 +745,12 @@ msgid "Created on"
 msgstr "Creado en"
 
 #. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+msgid "Currency precision rounding"
+msgstr "Redondeo de precisión de moneda"
+
+#. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.res_config_settings_l10n_ve_payment_extension
 msgid "Customer Journal"
 msgstr "Diario del Cliente"
@@ -982,6 +1000,18 @@ msgstr "Error en el campo de porcentaje de base imponible"
 #: code:addons/l10n_ve_payment_extension/models/fees_retention.py:0
 msgid "Error in the fees percentage field"
 msgstr "Error en el campo de porcentaje de tarifas"
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+msgid "Exchange Gain Account"
+msgstr "Cuenta de Ganancia por Diferencial Cambiario"
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+msgid "Exchange Loss Account"
+msgstr "Cuenta de Pérdida por Diferencial Cambiario"
 
 #. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
@@ -1262,6 +1292,18 @@ msgstr ""
 #: model:ir.model.fields.selection,name:l10n_ve_payment_extension.selection__account_retention__type_retention__islr
 msgid "ISLR"
 msgstr ""
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_partner__is_natural_resident_person
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_users__is_natural_resident_person
+msgid "Is Natural Resident Person"
+msgstr "Es persona natural residente"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_partner__is_non_resident_person
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_users__is_non_resident_person
+msgid "Is Non Resident Person"
+msgstr "Es persona no residente"
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_partner__islr_account
@@ -2681,6 +2723,18 @@ msgstr ""
 #. module: l10n_ve_payment_extension
 #. odoo-python
 #: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+msgid ""
+"The company must have an '%(account)s' configured to issue this retention: "
+"invoice %(invoice)s has a currency-precision difference of %(amount)s "
+"%(currency)s that needs to be recorded there."
+msgstr ""
+"La compañía debe tener configurada la '%(account)s' para emitir esta "
+"retención: la factura %(invoice)s tiene una diferencia de precisión de "
+"moneda de %(amount)s %(currency)s que debe registrarse ahí."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
 msgid "The company must have a supplier ISLR retention journal configured."
 msgstr ""
 "La compañía debe tener un diario para retenciones de ISLR de proveedor."
@@ -3906,3 +3960,68 @@ msgstr ""
 "municipal de esta sucursal usan el correlativo de la empresa matriz en lugar "
 "de una secuencia independiente. Solo aplica si la sucursal comparte el RIF "
 "de la empresa matriz."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/fees_retention.py:0
+msgid ""
+"Tier '%(name)s' must have an upper limit greater than the previous tier's, "
+"otherwise some amounts would have no rate."
+msgstr ""
+"El tramo '%(name)s' debe tener un límite superior mayor que el del tramo "
+"anterior; de lo contrario, algunos montos quedarían sin tarifa."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/fees_retention.py:0
+msgid "The last tier must have no upper limit (leave 'stop' empty)."
+msgstr "El último tramo no debe tener límite superior (deje 'stop' vacío)."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_move.py:0
+msgid ""
+"The rate registered for the currency on the invoice date (%(current)s) "
+"differs from the rate of invoice %(invoice)s (%(stored)s). Correct the "
+"invoice or the registered rate for that currency so that they match."
+msgstr ""
+"La tasa registrada de la moneda en la fecha de la factura (%(current)s) "
+"difiere de la tasa de la factura %(invoice)s (%(stored)s). Corrija la "
+"factura o la tasa registrada para dicha moneda para que concuerden."
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.constraint,message:l10n_ve_payment_extension.constraint_account_withholding_type_unique_name
+msgid "You cannot add withholdings with the same name"
+msgstr "No puede agregar retenciones con el mismo nombre"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.constraint,message:l10n_ve_payment_extension.constraint_account_withholding_type_unique_value
+msgid "You can not add withholdings with the same Value"
+msgstr "No puede agregar retenciones con el mismo valor"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.constraint,message:l10n_ve_payment_extension.constraint_economic_activity_code_uniq
+msgid "There cannot be two records with the same code for the selected municipality."
+msgstr "No puede haber dos registros con el mismo código para el municipio seleccionado."
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.constraint,message:l10n_ve_payment_extension.constraint_economic_activity_aliquot_mayor_cero
+msgid "The aliquot must be greater than zero"
+msgstr "La alícuota debe ser mayor que cero"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.constraint,message:l10n_ve_payment_extension.constraint_economic_branch_name_uniq
+msgid "You may not register an economic sector with the same name."
+msgstr "No puede registrar un sector económico con el mismo nombre."
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.constraint,message:l10n_ve_payment_extension.constraint_payment_concept_line_unique_code
+msgid "The concept code already exists"
+msgstr "El código del concepto ya existe"
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/res_partner.py:0
+msgid "A non resident partner cannot be a special taxpayer."
+msgstr "Un contacto no residente no puede ser contribuyente especial."
