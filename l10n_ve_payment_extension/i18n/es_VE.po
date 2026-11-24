@@ -2835,13 +2835,13 @@ msgstr ""
 #. odoo-python
 #: code:addons/l10n_ve_payment_extension/models/fees_retention.py:0
 msgid "The percentage of fees cannot be greater than 100%.\n"
-msgstr "El porcentaje de las tarifas no puede ser mayor que 100%"
+msgstr "El porcentaje de las tarifas no puede ser mayor que 100%\n"
 
 #. module: l10n_ve_payment_extension
 #. odoo-python
 #: code:addons/l10n_ve_payment_extension/models/fees_retention.py:0
 msgid "The rate percentage cannot be negative.\n"
-msgstr "El porcentaje de retención no puede ser negativo."
+msgstr "El porcentaje de retención no puede ser negativo.\n"
 
 #. module: l10n_ve_payment_extension
 #. odoo-python
@@ -3254,7 +3254,7 @@ msgstr "Debes ingresar una fecha de inicio y fin"
 #. odoo-python
 #: code:addons/l10n_ve_payment_extension/models/fees_retention.py:0
 msgid "You must enter the accumulated fees.\n"
-msgstr "Debes ingresar la tarifa acumulada"
+msgstr "Debes ingresar la tarifa acumulada\n"
 
 #. module: l10n_ve_payment_extension
 #: model:ir.actions.act_window,name:l10n_ve_payment_extension.action_economic_branch
