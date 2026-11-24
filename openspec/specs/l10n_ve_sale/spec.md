@@ -353,13 +353,32 @@ El método `search_read` de `sale.order` DEBE (MUST) ejecutarse con `active_test
 - **WHEN** un cliente RPC o una vista invoca `search_read` sobre órdenes de venta
 - **THEN** el resultado incluye las órdenes archivadas que cumplen el dominio
 
-### Requirement: Gerentes de ventas sin permiso de eliminación
+### Requirement: Gerentes de ventas sin permiso de eliminación de pickings
 
-El módulo DEBE (MUST) redefinir las ACL `sale.access_sale_order_manager` y `sale_stock.access_stock_picking_sales` dejando `perm_unlink` en 0, de modo que el grupo `sales_team.group_sale_manager` conserve lectura, escritura y creación sobre `sale.order` y `stock.picking` pero no pueda eliminarlos.
+El módulo DEBE (MUST) redefinir la ACL `sale_stock.access_stock_picking_sales` dejando `perm_unlink` en 0, de modo que el grupo `sales_team.group_sale_manager` conserve lectura, escritura y creación sobre `stock.picking` pero no pueda eliminarlos.
 
-#### Scenario: Gerente de ventas intenta eliminar una orden
+#### Scenario: Gerente de ventas intenta eliminar un picking
 
-- **WHEN** un usuario con solo el grupo de gerente de ventas intenta eliminar una orden de venta o un picking
+- **WHEN** un usuario con el grupo de gerente de ventas intenta eliminar un picking
+- **THEN** el sistema le niega el acceso de eliminación
+
+### Requirement: Gerentes de ventas eliminan cotizaciones por defecto
+
+El módulo NO DEBE (MUST NOT) redefinir la ACL `sale.access_sale_order_manager`: el grupo `sales_team.group_sale_manager` conserva el permiso nativo de eliminación sobre `sale.order`, que ninguna actualización de `l10n_ve_sale`, `sale` o `all` revierte. Siguen aplicando las reglas nativas de Odoo: solo se eliminan órdenes en estado borrador (`draft`) o canceladas (`cancel`). La migración `19.0.1.0.12` restaura el permiso en las bases donde el override anterior lo había dejado en 0.
+
+#### Scenario: Gerente de ventas elimina un borrador
+
+- **WHEN** un usuario con el grupo de gerente de ventas elimina una cotización en borrador con líneas
+- **THEN** la orden y sus líneas se eliminan
+
+#### Scenario: Gerente de ventas intenta eliminar una orden enviada o confirmada
+
+- **WHEN** un usuario con el grupo de gerente de ventas intenta eliminar una orden enviada o confirmada
+- **THEN** el sistema lo impide y pide cancelarla primero
+
+#### Scenario: Vendedor intenta eliminar una orden
+
+- **WHEN** un usuario con el grupo de vendedor (sin el de gerente) intenta eliminar una orden de venta
 - **THEN** el sistema le niega el acceso de eliminación
 
 ### Requirement: Menú de ítems de lista de precios por grupo
