@@ -1,4 +1,5 @@
 import json
+import logging
 import re
 from datetime import timedelta
 
@@ -7,14 +8,16 @@ from odoo.exceptions import UserError, ValidationError
 
 from ..services.tfhka_client import TFHKA_ENDPOINTS
 
+_logger = logging.getLogger(__name__)
+
 # Safety cap so one cron run can't try to drain an unbounded backlog in a
 # single transaction (risking hitting limit_time_cron on a long queue).
 TFHKA_QUEUE_BATCH_SIZE = 200
 
 # Safety margin absorbing clock drift between the Odoo app server (which
-# stamps date_state via fields.Datetime.now()) and the database server
-# (which stamps tfhka.api.log's create_date) when checking whether a log
-# postdates a given attempt in _tfhka_reconcile_stuck_processing.
+# stamps tfhka_last_attempt_at via fields.Datetime.now()) and the database
+# server (which stamps tfhka.api.log's create_date) when checking whether a
+# log postdates a given attempt in _tfhka_find_success_log.
 TFHKA_CLOCK_SKEW_MARGIN = timedelta(seconds=30)
 
 # How long a document can sit in 'processing' with no matching success log
@@ -39,13 +42,15 @@ class AccountMove(models.Model):
     # escritura de campo); un cron avanza la cola un documento a la vez,
     # esperando cada respuesta antes de pasar al siguiente.
     #
-    # Invariante que mantiene el cron (ver _tfhka_cron_process_queue): nunca
-    # hay más de un documento en 'processing' ni más de uno en 'error' a la
-    # vez. Un documento en 'error' detiene toda la cola hasta que un humano
-    # lo resuelve (botón 'Retry Digitalization') -- la cola nunca salta un
-    # fallo sin resolver, ya que el número de documento de TFHKA se calcula
-    # como "último número de TFHKA + 1" al momento de enviar, y debe
-    # mantenerse en estricto orden secuencial.
+    # Invariante que mantiene el cron, por compañía (ver
+    # _tfhka_cron_process_queue/_tfhka_process_queue_for_company): nunca hay
+    # más de un documento de una misma compañía en 'processing' ni más de
+    # uno en 'error' a la vez. Un documento en 'error' detiene la cola de
+    # esa compañía (no la de las demás) hasta que un humano lo resuelve
+    # (botón 'Retry Digitalization') -- la cola nunca salta un fallo sin
+    # resolver, ya que el número de documento de TFHKA se calcula como
+    # "último número de TFHKA + 1" al momento de enviar, por compañía, y
+    # debe mantenerse en estricto orden secuencial.
     tfhka_digitalization_state = fields.Selection(
         [
             ("none", "Not Digitalized"),
@@ -72,6 +77,17 @@ class AccountMove(models.Model):
         help="When tfhka_digitalization_state last changed. Used by the cron "
              "to tell a healthy 'processing' attempt from one abandoned by an "
              "interrupted run (see TFHKA_STUCK_PROCESSING_GRACE_PERIOD).",
+    )
+    tfhka_last_attempt_at = fields.Datetime(
+        string="TFHKA Last Attempt At",
+        copy=False,
+        help="When the most recent /Emision attempt for this document "
+             "started. Unlike date_state (overwritten on every state change, "
+             "including the later 'error' write), this survives past the "
+             "attempt that set it -- it's what lets a retry look up "
+             "tfhka.api.log for a response to *this* attempt even after the "
+             "document has already moved on to 'error' (see "
+             "_tfhka_find_success_log).",
     )
     tfhka_digitalization_error = fields.Text(
         string="TFHKA Digitalization Error",
@@ -325,26 +341,58 @@ class AccountMove(models.Model):
         this request. In "digitalization with payment" mode this button is
         the ONLY entry point to the queue (see
         _tfhka_is_eligible_for_digitalization, always False in that mode),
-        so it's the only place that can stop an unpaid or out-of-order
-        invoice before it reaches 'queued'. Both validated BEFORE
-        enqueueing so a failure here never touches
+        so it's the only place that can stop an unpaid, out-of-order, or
+        undeterminable-type invoice before it reaches 'queued'. All
+        validated BEFORE enqueueing so a failure here never touches
         tfhka_digitalization_state."""
         for move in self:
             move._tfhka_validate_previous_document_queued()
+            move._tfhka_validate_document_type_determinable()
+            move._tfhka_check_sequence_gap()
         self._check_tfhka_payment_required()
         self._tfhka_enqueue_digitalization()
 
+    def _tfhka_validate_document_type_determinable(self):
+        """Hard block: raises before this document reaches the queue if no
+        TFHKA document type can be determined for it (e.g. a credit note
+        without reversed_entry_id). Letting it through would fail once
+        picked up by the cron with no path back to a resolved state --
+        _tfhka_cron_process_queue's per-company error lock never clears on
+        its own, so this must never be allowed to reach 'queued'."""
+        self.ensure_one()
+        if not self._tfhka_get_document_type_and_series()[0]:
+            raise ValidationError(
+                _(
+                    "Cannot queue %(name)s for digitalization: no TFHKA "
+                    "document type could be determined for this document "
+                    "(e.g. a credit note without a reversal link). Check "
+                    "its configuration before retrying.",
+                    name=self.name,
+                )
+            )
+
     def _tfhka_validate_previous_document_queued(self):
         """Hard block: the previous posted document in this journal's own
-        numbering (by name) must already be 'queued' or 'success' before
-        this one can be sent to the queue. Only meaningful in
-        "digitalization with payment" mode -- the only mode where a human
-        chooses, via this button, which document to enqueue next; in
-        normal mode documents are enqueued automatically at posting, in
-        strict chronological order, so there's nothing retroactive to
-        check. TFHKA requires strictly consecutive numbering, so letting a
-        later document jump the queue ahead of an unsent earlier one would
-        risk submitting them out of order.
+        numbering (by name) must already be 'queued', 'processing' or
+        'success' before this one can be sent to the queue. Runs
+        regardless of mode: in "digitalization with payment" mode this
+        button is the only entry point to the queue, so it's the only
+        place that can stop an out-of-order invoice before it reaches
+        'queued'; in normal mode documents are usually enqueued
+        automatically at posting (in order), so this is normally a no-op
+        there too -- but posting doesn't always go through
+        move.action.post.alert.wizard (e.g. l10n_ve_donation posts a
+        reversal directly), which can leave a document at 'none'
+        indefinitely with no other guard before this manual button.
+        'processing' is accepted (not a blocker): it's the cron actively
+        sending the previous document right now, not a failure.
+        TFHKA requires strictly consecutive numbering, so letting a later
+        document jump the queue ahead of an unsent earlier one would risk
+        submitting them out of order. Compared by name (not
+        sequence_number) because name orders correctly across a
+        sequence_prefix reset (e.g. the yearly reset in 'INV/2024/9999' vs
+        'INV/2025/0001'), while sequence_number resets to 0 and would
+        silently stop matching the previous year's documents.
         """
         self.ensure_one()
         previous = self.env["account.move"].search(
@@ -359,11 +407,67 @@ class AccountMove(models.Model):
             order="name desc",
             limit=1,
         )
-        if previous and previous.tfhka_digitalization_state not in ("queued", "success"):
+        if previous and previous.tfhka_digitalization_state not in (
+            "queued", "processing", "success",
+        ):
             raise ValidationError(
                 _(
                     "Cannot queue %(name)s for digitalization: the previous document, "
                     "%(previous_name)s, is neither digitalized nor queued.",
+                    name=self.name,
+                    previous_name=previous.name,
+                )
+            )
+
+    def _tfhka_check_sequence_gap(self):
+        """Hard block, "digitalization with payment" mode only: this move's
+        ``sequence_number`` must be exactly one more than its predecessor's
+        in the same journal/move_type. Only enforced in that mode because
+        it's the one where TFHKA is sent the local ``sequence_number`` as
+        the document number (see ``_check_tfhka_payment_required`` /
+        ``action_tfhka_generate_digital``, its only entry point to the
+        queue) -- a gap there (e.g. a cancelled invoice that ate a number)
+        would be reported to TFHKA out of order. In normal mode the number
+        sent to TFHKA comes from TFHKA's own last-number-at-the-time (see
+        ``tfhka.document.service``), not ``sequence_number``, so a local gap
+        doesn't affect it. Ported from v19's
+        ``AccountMove._tfhka_check_sequence_gap``. No override wizard -- the
+        gap must be resolved in Odoo first; TFHKA requires strictly
+        consecutive numbering.
+
+        Only compared when ``previous`` shares this move's
+        ``sequence_prefix``: with ``use_date_range`` sequences,
+        ``sequence_number`` resets to 1 on every prefix change (e.g. the
+        yearly reset from 'INV/2025/9999' to 'INV/2026/0001'), so a
+        cross-prefix predecessor is a legitimate reset, not a gap --
+        checking it as one would block the first document of every year.
+        """
+        self.ensure_one()
+        if not self.company_id.digitalization_with_payment_tfhka:
+            return
+        previous = self.env["account.move"].search(
+            [
+                ("id", "!=", self.id),
+                ("company_id", "=", self.company_id.id),
+                ("journal_id", "=", self.journal_id.id),
+                ("move_type", "=", self.move_type),
+                ("state", "=", "posted"),
+                ("name", "<", self.name),
+            ],
+            order="name desc",
+            limit=1,
+        )
+        if (
+            previous
+            and previous.sequence_prefix == self.sequence_prefix
+            and self.sequence_number != previous.sequence_number + 1
+        ):
+            raise ValidationError(
+                _(
+                    "Cannot queue %(name)s for digitalization: there is a "
+                    "numbering gap between it and the previous document, "
+                    "%(previous_name)s. Fix the sequence irregularity in "
+                    "Odoo first.",
                     name=self.name,
                     previous_name=previous.name,
                 )
@@ -400,15 +504,33 @@ class AccountMove(models.Model):
 
     def _tfhka_is_eligible_for_digitalization(self):
         """True when this move should be queued for normal digitalization:
-        digital journal, not already digitalized, and not in "digitalization
+        digital journal, not already digitalized, not in "digitalization
         with payment" mode (driven by the manual button instead -- see
-        ``action_tfhka_generate_digital``)."""
+        ``action_tfhka_generate_digital``), and a TFHKA document type can
+        actually be determined for it -- otherwise it would reach 'queued'
+        only to fail and wedge the company's queue (see
+        _tfhka_cron_process_queue).
+
+        ``_tfhka_get_document_type_and_series`` can also raise ``UserError``
+        on its own (an invalid sales invoicing series configuration), not
+        just return an empty type. This runs synchronously inside the
+        posting flow (``_tfhka_enqueue_eligible_for_digitalization``, called
+        from ``move.action.post.alert.wizard.action_confirm()``), so letting
+        that propagate would abort the whole posting instead of just
+        excluding this move from the queue -- treated the same as an
+        undeterminable document type."""
         self.ensure_one()
-        return (
-            not self.is_digitalized
-            and self.journal_id.digital_invoice
-            and not self.company_id.digitalization_with_payment_tfhka
-        )
+        if (
+            self.is_digitalized
+            or not self.journal_id.digital_invoice
+            or self.company_id.digitalization_with_payment_tfhka
+        ):
+            return False
+        try:
+            document_type = self._tfhka_get_document_type_and_series()[0]
+        except UserError:
+            return False
+        return bool(document_type)
 
     def _tfhka_enqueue_eligible_for_digitalization(self):
         """Enqueues each eligible move for TFHKA digitalization (queue
@@ -444,6 +566,15 @@ class AccountMove(models.Model):
         if not tools.config["test_enable"]:
             self.env.cr.commit()  # pylint: disable=invalid-commit
 
+    def _tfhka_rollback(self):
+        """Rolls back the current transaction -- except under the test
+        runner, where Odoo's test framework forbids cr.commit()/rollback()
+        (it wraps each test in its own savepoint; a real rollback here
+        would destroy that savepoint and poison every test that runs
+        afterwards in the same transaction)."""
+        if not tools.config["test_enable"]:
+            self.env.cr.rollback()  # pylint: disable=invalid-commit
+
     def _tfhka_enqueue_digitalization(self):
         """Enqueue: call this instead of generate_document_digital() directly.
         Never calls TFHKA -- just a field write, so it can't roll back the
@@ -465,22 +596,57 @@ class AccountMove(models.Model):
         this is a defensive guard against any other caller triggering a real
         TFHKA call outside the queue on a document that isn't actually
         pending.
+
+        The attempt itself runs inside ``self.env.cr.savepoint()``: without
+        it, a failure partway through ``generate_document_digital()`` (e.g.
+        TFHKA answers 200 but the response is missing an expected field)
+        could leave an earlier partial write -- such as ``is_digitalized``
+        already flipped to True by ``tfhka.document.service`` before the
+        failure -- committed alongside this method's own 'error' state. A
+        retry (``action_tfhka_retry_digitalization``) would then resend an
+        already-submitted document, a fiscal duplicate. The savepoint
+        guarantees 'error' always means nothing from this attempt stuck,
+        matching the actual outcome at TFHKA. This doesn't affect
+        tfhka.api.log: outside tests that's written through its own cursor
+        with an immediate commit (see TfhkaApiClient._log_call), specifically
+        so the record of what was actually sent survives a rollback here --
+        it's what lets _tfhka_reconcile_stuck_processing tell a genuine
+        failure apart from an interrupted-but-received one.
         """
         self.ensure_one()
         if self.tfhka_digitalization_state != "queued":
             return self.tfhka_digitalization_state == "success"
-        self.write({"tfhka_digitalization_state": "processing"})
+        self.write({
+            "tfhka_digitalization_state": "processing",
+            "tfhka_last_attempt_at": fields.Datetime.now(),
+        })
         # Committed right away -- durable proof that this specific attempt
         # started, so a kill during the TFHKA call below leaves the document
         # visibly 'processing' instead of silently rolling back to 'queued'.
         self._tfhka_commit()
         try:
-            self.generate_document_digital()
-            self.write({
-                "tfhka_digitalization_state": "success",
-                "tfhka_digitalization_error": False,
-                "is_digitalized": True,
-            })
+            with self.env.cr.savepoint():
+                self.generate_document_digital()
+                if not self.is_digitalized:
+                    # generate_document_digital() can return without raising --
+                    # e.g. no TFHKA document type could be determined (a credit
+                    # note created outside the reversal flow, without
+                    # reversed_entry_id), or digital invoicing is off for the
+                    # company. Nothing was actually sent to TFHKA, so this must
+                    # not be recorded as a success.
+                    raise UserError(
+                        _(
+                            "TFHKA did not digitalize this document: no document type "
+                            "could be determined, or digital invoicing is disabled for "
+                            "this company. Check the document configuration before "
+                            "retrying."
+                        )
+                    )
+                self.write({
+                    "tfhka_digitalization_state": "success",
+                    "tfhka_digitalization_error": False,
+                    "is_digitalized": True,
+                })
             return True
         except Exception as error:
             self.write({
@@ -492,27 +658,32 @@ class AccountMove(models.Model):
             )
             return False
 
-    def _tfhka_recover_stuck_processing(self):
+    def _tfhka_recover_stuck_processing(self, company):
         """Called on every document found in 'processing' at the start of a
-        cron tick. A healthy attempt is never observed here: one cron tick
-        always resolves 'processing' to 'success'/'error' before it ends, so
-        the only way a fresh tick can find one is a previous run that got
-        interrupted mid-flight (Odoo killed, e.g. hitting limit_time_cron
-        while waiting on TFHKA).
+        cron tick, scoped to a single company (see
+        _tfhka_cron_process_queue). A healthy attempt is never observed
+        here: one cron tick always resolves 'processing' to
+        'success'/'error' before it ends, so the only way a fresh tick can
+        find one is a previous run that got interrupted mid-flight (Odoo
+        killed, e.g. hitting limit_time_cron while waiting on TFHKA).
 
         Processed oldest-first (``date_state asc``) so that, if more than
         one document is stuck, an old one past the grace period gets
         resolved before a fresh one halts the loop.
 
-        Returns True if it's safe to keep processing the queue this run
-        (every stuck record was resolved, or there were none), False if at
-        least one record is still within its grace period and was left
-        untouched -- the caller must halt the queue for this run without
-        even checking the error guard, so as not to advance past a document
-        that may still be legitimately in flight.
+        Returns True if it's safe to keep processing this company's queue
+        this run (every stuck record was resolved, or there were none),
+        False if at least one record is still within its grace period and
+        was left untouched -- the caller must halt the queue for this
+        company this run without even checking the error guard, so as not
+        to advance past a document that may still be legitimately in
+        flight.
         """
         stuck = self.search(
-            [("tfhka_digitalization_state", "=", "processing")],
+            [
+                ("tfhka_digitalization_state", "=", "processing"),
+                ("company_id", "=", company.id),
+            ],
             order="date_state asc",
         )
         for record in stuck:
@@ -522,22 +693,37 @@ class AccountMove(models.Model):
                 return False
         return True
 
-    def _tfhka_reconcile_stuck_processing(self):
-        """Returns True if this record was resolved (success or error),
-        False if it's still within TFHKA_STUCK_PROCESSING_GRACE_PERIOD and
-        was left untouched in 'processing'."""
+    def _tfhka_find_success_log(self):
+        """Returns the most recent successful ``/Emision`` log entry for this
+        document since its last send attempt (``tfhka_last_attempt_at``), or
+        an empty recordset if none. Shared by
+        ``_tfhka_reconcile_stuck_processing`` (an attempt interrupted by a
+        killed cron) and ``action_tfhka_retry_digitalization`` (an attempt
+        that landed in 'error', e.g. a network timeout, after TFHKA had
+        already accepted the document) -- both cases where the queue state
+        alone can't tell whether TFHKA already has this document, and
+        resending would risk a fiscal duplicate."""
         self.ensure_one()
-        log_entry = self.env["tfhka.api.log"].sudo().search(
+        if not self.tfhka_last_attempt_at:
+            return self.env["tfhka.api.log"]
+        return self.env["tfhka.api.log"].sudo().search(
             [
                 ("res_model", "=", self._name),
                 ("res_id", "=", self.id),
                 ("endpoint", "=", TFHKA_ENDPOINTS["emision"]),
                 ("success", "=", True),
-                ("create_date", ">=", self.date_state - TFHKA_CLOCK_SKEW_MARGIN),
+                ("create_date", ">=", self.tfhka_last_attempt_at - TFHKA_CLOCK_SKEW_MARGIN),
             ],
             order="create_date desc",
             limit=1,
         )
+
+    def _tfhka_reconcile_stuck_processing(self):
+        """Returns True if this record was resolved (success or error),
+        False if it's still within TFHKA_STUCK_PROCESSING_GRACE_PERIOD and
+        was left untouched in 'processing'."""
+        self.ensure_one()
+        log_entry = self._tfhka_find_success_log()
         if log_entry:
             self._tfhka_reconcile_success_from_log(log_entry)
             self.write({
@@ -588,28 +774,76 @@ class AccountMove(models.Model):
     def _tfhka_cron_process_queue(self):
         """Cron entry point -- operates on self (account.move).
 
-        Queue lock: if there is already a document in 'error', nothing is
-        processed -- that document must be resolved (retried successfully)
-        before the rest of the queue can advance. Same halt applies, even
-        earlier, if a document is still within its stuck-processing grace
-        period (see _tfhka_recover_stuck_processing).
+        TFHKA's "last number + 1" invariant is scoped per company, so the
+        queue is processed independently per company: an error in one
+        company must never halt digitalization for every other company in
+        the database (see _tfhka_process_queue_for_company).
+
+        Two cross-company safety nets a single-company view can't provide
+        on its own:
+        - An exception from one company (anything not already turned into
+          a per-document 'error' by _tfhka_process_digitalization, e.g. a
+          transient DB error) must not abort the whole tick -- caught here,
+          with a rollback to clear Postgres' aborted-transaction state
+          before moving on to the next company.
+        - TFHKA_QUEUE_BATCH_SIZE is a single budget shared across every
+          company this tick, not a per-company allowance -- otherwise a
+          tick's total work (and HTTP calls) scales with the number of
+          companies, reintroducing the long-running-tick risk the constant
+          exists to prevent.
         """
-        if not self._tfhka_recover_stuck_processing():
-            return
-        if self.search_count([("tfhka_digitalization_state", "=", "error")]):
-            return
+        remaining = TFHKA_QUEUE_BATCH_SIZE
+        for company in self.env["res.company"].search([]):
+            if remaining <= 0:
+                break
+            try:
+                remaining -= self._tfhka_process_queue_for_company(company, limit=remaining)
+            except Exception as error:
+                self._tfhka_rollback()
+                _logger.error(
+                    "TFHKA queue processing failed for company %s (id=%s): %s",
+                    company.name, company.id, error,
+                )
+
+    def _tfhka_process_queue_for_company(self, company, limit=TFHKA_QUEUE_BATCH_SIZE):
+        """Queue lock, scoped to a single company: if there is already a
+        document of this company in 'error', nothing of this company is
+        processed -- that document must be resolved (retried successfully)
+        before the rest of this company's queue can advance. Same halt
+        applies, even earlier, if a document of this company is still
+        within its stuck-processing grace period (see
+        _tfhka_recover_stuck_processing).
+
+        Returns the number of documents attempted (success or failure), so
+        the caller can enforce a single cap shared across every company
+        processed this tick (see _tfhka_cron_process_queue).
+        """
+        if not self._tfhka_recover_stuck_processing(company):
+            return 0
+        if self.search_count([
+            ("tfhka_digitalization_state", "=", "error"),
+            ("company_id", "=", company.id),
+            ("state", "!=", "cancel"),
+        ]):
+            return 0
         queued = self.search(
-            [("tfhka_digitalization_state", "=", "queued")],
+            [
+                ("tfhka_digitalization_state", "=", "queued"),
+                ("company_id", "=", company.id),
+            ],
             order="tfhka_queued_at asc, id asc",
-            limit=TFHKA_QUEUE_BATCH_SIZE,
+            limit=limit,
         )
+        processed = 0
         for record in queued:
             success = record._tfhka_process_digitalization()
+            processed += 1
             # Commit right after each document so its result is visible in
             # Odoo immediately, instead of only once the whole batch finishes.
             self._tfhka_commit()
             if not success:
-                break  # halt the queue here; resumes once retried successfully
+                break  # halt this company's queue; resumes once retried successfully
+        return processed
 
     def action_tfhka_retry_digitalization(self):
         """Button shown when state is 'error' (see the views). Only
@@ -621,12 +855,37 @@ class AccountMove(models.Model):
         that resets tfhka_queued_at to now, which would send the document
         to the back of the FIFO queue -- behind every document queued while
         it sat in 'error'. A retry must resume the queue at the same
-        position it halted it."""
+        position it halted it.
+
+        Before re-queuing, checks tfhka.api.log for a successful /Emision
+        response already recorded for the attempt that landed this document
+        in 'error' (see _tfhka_find_success_log): e.g. the HTTP response was
+        lost to a network timeout after TFHKA had already processed the
+        document, so blindly resending would submit a fiscal duplicate. If
+        found, recovers that result instead of resubmitting."""
         eligible = self.filtered(lambda record: record.tfhka_digitalization_state == "error")
-        eligible.write({
-            "tfhka_digitalization_state": "queued",
-            "tfhka_digitalization_error": False,
-        })
+        for record in eligible:
+            log_entry = record._tfhka_find_success_log()
+            if not log_entry:
+                record.write({
+                    "tfhka_digitalization_state": "queued",
+                    "tfhka_digitalization_error": False,
+                })
+                continue
+            record._tfhka_reconcile_success_from_log(log_entry)
+            record.write({
+                "tfhka_digitalization_state": "success",
+                "tfhka_digitalization_error": False,
+                "is_digitalized": True,
+            })
+            record.message_post(
+                body=_(
+                    "TFHKA digitalization had errored, but the API log shows the "
+                    "attempt actually succeeded (see The Factory HKA API Log "
+                    "#%s). Recovered automatically instead of resubmitting.",
+                    log_entry.id,
+                ),
+            )
 
     @api.depends('state', 'debit_origin_id', 'reversed_entry_id', 'is_digitalized')
     def _compute_invisible_check(self):
