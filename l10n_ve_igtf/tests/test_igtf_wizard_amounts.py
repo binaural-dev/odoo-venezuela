@@ -27,6 +27,9 @@ class TestIgtfWizardAmounts(TestIndexedPayments):
     def setUp(self):
         super().setUp()
         self.company.igtf_percentage = 3.0
+        # l10n_ve_rate exige una tasa USD en la fecha exacta del documento.
+        self._set_rate(self.currency_usd, self.invoice_date, 40.0)
+        self._set_rate(self.currency_usd, self.payment_date, 40.0)
 
     def _create_igtf_wizard(self, invoice, amount=None):
         journal = self._get_foreign_bank_journal(self.currency_usd)
