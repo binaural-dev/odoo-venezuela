@@ -1,9 +1,11 @@
 from odoo import fields
-from odoo.tests import TransactionCase, tagged
+from odoo.tests import tagged
+
+from .common import ForeignRateTransactionCase
 
 
 @tagged("post_install", "-at_install", "l10n_ve_invoice")
-class TestAccountDebitNote(TransactionCase):
+class TestAccountDebitNote(ForeignRateTransactionCase):
     def setUp(self):
         super().setUp()
         self.company = self.env.ref("base.main_company")

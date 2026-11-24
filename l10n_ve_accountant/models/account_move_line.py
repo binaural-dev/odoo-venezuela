@@ -1,6 +1,6 @@
 from contextlib import contextmanager
 from odoo import api, fields, models, Command, _
-from odoo.tools import float_compare ,float_round, float_is_zero
+from odoo.tools import float_round, float_is_zero
 from odoo.exceptions import UserError, ValidationError
 import logging
 
@@ -358,37 +358,51 @@ class AccountMoveLine(models.Model):
 
 
     def _prepare_analytic_distribution_line(
-        self, distribution, account_id, distribution_on_each_plan
+        self, distribution, account_ids, distribution_on_each_plan
     ):
         """
         This method adds the foreign_amount in the foreign currency to the analytical account line
         """
         self.ensure_one()
         res = super()._prepare_analytic_distribution_line(
-            distribution, account_id, distribution_on_each_plan
+            distribution, account_ids, distribution_on_each_plan
         )
-        account_id = int(account_id)
-        account = self.env["account.analytic.account"].browse(account_id)
-        distribution_plan = (
-            distribution_on_each_plan.get(account.root_plan_id, 0) + distribution
-        )
-        decimal_precision = self.env["decimal.precision"].precision_get(
-            "Percentage Analytic"
-        )
-        if (
-            float_compare(distribution_plan, 100, precision_digits=decimal_precision)
-            == 0
-        ):
-            foreign_amount = (
-                -self.foreign_balance
-                * (100 - distribution_on_each_plan.get(account.root_plan_id, 0))
-                / 100.0
-            )
+        # Proporcional al monto que ya calculo el core para esta linea.
+        if self.balance:
+            res["foreign_amount"] = res["amount"] * self.foreign_balance / self.balance
         else:
-            foreign_amount = -self.foreign_balance * distribution / 100.0
-
-        res["foreign_amount"] = foreign_amount
+            res["foreign_amount"] = -self.foreign_balance * distribution / 100.0
         return res
+
+    def _round_analytic_distribution_line(self, analytic_lines_vals):
+        """Redondea foreign_amount y reparte su error igual que el core hace con amount.
+
+        El core solo ajusta `amount`; sin esto, al guardar cada linea se redondea por
+        separado y la suma en moneda alterna puede descuadrar centavos.
+        """
+        super()._round_analytic_distribution_line(analytic_lines_vals)
+        currency = self.foreign_currency_id
+        vals_list = [vals for vals in analytic_lines_vals or [] if "foreign_amount" in vals]
+        if not currency or not vals_list:
+            return
+        rounding_error = 0.0
+        for vals in vals_list:
+            rounded = currency.round(vals["foreign_amount"])
+            rounding_error += rounded - vals["foreign_amount"]
+            vals["foreign_amount"] = rounded
+        for vals in vals_list:
+            if currency.is_zero(rounding_error):
+                break
+            step = max(
+                currency.rounding,
+                abs(currency.round(rounding_error / len(vals_list))),
+            )
+            if rounding_error < 0.0:
+                vals["foreign_amount"] += step
+                rounding_error += step
+            else:
+                vals["foreign_amount"] -= step
+                rounding_error -= step
 
     @api.model
     def abs_amount_lines_ids_adjust(self):
