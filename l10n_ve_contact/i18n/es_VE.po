@@ -141,6 +141,12 @@ msgid "Parish"
 msgstr "Parroquia"
 
 #. module: l10n_ve_contact
+#: model:ir.model.fields,field_description:l10n_ve_contact.field_res_partner__allowed_prefix_vat
+#: model:ir.model.fields,field_description:l10n_ve_contact.field_res_users__allowed_prefix_vat
+msgid "Allowed Prefix VAT"
+msgstr "Tipos de documento permitidos"
+
+#. module: l10n_ve_contact
 #: model:ir.model.fields,field_description:l10n_ve_contact.field_res_partner__prefix_vat
 #: model:ir.model.fields,field_description:l10n_ve_contact.field_res_users__prefix_vat
 msgid "Prefix VAT"
