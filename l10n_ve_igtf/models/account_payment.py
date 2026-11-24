@@ -151,9 +151,14 @@ class AccountPaymentAndIgtf(models.Model):
         journal has is_purchase_international = True.
         """
         for rec in self:
+            # El balance forzado se descarta solo en los pagos del wizard: ahí
+            # el core lo saca del residual de la factura y un pago indexado va
+            # a la tasa de su fecha. Un pago creado fuera del wizard con su
+            # propio balance (el cierre del PdV de una caja en otra moneda, con
+            # lo cobrado a la tasa de la caja) lo conserva.
             vals = super(AccountPaymentAndIgtf, self)._prepare_move_line_default_vals(
                 write_off_line_vals,
-                force_balance = None
+                force_balance=None if rec.payment_from_wizard else force_balance,
             )
 
             
