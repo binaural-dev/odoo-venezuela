@@ -1,4 +1,4 @@
-from odoo import models, fields, _
+from odoo import api, models, fields, _
 from odoo.exceptions import UserError
 from odoo.tools import float_is_zero, float_round
 
@@ -96,6 +96,66 @@ class PosOrder(models.Model):
             self._get_rounded_amount(amount_total) - self.amount_paid,
             precision_rounding=self.currency_id.rounding,
         )
+
+    @api.model
+    def get_refund_igtf_data(self, order_ids):
+        """IGTF that the original orders of a refund can still give back.
+
+        A refund gives back the IGTF the customer paid on the sale, in
+        proportion to what it refunds, whatever methods it is paid with: the
+        PoS computes its share from the amounts returned here
+        (``l10n_ve_pos_igtf`` order_model.js, ``_igtfRefundShare``). Each
+        amount is what the original order charged minus what its previous
+        refunds already gave back, so successive partial refunds add up to the
+        IGTF of the sale and the last one takes the exact remainder. A refund
+        of several orders takes, of each, the part of its lines that refunds
+        that order.
+
+        Returns one dict per original order, with positive amounts: ``id``,
+        ``amount_total`` (invoice total still to refund), ``igtf_amount``,
+        ``bi_igtf`` and ``foreign_igtf_amount`` (IGTF in the alternate currency).
+        """
+        if not order_ids:
+            return []
+        if isinstance(order_ids, int):
+            order_ids = [order_ids]
+        result = []
+        for order in self.browse(order_ids).exists():
+            result.append(order._get_refund_igtf_remaining())
+        return result
+
+    def _get_refund_igtf_remaining(self):
+        self.ensure_one()
+        currency = self.currency_id
+        foreign_currency = self.company_id.foreign_currency_id or currency
+        charged = {
+            "amount_total": abs(self.amount_total),
+            "igtf_amount": abs(self.igtf_amount),
+            "bi_igtf": abs(self.bi_igtf),
+            "foreign_igtf_amount": abs(
+                sum(self.payment_ids.filtered("include_igtf").mapped("foreign_igtf_amount"))
+            ),
+        }
+        refunded = dict.fromkeys(charged, 0.0)
+        refund_lines = self.lines.refund_orderline_ids.filtered(
+            lambda line: line.order_id.state not in ("draft", "cancel")
+        )
+        for refund in refund_lines.order_id:
+            lines = refund_lines.filtered(lambda line: line.order_id == refund)
+            amount = abs(sum(lines.mapped("price_subtotal_incl")))
+            share = amount / abs(refund.amount_total) if refund.amount_total else 0.0
+            refund_igtf = refund.payment_ids.filtered("include_igtf")
+            refunded["amount_total"] += amount
+            refunded["igtf_amount"] += abs(refund.igtf_amount) * share
+            refunded["bi_igtf"] += abs(refund.bi_igtf) * share
+            refunded["foreign_igtf_amount"] += (
+                abs(sum(refund_igtf.mapped("foreign_igtf_amount"))) * share
+            )
+        remaining = {"id": self.id}
+        for key, value in charged.items():
+            rounding = foreign_currency if key == "foreign_igtf_amount" else currency
+            remaining[key] = max(rounding.round(value - refunded[key]), 0.0)
+        return remaining
 
     def _prepare_account_move_line_data_for_payments(self, partner=None):
         """Add the IGTF of the payments each entry groups to its metadata and,

@@ -18,8 +18,10 @@ patch(PaymentScreenStatus.prototype, {
     return this.pos.formatForeignCurrency(this.props.order.get_foreign_total_with_igtf());
   },
   get isIgtf() {
-    return Array.from(this.props.order.payment_ids || []).some(
-      (payment_line) => payment_line.appliesIgtf
+    const order = this.props.order;
+    return (
+      Array.from(order.payment_ids || []).some((payment_line) => payment_line.appliesIgtf) ||
+      Boolean(order.hasRefundIgtf?.())
     );
   },
 });

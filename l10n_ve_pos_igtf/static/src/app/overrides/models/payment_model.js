@@ -20,6 +20,14 @@ patch(PosPayment.prototype, {
   get appliesIgtf() {
     return Boolean(this.currencySettings?.apply_igtf);
   },
+  _igtfGenerates(order) {
+    // Whether the base this line covers generates IGTF: never on a refund that
+    // gives back the IGTF of its sale (order._igtfRefundShare).
+    return (
+      this.appliesIgtf &&
+      !(typeof order?._igtfRefundShare === "function" && order._igtfRefundShare())
+    );
+  },
   _igtfShownDue(sign, localDue) {
     // Magnitude, in the payment currency, of a local due as the cashier sees
     // it on screen (rounded to the payment currency).
@@ -31,7 +39,7 @@ patch(PosPayment.prototype, {
     // is in the currency the panel shows and nothing else has been paid yet.
     // 0 otherwise.
     if (
-      !this.appliesIgtf ||
+      !this._igtfGenerates(order) ||
       !this.usesAlternateEngine ||
       unpaidIgtf ||
       typeof order.get_foreign_total_with_igtf !== "function"
@@ -80,7 +88,7 @@ patch(PosPayment.prototype, {
       const requested = Number(amount) || 0;
       const { sign, remainingBase, unpaidIgtf } = order._igtfBaseState(this);
       const dueN = order._igtfRoundLocal(remainingBase + unpaidIgtf);
-      const fullN = this.appliesIgtf
+      const fullN = this._igtfGenerates(order)
         ? order._igtfRoundLocal(dueN + order.compute_igtf_amount(remainingBase))
         : dueN;
       const typed = this.currency.round(requested);

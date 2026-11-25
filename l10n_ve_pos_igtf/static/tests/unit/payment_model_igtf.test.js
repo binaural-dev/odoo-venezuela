@@ -36,6 +36,7 @@ function makeIgtfOrder(total, payments = []) {
         _igtfRoundLocal: proto._igtfRoundLocal,
         _igtfToForeign: proto._igtfToForeign,
         _igtfBaseState: proto._igtfBaseState,
+        _igtfRefundShare: proto._igtfRefundShare,
         compute_igtf_amount: proto.compute_igtf_amount,
         get_foreign_total_with_igtf: proto.get_foreign_total_with_igtf,
     };
@@ -58,6 +59,7 @@ function makeIgtfPayment(order, extra = {}) {
         _igtfShownDue: proto._igtfShownDue,
         _igtfPanelTotal: proto._igtfPanelTotal,
         _igtfCompare: proto._igtfCompare,
+        _igtfGenerates: proto._igtfGenerates,
         ...extra,
     };
 }
