@@ -175,11 +175,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             "credit_note_number": move.name if self._determinate_type_for_move(move) == "NC" else "--",
             "debit_note_number": move.name if self._determinate_type_for_move(move) == "ND" else "--",
             "transaction_type": self._determinate_transaction_type(move),
-            "number_invoice_affected": (
-                move.debit_origin_id.name
-                if move.journal_id.is_debit
-                else move.reversed_entry_id.name or "--"
-            ),
+            "number_invoice_affected": self._get_affected_document_name(move),
             "correlative": move.correlative or '--',
             "reduced_aliquot": 0.08,
             "general_aliquot": 0.16,
@@ -231,7 +227,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             "credit_note_number": move.name if self._determinate_type_for_move(move) == "NC" else "",
             "debit_note_number": move.name if self._determinate_type_for_move(move) == "ND" else "",
             "transaction_type": self._determinate_transaction_type(move),
-            "number_invoice_affected": move.debit_origin_id.name if move.journal_id.is_debit else move.reversed_entry_id.name or "--",
+            "number_invoice_affected": self._get_affected_document_name(move),
             "correlative": move.correlative if not move.declaration_unique_of_customs else "-",
             "reduced_aliquot": 0.08,
             "extend_aliquot": 0.31,
@@ -867,14 +863,36 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         _fn = datetime.strptime(str(date), "%Y-%m-%d")
         return _fn.strftime("%d/%m/%Y")
 
+    def _is_debit_note(self, move):
+        """A debit note is an invoice issued against another document
+        (``debit_origin_id``), whatever journal it is in.
+
+        The flag «Es débito» of the journal does not tell the document: the
+        exchange difference needs a sales journal marked as debit, and the
+        debit notes issued with the «Debit Note» button stay in the journal
+        of their invoice. Every debit note of the localization (button, IGTF,
+        exchange difference) is created through ``debit_origin_id``.
+        """
+        return move.move_type in ("out_invoice", "in_invoice") and bool(move.debit_origin_id)
+
     def _determinate_type_for_move(self, move):
-        move_type = move.move_type
-        if move.journal_id.is_debit:
-            move_type = "in_debit"
+        """FAC, NC or ND of each document, from the document itself: a credit
+        note is a refund, a debit note an invoice with ``debit_origin_id``
+        and anything else an invoice."""
+        if move.move_type in ("out_refund", "in_refund"):
+            return self._determinate_type(move.move_type)
+        if self._is_debit_note(move):
+            return self._determinate_type("out_debit")
+        return self._determinate_type(move.move_type)
 
-        type_for_move = self._determinate_type(move_type)
-
-        return type_for_move
+    def _get_affected_document_name(self, move):
+        """Number of the document a credit or debit note affects, «--» for
+        an invoice."""
+        if self._is_debit_note(move):
+            return move.debit_origin_id.name
+        if move.move_type in ("out_refund", "in_refund"):
+            return move.reversed_entry_id.name or "--"
+        return "--"
 
 
     def _determinate_type(self, type):
@@ -891,7 +909,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
     def _determinate_transaction_type(self, move):
         if move.move_type in ["out_invoice", "in_invoice"] and move.state == "posted":
-            if move.journal_id.is_debit:
+            if self._is_debit_note(move):
                 return "02-REG"
             else:
                 return "01-REG"
