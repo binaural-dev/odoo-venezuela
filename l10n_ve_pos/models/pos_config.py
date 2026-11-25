@@ -53,15 +53,26 @@ class PosConfig(models.Model):
     def _compute_rate(self):
         """
         Compute the rate of the pos using the compute_rate method of the res.currency.rate model.
+
+        With an active session, the rate is the one of the session's day (the
+        day it was opened, ``pos.session.foreign_rate_date``) until it closes,
+        even after midnight: a session never works with the rate of another
+        day. ``current_session_id`` is not searchable, so it can't be a
+        dependency: the session invalidates these fields when it stores its
+        day (``pos.session._set_opening_rate``).
         """
-        rate = self.env["res.currency.rate"]
         for config in self:
-            # La caja puede abrirse sin tasa del día (la conversión devuelve 0.0):
-            # este compute no debe bloquear la vista de la configuración.
-            rate_values = rate.compute_rate(
-                config.foreign_currency_id.id,
-                fields.Date.context_today(config),
-                raise_if_not_found=False,
+            # Sin tasa (caja sin sesión, aún sin la tasa del día) la conversión
+            # devuelve 0.0: este compute no debe bloquear la vista de la
+            # configuración. Lo que no abre sin tasa es la sesión.
+            rate_values = (
+                self.env["res.currency.rate"]
+                .with_company(config.company_id)
+                .compute_rate(
+                    config.foreign_currency_id.id,
+                    config._get_pos_rate_date(),
+                    raise_if_not_found=False,
+                )
             )
             config.update(rate_values)
 
@@ -109,7 +120,8 @@ class PosConfig(models.Model):
     def _compute_tender_currency_rates(self):
         """Tasas de las monedas de cobro (``pos.payment.method.tender_currency_id``)
         con la misma fuente y la misma orientación que ``_compute_rate``:
-        ``compute_rate`` a la fecha del usuario, ``foreign_rate`` = moneda de
+        ``compute_rate`` al día de la tasa de la caja (``_get_pos_rate_date``: el
+        de su sesión o, sin sesión, el del usuario), ``foreign_rate`` = moneda de
         cobro → caja (la GRANDE, Bs por €) y ``foreign_inverse_rate`` = caja →
         moneda de cobro (la CHICA). Viven en la caja porque ``pos.config`` se
         carga entero en cada apertura (``pos.load.mixin._last_server_date_to_load``
@@ -130,7 +142,7 @@ class PosConfig(models.Model):
             for currency in config.payment_method_ids.tender_currency_id:
                 values = rate.compute_rate(
                     currency.id,
-                    fields.Date.context_today(config),
+                    config._get_pos_rate_date(),
                     raise_if_not_found=False,
                 )
                 rates[str(currency.id)] = {
@@ -138,6 +150,14 @@ class PosConfig(models.Model):
                     "foreign_inverse_rate": values.get("foreign_inverse_rate") or 0.0,
                 }
             config.tender_currency_rates = rates
+
+    def _get_pos_rate_date(self):
+        """Día de la tasa de la caja: el de su sesión activa (fijado al abrirla)
+        o, sin sesión, el día del usuario. Los módulos que convierten montos de
+        la caja con la tasa nativa de Odoo deben usar este día, no el de hoy."""
+        self.ensure_one()
+        session = self.current_session_id
+        return session._get_rate_date() if session else fields.Date.context_today(self)
 
     # ---------------------------------------------------------------
     # POS-scoped currency conversion

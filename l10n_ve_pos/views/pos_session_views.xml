@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_pos_session_form" model="ir.ui.view">
+        <field name="name">pos.session.form.l10n_ve_pos</field>
+        <field name="model">pos.session</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_session_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='start_at']" position="after">
+                <field name="foreign_rate_date" invisible="not foreign_rate_date"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
