@@ -34,3 +34,4 @@ from . import test_multicurrency_revaluation
 from . import test_create_manual_rate_future_date
 from . import test_invoice_list_columns
 from . import test_invoice_details_report
+from . import test_invoice_due_date_display
