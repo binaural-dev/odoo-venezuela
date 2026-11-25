@@ -1,4 +1,5 @@
-from odoo import api, models, fields
+from odoo import _, api, fields, models
+from odoo.exceptions import ValidationError
 
 
 class ResPartner(models.Model):
@@ -36,6 +37,71 @@ class ResPartner(models.Model):
         company_partner_ids = self.env['res.company'].search([]).mapped('partner_id.id')
         for partner in self:
             partner.is_current_company_partner = partner.id in company_partner_ids
+
+    @api.model
+    def _l10n_ve_branch_synced_fields(self):
+        """Fiscal fields that branches inherit from their root company partner."""
+        return ["type_person_id", "withholding_type_id", "taxpayer_type"]
+
+    def _l10n_ve_root_fiscal_values(self):
+        """Synced fiscal fields that this root company partner has set, in write format.
+
+        A field empty on the root is left out: it must not replace the value of a branch.
+        """
+        self.ensure_one()
+        return {
+            fname: self._fields[fname].convert_to_write(self[fname], self)
+            for fname in self._l10n_ve_branch_synced_fields()
+            if self[fname]
+        }
+
+    def _l10n_ve_propagate_fiscal_fields_to_branches(self, values, branches=None):
+        """Write on the branches the fiscal values written on a root company partner.
+
+        Only the synced fields present in ``values`` are written, so a field that was not
+        touched on the root is not touched on the branches either.
+
+        :param values: fields to write, in write format (many2one as id)
+        :param branches: ``res.company`` records to write on. By default, every branch
+            (any level, archived too) of the root companies whose partner is in ``self``.
+        """
+        synced = self._l10n_ve_branch_synced_fields()
+        values = {fname: value for fname, value in values.items() if fname in synced}
+        if not values:
+            return
+        if branches is None:
+            Company = self.env["res.company"].sudo().with_context(active_test=False)
+            roots = Company.search([("partner_id", "in", self.ids), ("parent_id", "=", False)])
+            branches = Company.search(
+                [("id", "child_of", roots.ids), ("id", "not in", roots.ids)]
+            )
+        branches.sudo().partner_id.write(values)
+
+    def _fields_sync(self, values):
+        super()._fields_sync(values)
+        self._l10n_ve_propagate_fiscal_fields_to_branches(values)
+
+    @api.constrains(lambda self: self._l10n_ve_branch_synced_fields())
+    def _l10n_ve_check_branch_fiscal_fields(self):
+        """Branch partners must keep the fiscal values of their root company partner.
+
+        A field empty on the root is not compared: the root has no value to impose there.
+        """
+        branches = self.env["res.company"].sudo().with_context(active_test=False).search(
+            [("partner_id", "in", self.ids), ("parent_id", "!=", False)]
+        )
+        for branch in branches:
+            root_partner = branch.root_id.partner_id
+            for fname in self._l10n_ve_branch_synced_fields():
+                if root_partner[fname] and branch.partner_id[fname] != root_partner[fname]:
+                    raise ValidationError(
+                        _(
+                            "The field %(field)s of a branch cannot differ from its root "
+                            "company. Edit it in the contact of the root company %(root)s.",
+                            field=self._fields[fname]._description_string(self.env),
+                            root=branch.root_id.name,
+                        )
+                    )
 
     is_resident_person = fields.Boolean(
         compute="_compute_is_resident_person",

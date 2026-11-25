@@ -100,6 +100,18 @@ class ResCompany(models.Model):
         ),
     )
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        # The core only copies res.company fields to new branches, not the fiscal
+        # fields stored on the partner, so they are propagated here, only to the new branches.
+        companies = super().create(vals_list)
+        for branch in companies.filtered("parent_id"):
+            root_partner = branch.root_id.partner_id
+            root_partner._l10n_ve_propagate_fiscal_fields_to_branches(
+                root_partner._l10n_ve_root_fiscal_values(), branches=branch
+            )
+        return companies
+
     def write(self, vals):
         if "condition_withholding_id" in vals:
             for company in self:

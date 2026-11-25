@@ -17,6 +17,16 @@ msgstr ""
 
 #. module: l10n_ve_payment_extension
 #. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/res_partner.py:0
+msgid ""
+"The field %(field)s of a branch cannot differ from its root company. Edit it "
+"in the contact of the root company %(root)s."
+msgstr ""
+"El campo %(field)s de una sucursal no puede ser distinto al de su compañía "
+"raíz. Edítelo en el contacto de la compañía raíz %(root)s."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
 #: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
 msgid ""
 "This retention cannot be posted.\n"
