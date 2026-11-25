@@ -142,10 +142,17 @@ class MunicipalRetentionPatentReport(models.TransientModel):
             return line.foreign_subtotal
         return line.balance * line.move_id.direction_sign
 
-    def _get_xlsx_file_domain(self):
+    def _get_period_domain(self):
+        """Documents of the month of the report: those whose accounting date
+        (``date``) falls in it, as the sale book takes them, whenever they
+        were created or posted."""
         return [
-            ("move_id.invoice_date_display", ">=", self.date_start),
-            ("move_id.invoice_date_display", "<=", self.date_end),
+            ("move_id.date", ">=", self.date_start),
+            ("move_id.date", "<=", self.date_end),
+        ]
+
+    def _get_xlsx_file_domain(self):
+        return self._get_period_domain() + [
             ("move_id.move_type", "in", ["out_invoice", "out_refund"]),
             ("move_id.financial_document", "=", True),
             ("move_id.state", "=", "posted"),
@@ -229,9 +236,7 @@ class MunicipalRetentionPatentReport(models.TransientModel):
         return table.fillna(0)
 
     def _get_xlsx_municipality_retention_report_domain(self):
-        return [
-            ("move_id.invoice_date_display", ">=", self.date_start),
-            ("move_id.invoice_date_display", "<=", self.date_end),
+        return self._get_period_domain() + [
             ("move_id.move_type", "in", ["out_invoice", "out_refund"]),
             ("move_id.financial_document", "=", False),
             ("move_id.state", "=", "posted"),
