@@ -75,7 +75,7 @@ Base de pruebas (datos sintéticos: VEF/USD con tasa 380, almacén y ubicación 
 | Devoluciones de pedidos de donación | Se permiten, como en la versión 17; por decidir con Producto si se bloquean |
 | "Crear factura" en una donación sin pedido | Oculto (REQ-DON-015) |
 | Almacén por defecto del pedido | Sin cambio: `sale_order.py` es idéntico al de la versión 17 |
-| ACL de `account.move` para Donation Manager | Se mantiene como en 17: es necesario para que quien factura una donación desde ventas cree la factura y su nota de crédito automática |
+| ACL de `account.move` para Donation Manager | Se mantenía como en 17; quitado en 19.0.3.0.4 porque no hace falta (ver STATE del cambio `donation-received-documents`, I3) |
 | `action_post` con varias facturas | Un asistente publica todas las facturas del lote y sus notas (REQ-DON-012) |
 | Asientos manuales en diarios con hash | Publicar no escribe sobre el asiento (REQ-DON-014) |
 | Reversión de un lote mixto | Reversa también las facturas que no son de donación (REQ-DON-013) |

@@ -25,7 +25,7 @@ Instancia con `enterprise-19.0`, `odoo-venezuela`, `integra-addons` y `third-par
 
 ## Resultado
 
-**221 tests, 0 fallos, 0 errores** en toda la suite del módulo; pre-commit (`.po`, pylint
+**223 tests, 0 fallos, 0 errores** en toda la suite del módulo; pre-commit (`.po`, pylint
 opcional y obligatorio) pasa.
 
 Los ajustes de la validación funcional (REQ-DON-029 a 034) se prueban en archivos nuevos o
@@ -66,9 +66,14 @@ certificado. Los tests de cada corrección fallan sin ella.
 - Quien valida un traslado valorado necesita el grupo «Costo Alterno (Ver)» si
   `binaural_foreign_cost` está instalado: la lectura vive en ese módulo, no en este.
 
-- `ir.model.access.csv` da lectura, escritura, creación y borrado de `account.move` al grupo Gestor
-  aunque no implique ningún grupo contable (ya era así antes de este cambio). La decisión (implicar
-  `account.group_account_invoice` o dejarlo de solo lectura) es del líder técnico.
+- I3 resuelto (25/11/2026, a raíz de la revisión de Roque): el `ir.model.access.csv` que daba
+  lectura, escritura, creación y borrado de `account.move` al grupo Gestor se quitó (versión
+  `19.0.3.0.4`). La justificación original («es necesario para que quien factura desde ventas cree
+  la factura y su nota de crédito») no se sostiene en Odoo 19: `sale` crea la factura con `sudo()`,
+  y publicarla y el asistente de reversa exigen Facturación. Con el permiso, un usuario solo-Gestor
+  leía cualquier asiento (test `test_the_manager_alone_has_no_access_to_the_accounting_entries`
+  fallaba con la línea y pasa sin ella); quien factura una donación no necesita el grupo
+  (`test_who_invoices_a_donation_does_not_need_the_manager_group`).
 - El hook de la marca del extracto reevalúa cada cambio de líneas de los asientos de extracto
   (consulta las cuentas de donaciones recibidas de la compañía).
 
@@ -83,7 +88,7 @@ certificado. Los tests de cada corrección fallan sin ella.
   (`_compute_donation_amounts`) y con el cuerpo del certificado, no con un asiento real de otra
   compañía.
 - La interfaz se recorrió en una base de pruebas; falta la validación funcional del consultor.
-- La versión del manifest es `19.0.3.0.3`; la migración `migrations/19.0.3.0.1/post-migration.py`
+- La versión del manifest es `19.0.3.0.4`; la migración `migrations/19.0.3.0.1/post-migration.py`
   mueve el grupo Gestor a su privilegio propio y pasa el formato del Certificado a carta si sigue en
   A4, en las bases que ya tienen el módulo (el privilegio se probó en una copia de una base instalada;
   la migración completa, con tests de la función).
@@ -100,9 +105,9 @@ certificado. Los tests de cada corrección fallan sin ella.
 ## Próximos pasos
 
 - [x] Ajustes de la validación funcional (REQ-DON-029 a 034) con sus tests.
-- [x] Revisión del código con las reglas de Binaural; hallazgos corregidos (queda I3).
-- [ ] Commits, push y revalidación de Producto en el staging con la versión `19.0.3.0.3`.
+- [x] Revisión del código con las reglas de Binaural; hallazgos corregidos, incluido I3.
+- [ ] Commits, push y revalidación de Producto en el staging con la versión `19.0.3.0.4`.
 - [ ] Vincular el PR a la tarea 86967 y aprobar el código por el dueño técnico de la vertical.
 - [ ] Producto: H8, H13, el RIF sin prefijo en otros módulos, el caso T04 y las mejoras C4 y C6.
-- [ ] Líder técnico: permiso de `account.move` del grupo Gestor (I3).
+- [x] Permiso de `account.move` del grupo Gestor (I3): quitado.
 

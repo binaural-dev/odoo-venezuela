@@ -1,6 +1,6 @@
 # Capacidad `l10n_ve_donation` · estado vigente
 
-Fuente de verdad del comportamiento actual del módulo (versión `19.0.3.0.3`, Odoo 19). Cada
+Fuente de verdad del comportamiento actual del módulo (versión `19.0.3.0.4`, Odoo 19). Cada
 requisito tiene un REQ-ID estable y sus escenarios Dado/Cuando/Entonces; los tests los citan por
 ese ID. El historial de cada cambio (por qué, cómo y con qué verificación) está en
 `openspec/changes/archive/`:
@@ -422,7 +422,17 @@ La nota de crédito automática de una factura de donación DEBE (MUST) tener la
 - **Entonces** se crea y se publica la nota de crédito en USD con la tarifa en USD, la factura queda revertida y no sale el error de divisa; los cuatro cruces de tarifa del cliente y moneda de la venta funcionan igual
 
 ### Requirement: REQ-DON-034 · Botones del asiento y grupo Gestor
-«Revertir asiento» DEBE (MUST) conservar la condición estándar de Odoo (solo asientos manuales publicados que no estén revertidos) y ocultarse además en los asientos de donación a quien no es Gestor. «Restablecer a borrador» DEBE (MUST) conservar la condición estándar (`show_reset_to_draft_button`) y ocultarse además en las facturas de venta y en los asientos de donación. El grupo Gestor de Donaciones DEBE (MUST) tener un privilegio propio («Donaciones», en la categoría de Contabilidad): un selector independiente del de Contabilidad en la pestaña de permisos, para que guardar la ficha del usuario con otro nivel no lo quite y para que se pueda asignar sin modo desarrollador (un grupo sin privilegio solo se dibuja en ese modo). El registro no es `noupdate` y la migración mueve el grupo al privilegio nuevo en las bases existentes; el administrador se agrega al grupo al instalar el módulo (`post_init_hook`) y no en cada actualización.
+«Revertir asiento» DEBE (MUST) conservar la condición estándar de Odoo (solo asientos manuales publicados que no estén revertidos) y ocultarse además en los asientos de donación a quien no es Gestor. «Restablecer a borrador» DEBE (MUST) conservar la condición estándar (`show_reset_to_draft_button`) y ocultarse además en las facturas de venta y en los asientos de donación. El grupo Gestor de Donaciones DEBE (MUST) tener un privilegio propio («Donaciones», en la categoría de Contabilidad): un selector independiente del de Contabilidad en la pestaña de permisos, para que guardar la ficha del usuario con otro nivel no lo quite y para que se pueda asignar sin modo desarrollador (un grupo sin privilegio solo se dibuja en ese modo). El registro no es `noupdate` y la migración mueve el grupo al privilegio nuevo en las bases existentes; el administrador se agrega al grupo al instalar el módulo (`post_init_hook`) y no en cada actualización. El grupo es una marca funcional (quién revierte o pasa a borrador un asiento de donación) y NO DEBE (MUST NOT) dar permisos sobre `account.move`: el módulo no define `ir.model.access.csv`. Quien factura una donación necesita Facturación de Odoo (publicar la factura y su nota de crédito automática lo exigen), con o sin el grupo.
+
+#### Scenario: El Gestor sin Facturación no accede a los asientos
+- **Dado** un usuario que solo tiene el grupo Gestor de Donaciones
+- **Cuando** intenta leer, modificar o borrar un asiento, crear uno o publicar una factura
+- **Entonces** Odoo lo rechaza con un error de acceso
+
+#### Scenario: Quien factura una donación no necesita el Gestor
+- **Dado** un usuario de ventas con Facturación y sin el grupo Gestor
+- **Cuando** publica la factura de una donación
+- **Entonces** la factura queda publicada y se crea su nota de crédito de donación
 
 ### Requirement: REQ-DON-035 · Baja de un activo por donación con su motivo
 Cuando un activo se da de baja indicando un motivo (`account.asset.set_to_close` con `message`), los asientos de baja que se generan DEBEN (MUST) llevar ese motivo como referencia (`ref`) y como etiqueta de sus apuntes; sin motivo, los asientos de baja quedan como los genera Odoo. (Requisito heredado de la migración, formalizado al escribir la spec vigente.)
@@ -449,5 +459,3 @@ Cuando un activo se da de baja indicando un motivo (`account.asset.set_to_close`
   una mejora de Producto.
 - Con `binaural_foreign_cost`, quien valida un traslado valorado necesita el grupo «Costo Alterno
   (Ver)»: la lectura vive en ese módulo.
-- El grupo Gestor de Donaciones tiene permiso completo sobre `account.move` en
-  `ir.model.access.csv` (decisión pendiente del líder técnico).

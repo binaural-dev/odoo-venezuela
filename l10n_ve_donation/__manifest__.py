@@ -1,6 +1,6 @@
 {
     "name": "Venezuela - Donaciones",
-    "version": "19.0.3.0.3",
+    "version": "19.0.3.0.4",
     "category": "Accounting/Accounting",
     "summary": "Venezuela - Donaciones",
     "author": "binaural-dev",
@@ -19,7 +19,6 @@
         "data/donation_certificate_paperformat.xml",
         "data/donation_receipt_paperformat.xml",
         "security/res_groups.xml",
-        "security/ir.model.access.csv",
         "report/donation_product_table_template.xml",
         "report/donation_certificate_report.xml",
         "report/donation_certificate_template.xml",

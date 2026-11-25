@@ -3,8 +3,8 @@ from pathlib import Path
 
 from lxml import etree
 
-from odoo import Command
-from odoo.exceptions import UserError
+from odoo import Command, fields
+from odoo.exceptions import AccessError, UserError
 from odoo.tests import tagged
 from odoo.tools.safe_eval import safe_eval
 
@@ -205,3 +205,64 @@ class TestDonationSecurityAndViews(TestDonationCommon):
         self.assertEqual(entry.state, "posted")
         entry.with_user(self._user("manager", manager=True)).button_draft()
         self.assertEqual(entry.state, "draft")
+
+    # ── the Donation Manager does not give access to the accounting records ──
+
+    def _plain_user(self, login, *xmlids):
+        groups = self.env.ref("base.group_user")
+        for xmlid in xmlids:
+            groups |= self.env.ref(xmlid)
+        return self.env["res.users"].create({
+            "name": login, "login": login, "company_id": self.company.id,
+            "company_ids": [Command.set(self.company.ids)],
+            "group_ids": [Command.set(groups.ids)],
+        })
+
+    def test_the_manager_alone_has_no_access_to_the_accounting_entries(self):
+        # REQ-DON-034
+        """The group is a functional mark (who reverses or resets a donation
+        entry), not an accounting permission: whoever has it and has no
+        Invoicing or Accounting right cannot read, create, change or delete
+        any journal entry, nor post an invoice."""
+        user = self._plain_user("only.manager", "l10n_ve_donation.group_donation_manager")
+        regular = self._entry(is_donation=False)
+        with self.assertRaises(AccessError):
+            regular.with_user(user).check_access("read")
+        with self.assertRaises(AccessError):
+            regular.with_user(user).check_access("write")
+        with self.assertRaises(AccessError):
+            regular.with_user(user).check_access("unlink")
+        with self.assertRaises(AccessError):
+            self.env["account.move"].with_user(user).check_access("create")
+        with self.assertRaises(AccessError):
+            regular.with_user(user).action_post()
+
+    def test_who_invoices_a_donation_does_not_need_the_manager_group(self):
+        # REQ-DON-034
+        """The sales user (Invoicing right, no Donation Manager) posts the
+        donation invoice and its credit note is created: the invoicing right
+        is what the flow asks for, not the group of the donations."""
+        user = self._plain_user(
+            "invoicer", "sales_team.group_sale_salesman", "account.group_account_invoice",
+        )
+        self.assertFalse(user.has_group("l10n_ve_donation.group_donation_manager"))
+        invoice = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": self.company.partner_id.id,
+            "journal_id": self.journal_sale.id,
+            "is_donation": True,
+            "correlative": "99992",
+            "invoice_date": fields.Date.today(),
+            "date": fields.Date.today(),
+            "invoice_line_ids": [Command.create({
+                "product_id": self.product_donation.id,
+                "quantity": 1,
+                "price_unit": 100,
+                "tax_ids": [Command.set([self.sale_tax.id])],
+            })],
+        })
+        invoice.with_user(user).with_context(move_action_post_alert=True).action_post()
+        self.assertEqual(invoice.state, "posted")
+        credit_note = self.env["account.move"].search([("reversed_entry_id", "=", invoice.id)])
+        self.assertEqual(credit_note.move_type, "out_refund")
+        self.assertTrue(credit_note.is_donation)
