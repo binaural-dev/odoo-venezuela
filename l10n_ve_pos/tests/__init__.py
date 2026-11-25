@@ -22,3 +22,4 @@ from . import test_pos_tender_currency
 from . import test_pos_global_discount_foreign_price
 from . import test_pos_line_foreign_price_backfill
 from . import test_pos_sale_foreign_price_scenarios
+from . import test_pos_session_opening_rate
