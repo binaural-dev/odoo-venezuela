@@ -578,7 +578,11 @@ class AccountMove(models.Model):
     def _tfhka_enqueue_digitalization(self):
         """Enqueue: call this instead of generate_document_digital() directly.
         Never calls TFHKA -- just a field write, so it can't roll back the
-        caller's transaction (e.g. the posting of the invoice itself)."""
+        caller's transaction (e.g. the posting of the invoice itself).
+
+        Wakes the queue cron right away (see _tfhka_trigger_queue_cron) so
+        the document doesn't sit waiting for the cron's next scheduled run."""
+        queued_any = False
         for record in self:
             if record.tfhka_digitalization_state in ("queued", "processing"):
                 continue
@@ -587,6 +591,33 @@ class AccountMove(models.Model):
                 "tfhka_queued_at": fields.Datetime.now(),
                 "tfhka_digitalization_error": False,
             })
+            queued_any = True
+        if queued_any:
+            self._tfhka_trigger_queue_cron()
+
+    @api.model
+    def _tfhka_trigger_queue_cron(self):
+        """Asks Odoo's cron scheduler to run the digitalization queue cron
+        as soon as possible instead of waiting for its next scheduled call.
+
+        Before this, a freshly posted invoice waited for the cron's
+        1-minute interval plus the scheduler's own polling (ticket 16682),
+        usually one to a few minutes, even though the TFHKA round trip
+        itself takes about one second.
+
+        ``ir.cron._trigger()`` only records an ``ir.cron.trigger`` row and
+        notifies the scheduler after this transaction commits, so the cron
+        never sees an uncommitted 'queued' document and a rollback of the
+        posting simply discards the trigger. The cron keeps processing the
+        queue one document at a time, in order, exactly as before -- this
+        only removes the idle wait. Skipped when the cron is archived (e.g.
+        a neutralized database), so a restored copy never wakes it up."""
+        cron = self.env.ref(
+            "l10n_ve_invoice_digital.ir_cron_tfhka_digitalization_queue",
+            raise_if_not_found=False,
+        )
+        if cron and cron.sudo().active:
+            cron.sudo()._trigger()
 
     def _tfhka_process_digitalization(self):
         """Digitalize this single document. Returns True/False (success/failure).
@@ -886,6 +917,11 @@ class AccountMove(models.Model):
                     log_entry.id,
                 ),
             )
+        # Either path clears this company's 'error' lock: wake the cron so
+        # the re-queued document (and anything queued behind it) is
+        # processed right away instead of on the next scheduled run.
+        if eligible:
+            self._tfhka_trigger_queue_cron()
 
     @api.depends('state', 'debit_origin_id', 'reversed_entry_id', 'is_digitalized')
     def _compute_invisible_check(self):
