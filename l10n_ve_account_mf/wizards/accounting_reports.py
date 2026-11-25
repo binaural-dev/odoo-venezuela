@@ -323,7 +323,7 @@ class WizardAccountingReports(models.TransientModel):
         acumulan en el resumen."""
         return (
             move.move_type != "out_invoice"
-            or move.journal_id.is_debit
+            or self._is_debit_note(move)
             or move.partner_id.prefix_vat == "J"
             or move.partner_id.taxpayer_type != "ordinary"
         )

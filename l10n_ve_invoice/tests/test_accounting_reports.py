@@ -321,10 +321,41 @@ class TestAccountingReports(TransactionCase):
         wizard = self._create_wizard("sale")
         self.assertEqual(wizard._determinate_type("in_debit"), "ND")
 
-    def test_determinate_type_for_move_debit_journal(self):
-        move = self._create_move("out_invoice", self.journal_debit, [self.tax_sale_16.id])
+    def test_determinate_type_for_move_comes_from_the_document(self):
+        """The type of each document comes from the document, not from the
+        flag «Es débito» of its journal (task 87657): an invoice in a debit
+        journal is FAC, a credit note is NC in any journal and a debit note
+        (``debit_origin_id``) is ND in any journal."""
         wizard = self._create_wizard("sale")
-        self.assertEqual(wizard._determinate_type_for_move(move), "ND")
+        origin = self._create_posted_move("out_invoice", self.journal_sale, [self.tax_sale_16.id])
+        invoice_in_debit_journal = self._create_move(
+            "out_invoice", self.journal_debit, [self.tax_sale_16.id]
+        )
+        refund_in_debit_journal = self._create_move(
+            "out_refund", self.journal_debit, [self.tax_sale_16.id], reversed_entry_id=origin.id
+        )
+        debit_note_in_sale_journal = self._create_move(
+            "out_invoice", self.journal_sale, [self.tax_sale_16.id], debit_origin_id=origin.id
+        )
+        debit_note_in_debit_journal = self._create_move(
+            "out_invoice", self.journal_debit, [self.tax_sale_16.id], debit_origin_id=origin.id
+        )
+        self.assertEqual(wizard._determinate_type_for_move(invoice_in_debit_journal), "FAC")
+        self.assertEqual(wizard._determinate_type_for_move(refund_in_debit_journal), "NC")
+        self.assertEqual(wizard._determinate_type_for_move(debit_note_in_sale_journal), "ND")
+        self.assertEqual(wizard._determinate_type_for_move(debit_note_in_debit_journal), "ND")
+        self.assertEqual(wizard._get_affected_document_name(invoice_in_debit_journal), "--")
+        self.assertEqual(wizard._get_affected_document_name(refund_in_debit_journal), origin.name)
+        self.assertEqual(wizard._get_affected_document_name(debit_note_in_sale_journal), origin.name)
+        purchase_origin = self._create_posted_move(
+            "in_invoice", self.journal_purchase, [self.tax_purchase_16.id]
+        )
+        purchase_debit_note = self._create_move(
+            "in_invoice", self.journal_purchase, [self.tax_purchase_16.id],
+            debit_origin_id=purchase_origin.id, correlative="00002",
+        )
+        self.assertEqual(wizard._determinate_type_for_move(purchase_debit_note), "ND")
+        self.assertEqual(wizard._determinate_type_for_move(purchase_origin), "FAC")
 
     def test_transaction_type_invoice_posted(self):
         move = self._create_move(
@@ -618,17 +649,61 @@ class TestAccountingReports(TransactionCase):
         self.assertIn("correlative", line)
         self.assertIn("total_sales", line)
 
+    def _post_document(self, move_type, journal, tax_ids, **kwargs):
+        move = self._create_move(move_type, journal, tax_ids, **kwargs)
+        move.with_context(move_action_post_alert=True).action_post()
+        self.assertEqual(move.state, "posted")
+        return move
+
     def test_fields_sale_book_line_debit_journal(self):
+        """With the sales journal marked «Es débito» (required by the exchange
+        difference) its invoices are FAC and its debit notes ND with the
+        invoice they affect (task 87657)."""
         today = fields.Date.today()
-        move = self._create_posted_move(
+        invoice = self._post_document(
             "out_invoice", self.journal_debit, [self.tax_sale_16.id],
             invoice_date_display=today,
         )
+        debit_note = self._post_document(
+            "out_invoice", self.journal_debit, [self.tax_sale_16.id],
+            invoice_date_display=today, debit_origin_id=invoice.id, correlative="00002",
+        )
         wizard = self._create_wizard("sale", date_from=today, date_to=today)
-        taxes = wizard._determinate_amount_taxeds(move)
-        line = wizard._fields_sale_book_line(move, taxes)
+        line = wizard._fields_sale_book_line(invoice, wizard._determinate_amount_taxeds(invoice))
+        self.assertEqual(line["move_type"], "FAC")
+        self.assertEqual(line["invoice_number"], invoice.name)
+        self.assertEqual(line["debit_note_number"], "--")
+        self.assertEqual(line["transaction_type"], "01-REG")
+        self.assertEqual(line["number_invoice_affected"], "--")
+        line = wizard._fields_sale_book_line(
+            debit_note, wizard._determinate_amount_taxeds(debit_note)
+        )
         self.assertEqual(line["move_type"], "ND")
-        self.assertEqual(line["debit_note_number"], move.name)
+        self.assertEqual(line["debit_note_number"], debit_note.name)
+        self.assertEqual(line["invoice_number"], "--")
+        self.assertEqual(line["transaction_type"], "02-REG")
+        self.assertEqual(line["number_invoice_affected"], invoice.name)
+
+    def test_fields_sale_book_line_debit_note_in_sale_journal(self):
+        """A debit note issued with the «Debit Note» button stays in the
+        journal of its invoice, not marked «Es débito»: it is ND with the
+        invoice it affects, not FAC with «--» (task 87657)."""
+        today = fields.Date.today()
+        invoice = self._post_document(
+            "out_invoice", self.journal_sale, [self.tax_sale_16.id], invoice_date_display=today,
+        )
+        debit_note = self._post_document(
+            "out_invoice", self.journal_sale, [self.tax_sale_16.id],
+            invoice_date_display=today, debit_origin_id=invoice.id, correlative="00002",
+        )
+        wizard = self._create_wizard("sale", date_from=today, date_to=today)
+        line = wizard._fields_sale_book_line(
+            debit_note, wizard._determinate_amount_taxeds(debit_note)
+        )
+        self.assertEqual(line["move_type"], "ND")
+        self.assertEqual(line["debit_note_number"], debit_note.name)
+        self.assertEqual(line["transaction_type"], "02-REG")
+        self.assertEqual(line["number_invoice_affected"], invoice.name)
 
     def test_fields_sale_book_line_missing_invoice_date_raises(self):
         move = self._create_posted_move(
