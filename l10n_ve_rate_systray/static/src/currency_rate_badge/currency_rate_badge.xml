@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="l10n_ve_rate_systray.CurrencyRateBadge">
+        <div t-if="state.data"
+             class="o_currency_rate_badge d-flex align-items-center"
+             t-att-class="props.wrapperClass"
+             t-att-title="title">
+            <span class="d-flex align-items-center gap-1 rounded px-2 py-1 fw-bold text-nowrap"
+                  t-att-class="state.data.is_today ? 'bg-success text-black' : 'bg-danger text-white'">
+                <i class="fa fa-usd" role="img" aria-label="Rate"/>
+                <t t-if="hasRate">
+                    <span t-out="state.data.currency_symbol"/>
+                    <span t-out="rateLabel"/>
+                    <small t-if="!state.data.is_today" class="fw-normal">(<t t-out="dateLabel"/>)</small>
+                </t>
+                <span t-else="">No rate</span>
+            </span>
+        </div>
+    </t>
+</templates>
