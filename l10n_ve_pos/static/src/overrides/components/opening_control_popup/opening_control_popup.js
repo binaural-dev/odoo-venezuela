@@ -9,9 +9,9 @@ patch(OpeningControlPopup.prototype, {
    * (la noche anterior, otra pestaña) abriría con la tasa que tiene en el
    * navegador. Antes de abrir se compara con la tasa de la sesión
    * (PosStore.checkOpeningRate); si no es la misma, la caja no abre y recarga
-   * sus datos. Lo que otros módulos registran al abrir va en
-   * _beforeOpeningSession, después del chequeo, para no dejarlo hecho en una
-   * caja que no abrió.
+   * sus datos, y sin conexión tampoco abre. Lo que otros módulos registran al
+   * abrir va en _beforeOpeningSession, después del chequeo, para no dejarlo
+   * hecho en una caja que no abrió.
    */
   async confirm() {
     const check = await this.pos.checkOpeningRate();

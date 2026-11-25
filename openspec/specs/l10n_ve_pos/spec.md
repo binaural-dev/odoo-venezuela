@@ -921,7 +921,7 @@ El sistema NO DEBE (MUST NOT) abrir una sesión cuando la moneda alterna no tien
 
 ### Requirement: La caja no abre con una tasa cargada que no es la de la sesión
 
-Antes de confirmar la apertura el PdV DEBE (MUST) mandar a `pos.session.check_opening_rate` la tasa de la caja y el `rate` de cada moneda cargados. Si alguno no es el de la sesión NO DEBE (MUST NOT) abrir: avisa "Tasa desactualizada" y recarga los datos. Lo que se registra al abrir va en `_beforeOpeningSession`, después del chequeo.
+Antes de confirmar la apertura el PdV DEBE (MUST) mandar a `pos.session.check_opening_rate` la tasa de la caja y el `rate` de cada moneda cargados. Si alguno no es el de la sesión NO DEBE (MUST NOT) abrir: avisa "Tasa desactualizada" y recarga los datos. Sin conexión NO DEBE (MUST NOT) abrir, porque no puede comparar las tasas: avisa como el core que la caja no se abre sin conexión. Lo que se registra al abrir va en `_beforeOpeningSession`, después del chequeo.
 
 #### Scenario: Caja cargada la noche anterior
 
@@ -942,6 +942,11 @@ Antes de confirmar la apertura el PdV DEBE (MUST) mandar a `pos.session.check_op
 
 - **WHEN** la tasa cargada es vieja y el equipo tiene órdenes pagadas sin sincronizar
 - **THEN** la sesión abre para enviarlas y el PdV recarga los datos enseguida
+
+#### Scenario: Apertura sin conexión
+
+- **WHEN** el chequeo de la tasa no llega al servidor (`ConnectionLostError`), aunque la conexión vuelva enseguida
+- **THEN** la sesión no abre, se avisa que la caja no se abre sin conexión y no se ejecuta `_beforeOpeningSession`
 
 #### Scenario: Registro de apertura de otros módulos
 

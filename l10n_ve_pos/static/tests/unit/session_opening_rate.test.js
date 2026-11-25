@@ -143,9 +143,12 @@ describe("l10n_ve_pos tasa de apertura de la sesión", () => {
         expect(reloads).toEqual([]);
     });
 
-    test("sin conexión deja que el core muestre su aviso", async () => {
-        const { store, reloads } = makeStore({ error: new ConnectionLostError("/x") });
-        expect(await checkOpeningRate(store)).toBe("ok");
+    test("sin conexión la caja no abre: no se puede comparar la tasa", async () => {
+        allowTranslations();
+        const { store, dialogs, reloads } = makeStore({ error: new ConnectionLostError("/x") });
+        expect(await checkOpeningRate(store)).toBe("blocked");
+        expect(dialogs.length).toBe(1);
+        expect(String(dialogs[0].body)).toInclude("offline");
         expect(reloads).toEqual([]);
     });
 

@@ -185,6 +185,12 @@ msgid "Connection error"
 msgstr ""
 
 #. module: l10n_ve_pos
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/services/pos_store.js:0
+msgid "Connection Lost"
+msgstr "Conexión perdida"
+
+#. module: l10n_ve_pos
 #: model:ir.model,name:l10n_ve_pos.model_res_partner
 msgid "Contact"
 msgstr "Contacto"
@@ -1075,6 +1081,12 @@ msgstr "Los productos '%s' no están disponibles en el almacén %s"
 #: model:ir.model.fields,help:l10n_ve_pos.field_pos_payment__foreign_rate
 msgid "The rate that is gonna be always shown to the user."
 msgstr "La tarifa que siempre se mostrará al usuario."
+
+#. module: l10n_ve_pos
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/services/pos_store.js:0
+msgid "The register cannot be opened while offline. Please try again."
+msgstr "La caja no se puede abrir sin conexión. Inténtelo de nuevo."
 
 #. module: l10n_ve_pos
 #. odoo-python

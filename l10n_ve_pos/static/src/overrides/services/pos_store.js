@@ -103,7 +103,8 @@ patch(PosStore.prototype, {
    * Antes de abrir la sesión: la tasa cargada en el navegador debe ser la de
    * la sesión (la del día). Devuelve:
    * - "ok": abrir como siempre.
-   * - "blocked": no abrir (sin tasa del día, o se recargan los datos).
+   * - "blocked": no abrir (sin tasa del día, sin conexión, o se recargan los
+   *   datos).
    * - "reload": la tasa es vieja pero hay órdenes pagadas sin sincronizar, que
    *   solo se envían con la sesión abierta y que una recarga perdería: abrir,
    *   y recargar los datos enseguida (reloadData sincroniza antes).
@@ -116,9 +117,15 @@ patch(PosStore.prototype, {
         this._getLoadedRates(),
       ]);
     } catch (error) {
-      // Sin conexión el core ya avisa que la caja no se puede abrir.
+      // Sin conexión no se puede comparar la tasa: no abrir, con el aviso del
+      // core. Con una conexión inestable la apertura (set_opening_control)
+      // podría pasar justo después y la caja quedaría con la tasa vieja.
       if (error instanceof ConnectionLostError) {
-        return "ok";
+        this.dialog.add(AlertDialog, {
+          title: _t("Connection Lost"),
+          body: _t("The register cannot be opened while offline. Please try again."),
+        });
+        return "blocked";
       }
       // Sesión borrada: el core recarga el PdV; cualquier otro error sube.
       await this.reloadIfSessionDeleted(error);
