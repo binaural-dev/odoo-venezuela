@@ -333,6 +333,15 @@ class AccountMoveLine(models.Model):
         "foreign_credit_adjustment",
         "move_id.invoice_date",
         "move_id.date",
+        # `_get_non_invoice_foreign_value` mira las lineas hermanas: si las
+        # demas estan en la moneda alterna, la unica linea en moneda de la
+        # compania toma su monto con signo contrario. Sin estas dependencias,
+        # cambiar la contrapartida a USD despues de crear el asiento (p. ej.
+        # al conciliar una linea de extracto en Bs) dejaba la linea del banco
+        # con el monto a la tasa del dia y el asiento descuadrado en alterna
+        # (ticket #16410).
+        "move_id.line_ids.amount_currency",
+        "move_id.line_ids.currency_id",
     )
     def _compute_foreign_debit_credit(self):
         for line in self:
