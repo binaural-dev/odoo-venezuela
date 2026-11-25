@@ -5,12 +5,12 @@ from . import (
     product_template,
     res_company,
     res_config_settings,
+    res_partner,
     sale_order,
     stock_location,
     stock_move,
     stock_picking,
     stock_picking_type,
-    stock_scrap,
+    stock_return_picking,
     stock_warehouse,
 )
-

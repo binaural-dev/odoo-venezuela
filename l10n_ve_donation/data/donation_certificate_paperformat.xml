@@ -1,9 +1,11 @@
 <odoo>
     <data noupdate="1">
+        <!-- Letter size, the usual one in Venezuela for the certificate (the
+             receipt is half letter). -->
         <record id="paperformat_donation_certificate" model="report.paperformat">
             <field name="name">Donation Certificate</field>
             <field name="default" eval="False"/>
-            <field name="format">A4</field>
+            <field name="format">Letter</field>
             <field name="orientation">Portrait</field>
             <field name="margin_top">10</field>
             <field name="margin_bottom">10</field>

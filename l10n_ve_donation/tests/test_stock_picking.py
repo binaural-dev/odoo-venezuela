@@ -1,236 +1,314 @@
 # -*- coding: utf-8 -*-
-from odoo.tests import tagged
-from odoo.exceptions import UserError
 from odoo import Command
+from odoo.exceptions import UserError
+from odoo.tests import tagged
 
-from odoo.addons.l10n_ve_stock_account.tests.common import StockAccountTestCommon
+from .common import TestDonationCommon
 
 
 @tagged("post_install", "-at_install", "l10n_ve_donation")
-class TestDonationStockPicking(StockAccountTestCommon):
-    """Coverage for the `is_donation` field and related overrides that
-    `l10n_ve_donation` adds to `stock.picking` (moved here from
-    `l10n_ve_stock_account` -- see that module's `test_stock_picking.py`)."""
+class TestDonationStockPicking(TestDonationCommon):
+    """`is_donation` and the donation rules that `l10n_ve_donation` adds to
+    `stock.picking`: menu default, transfer reason, validation, delivery
+    configuration errors and the cost of the delivery receipt.
+
+    Covers: REQ-DON-001, REQ-DON-002, REQ-DON-003, REQ-DON-004, REQ-DON-006, REQ-DON-017, REQ-DON-019, REQ-DON-032.
+    """
 
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-
-        cls.company_partner = cls.company.partner_id
-
-        cls.sale_journal = cls.env["account.journal"].search(
-            [("type", "=", "sale"), ("company_id", "=", cls.company.id)], limit=1
-        )
-        if not cls.sale_journal:
-            cls.sale_journal = cls.env["account.journal"].create({
-                "name": "Donation Sale Journal",
-                "type": "sale",
-                "code": "DONSJ",
-                "company_id": cls.company.id,
-            })
-        cls.company.customer_journal_id = cls.sale_journal.id
-
-        cls.income_account = cls.env["account.account"].search(
-            [("account_type", "=", "income"), ("company_ids", "in", cls.company.ids)],
-            limit=1,
-        ) or cls.env["account.account"].create({
-            "name": "Donation Income Test",
-            "code": "DONINC01",
-            "account_type": "income",
-            "company_ids": [Command.set([cls.company.id])],
-        })
-
-        # `create_invoice()` needs a receivable account on the invoice
-        # partner (the company's own partner, for donations) to build the
-        # payment-term line -- a minimal database has no default one.
-        if not cls.company_partner.property_account_receivable_id:
-            cls.receivable_account = cls.env["account.account"].search(
-                [("account_type", "=", "asset_receivable"), ("company_ids", "in", cls.company.ids)],
-                limit=1,
-            ) or cls.env["account.account"].create({
-                "name": "Donation Receivable Test",
-                "code": "DONREC01",
-                "account_type": "asset_receivable",
-                "company_ids": [Command.set([cls.company.id])],
-            })
-            cls.company_partner.property_account_receivable_id = cls.receivable_account.id
-
-        cls.partner = cls.env["res.partner"].create({"name": "Donation Test Partner"})
-        cls.product = cls.env["product.product"].create({
-            "name": "Donation Coverage Product",
-            "type": "consu",
-            "lst_price": 100.0,
-            "property_account_income_id": cls.income_account.id,
-            "taxes_id": [Command.clear()],
-            "supplier_taxes_id": [Command.clear()],
-        })
-
-        cls.picking_type_internal = cls.env.ref("stock.picking_type_internal")
-        cls.location_stock = cls.env.ref("stock.stock_location_stock")
-
+        cls.reason_donation = cls.env.ref("l10n_ve_stock_account.transfer_reason_donation")
+        cls.reason_sale = cls.env.ref("l10n_ve_stock_account.transfer_reason_sale")
         cls.reason_self_consumption = cls.env.ref(
             "l10n_ve_stock_account.transfer_reason_self_consumption"
         )
 
-    # ── Helpers ──
+    def _create_regular_picking(self):
+        picking_type = self.warehouse_normal.out_type_id
+        return self.env["stock.picking"].create({
+            "picking_type_id": picking_type.id,
+            "location_id": picking_type.default_location_src_id.id,
+            "location_dest_id": self.env.ref("stock.stock_location_customers").id,
+        })
 
-    def _create_sale_order(self, is_donation=True, partner=None):
-        partner = partner or self.company_partner
-        so = self.env["sale.order"].create({
-            "partner_id": partner.id,
-            "document": "dispatch_guide",
-            "is_donation": is_donation,
+    def _create_donation_sale_picking(self):
+        order = self.env["sale.order"].create({
+            "partner_id": self.partner.id,
+            "is_donation": True,
+            "document": "invoice",
             "order_line": [Command.create({
-                "product_id": self.product.id,
+                "product_id": self.product_storable.id,
                 "product_uom_qty": 1,
                 "price_unit": 100.0,
-                "tax_ids": [Command.clear()],
             })],
         })
-        return so
-
-    def _create_outgoing_donation_picking(self, validate=True):
-        # Built directly (not via sale.order.action_confirm()) to avoid the
-        # procurement/stock-rule machinery, which needs warehouse routes
-        # that don't exist in this minimal test database.
-        so = self._create_sale_order(is_donation=True)
-        picking_type_out = self.env.ref("stock.picking_type_out")
+        picking_type = self.env.ref("stock.picking_type_out")
         location_customers = self.env.ref("stock.stock_location_customers")
-        picking = self.env["stock.picking"].create({
-            "partner_id": so.partner_id.id,
-            "picking_type_id": picking_type_out.id,
-            "location_id": self.location_stock.id,
+        return self.env["stock.picking"].create({
+            "partner_id": order.partner_id.id,
+            "picking_type_id": picking_type.id,
+            "location_id": picking_type.default_location_src_id.id,
             "location_dest_id": location_customers.id,
-            "sale_id": so.id,
+            "sale_id": order.id,
+        })
+
+    # ── is_donation ──
+
+    def test_is_donation_follows_the_sale_order(self):
+        picking = self._create_donation_sale_picking()
+        self.assertTrue(picking.is_donation)
+        picking.sale_id.is_donation = False
+        self.assertFalse(picking.is_donation)
+
+    def test_is_donation_is_false_by_default(self):
+        picking = self._create_regular_picking()
+        self.assertFalse(picking.is_donation)
+
+    def test_is_donation_kept_without_sale_order(self):
+        picking = self._create_donation_picking()
+        self.assertTrue(picking.is_donation)
+        picking.write({"partner_id": self.partner.id})
+        self.assertTrue(picking.is_donation)
+
+    def test_donation_menu_context_marks_the_new_picking(self):
+        Picking = self.env["stock.picking"]
+        self.assertTrue(
+            Picking.with_context(donation_menu=True).default_get(["is_donation"])["is_donation"]
+        )
+        self.assertFalse(Picking.default_get(["is_donation"]).get("is_donation"))
+        # A `default_is_donation` is NOT what the menu uses (it would leak
+        # to every record created from the action, e.g. valuation entries).
+        self.assertNotIn(
+            "default_is_donation",
+            self.env.ref("l10n_ve_donation.action_stock_picking_donation").context,
+        )
+
+    # ── transfer reason ──
+
+    def test_donation_delivery_gets_the_donation_reason(self):
+        picking = self._create_donation_picking()
+        self.assertEqual(picking.transfer_reason_id, self.reason_donation)
+        self.assertIn(self.reason_donation, picking.allowed_reason_ids)
+
+    def test_donation_reason_is_added_not_substituted(self):
+        """The base list of the picking is kept: the reason is added to it
+        (the base computation rewrites any reason that is not allowed)."""
+        picking = self._create_donation_picking()
+        self.assertIn(self.reason_self_consumption, picking.allowed_reason_ids)
+
+    def test_donation_sale_picking_gets_the_donation_reason(self):
+        picking = self._create_donation_sale_picking()
+        self.assertEqual(picking.transfer_reason_id, self.reason_donation)
+        self.assertIn(self.reason_sale, picking.allowed_reason_ids)
+
+    def test_regular_delivery_keeps_its_reason(self):
+        picking = self._create_regular_picking()
+        self.assertNotEqual(picking.transfer_reason_id, self.reason_donation)
+        self.assertNotIn(self.reason_donation, picking.allowed_reason_ids)
+
+    def test_donation_picking_has_no_dispatch_guide(self):
+        picking = self._create_donation_picking(partner=self.partner)
+        self.assertFalse(picking.is_dispatch_guide)
+
+    def test_form_view_makes_the_donation_reason_readonly(self):
+        arch = self.env["stock.picking"].get_view(
+            self.env.ref("l10n_ve_donation.view_picking_form_donation").id, "form"
+        )["arch"]
+        self.assertIn("is_donation or state == 'done'", arch)
+
+    def test_form_does_not_repeat_fields(self):
+        """`l10n_ve_inventory_book` requires a single `is_donation` and a
+        single `sale_id` in the picking form."""
+        from lxml import etree
+        arch = etree.fromstring(
+            self.env["stock.picking"].get_view(view_type="form")["arch"]
+        )
+        for fname in ("is_donation", "sale_id", "picking_type_code"):
+            self.assertEqual(len(arch.xpath(f"//field[@name='{fname}']")), 1, fname)
+
+    def test_create_invoice_button_is_hidden_on_a_donation_without_sale(self):
+        """The 'Create Invoice' button would issue a regular fiscal invoice
+        to the beneficiary of a donation delivery."""
+        picking = self._create_donation_picking(partner=self.partner, validate=True)
+        self.assertEqual(picking.state, "done")
+        self.assertFalse(picking.show_create_invoice)
+
+        # Control: the same done delivery, if it were not a donation, would
+        # offer the button.
+        picking.is_donation = False
+        self.assertTrue(picking.show_create_invoice)
+
+    # ── button_validate ──
+
+    def test_validate_requires_contact_or_reason(self):
+        picking = self._create_donation_picking()
+        with self.assertRaises(UserError):
+            picking.button_validate()
+
+    def test_validate_with_reason_only_is_accepted(self):
+        picking = self._create_donation_picking(reason="Hospital campaign", validate=True)
+        self.assertEqual(picking.state, "done")
+
+    def test_validate_with_contact_only_is_accepted(self):
+        picking = self._create_donation_picking(partner=self.partner, validate=True)
+        self.assertEqual(picking.state, "done")
+
+    # ── configuration errors ──
+
+    def test_config_errors_destination_must_be_inventory(self):
+        picking = self._create_donation_picking(reason="x")
+        picking.location_dest_id = self.env.ref("stock.stock_location_customers")
+        picking.move_ids.location_dest_id = self.env.ref("stock.stock_location_customers")
+        errors = picking._get_donation_delivery_config_errors()
+        self.assertEqual(len(errors), 1)
+        with self.assertRaises(UserError):
+            picking.button_validate()
+
+    def test_config_errors_real_time_needs_the_valuation_account(self):
+        self.location_donation.valuation_account_id = False
+        picking = self._create_donation_picking(reason="x")
+        self.assertTrue(picking._has_real_time_valuation_moves())
+        self.assertEqual(len(picking._get_donation_delivery_config_errors()), 1)
+
+    def test_config_errors_periodic_valuation_does_not_need_the_account(self):
+        self.location_donation.valuation_account_id = False
+        self.product_categ.property_valuation = "periodic"
+        picking = self._create_donation_picking(reason="x")
+        self.assertFalse(picking._has_real_time_valuation_moves())
+        self.assertEqual(picking._get_donation_delivery_config_errors(), [])
+
+    def test_config_errors_ok_when_configured(self):
+        picking = self._create_donation_picking(reason="x")
+        self.assertEqual(picking._get_donation_delivery_config_errors(), [])
+
+    def test_config_errors_non_storable_products_are_not_real_time(self):
+        service_like = self.env["product.product"].create({
+            "name": "Consumable", "type": "consu", "categ_id": self.product_categ.id,
+        })
+        picking = self._create_donation_picking(reason="x", product=service_like)
+        self.assertFalse(picking._has_real_time_valuation_moves())
+
+    # ── certificate ──
+
+    def test_certificate_cost_comes_from_the_move_value(self):
+        picking = self._create_donation_picking(quantity=3, partner=self.partner, validate=True)
+        rows = picking._get_donation_product_lines()
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["unit_cost"], 15.0)
+        self.assertEqual(rows[0]["total_value"], 45.0)
+        self.assertEqual(picking._get_donation_grand_total(), 45.0)
+
+    def test_certificate_cost_is_stable_after_a_cost_change(self):
+        picking = self._create_donation_picking(partner=self.partner, validate=True)
+        self.product_storable.standard_price = 99.0
+        self.assertEqual(picking._get_donation_grand_total(), 15.0)
+
+    def test_certificate_cost_is_zero_before_validation(self):
+        picking = self._create_donation_picking(partner=self.partner)
+        self.assertEqual(picking._get_donation_grand_total(), 0.0)
+
+    def test_print_receipt_returns_the_delivery_receipt(self):
+        picking = self._create_donation_picking(
+            partner=self.partner, reason="Medication for the clinic", validate=True
+        )
+        report = self.env.ref("l10n_ve_donation.action_donation_receipt_stock_picking")
+        action = picking.print_donation_receipt()
+        self.assertEqual(action, report.report_action(picking))
+        html, _ = self.env["ir.actions.report"]._render_qweb_html(
+            "l10n_ve_donation.donation_receipt_template_stock_picking", picking.ids
+        )
+        self.assertIn(self.partner.name.encode(), html)
+        self.assertIn(b"Donation Receipt", html)
+        self.assertIn(b"Medication for the clinic", html)
+        # The detail of the goods is the shared product table, with its total.
+        self.assertIn(b"Total at cost", html)
+
+    def test_receipt_documents_use_the_venezuelan_formats(self):
+        # REQ-DON-032
+        """RIF with its prefix, the whole address (state and zip, no name
+        repeated) and the amounts of the table with the format of the
+        language: the documents showed «21232157-1», «CANDELARIA», «Name 45
+        Valencia CB 2006», «10.0» and «5000.00 Bs.F»."""
+        venezuela = self.env.ref("base.ve")
+        state = self.env["res.country.state"].search([("country_id", "=", venezuela.id)], limit=1) \
+            or self.env["res.country.state"].create(
+                {"name": "Test State", "code": "TS", "country_id": venezuela.id}
+            )
+        self.company.partner_id.write({
+            "prefix_vat": "J", "vat": "123456789", "street": "Av. Principal 1", "city": "Caracas",
+            "state_id": state.id, "zip": "1010", "country_id": venezuela.id,
+        })
+        self.partner.write({
+            "street": "Calle 45", "city": "Valencia", "state_id": state.id, "zip": "2001",
+            "country_id": venezuela.id,
+        })
+        picking = self._create_donation_picking(quantity=2.0, partner=self.partner, validate=True)
+        html, _ = self.env["ir.actions.report"]._render_qweb_html(
+            "l10n_ve_donation.donation_receipt_template_stock_picking", picking.ids
+        )
+        html = html.decode()
+        self.assertIn("J-123456789", html)
+        self.assertIn(f"Av. Principal 1, Caracas, {state.name}, 1010, Venezuela", html)
+        self.assertIn(f"Calle 45, Valencia, {state.name}, 2001, Venezuela", html)
+        self.assertNotIn(f"{self.partner.name} Calle 45", html)
+        currency = self.company.currency_id
+        for amount in (15.0, 30.0):
+            self.assertIn(
+                str(self.env["ir.qweb.field.monetary"].value_to_html(amount, {"display_currency": currency})),
+                html,
+            )
+        self.assertNotIn("30.00 " + currency.symbol, html)
+
+    def test_delivery_receipt_amounts_come_from_the_cost_of_the_goods(self):
+        picking = self._create_donation_picking(quantity=2.0, partner=self.partner, validate=True)
+        amounts = picking._get_donation_picking_amounts()
+        self.assertAlmostEqual(amounts["amount"], picking._get_donation_grand_total())
+        self.assertTrue(amounts["amount"])
+        self.assertEqual(amounts["currency"], self.company.currency_id)
+
+    # ── returns ──
+
+    def test_donation_delivery_cannot_be_returned(self):
+        picking = self._create_donation_picking(partner=self.partner, validate=True)
+        wizard = self.env["stock.return.picking"].with_context(
+            active_id=picking.id, active_model="stock.picking"
+        ).create({})
+        with self.assertRaises(UserError):
+            wizard._create_return()
+
+    def test_donation_delivery_is_not_listed_in_the_dispatch_guides(self):
+        """The donation delivery receipt replaces the dispatch guide: a
+        donation delivery of a standard delivery operation type (the one
+        that is listed in the guides) is not listed; without the donation
+        mark it is."""
+        out_type = self.warehouse_donation.out_type_id
+        product = self.product_storable
+        location_src = out_type.default_location_src_id
+        destination = self.location_donation
+        self._create_stock(product, 1, location_src)
+        picking = self.env["stock.picking"].create({
+            "picking_type_id": out_type.id,
+            "location_id": location_src.id,
+            "location_dest_id": destination.id,
+            "partner_id": self.partner.id,
+            "is_donation": True,
             "move_ids": [Command.create({
-                "product_id": self.product.id,
+                "product_id": product.id,
                 "product_uom_qty": 1,
-                "location_id": self.location_stock.id,
-                "location_dest_id": location_customers.id,
+                "product_uom": product.uom_id.id,
+                "location_id": location_src.id,
+                "location_dest_id": destination.id,
             })],
         })
         picking.action_confirm()
-        if validate:
-            picking.move_ids.write({"quantity": 1, "picked": True})
-            picking.button_validate()
-        return picking
+        picking.action_assign()
+        picking.move_ids.write({"quantity": 1, "picked": True})
+        picking.button_validate()
+        self.assertEqual(picking.state, "done")
+        self.assertEqual(picking.type_delivery_step, "out")
+        self.assertFalse(picking.match_guide_dispatch_domain)
 
-    def _create_internal_picking(self):
-        return self.env["stock.picking"].create({
-            "picking_type_id": self.picking_type_internal.id,
-            "location_id": self.location_stock.id,
-            "location_dest_id": self.location_stock.id,
-        })
+        picking.is_donation = False
+        self.assertTrue(picking.match_guide_dispatch_domain)
 
-    # ── _compute_is_donation ──
-
-    def test_compute_is_donation_follows_sale_order(self):
-        picking = self._create_outgoing_donation_picking(validate=False)
-        self.assertTrue(picking.is_donation)
-
-    def test_compute_is_donation_false_without_sale(self):
-        picking = self._create_internal_picking()
-        self.assertFalse(picking.is_donation)
-
-    # ── onchange is_donation / partner_id ──
-
-    def test_onchange_is_donation_sets_company_partner(self):
-        picking = self._create_internal_picking()
-        picking.is_donation = True
-        picking.is_dispatch_guide = True
-        picking._onchange_is_donation()
-        self.assertEqual(picking.partner_id, self.company_partner)
-        self.assertFalse(picking.is_dispatch_guide)
-
-    def test_onchange_partner_id_donation_allows_company_partner(self):
-        picking = self._create_internal_picking()
-        picking.is_donation = True
-        picking.partner_id = self.company_partner
-        picking._onchange_partner_id_donation()  # should not raise
-
-    def test_onchange_partner_id_donation_raises_for_other_partner(self):
-        picking = self._create_internal_picking()
-        picking.is_donation = True
-        picking.partner_id = self.partner
-        with self.assertRaises(UserError):
-            picking._onchange_partner_id_donation()
-
-    # ── _compute_picking_type_domain ──
-
-    def test_compute_picking_type_domain_uses_native_domain_for_donation(self):
-        # l10n_ve_donation no longer restricts the domain by
-        # `is_donation_picking_type` -- no data ever sets that flag, which
-        # used to leave donation pickings with an empty (unusable) domain.
-        picking = self._create_internal_picking()
-        picking.is_donation = True
-        picking._compute_picking_type_domain()
-        self.assertIn("internal", picking.picking_type_domain)
-
-    # ── _compute_allowed_reason_ids ──
-
-    def test_compute_allowed_reason_ids_forces_self_consumption(self):
-        picking = self._create_outgoing_donation_picking(validate=False)
-        picking._compute_allowed_reason_ids()
-        self.assertEqual(picking.allowed_reason_ids, self.reason_self_consumption)
-        self.assertEqual(picking.transfer_reason_id, self.reason_self_consumption)
-
-    def test_compute_allowed_reason_ids_replaces_not_extends(self):
-        # (6, 0, [id]) must replace whatever super() computed (e.g. the
-        # "sale" reason for an outgoing picking with a sale order), not
-        # add self-consumption on top of it.
-        picking = self._create_outgoing_donation_picking(validate=False)
-        picking._compute_allowed_reason_ids()
-        self.assertNotIn(self.env.ref("l10n_ve_stock_account.transfer_reason_sale").id, picking.allowed_reason_ids.ids)
-
-    # ── create_invoice ──
-
-    def test_create_invoice_marks_invoice_as_donation(self):
-        picking = self._create_outgoing_donation_picking(validate=True)
-        invoice = picking.create_invoice()
-        self.assertTrue(invoice)
-        self.assertTrue(invoice.is_donation)
-
-    def test_create_invoice_raises_on_multiple_pickings(self):
-        picking_a = self._create_outgoing_donation_picking(validate=True)
-        picking_b = self._create_outgoing_donation_picking(validate=True)
-        with self.assertRaises(ValueError):
-            (picking_a | picking_b).create_invoice()
-
-    # ── create_multi_invoice ──
-
-    def test_create_multi_invoice_marks_invoice_as_donation(self):
-        picking_a = self._create_outgoing_donation_picking(validate=True)
-        picking_b = self._create_outgoing_donation_picking(validate=True)
-        pickings = picking_a | picking_b
-
-        invoice = picking_a.create_multi_invoice(pickings)
-
-        self.assertTrue(invoice)
-        self.assertTrue(invoice.is_donation)
-
-    def test_create_multi_invoice_does_not_mark_mixed_batch_as_donation(self):
-        donation_picking = self._create_outgoing_donation_picking(validate=True)
-        so = self._create_sale_order(is_donation=False, partner=self.partner)
-        picking_type_out = self.env.ref("stock.picking_type_out")
-        location_customers = self.env.ref("stock.stock_location_customers")
-        regular_picking = self.env["stock.picking"].create({
-            "partner_id": so.partner_id.id,
-            "picking_type_id": picking_type_out.id,
-            "location_id": self.location_stock.id,
-            "location_dest_id": location_customers.id,
-            "sale_id": so.id,
-            "move_ids": [Command.create({
-                "product_id": self.product.id,
-                "product_uom_qty": 1,
-                "location_id": self.location_stock.id,
-                "location_dest_id": location_customers.id,
-            })],
-        })
-        regular_picking.action_confirm()
-        regular_picking.move_ids.write({"quantity": 1, "picked": True})
-        regular_picking.button_validate()
-        pickings = donation_picking | regular_picking
-
-        invoice = donation_picking.create_multi_invoice(pickings)
-
-        self.assertFalse(invoice.is_donation)
