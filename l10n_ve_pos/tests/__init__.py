@@ -18,3 +18,4 @@ from . import test_pos_config_stock_availability
 from . import test_server_date_vs_user_tz
 from . import test_pos_config_product_creation
 from . import test_pos_product_available_qty
+from . import test_pos_tender_currency

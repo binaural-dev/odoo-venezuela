@@ -1,8 +1,21 @@
 /** @odoo-module */
 
 import { patch } from "@web/core/utils/patch";
+import { redirect } from "@web/core/utils/urls";
 import { _t } from "@web/core/l10n/translation";
+import {
+    AlertDialog,
+    ConfirmationDialog,
+} from "@web/core/confirmation_dialog/confirmation_dialog";
 import { KioskDebugDialog } from "@l10n_ve_pos_self_order/app/debug/kiosk_debug_dialog";
+
+// Órdenes pendientes que se listan en el aviso de bloqueo (igual que la caja).
+const MAX_PENDING_SHOWN = 10;
+
+// Menú de selección de cajas del PdV (`PosStore.redirectToBackend` de
+// point_of_sale). No es adonde va la caja al cerrar: en 19.0 vuelve a
+// `/pos/ui/<caja>`, que en el equipo del Kiosko abriría una sesión de caja.
+export const POS_MENU_URL = "/odoo/action-point_of_sale.action_client_pos_menu";
 
 /**
  * Extensión fiscal del panel de Debug del Kiosko (`KioskDebugDialog`, base).
@@ -54,5 +67,133 @@ patch(KioskDebugDialog.prototype, {
             this.state.connected = ok;
             return ok;
         });
+    },
+
+    _mfAlert(title, body, props = {}) {
+        this.dialog.add(AlertDialog, { title, body, ...props });
+    },
+
+    /** Confirmación de la Z (irreversible), con el texto de la caja. */
+    _confirmReportZ() {
+        return new Promise((resolve) => {
+            this.dialog.add(
+                ConfirmationDialog,
+                {
+                    title: _t("Confirm Z report"),
+                    body: _t(
+                        "The Z report will close the current fiscal day. This action is irreversible. Do you want to continue?"
+                    ),
+                    confirm: () => resolve(true),
+                    cancel: () => resolve(false),
+                },
+                { onClose: () => resolve(false) }
+            );
+        });
+    },
+
+    /**
+     * Cerrar sesión e imprimir Z (ticket 16406). Mismo flujo que el botón de la
+     * caja (`ClosePosPopup.closeSessionAndPrintZ` de l10n_ve_pos_mf):
+     *  1. si hay órdenes de la sesión sin número fiscal, avisa y no sigue;
+     *  2. pide confirmación (la Z es irreversible);
+     *  3. lee S1 e imprime la Z;
+     *  4. sincroniza la Z con Odoo;
+     *  5. cierra la sesión con el cierre nativo del Kiosko;
+     *  6. lleva al menú de selección de cajas del PdV (`POS_MENU_URL`).
+     * Cualquier fallo corta el flujo en ese paso. Antes de empezar, tampoco
+     * sigue si hay una factura fiscal imprimiéndose (la Z se metería en medio)
+     * o si la sesión ya tiene su Z (otra Z cerraría un día vacío).
+     */
+    onCloseSessionAndPrintZ() {
+        return this._run(_t("Close session and print Z"), async () => {
+            if (this.selfOrder.isPrintingKioskFiscalInvoice) {
+                return {
+                    valid: false,
+                    message: _t("A fiscal invoice is being printed. Try again when it finishes."),
+                };
+            }
+
+            const check = await this.selfOrder.checkKioskCloseSession();
+            if (check.report_z) {
+                const body = _t(
+                    "This session already has its Z report (no. %s). Close it from the backend.",
+                    check.report_z
+                );
+                this._mfAlert(_t("The session cannot be closed"), body);
+                return { valid: false, message: body };
+            }
+            const pending = check.pending_orders;
+            if (pending.length) {
+                this._alertPendingOrders(pending);
+                return {
+                    valid: false,
+                    message: _t("%s order(s) without a fiscal invoice.", pending.length),
+                };
+            }
+
+            if (!(await this._confirmReportZ())) {
+                return { valid: true, message: _t("Cancelled.") };
+            }
+
+            const zResult = await this.selfOrder.printKioskReportZ();
+            if (!zResult.success) {
+                this._mfAlert(_t("Error printing the Z report"), zResult.error);
+                return { valid: false, message: zResult.error };
+            }
+
+            const synced = await this.selfOrder.syncKioskReportZ(zResult.value);
+            if (!synced.success) {
+                const body = _t(
+                    "The Z report was printed, but Odoo could not be updated (reason: %s). The session was not closed. Check the sales book and close the session from the backend.",
+                    synced.error || _t("unknown error")
+                );
+                this._mfAlert(_t("Z report printed with a warning"), body);
+                return { valid: false, message: body };
+            }
+
+            const closed = await this.selfOrder.closeKioskSession();
+            if (!closed.success) {
+                const body = _t(
+                    "The Z report was printed and synced, but the session could not be closed (reason: %s). Close it from the backend.",
+                    closed.error || _t("unknown error")
+                );
+                this._mfAlert(_t("Session not closed"), body);
+                return { valid: false, message: body };
+            }
+            redirect(POS_MENU_URL);
+            return { valid: true, message: _t("Z report printed and session closed.") };
+        });
+    },
+
+    /**
+     * Aviso de bloqueo con las órdenes pendientes. Las pagadas se resuelven en
+     * el panel de Órdenes (el aviso lo abre: `checkKioskCloseSession` ya las
+     * cargó aunque no estén entre las últimas); las que quedaron en borrador con
+     * un pago no aparecen en el panel y se resuelven desde el backend.
+     */
+    _alertPendingOrders(pending) {
+        const shown = pending
+            .slice(0, MAX_PENDING_SHOWN)
+            .map((order) => {
+                const ref = order.pos_reference || order.name;
+                return order.state === "draft"
+                    ? _t("%s (unfinished order with a payment: resolve it from the backend)", ref)
+                    : ref;
+            })
+            .join("\n");
+        const more = pending.length - MAX_PENDING_SHOWN;
+        // Sin concatenar: `_t` es perezoso y se resuelve al mostrarse.
+        const orders =
+            more > 0 ? _t("%(orders)s\n... and %(more)s more", { orders: shown, more }) : shown;
+        const body = _t(
+            "There are %(count)s order(s) without a fiscal invoice in this session. Create their invoice or print them from Orders before closing:\n\n%(orders)s",
+            { count: pending.length, orders }
+        );
+        const fromPanel = pending.some((order) => order.state !== "draft");
+        this._mfAlert(
+            _t("The session cannot be closed"),
+            body,
+            fromPanel ? { confirmLabel: _t("Open Orders"), confirm: () => this.onOpenOrders() } : {}
+        );
     },
 });

@@ -347,6 +347,11 @@ msgid "Report Z"
 msgstr "Reporte Z"
 
 #. module: l10n_ve_pos_mf
+#: model:ir.model.fields,field_description:l10n_ve_pos_mf.field_pos_session__report_z_date
+msgid "Report Z Date"
+msgstr "Fecha del Reporte Z"
+
+#. module: l10n_ve_pos_mf
 #. odoo-javascript
 #: code:addons/l10n_ve_pos_mf/static/src/xml/Navbar.xml:0
 #, python-format
@@ -411,8 +416,8 @@ msgstr "Serial de la Máquina fiscal:"
 #. module: l10n_ve_pos_mf
 #: model:ir.model.fields,field_description:l10n_ve_pos_mf.field_pos_config__serial_machine
 #: model:ir.model.fields,field_description:l10n_ve_pos_mf.field_pos_session__serial_machine
-msgid "Serial of fiscal machine"
-msgstr "Serial de la maquina fiscal"
+msgid "Serial de Máquina Fiscal"
+msgstr "Serial de la máquina fiscal"
 
 #. module: l10n_ve_pos_mf
 #: model:ir.model.fields,field_description:l10n_ve_pos_mf.field_pos_config__traditional_line
@@ -449,3 +454,25 @@ msgstr "Error con la máquina fiscal"
 #: model:res.groups,name:l10n_ve_pos_mf.group_pos_close_native
 msgid "Close POS session natively (skip mandatory Z report)"
 msgstr "Cerrar sesión de PDV de forma nativa (sin Reporte Z obligatorio)"
+
+#. module: l10n_ve_pos_mf
+#. odoo-python
+#: code:addons/l10n_ve_pos_mf/models/decimal_precision.py:0
+msgid "Fiscal price precision"
+msgstr "Precisión del precio fiscal"
+
+#. module: l10n_ve_pos_mf
+#. odoo-python
+#: code:addons/l10n_ve_pos_mf/models/decimal_precision.py:0
+msgid ""
+"Fiscal documents only accept %(fiscal_digits)s decimals in the unit price. "
+"With %(digits)s decimals in %(precision)s, the amounts in Odoo may not match "
+"the fiscal document.\n"
+"\n"
+"The change will be recorded in the history of this precision."
+msgstr ""
+"Los documentos fiscales solo admiten %(fiscal_digits)s decimales en el precio "
+"unitario. Con %(digits)s decimales en %(precision)s, los montos de Odoo "
+"pueden no cuadrar con el documento fiscal.\n"
+"\n"
+"El cambio quedará registrado en el historial de esta precisión."

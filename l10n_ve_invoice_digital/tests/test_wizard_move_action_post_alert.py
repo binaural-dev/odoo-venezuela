@@ -3,6 +3,8 @@ from odoo import Command, fields
 from unittest.mock import patch
 from odoo.addons.l10n_ve_invoice.tests.common import ForeignRateTransactionCase
 
+from .common import make_compute_rate_tolerant, seed_today_vef_rate
+
 
 @tagged("post_install", "-at_install", "l10n_ve_invoice_digital", "move_action_post_alert")
 class TestMoveActionPostAlertWizard(ForeignRateTransactionCase):
@@ -20,6 +22,8 @@ class TestMoveActionPostAlertWizard(ForeignRateTransactionCase):
             "token_auth_tfhka": "token_fake",
             "country_id": self.env.ref('base.ve').id,
         })
+        seed_today_vef_rate(self.env, self.company)
+        make_compute_rate_tolerant(self, self.env)
 
         seq = self.env['ir.sequence'].create({
             'name': 'Sec Test',

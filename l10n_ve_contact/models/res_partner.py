@@ -220,6 +220,24 @@ class ResPartner(models.Model):
                     record.check_duplicate_email(vals.get("email"))
         return res
 
+    @api.model
+    def _get_view(self, view_id=None, view_type="form", **options):
+        """Keep the digits-only widget on the CI/RIF of the partner forms.
+
+        partner_autocomplete (auto_install) forces its IAP search widget on
+        every ``vat`` of a partner form, which drops ``l10n_ve_vat`` set in
+        views/res_partner.xml and lets letters in again, also in the PoS form
+        (there it falls back to the plain char field). Searching IAP by the
+        number without its prefix finds nothing, so the CI/RIF keeps ours.
+        This override wins because l10n_ve_contact loads after
+        partner_autocomplete (it is deeper in the dependency graph).
+        """
+        arch, view = super()._get_view(view_id, view_type, **options)
+        if view_type == "form":
+            for node in arch.xpath("//field[@name='vat'][@widget='field_partner_autocomplete']"):
+                node.set("widget", "l10n_ve_vat")
+        return arch, view
+
     def _check_vat(self):
         pattern = "^[0-9]*$"
         for record in self:
