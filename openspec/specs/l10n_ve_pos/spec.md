@@ -537,7 +537,12 @@ El recibo y las pantallas del PdV DEBE (MUST) exponer los totales alternos: `exp
 
 ### Requirement: Reporte de métodos de pago del PdV
 
-El wizard `pos.payment.report` DEBE (MUST) generar el reporte `l10n_ve_pos.payment_report_pos` filtrado por rango de fechas (convertido a la zona horaria del usuario), cajas, categorías de producto y nivel de categorías (1er nivel, 2do nivel o ambos), mostrando por método de pago y por categoría los montos en moneda principal y en moneda alterna con su porcentaje sobre el total.
+El wizard `pos.payment.report` DEBE (MUST) generar el reporte `l10n_ve_pos.payment_report_pos` filtrado por rango de fechas (convertido a la zona horaria del usuario), cajas, categorías de producto y nivel de categorías (1er nivel, 2do nivel o ambos), mostrando por método de pago y por categoría los montos en moneda principal y en moneda alterna con su porcentaje sobre el total. El formulario del wizard (`l10n_ve_pos.pos_payment_report`) DEBE (MUST) mostrar las cajas (`pos_config_ids`) con `mode="list"` y NO DEBE (MUST NOT) usar `mode="tree"`, que en Odoo 19 hace que el cliente web busque una vista `tree` inexistente y el menú *Punto de venta > Reportes > Reporte de pagos* no abra.
+
+#### Scenario: Apertura del wizard desde el menú
+
+- **WHEN** el usuario entra a *Punto de venta > Reportes > Reporte de pagos*
+- **THEN** el formulario abre con la lista de cajas y permite agregar cajas, sin el error «No se encontró ninguna vista predeterminada de tipo 'tree'»
 
 #### Scenario: Generación del reporte
 
