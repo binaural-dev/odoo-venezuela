@@ -312,5 +312,19 @@ class PosOrder(models.Model):
         original_line = pos_order_line.refunded_orderline_id
         if original_line and not foreign_price:
             foreign_price = original_line.foreign_price
+        # Red de seguridad (#16676): líneas guardadas sin precio alterno antes
+        # de que el servidor lo completara (p. ej. liquidadas desde una orden de
+        # venta con ``pos_sale``, cuyo ``setUnitPrice`` no llama a ``super``
+        # desde el core ``534aaac9114d``). Se calcula con la tasa del PdV de la
+        # orden y NO se escribe en la línea de orden: la factura no debe tener
+        # efectos laterales. Las secciones de combo (sin precio) no se tocan.
+        if (
+            not foreign_price
+            and pos_order_line.price_unit
+            and res.get("display_type", "product") == "product"
+        ):
+            computed = pos_order_line._get_foreign_price_from_price_unit()
+            if computed is not None:
+                foreign_price = computed
         res["foreign_price"] = foreign_price
         return res
