@@ -95,6 +95,12 @@
                                     <field name="token_auth_tfhka" readonly="True" password="True" style="width: 100%;"/>
                                 </div>
                             </div>
+                            <div class="form-group" invisible="not token_expiry_tfhka">
+                                <label for="token_expiry_tfhka" class="col-form-label">Token Expiry</label>
+                                <div class="col-sm-12">
+                                    <field name="token_expiry_tfhka" readonly="True"/>
+                                </div>
+                            </div>
                             <div class="form-group">
                                 <button name="action_generate_token_tfhka" 
                                         type="object" 

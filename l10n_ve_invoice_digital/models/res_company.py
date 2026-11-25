@@ -1,9 +1,18 @@
+from datetime import datetime, timedelta
+
 from odoo import fields, models, api, _
 from odoo.exceptions import ValidationError, UserError
 import json
 import logging
 
 _logger = logging.getLogger(__name__)
+
+# Vigencia del token de /Autenticacion cuando la respuesta no trae
+# ``expiracion`` (TFHKA emite tokens de 12 h).
+TFHKA_TOKEN_LIFETIME = timedelta(hours=12)
+# Margen con el que se renueva el token antes de su vencimiento, para no
+# llegar a la imprenta con un token que expira en pleno envío.
+TFHKA_TOKEN_REFRESH_MARGIN = timedelta(minutes=30)
 
 
 class ResCompany(models.Model):
@@ -13,6 +22,14 @@ class ResCompany(models.Model):
     password_tfhka = fields.Char()
     url_tfhka = fields.Char()
     token_auth_tfhka = fields.Char()
+    token_expiry_tfhka = fields.Datetime(
+        string="TFHKA Token Expiry",
+        copy=False,
+        readonly=True,
+        help="Expiration (UTC) of the current TFHKA token, as returned by "
+        "/Autenticacion. The token is reused until shortly before this date "
+        "and refreshed automatically afterwards.",
+    )
     invoice_digital_tfhka = fields.Boolean()
     dispatch_guide_digital_tfhka = fields.Boolean()
     sequence_validation_tfhka = fields.Boolean(default=True)
@@ -92,8 +109,14 @@ class ResCompany(models.Model):
         Bearer), así que se registra explícitamente aquí para que también
         quede en el historial de llamadas a la API.
         """
+        # La respuesta trae el token Bearer: se enmascara antes de guardarla
+        # para que no quede visible en el historial de llamadas (ticket 16683).
         response_text = (
-            json.dumps(response_data, default=str, indent=2)
+            json.dumps(
+                self.env["tfhka.api.log"]._sanitize_payload(response_data),
+                default=str,
+                indent=2,
+            )
             if isinstance(response_data, dict)
             else (str(response_data) if response_data is not None else False)
         )
@@ -121,7 +144,10 @@ class ResCompany(models.Model):
 
     def _process_tfhka_response_data(self, data):
         if "token" in data:
-            self.token_auth_tfhka = data["token"]
+            self.write({
+                "token_auth_tfhka": data["token"],
+                "token_expiry_tfhka": self._parse_tfhka_token_expiry(data.get("expiracion")),
+            })
             _logger.info("TFHKA token generated successfully.")
         else:
             _logger.error("The 'token' field is not found in the response: %s", data)
@@ -133,3 +159,34 @@ class ResCompany(models.Model):
             raise ValidationError(_("Authentication error: %(message)s", message=message))
         else:
             raise ValidationError(_("Error in the TFHKA API: %(status_code)s", status_code=response.status_code))
+
+    @api.model
+    def _parse_tfhka_token_expiry(self, value):
+        """Converts the ``expiracion`` returned by /Autenticacion (UTC ISO
+        8601, e.g. ``2025-01-31T23:59:59.1234567Z``) into a naive UTC
+        datetime. Falls back to now + 12 h when it's missing, malformed or
+        already in the past -- the 401 retry in ``tfhka.api.client`` still
+        covers a token the API invalidates earlier than announced."""
+        now = fields.Datetime.now()
+        fallback = now + TFHKA_TOKEN_LIFETIME
+        if not isinstance(value, str) or len(value) < 19:
+            return fallback
+        try:
+            expiry = datetime.strptime(value[:19], "%Y-%m-%dT%H:%M:%S")
+        except ValueError:
+            return fallback
+        return expiry if expiry > now else fallback
+
+    def _tfhka_token_needs_refresh(self):
+        """True when the stored token is about to expire and must be renewed
+        BEFORE calling TFHKA (ticket 16683), instead of waiting for the API
+        to answer 401.
+
+        A token without a known expiry (stored before this field existed)
+        keeps the previous behavior: it's reused until TFHKA rejects it
+        with 401. An empty token is not refreshed here either, so the
+        existing "token is empty" configuration error is preserved."""
+        self.ensure_one()
+        if not self.token_auth_tfhka or not self.token_expiry_tfhka:
+            return False
+        return self.token_expiry_tfhka - TFHKA_TOKEN_REFRESH_MARGIN <= fields.Datetime.now()

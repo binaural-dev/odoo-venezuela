@@ -10,3 +10,4 @@ from . import test_res_partner
 from . import test_tfhka_api_log
 from . import test_ir_sequence
 from . import test_tfhka_digitalization_mixin
+from . import test_tfhka_token_reuse

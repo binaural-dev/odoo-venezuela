@@ -6,6 +6,7 @@ class ResConfigSettings(models.TransientModel):
     password_tfhka = fields.Char(related="company_id.password_tfhka", string="Password", readonly=False)
     url_tfhka = fields.Char(related="company_id.url_tfhka", string="URL", readonly=False)
     token_auth_tfhka = fields.Char(related="company_id.token_auth_tfhka", string="Token Auth", readonly=False)
+    token_expiry_tfhka = fields.Datetime(related="company_id.token_expiry_tfhka", string="Token Expiry")
     invoice_digital_tfhka = fields.Boolean(related="company_id.invoice_digital_tfhka", string="Invoice Digital", readonly=False)
     dispatch_guide_digital_tfhka = fields.Boolean(related="company_id.dispatch_guide_digital_tfhka", string="Dispatch Guide Digital", readonly=False)
     sequence_validation_tfhka = fields.Boolean(related="company_id.sequence_validation_tfhka", string="Sequence Validation", readonly=False)
