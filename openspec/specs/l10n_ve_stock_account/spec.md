@@ -17,12 +17,17 @@ El sistema DEBE (MUST) proveer el modelo `transfer.reason` con las razones carga
 
 ### Requirement: Razones de traslado permitidas según la operación
 
-El campo `allowed_reason_ids` de `stock.picking` (`_compute_allowed_reason_ids`) DEBE (MUST) limitar las razones seleccionables según la operación: salida con venta ofrece `sale` (asignada por defecto solo si el traslado aún no tiene razón) y `export`, o solo `self_consumption` si es donación; salida sin venta ofrece `self_consumption`, `other_causes`, `repair_improvement` y `external_storage`; interno ofrece `consignment`, `transfer` y `other_causes`, forzando `consignment` y `is_consignment_readonly` cuando el almacén del destino es de consignación; si el destino no es de consignación y el traslado no tiene una razón permitida, se asigna la razón interna por defecto de la compañía (`internal_transfer_reason_id`) o, si no hay, `transfer`, nunca `consignment` por posición. Si la razón asignada no está entre las permitidas, se reemplaza por la primera permitida. Cuando no se calculó ninguna razón permitida —caso de las entradas (`incoming`) y de cualquier otro código de operación— el campo DEBE (MUST) quedar con TODAS las razones del catálogo, no vacío.
+El campo `allowed_reason_ids` de `stock.picking` (`_compute_allowed_reason_ids`) DEBE (MUST) limitar las razones seleccionables según la operación: salida con venta ofrece `sale` (asignada por defecto solo si el traslado aún no tiene razón) y `export`, o solo `self_consumption` si es donación; una salida del punto de venta (con `pos_order_id` o `pos_session_id`, campos que solo se leen si `point_of_sale` está instalado, vía `_is_point_of_sale_picking`) se trata como salida con venta aunque no tenga `sale_id`, y como el punto de venta asigna esos campos después de crear el traslado, el cómputo depende de ellos cuando existen; salida sin venta ofrece `self_consumption`, `other_causes`, `repair_improvement` y `external_storage`; interno ofrece `consignment`, `transfer` y `other_causes`, forzando `consignment` y `is_consignment_readonly` cuando el almacén del destino es de consignación; si el destino no es de consignación y el traslado no tiene una razón permitida, se asigna la razón interna por defecto de la compañía (`internal_transfer_reason_id`) o, si no hay, `transfer`, nunca `consignment` por posición. Si la razón asignada no está entre las permitidas, se reemplaza por la primera permitida. Cuando no se calculó ninguna razón permitida —caso de las entradas (`incoming`) y de cualquier otro código de operación— el campo DEBE (MUST) quedar con TODAS las razones del catálogo, no vacío.
 
 #### Scenario: Despacho de una venta
 
 - **WHEN** un traslado de salida proviene de una orden de venta y no es donación
 - **THEN** las razones disponibles son venta y exportación, con venta asignada por defecto
+
+#### Scenario: Venta del punto de venta
+
+- **WHEN** un traslado de salida proviene de una orden o sesión del punto de venta, sin orden de venta
+- **THEN** las razones disponibles son venta y exportación, y una razón de autoconsumo se reemplaza por venta
 
 #### Scenario: Traslado interno hacia almacén de consignación
 
