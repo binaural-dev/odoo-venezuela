@@ -553,11 +553,20 @@ class TestKioskInvoiceForeignDebitCredit(TransactionCase):
     # against — proving the whole Kiosk chain (recompute → invoice line
     # copy → l10n_ve_accountant's tax-engine-driven ``foreign_subtotal``)
     # never drifts from what ``_convert`` says, at ANY of these rates.
+    #
+    # Sin la tasa de hiperinflación (7654321.123456): esta compañía está en
+    # USD, así que la tasa del asiento es USD por Bs (1/7654321 ≈ 1.3e-7) y
+    # con los 6 decimales de "Tasa" queda en 0. Desde el ticket 16384
+    # (``b01efe8f5``, ``account.move._post`` en ``l10n_ve_accountant``) un
+    # asiento sin tasa no se publica, y el pago de la factura falla antes de
+    # llegar a lo que mide este test. Es el mismo piso que documenta
+    # ``FOREIGN_RATE_FIELD_FLOOR`` en ``l10n_ve_pos/tests/
+    # test_pos_config_convert_precision.py``, que sigue cubriendo la
+    # conversión a esa escala sin publicar asientos.
     BS_PER_USD_RATES = [
         0.99999949,  # near 1:1
         36.567891234,  # realistic BCV-shaped rate, many decimals
         189.34567891234,  # realistic, bigger
-        7654321.123456,  # hyperinflation-scale
     ]
     QUANTITIES = [1.0, 3.0, 7.0]
 
