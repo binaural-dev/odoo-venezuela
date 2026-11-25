@@ -1,3 +1,4 @@
+import gc
 import logging
 import re
 
@@ -30,6 +31,34 @@ DRIVER_LICENSE_TYPES = [
     ("4", "4th Degree"),
     ("5", "5th Degree"),
 ]
+
+# One-time catch-up for this module's heavy store=True fields, see
+# StockPicking._l10n_ve_stock_account_batch_recompute_heavy_fields below. Order matters:
+# stock.picking's own fields read from sale.order.is_consignation and stock.move.qty_return,
+# so those two compute first; account.move and stock.move.line read the picking's own
+# (non-computed) guide_number, so they compute last.
+HEAVY_RECOMPUTE_DONE_FLAG = "l10n_ve_stock_account.heavy_fields_batch_recomputed_19_0_2_1_9"
+HEAVY_RECOMPUTE_PLAN = [
+    ("stock.move", ["qty_return"]),
+    ("sale.order", ["is_consignation"]),
+    (
+        "stock.picking",
+        [
+            "match_guide_dispatch_domain",
+            "is_dispatch_guide",
+            "is_transfer_between_warehouses",
+            "partner_required",
+            "is_consignment",
+            "type_of_return",
+            "dispatch_guide_controls",
+            "allowed_reason_ids",
+        ],
+    ),
+    ("account.move", ["guide_number"]),
+    ("stock.move.line", ["qty_invoiced", "date_done", "guide_number"]),
+]
+HEAVY_RECOMPUTE_CHUNK_SIZE = 1000
+
 
 class StockPicking(models.Model):
     _inherit = "stock.picking"
@@ -264,6 +293,92 @@ class StockPicking(models.Model):
     order_is_consignment = fields.Boolean(compute="_compute_order_is_consignment")
 
     location_id = fields.Many2one(compute="_compute_location_id")
+
+    def _auto_init(self):
+        result = super()._auto_init()
+        self._l10n_ve_stock_account_protect_heavy_fields()
+        return result
+
+    def _l10n_ve_stock_account_protect_heavy_fields(self):
+        """Protect this module's heavy store=True fields (HEAVY_RECOMPUTE_PLAN) while this
+        module's data/views load, and recompute them once in batches.
+
+        Why: loading this module's own views (stock_picking_guide_dispatch_views.xml's action
+        embeds match_guide_dispatch_domain in a domain) retriggers Odoo's dependency graph into
+        marking these fields dirty for virtually the whole stock_picking table, on every single
+        module update, not just the first, and whether or not their column is new. Recomputing
+        (or even just fetching) that for the whole table in one transaction is what killed the
+        Odoo.sh build with "odoo-bin process got killed, most likely hit a memory limit" (task
+        <TICKET>). env.protected() is what BaseModel.modified() checks before queueing anything
+        ("records -= self.env.protected(field)"), so it is the only thing that stops the sweep —
+        and it has to stay pushed for this module's entire load, every load, not just the
+        one-time recompute. migrations/19.0.2.1.9/post-10-release_heavy_fields_protection.py
+        pops it once this module's own data/views finish loading.
+
+        If it does not run: the first load with enough pickings crashes the same way, forever,
+        regardless of HEAVY_RECOMPUTE_DONE_FLAG — the trigger doesn't care the data is correct.
+
+        How to revert: delete ir.config_parameter HEAVY_RECOMPUTE_DONE_FLAG to force a harmless
+        redundant recompute. To remove the mechanism entirely, also delete
+        migrations/19.0.2.1.9/pre-10-create_missing_columns.py and post-10-release_heavy_fields_protection.py.
+        """
+        # _auto_init runs once per module touching stock.picking (stock, sale_stock, sale_zmart,
+        # ...), not once per process: without this guard every one of those re-ran the full
+        # protect setup below, including Model.search([]).ids over 1.1M+ stock.move rows.
+        if getattr(self.pool, "_l10n_ve_stock_account_heavy_fields_protected", False):
+            return
+
+        env = self.env
+        ids_and_fields = []
+        env.transaction.protected.pushmap()
+        for model_name, field_names in HEAVY_RECOMPUTE_PLAN:
+            Model = env[model_name].with_context(active_test=False)
+            ids = Model.search([]).ids
+            fields_ = [Model._fields[name] for name in field_names]
+            for field in fields_:
+                env.transaction.protected[field] = frozenset(ids)
+            ids_and_fields.append((model_name, ids, fields_))
+        # Tells migrations/.../post-10-release_heavy_fields_protection.py there is a layer to
+        # pop: the registry is the one object a migration script (which only gets a bare cr, no
+        # access to this model instance) can reach that lives for this whole process.
+        self.pool._l10n_ve_stock_account_heavy_fields_protected = True
+
+        ICP = env["ir.config_parameter"].sudo()
+        if ICP.get_param(HEAVY_RECOMPUTE_DONE_FLAG):
+            return
+
+        _logger.info("l10n_ve_stock_account: starting one-time batch recompute of heavy fields")
+        for model_name, ids, fields_ in ids_and_fields:
+            if not ids:
+                continue
+            _logger.info(
+                "l10n_ve_stock_account: recomputing %s on %s (%d records)",
+                [f.name for f in fields_], model_name, len(ids),
+            )
+            Model = env[model_name]
+            field_names = [f.name for f in fields_]
+            for offset in range(0, len(ids), HEAVY_RECOMPUTE_CHUNK_SIZE):
+                chunk = Model.browse(ids[offset:offset + HEAVY_RECOMPUTE_CHUNK_SIZE])
+                for field in fields_:
+                    # Covers the case where the field was not already queued (super()._auto_init
+                    # only queues it itself when the column/relation table was genuinely new);
+                    # when it was, this is a harmless no-op on top of what is already queued.
+                    env.add_to_compute(field, chunk)
+                # chunk.flush_recordset(field_names), unlike Model.flush_model(field_names) or
+                # env.flush_all(), scopes the recompute to chunk's own ids
+                # (BaseModel._recompute_recordset passes self._ids to _recompute_field). Without
+                # this, a field super()._auto_init() already queued whole-table (because its
+                # column/relation table was genuinely new) would get recomputed for every
+                # pending id the first time any chunk touches it, not just this chunk's 1000 —
+                # which is exactly the original crash, just moved one call deeper.
+                chunk.flush_recordset(field_names)
+                self._cr.commit()
+                env.invalidate_all()
+                gc.collect()
+
+        ICP.set_param(HEAVY_RECOMPUTE_DONE_FLAG, "1")
+        self._cr.commit()
+        _logger.info("l10n_ve_stock_account: batch recompute of heavy fields done")
 
     def _set_guide_number(self):
         for picking in self:
