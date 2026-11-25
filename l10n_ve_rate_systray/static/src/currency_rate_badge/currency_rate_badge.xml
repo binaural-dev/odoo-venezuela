@@ -5,8 +5,8 @@
              class="o_currency_rate_badge d-flex align-items-center"
              t-att-class="props.wrapperClass"
              t-att-title="title">
-            <span class="d-flex align-items-center gap-1 rounded px-2 py-1 fw-bold text-black text-nowrap"
-                  t-att-class="state.data.is_today ? 'bg-success' : 'bg-danger'">
+            <span class="d-flex align-items-center gap-1 rounded px-2 py-1 fw-bold text-nowrap"
+                  t-att-class="state.data.is_today ? 'bg-success text-black' : 'bg-danger text-white'">
                 <i class="fa fa-usd" role="img" aria-label="Rate"/>
                 <t t-if="hasRate">
                     <span t-out="state.data.currency_symbol"/>

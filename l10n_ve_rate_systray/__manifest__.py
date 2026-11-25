@@ -14,7 +14,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Technical",
-    "version": "17.0.1.0.0",
+    "version": "17.0.1.0.1",
     "depends": ["web", "base_setup"],
     "images": ["static/description/icon.png"],
     "data": [
