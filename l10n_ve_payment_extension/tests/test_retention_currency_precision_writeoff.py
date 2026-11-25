@@ -147,7 +147,7 @@ class TestRetentionCurrencyPrecisionWriteoff(RetentionTestCommon):
             journal=self.journal_multi.id,
         )
         invoice.write({"currency_id": self.currency_usd.id})
-        invoice.action_post()
+        invoice.with_context(move_action_post_alert=True).action_post()
         return invoice
 
     def _bill_in_usd(self, amount):
@@ -156,7 +156,7 @@ class TestRetentionCurrencyPrecisionWriteoff(RetentionTestCommon):
             journal=self.journal_multi_purchase.id,
         )
         bill.write({"currency_id": self.currency_usd.id})
-        bill.action_post()
+        bill.with_context(move_action_post_alert=True).action_post()
         return bill
 
     def _document_in_usd_islr(self, amount, move_type, journal):
@@ -181,7 +181,7 @@ class TestRetentionCurrencyPrecisionWriteoff(RetentionTestCommon):
                 line.price_unit = amount
         doc = doc_form_edit.save()
         doc.write({"currency_id": self.currency_usd.id})
-        doc.action_post()
+        doc.with_context(move_action_post_alert=True).action_post()
         return doc
 
     def _grain(self, invoice):
@@ -364,7 +364,7 @@ class TestRetentionCurrencyPrecisionWriteoff(RetentionTestCommon):
             1000.0, self.partner_pnr_75, out_invoice="out_invoice",
             journal=self.journal_multi.id,
         )
-        invoice.action_post()
+        invoice.with_context(move_action_post_alert=True).action_post()
         due = abs(invoice.amount_residual_signed)
 
         retention = self.env["account.retention"].create({
@@ -829,7 +829,7 @@ class TestRetentionCurrencyPrecisionWriteoff(RetentionTestCommon):
         note.write({"currency_id": self.currency_usd.id})
         if debit_origin:
             note.write({"debit_origin_id": debit_origin.id})
-        note.action_post()
+        note.with_context(move_action_post_alert=True).action_post()
         return note
 
     def _retention_for_note(self, note, retention_type, amount_company_currency, number):
@@ -1127,7 +1127,7 @@ class TestRetentionCurrencyPrecisionWriteoff(RetentionTestCommon):
         if "invoice_date_display" in invoice._fields:
             vals["invoice_date_display"] = date
         invoice.write(vals)
-        invoice.action_post()
+        invoice.with_context(move_action_post_alert=True).action_post()
         return invoice
 
     def test_cycle_retention_then_payment_closes_the_invoice(self):

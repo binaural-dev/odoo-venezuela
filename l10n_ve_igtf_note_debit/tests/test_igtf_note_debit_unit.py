@@ -22,6 +22,19 @@ class TestIgtfNoteDebitUnit(TransactionCase):
             "foreign_currency_id": cls.env.ref("base.USD").id,
             "country_id": cls.company.country_id.id or cls.env.ref("base.ve").id,
         })
+        # La tasa se busca por la fecha exacta del documento (`compute_rate`): sin la de hoy, las
+        # facturas de estas pruebas no se pueden crear en una base limpia.
+        usd = cls.env.ref("base.USD")
+        today = fields.Date.context_today(cls.env.user)
+        if not cls.env["res.currency.rate"].search([
+            ("currency_id", "=", usd.id), ("company_id", "=", cls.company.id), ("name", "=", today),
+        ]):
+            cls.env["res.currency.rate"].create({
+                "currency_id": usd.id,
+                "company_id": cls.company.id,
+                "name": today,
+                "inverse_company_rate": 100.0,
+            })
         cls.partner = cls.env["res.partner"].create({"name": "Cliente IGTF Unit Test"})
 
         cls.exempt_sale_tax = cls.env["account.tax"].create({
@@ -125,10 +138,12 @@ class TestIgtfNoteDebitUnit(TransactionCase):
         """Diario de banco en USD: la ND de IGTF siempre es en VEF (moneda de la
         compañía), así que un pago en USD obliga a cruzar monedas distintas."""
         usd = self.env.ref("base.USD")
-        usd.write({
-            "active": True,
-            "rate_ids": [Command.create({"name": fields.Date.today(), "company_rate": 1 / 40.0})],
-        })
+        usd.active = True
+        # La clase ya deja una tasa de hoy (una por dia y compania): se ajusta a 40.
+        self.env["res.currency.rate"].search([
+            ("currency_id", "=", usd.id), ("company_id", "=", self.company.id),
+            ("name", "=", fields.Date.context_today(self.env.user)),
+        ]).company_rate = 1 / 40.0
         account = self.env["account.account"].create({
             "name": "Banco USD (unit test ND IGTF)", "code": "BUSDNDI01",
             "account_type": "asset_cash", "currency_id": usd.id,
