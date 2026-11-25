@@ -23,3 +23,5 @@ from . import test_pos_session_opening_rate
 from . import test_pos_partner_load_limit
 from . import test_pos_global_discount_foreign_price
 from . import test_pos_order_report
+from . import test_pos_line_foreign_price_backfill
+from . import test_pos_sale_foreign_price_scenarios
