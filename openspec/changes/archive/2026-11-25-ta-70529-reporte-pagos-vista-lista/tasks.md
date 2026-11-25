@@ -2,7 +2,7 @@
 
 - [x] 1.1 `wizard/payment_report.xml`: `pos_config_ids` con `mode="list"`
 - [x] 1.2 `tests/test_pos_payment_report_view.py`: el formulario abre sin `mode="tree"`
-- [x] 1.3 Versión del manifest a `19.0.1.28.2`
+- [x] 1.3 Versión del manifest a `19.0.1.31.2`
 
 ## 2. Verificación
 

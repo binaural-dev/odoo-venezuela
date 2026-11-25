@@ -6,7 +6,7 @@ Al entrar a *Punto de venta > Reportes > Reporte de pagos* el cliente web muestr
 
 - `wizard/payment_report.xml`: `pos_config_ids` pasa de `mode="tree"` a `mode="list"`.
 - Prueba `tests/test_pos_payment_report_view.py`: verifica que el formulario no declare `mode="tree"` y que abra agregando una caja.
-- Versión del manifest de `l10n_ve_pos` a `19.0.1.28.2`.
+- Versión del manifest de `l10n_ve_pos` a `19.0.1.31.2`.
 
 ## Impact
 
