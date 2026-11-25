@@ -79,13 +79,23 @@ class RetentionFlowHelpers:
         document.write({"date": self.doc_date, "invoice_date_display": self.doc_date})
         return document
 
-    def _document(self, doc_type, retention_type, amount=AMOUNT):
+    def _document(self, doc_type, retention_type, amount=AMOUNT, auto_iva=False, debit_date=None):
         """Documento publicado en `doc_date`. En esta rama no existe un
         `move_type` de nota de debito: es una factura (`out_invoice` /
         `in_invoice`) con `debit_origin_id`, que se crea con el asistente
-        nativo `account.debit.note` a partir de una factura publicada."""
+        nativo `account.debit.note` a partir de una factura publicada.
+
+        `auto_iva`: marca `generate_iva_retention` en el documento (la nota de
+        debito, no su origen) antes de publicarlo, para que la retencion se
+        cree sola al publicar.
+
+        `debit_date`: fecha propia de la nota de debito, posterior a la de su
+        factura de origen (por defecto la misma `doc_date`). Entra por el
+        asistente, como la escribe el usuario."""
+        auto = {"generate_iva_retention": True} if auto_iva else {}
         if not doc_type.endswith("_debit"):
             document = self._form_document(doc_type, retention_type, amount)
+            document.write(auto)
             document.with_context(move_action_post_alert=True).action_post()
             return document
 
@@ -96,7 +106,7 @@ class RetentionFlowHelpers:
             active_model="account.move", active_ids=origin.ids,
         ))
         wizard.journal_id = origin.journal_id
-        wizard.date = self.doc_date
+        wizard.date = debit_date or self.doc_date
         wizard.copy_lines = False
         debit = self.env["account.move"].browse(wizard.save().create_debit()["res_id"])
         with Form(debit) as form_debit:
@@ -110,7 +120,11 @@ class RetentionFlowHelpers:
                 line.price_unit = amount
         debit = form_debit.save()
         self.assertEqual(debit.debit_origin_id, origin)
+        # La fecha de tasa (`invoice_date`) es la del origen; la fecha propia del documento
+        # (`invoice_date_display`, la que imprimen comprobante y TXT) es la del asistente.
         self.assertEqual(debit.invoice_date, self.doc_date)
+        self.assertEqual(debit.invoice_date_display, debit_date or self.doc_date)
+        debit.write(auto)
         debit.with_context(move_action_post_alert=True).action_post()
         return debit
 
