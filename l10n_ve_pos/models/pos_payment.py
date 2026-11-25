@@ -30,6 +30,23 @@ class PosPayment(models.Model):
     )
     foreign_amount = fields.Float(readonly=True, digits=(16, 2))
     foreign_currency_id = fields.Many2one("res.currency", compute="_compute_foreign_currency_id")
+    # Moneda en la que pagó el cliente cuando no es la de la caja ni la alterna
+    # (pos.payment.method.tender_currency_id, p. ej. EUR). `amount` sigue en la
+    # moneda de la caja (lo que el core suma y contabiliza) y `foreign_amount`
+    # en la alterna; `tender_amount` es lo tecleado por el cajero, lo que entra
+    # al cajón y al diario real de esa moneda (cruce, cierre).
+    # binaural_pos_multicurrency define los mismos campos para sus cajas en otra
+    # moneda (cobro en la moneda de la compañía).
+    tender_currency_id = fields.Many2one(
+        "res.currency",
+        readonly=True,
+        help="Currency the customer paid in, when it differs from the Point of Sale currency.",
+    )
+    tender_amount = fields.Monetary(
+        currency_field="tender_currency_id",
+        readonly=True,
+        help="Amount the customer paid, in the tender currency.",
+    )
 
     @api.depends()
     def _compute_foreign_currency_id(self):
@@ -61,6 +78,8 @@ class PosPayment(models.Model):
             "foreign_rate",
             "foreign_amount",
             "foreign_currency_id",
+            "tender_currency_id",
+            "tender_amount",
         ]
         for name in required:
             if name not in res:

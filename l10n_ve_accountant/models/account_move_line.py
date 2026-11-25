@@ -1,6 +1,6 @@
 from contextlib import contextmanager
 from odoo import api, fields, models, Command, _
-from odoo.tools import float_compare ,float_round, float_is_zero
+from odoo.tools import float_round, float_is_zero
 from odoo.exceptions import UserError, ValidationError
 import logging
 
@@ -268,7 +268,16 @@ class AccountMoveLine(models.Model):
         # cambia `move_currency_to_company_currency_rate` -- esa escritura
         # dispara `_inverse_foreign_balance`, que fija foreign_debit/credit.
         # Ya no hace falta re-derivar el valor aca con `_convert()`.
-        if self.display_type in ("payment_term", "tax"):
+        #
+        # Excepcion: el asiento de base efectivo (IMBEF) que genera el core al
+        # conciliar copia el display_type 'tax' de la factura, pero sus lineas
+        # nacen con foreign_balance = 0. Devolverlo dejaba el monto alterno del
+        # impuesto en 0 (ticket 10703 en v17). Esas lineas se valoran por la
+        # ruta de asiento no-factura (amount_currency / tasa).
+        if (
+            self.display_type in ("payment_term", "tax")
+            and not self.move_id.tax_cash_basis_origin_move_id
+        ):
             return self.foreign_balance
 
         # 2 — Section / Subsection / Note: zero. `line_subsection` is the
@@ -349,37 +358,51 @@ class AccountMoveLine(models.Model):
 
 
     def _prepare_analytic_distribution_line(
-        self, distribution, account_id, distribution_on_each_plan
+        self, distribution, account_ids, distribution_on_each_plan
     ):
         """
         This method adds the foreign_amount in the foreign currency to the analytical account line
         """
         self.ensure_one()
         res = super()._prepare_analytic_distribution_line(
-            distribution, account_id, distribution_on_each_plan
+            distribution, account_ids, distribution_on_each_plan
         )
-        account_id = int(account_id)
-        account = self.env["account.analytic.account"].browse(account_id)
-        distribution_plan = (
-            distribution_on_each_plan.get(account.root_plan_id, 0) + distribution
-        )
-        decimal_precision = self.env["decimal.precision"].precision_get(
-            "Percentage Analytic"
-        )
-        if (
-            float_compare(distribution_plan, 100, precision_digits=decimal_precision)
-            == 0
-        ):
-            foreign_amount = (
-                -self.foreign_balance
-                * (100 - distribution_on_each_plan.get(account.root_plan_id, 0))
-                / 100.0
-            )
+        # Proporcional al monto que ya calculo el core para esta linea.
+        if self.balance:
+            res["foreign_amount"] = res["amount"] * self.foreign_balance / self.balance
         else:
-            foreign_amount = -self.foreign_balance * distribution / 100.0
-
-        res["foreign_amount"] = foreign_amount
+            res["foreign_amount"] = -self.foreign_balance * distribution / 100.0
         return res
+
+    def _round_analytic_distribution_line(self, analytic_lines_vals):
+        """Redondea foreign_amount y reparte su error igual que el core hace con amount.
+
+        El core solo ajusta `amount`; sin esto, al guardar cada linea se redondea por
+        separado y la suma en moneda alterna puede descuadrar centavos.
+        """
+        super()._round_analytic_distribution_line(analytic_lines_vals)
+        currency = self.foreign_currency_id
+        vals_list = [vals for vals in analytic_lines_vals or [] if "foreign_amount" in vals]
+        if not currency or not vals_list:
+            return
+        rounding_error = 0.0
+        for vals in vals_list:
+            rounded = currency.round(vals["foreign_amount"])
+            rounding_error += rounded - vals["foreign_amount"]
+            vals["foreign_amount"] = rounded
+        for vals in vals_list:
+            if currency.is_zero(rounding_error):
+                break
+            step = max(
+                currency.rounding,
+                abs(currency.round(rounding_error / len(vals_list))),
+            )
+            if rounding_error < 0.0:
+                vals["foreign_amount"] += step
+                rounding_error += step
+            else:
+                vals["foreign_amount"] -= step
+                rounding_error -= step
 
     @api.model
     def abs_amount_lines_ids_adjust(self):
@@ -690,10 +713,8 @@ class AccountMoveLine(models.Model):
         if not debit_line or not credit_line or not (res or {}).get('partial_values'):
             return res
 
-        # Reuse core's own exchange-move date, or `max(debit, credit)` if
-        # it built none -- never "today" (wrong rate for past partials).
         # Ver openspec: design-notes.md § _prepare_reconciliation_single_partial
-        exchange_date = exchange_values.get('move_values', {}).get('date') or max(debit_line.date, credit_line.date)
+        exchange_date = self._get_alt_exchange_date(debit_line, credit_line, exchange_values)
 
         # Prefer the invoice side as rate source (core's own convention);
         # fall back to the earlier-dated side when neither is an invoice.
@@ -738,6 +759,27 @@ class AccountMoveLine(models.Model):
 
         self._queue_standalone_foreign_exchange_difference(rate_source, counterpart, alt_diff, exchange_date)
         return res
+
+    def _get_alt_exchange_date(self, debit_line, credit_line, exchange_values):
+        """Date for the alternate-currency exchange difference entry.
+
+        Reuses core's own exchange-move date. If it built none, applies the
+        SAME rule core uses for its own entry (`journal.accounting_date`,
+        which keeps the exchange journal's sequence/lock dates coherent) over
+        `max(debit, credit)` -- never "today" (wrong rate for past partials)
+        and never the raw date, or this standalone entry would be dated
+        differently from the native one in the same reconciliation. Without
+        an exchange journal there is no rule to apply: the raw date is kept.
+        Ver openspec: design-notes.md § _prepare_reconciliation_single_partial
+        """
+        exchange_date = (exchange_values.get('move_values') or {}).get('date')
+        if exchange_date:
+            return exchange_date
+        exchange_date = max(debit_line.date, credit_line.date)
+        exchange_journal = self._get_exchange_journal(debit_line.company_id)
+        if not exchange_journal:
+            return exchange_date
+        return exchange_journal.with_context(move_date=exchange_date).accounting_date
 
     def _get_settled_company_amount(self, debit_line, new_residual, initial_residual):
         """Signed company-currency amount settled in this partial, from the

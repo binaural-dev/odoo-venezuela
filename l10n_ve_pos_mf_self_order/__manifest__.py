@@ -10,7 +10,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Point of Sale",
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.1.0",
     "depends": [
         # Driver Web Serial de la máquina fiscal (TfhkaDriver): se importa y se
         # inyecta directamente en el bundle del Kiosko, así que se declara como

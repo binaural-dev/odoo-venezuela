@@ -8,12 +8,12 @@ Adapta el Punto de Venta de Odoo 19 a la operación venezolana: tasa operativa d
 
 ### Requirement: Tasa operativa de la caja calculada desde la tasa registrada
 
-`pos.config` DEBE (MUST) exponer la moneda alterna de la compañía (`foreign_currency_id`, related a `company_id.foreign_currency_id`) y calcular `foreign_rate` y `foreign_inverse_rate` (campo con `digits=(16,15)`) mediante `res.currency.rate.compute_rate` de `l10n_ve_rate` con la fecha del día, quedando como tasa operativa de la sesión.
+`pos.config` DEBE (MUST) exponer `foreign_currency_id` (related a la compañía) y calcular `foreign_rate` y `foreign_inverse_rate` (`digits=(16,15)`) con `res.currency.rate.compute_rate` de `l10n_ve_rate`, para el día de la sesión activa (`pos.session.foreign_rate_date`) o, sin sesión abierta, el día del usuario.
 
 #### Scenario: Carga de la configuración de caja
 
 - **WHEN** se computa `_compute_rate` de una caja cuya compañía tiene moneda alterna con tasa registrada
-- **THEN** `foreign_rate` y `foreign_inverse_rate` toman los valores devueltos por `compute_rate` para esa moneda a la fecha actual
+- **THEN** `foreign_rate` y `foreign_inverse_rate` toman los valores devueltos por `compute_rate` para esa moneda a la fecha actual, o a la del día de la sesión si hay una abierta
 
 ### Requirement: Apertura de sesión exige moneda alterna activa
 
@@ -26,7 +26,7 @@ El sistema DEBE (MUST) impedir abrir la interfaz del PdV (`pos.config._action_to
 
 ### Requirement: Conversión centralizada con tasa completa y redondeo solo del resultado
 
-La conversión entre moneda principal y alterna del PdV DEBE (MUST) hacerse multiplicando el monto por la tasa cruda sin redondear y redondeando únicamente el resultado con `to_currency.round()`. Para principal → alterna se usa `foreign_inverse_rate`; para alterna → principal se usa `foreign_rate`; misma moneda devuelve el monto (redondeado si se pide); sin tasa disponible devuelve `0.0`. Este contrato está implementado en espejo en `pos.config._convert` (backend) y en `PosOrder._convert` del frontend (`static/src/overrides/models/pos_order.js`).
+La conversión del PdV DEBE (MUST) multiplicar el monto por la tasa cruda sin redondear y redondear solo el resultado con `to_currency.round()`: principal → alterna con `foreign_inverse_rate`, alterna → principal con `foreign_rate` y, con una moneda de cobro, las tasas de `tender_currency_rates`. Misma moneda devuelve el monto; sin tasa, `0.0`. El contrato está en espejo en `pos.config._convert` y en `PosOrder._convert` del frontend.
 
 #### Scenario: Conversión de bolívares a divisa
 
@@ -35,13 +35,18 @@ La conversión entre moneda principal y alterna del PdV DEBE (MUST) hacerse mult
 
 #### Scenario: Sin tasa configurada
 
-- **WHEN** ninguna de las dos monedas involucradas es la moneda alterna, o la tasa operativa es cero
+- **WHEN** ninguna de las dos monedas involucradas es la alterna ni una moneda de cobro de la caja, o la tasa operativa es cero
 - **THEN** la conversión devuelve `0.0` (y el frontend registra una advertencia en consola una sola vez)
 
 #### Scenario: Caja sin tasa del día
 
 - **WHEN** `pos.config._compute_rate` se calcula un día sin tasa cargada para la moneda alterna
 - **THEN** llama a `compute_rate` con `raise_if_not_found=False` y no lanza error (la configuración de la caja sigue accesible, aunque `l10n_ve_rate.compute_rate` lance `UserError` por defecto)
+
+#### Scenario: Bolívares y una moneda de cobro
+
+- **WHEN** se convierte entre la moneda principal y una moneda de cobro de los métodos de la caja con tasa del día
+- **THEN** la conversión no da `0.0`: usa la tasa de esa moneda en `tender_currency_rates`
 
 ### Requirement: Facturación obligatoria de toda orden del PdV
 
@@ -230,23 +235,36 @@ Durante el cierre de sesión, el sistema DEBE (MUST) acumular `foreign_amount` d
 
 ### Requirement: Cross moves de compensación para métodos en divisa
 
-Al cerrar la sesión (`action_pos_session_close` → `_validate_cross_move`), por cada método de pago que pase `_is_cross_move_eligible` —`is_foreign_currency`, tipo distinto de `pay_later`, `cross_account_journal` y `cross_journal` presentes Y una cuenta transitoria resoluble— el sistema DEBE (MUST) crear en `cross_account_journal` asientos EN BORRADOR (`state="draft"`) que trasladan el saldo de la cuenta transitoria del método hacia la cuenta real del `cross_journal`, con `foreign_debit`/`foreign_credit`, `not_foreign_recalculate = True`, la tasa del pago (`foreign_rate`, también en el encabezado junto con `foreign_currency_id`) y una referencia (`ref`) que identifica sesión/orden/pago; el número secuencial (`name`) se deja vacío para que lo asigne el diario al contabilizar. Un método sin alguno de los dos diarios se omite en silencio (change `l10n-ve-pos-cross-move-accounts-check` de `l10n_ve_pos`: la sesión no abre si al cruce le faltan sus cuentas; en el cierre, una transitoria que falte omite el cruce con un aviso en el log y una cuenta de las líneas de pago que falte da un error legible).
-
-La cuenta transitoria la resuelve `_get_cross_transitory_account`: para `cash`, `journal_id.default_account_id`; para el resto, `outstanding_account_id` o, si está vacía, `journal_id.default_account_id`; y como último recurso, en ambos casos, `company_id.account_default_pos_receivable_account_id`. La cuenta real la resuelve `_get_cross_real_account` con la `payment_account_id` de las líneas de método de pago entrantes o salientes del `cross_journal` según el signo. Existe además una variante `use_suspense=True` (usada desde fuera, p. ej. `binaural_pos_close` para cash in/out) que drena `journal_id.suspense_account_id` hacia `cross_journal.suspense_account_id` invirtiendo el sentido del asiento.
+Al cerrar la sesión (`_validate_cross_move`), por cada método que pase `_is_cross_move_eligible` (`is_foreign_currency` o una moneda de cobro, tipo distinto de `pay_later`, sus dos diarios de cruce y una transitoria resoluble), el sistema DEBE (MUST) crear en `cross_account_journal` asientos en borrador que pasan el saldo de la transitoria del método a la cuenta real del `cross_journal`, con `foreign_debit`/`foreign_credit`, `not_foreign_recalculate` y una `ref` de sesión, orden o pago.
 
 #### Scenario: Método en divisa completo
 
 - **WHEN** se cierra una sesión con pagos de un método `is_foreign_currency` con ambos diarios configurados
-- **THEN** se crean asientos borrador en `cross_account_journal` que acreditan la cuenta transitoria y debitan la cuenta real del `cross_journal` (o a la inversa para montos negativos)
+- **THEN** se crean asientos borrador en `cross_account_journal` que acreditan la cuenta transitoria y debitan la cuenta real del `cross_journal` (o a la inversa para montos negativos), con la tasa del pago y `foreign_currency_id` también en el encabezado, sin `name`: lo asigna el diario al contabilizar
 
 #### Scenario: Configuración incompleta
 
 - **WHEN** al método le falta `cross_account_journal` o `cross_journal`
-- **THEN** no se crea ningún cross move para ese método y el cierre no falla
+- **THEN** no se crea ningún cross move para ese método y el cierre no falla (un método con moneda de cobro no se puede guardar así)
+
+#### Scenario: Cuentas faltantes
+
+- **WHEN** a un método con sus dos diarios le falta alguna cuenta que usa su cruce
+- **THEN** la sesión no abre (change `l10n-ve-pos-cross-move-accounts-check`); en una sesión abierta antes, al cerrar, una transitoria que falte omite el cruce con un aviso en el log y una cuenta de las líneas de pago que falte da un error legible
+
+#### Scenario: Cuentas del cruce
+
+- **WHEN** se arma el cruce de un método
+- **THEN** la transitoria es la que resuelve `_get_cross_transitory_account` (efectivo: `journal_id.default_account_id`; el resto: `outstanding_account_id` o la del diario; en ambos, como último recurso, la cuenta por cobrar del PdV de la compañía) y la real la `payment_account_id` de las líneas de pago entrantes o salientes del `cross_journal`, según el signo; con `use_suspense=True` el asiento va entre las cuentas transitorias de los dos diarios, con el sentido invertido
+
+#### Scenario: Método con moneda de cobro
+
+- **WHEN** se cierra una sesión con pagos de un método con moneda de cobro y sus dos diarios
+- **THEN** su cruce se crea como el de un método en divisa y la línea del diario real lleva como `amount_currency` lo cobrado en esa moneda
 
 ### Requirement: Granularidad del cross move según split_transactions
 
-La granularidad de los cross moves DEBE (MUST) seguir el flag nativo `split_transactions` del método: con `split_transactions` verdadero se crea un asiento por cada `pos.payment` (referenciando orden y pago); con falso, un único asiento por método y sesión con el neto de todos sus pagos, sin crear nada si el neto es cero. Si el partner de un pago pertenece a otra compañía, se omite del encabezado del asiento (las líneas lo conservan).
+La granularidad de los cross moves DEBE (MUST) seguir el flag nativo `split_transactions` del método: verdadero, un asiento por cada `pos.payment` (con su orden y pago en la referencia); falso, un único asiento por método y sesión con una pata de entradas y otra de salidas, cada una con el neto de sus pagos, y ninguno si los netos en la caja, la alterna y la moneda de cobro son todos cero. Si el partner de un pago es de otra compañía, se omite del encabezado.
 
 #### Scenario: Método identificando cliente
 
@@ -255,8 +273,28 @@ La granularidad de los cross moves DEBE (MUST) seguir el flag nativo `split_tran
 
 #### Scenario: Neto cero combinado
 
-- **WHEN** el método no divide transacciones y las ventas y devoluciones del método se anulan entre sí
+- **WHEN** el método no divide transacciones y las ventas y devoluciones del método se anulan entre sí en la caja, en la alterna y en la moneda de cobro
 - **THEN** no se crea ningún asiento para ese método
+
+#### Scenario: Venta y devolución en divisa a tasas distintas
+
+- **WHEN** el método no divide transacciones y la sesión tiene una venta de 40 a 50 por unidad y una devolución de 60 a 10 (neto −20 en la caja y +1.400 en la alterna)
+- **THEN** se crea un asiento con dos pares de líneas, la venta y la devolución, cada línea con saldo y `amount_currency` del mismo signo, y el diario real recibe −20 y +1.400
+
+#### Scenario: Venta y reembolso en euros a tasas distintas
+
+- **WHEN** el método en EUR no divide transacciones y la sesión tiene una venta de 20 € por 1.000 Bs y un reembolso de 25 € por 750 Bs
+- **THEN** se crea un asiento con dos pares de líneas y la caja real en EUR recibe −250 Bs con +5 € en `amount_currency`, sin que el cierre choque con `account_move_line_check_amount_currency_balance_sign`
+
+#### Scenario: Neto cero en la caja con divisas de diferencia
+
+- **WHEN** las ventas y reembolsos del método suman cero en la caja pero no en la alterna o en euros
+- **THEN** se crea el asiento y la diferencia en esa moneda pasa al diario real
+
+#### Scenario: Tasa de cada pata
+
+- **WHEN** el reembolso de la sesión se valoró a la tasa de su venta original y la venta a la del día
+- **THEN** las líneas de cada pata se arman con la tasa de sus pagos; es informativa, porque la línea guardada toma la del asiento y sus montos alternos son los de sus pagos
 
 ### Requirement: Reescritura de totales de las órdenes al cerrar la sesión
 
@@ -321,12 +359,22 @@ La carga de listas de precios al PdV (`product.pricelist._load_pos_data_domain`)
 
 ### Requirement: Monedas cargadas al PdV restringidas y ordenadas
 
-El loader de `res.currency` DEBE (MUST) restringir las monedas enviadas al PdV a la moneda de la compañía, la moneda de la caja y la moneda alterna (`_load_pos_data_domain`), exponer `inverse_rate` entre los campos y devolver la lista con la moneda de la compañía en primera posición (`_load_pos_data_read`).
+El loader de `res.currency` DEBE (MUST) restringir las monedas a la de la compañía, la de la caja, la alterna y las de cobro de sus métodos, exponer `inverse_rate`, devolver la de la compañía primero, cargarlas sin el filtro por `write_date` y servir su `rate` del día de la sesión (la alterna, con la tasa exacta de la caja).
 
 #### Scenario: Compañía con moneda alterna
 
 - **WHEN** se abre una caja de una compañía con moneda alterna configurada
 - **THEN** al frontend llegan únicamente esas monedas, con la de la compañía primero
+
+#### Scenario: Caja con un método en una moneda de cobro
+
+- **WHEN** la caja tiene un método con moneda de cobro EUR
+- **THEN** el EUR también llega al frontend, después de la moneda de la compañía
+
+#### Scenario: Tasa nueva con la caja en caché
+
+- **WHEN** la caja tiene caché de una carga anterior y se registra una tasa nueva, sin cambiar la moneda
+- **THEN** la carga limitada trae la moneda igual, con el `rate` del día de la sesión
 
 ### Requirement: Permisos para cambiar cantidad y precio en la caja
 
@@ -623,3 +671,303 @@ Con el flag activo, `pos.session.load_data` DEBE (MUST) cargar `product.template
 
 - **WHEN** el pago se registró a las 00:30 UTC del día siguiente y solo hay tasa del día del usuario
 - **THEN** el cross move de ese pago se crea con la fecha del día del usuario
+
+### Requirement: Método de pago en una tercera moneda de cobro
+
+Un método de pago DEBE (MUST) poder declararse en una tercera moneda de cobro (`tender_currency_id`), distinta de la moneda de la compañía. No DEBE (MUST) combinarse con `is_foreign_currency` ni con un método de crédito y DEBE (MUST) tener sus dos diarios de cruce, el real en esa moneda. Lo que depende de la caja lo DEBE (MUST) validar cada caja del método (`pos.config._get_tender_currency_error`): aquí, solo una caja en la moneda de la compañía y sin la alterna.
+
+#### Scenario: Moneda de cobro igual a la de la compañía o a la alterna
+
+- **WHEN** se le pone a un método como moneda de cobro la moneda de la compañía, o se agrega a una caja en la moneda de la compañía un método con la alterna como moneda de cobro
+- **THEN** se rechaza con un error de validación: en esa caja la alterna se cobra con `is_foreign_currency`
+
+#### Scenario: Método sin caja con la alterna
+
+- **WHEN** se crea un método con la alterna como moneda de cobro que todavía no está en ninguna caja
+- **THEN** se acepta, y lo valida cada caja a la que se agregue
+
+#### Scenario: Método en divisa con moneda de cobro
+
+- **WHEN** un método tiene a la vez `is_foreign_currency` y una moneda de cobro
+- **THEN** se rechaza con un error de validación
+
+#### Scenario: Diario de cruce en otra moneda
+
+- **WHEN** el diario de cruce de un método con moneda de cobro no está en esa moneda
+- **THEN** se rechaza con un error de validación
+
+#### Scenario: Método sin diarios de cruce
+
+- **WHEN** a un método con moneda de cobro le falta el diario de cruce o el diario de la cuenta de cruce
+- **THEN** se rechaza con un error de validación: sin ellos el cruce se omitiría y los euros no llegarían a la caja real
+
+#### Scenario: Caja en otra moneda
+
+- **WHEN** se agrega un método con moneda de cobro a una caja cuya moneda no es la de la compañía, o se le pone la moneda de cobro a un método de esa caja, y ningún módulo extiende el gancho
+- **THEN** se rechaza con un error de validación
+
+### Requirement: Conversión con la tasa del día de la moneda de cobro
+
+El motor de conversión (`pos.config._get_pos_conversion_rate` y su espejo `_getPosConversionRate`) DEBE (MUST) convertir entre la moneda de cobro y la caja con las tasas de `tender_currency_rates` (`compute_rate` a la fecha del usuario, moneda → caja la grande y caja → moneda la chica), y entre la moneda de cobro y la alterna pasando por la caja sin redondear la tasa. Los pares sin moneda de cobro NO DEBEN (MUST NOT) cambiar. Sin tasa del día la conversión DEBE (MUST) dar 0.
+
+#### Scenario: Euros a bolívares
+
+- **WHEN** la tasa del día del EUR es 1.003,8765 Bs y se convierten 100 €
+- **THEN** el resultado es 100.387,65 Bs
+
+#### Scenario: Euros a dólares
+
+- **WHEN** se convierte de EUR a USD
+- **THEN** la tasa es la del EUR → Bs multiplicada por la de Bs → USD, sin redondear
+
+#### Scenario: Sin tasa del día
+
+- **WHEN** el EUR no tiene tasa en la fecha del usuario
+- **THEN** la conversión da 0 y el PdV no agrega la línea del método, con un aviso
+
+### Requirement: La moneda de cobro llega al PdV
+
+El PdV DEBE (MUST) cargar las monedas de cobro de sus métodos, y `res.currency` DEBE (MUST) cargarse completo en cada carga, sin el filtro por `write_date`.
+
+#### Scenario: Moneda de cobro agregada después de la última carga
+
+- **WHEN** la caja tiene datos en caché y se agrega un método en EUR
+- **THEN** la próxima carga trae el EUR
+
+### Requirement: Cobro tecleado en la moneda de cobro
+
+Al pagar con un método con moneda de cobro, el PdV DEBE (MUST) proponer lo adeudado en esa moneda y tomar lo tecleado en ella, redondeado a esa moneda. Si es justo lo propuesto, la línea DEBE (MUST) valer en la caja exactamente el restante; si es más, lo tecleado por la tasa, con el signo del restante; si es menos, la conversión de lo tecleado. El pago DEBE (MUST) guardar lo cobrado en `tender_amount` con la moneda del método, y su `foreign_amount` se deriva del monto en la caja.
+
+#### Scenario: Pago exacto en euros
+
+- **WHEN** la venta es de 8.500 Bs y el cajero cobra los 8,47 € propuestos
+- **THEN** la línea vale 8.500 Bs, no queda restante y se puede validar
+
+#### Scenario: Pago de más en euros
+
+- **WHEN** la venta es de 8.500 Bs y el cajero teclea 10 €
+- **THEN** la línea vale los 10 € convertidos y el vuelto sale en Bs
+
+#### Scenario: Excedente sobre lo adeudado redondeado
+
+- **WHEN** la venta es de 18.560 Bs con el € a 1.004,9565776200 Bs (se proponen 18,47 €) y el cajero teclea 25 €
+- **THEN** la línea vale 25.123,91 Bs y el vuelto 6.563,91 Bs, no 25.122,37 y 6.562,37 (excedente medido contra 18,47 €)
+
+#### Scenario: Reembolso con excedente
+
+- **WHEN** un reembolso de una venta cobrada a 1.000 Bs/€ debe 8 € y el cajero teclea 10 €
+- **THEN** la línea vale -10.000 Bs, a la tasa original
+
+#### Scenario: Pago parcial en euros
+
+- **WHEN** la venta es de 17.000 Bs y el cajero teclea 5 €
+- **THEN** la línea vale la conversión de 5 € y el restante sigue en Bs, en USD y en euros
+
+#### Scenario: Línea y recibo en la moneda de cobro
+
+- **WHEN** se agrega una línea del método en EUR
+- **THEN** la línea muestra "€ X / Bs Y" y el recibo muestra los euros junto al nombre del método
+
+#### Scenario: Recibo de un pago anterior a un cambio del método
+
+- **WHEN** después de cobrar en EUR se cambia o se quita la moneda de cobro del método y se reimprime el recibo
+- **THEN** el recibo muestra la moneda y el monto con que se cobró, guardados en el pago
+
+### Requirement: Cobro desde el backend en la moneda de cobro
+
+Un pago con un método con moneda de cobro registrado desde el backend (`pos.make.payment`) DEBE (MUST) quedar con la moneda del método y su monto en esa moneda, igual que uno sincronizado desde el PdV: a la tasa del día de la caja, o en un reembolso a la de los cobros originales. Sin tasa del día de esa moneda, el cobro desde el backend DEBE (MUST) rechazarse con el aviso del PdV.
+
+#### Scenario: Cobro de una orden desde el backend
+
+- **WHEN** se cobra desde el backend una orden de 100.387,65 Bs con el método en EUR, a 1.003,8765 Bs/€
+- **THEN** el pago queda con moneda EUR y 100 €, y su cajón y su cruce los cuentan
+
+#### Scenario: Reembolso desde el backend
+
+- **WHEN** la venta se cobró con 80 € y se reembolsa entera desde el backend con el método en EUR
+- **THEN** el pago del reembolso queda en −80 €, aunque la tasa del día sea otra
+
+#### Scenario: Cobro desde el backend sin tasa del día
+
+- **WHEN** el EUR no tiene tasa del día y se cobra desde el backend una orden con el método en EUR
+- **THEN** se rechaza con el mismo aviso del PdV y la orden sigue sin pagos; los demás métodos se cobran igual
+
+#### Scenario: Orden sincronizada sin tasa del día
+
+- **WHEN** llega al servidor una orden de un PdV con un bundle anterior, pagada en EUR sin `tender_amount` y sin tasa del día del EUR
+- **THEN** se sincroniza igual, con 0 € en el pago y un aviso en el log del servidor
+
+### Requirement: Reembolso a la tasa con la que se cobró la moneda de cobro
+
+El reembolso de una orden pagada en una moneda de cobro DEBE (MUST) convertir esa moneda con la tasa con la que se cobraron en ella los pagos de las órdenes originales de todas sus líneas (`get_refund_tender_rates`), no con la del día, en el PdV y en el backend.
+
+#### Scenario: Reembolso desde el backend de una venta de otro día
+
+- **WHEN** una venta se cobró con 24,29 € a 1.399,75 Bs/€ y hoy el € vale 1.003,8765 Bs, y su reembolso se paga desde el backend con el método en EUR
+- **THEN** el pago del reembolso queda en −24,29 € y no en −33,87 €
+
+#### Scenario: Reembolso de un pago en euros
+
+- **WHEN** la venta original se cobró a 1.000 Bs/€ y hoy el € vale 1.003,8765 Bs
+- **THEN** reembolsar 8.000 Bs con el método en EUR devuelve 8 €
+
+#### Scenario: Reembolso con líneas de dos ventas
+
+- **WHEN** un reembolso armado fuera del PdV (`sync_from_ui` del core rechaza uno de varias órdenes) tiene líneas de dos ventas cobradas con 80 € y con 50 € a tasas distintas, y se paga entero desde el backend con el método en EUR
+- **THEN** devuelve 130 €, a la tasa de las dos ventas, y no 120 € a la de la primera
+
+### Requirement: El cruce de la moneda de cobro lleva lo cobrado en esa moneda
+
+Un método con moneda de cobro y sus dos diarios de cruce DEBE (MUST) cruzar como un método en divisa, y la línea del diario real DEBE (MUST) llevar como `amount_currency` lo cobrado en esa moneda (`tender_amount`), con el debe/haber en la moneda de la compañía y los montos alternos de los pagos. Sin `currency_amount`, DEBE (MUST) convertir el debe/haber, que está en la moneda de la compañía, a la tasa del día de la caja.
+
+#### Scenario: Venta en efectivo en euros
+
+- **WHEN** se cierra una sesión con una venta de 116 USD pagada con 100 € en el efectivo en EUR
+- **THEN** el cruce lleva 116 en la transitoria del método y en la de la caja en EUR, con `amount_currency` de 100 € en esta última
+
+#### Scenario: Método sin moneda de cobro
+
+- **WHEN** se cruza un método en la alterna
+- **THEN** su cruce no cambia y no recibe el argumento nuevo
+
+#### Scenario: Llamador sin el monto en la moneda de cobro
+
+- **WHEN** un módulo crea el cruce de un método con moneda de cobro sin pasar `currency_amount`
+- **THEN** la línea del diario real lleva la conversión del debe/haber desde la moneda de la compañía a la tasa del día de la caja, no el debe/haber como si fuera esa moneda
+
+### Requirement: El efectivo de la caja es el de su moneda
+
+La apertura de una sesión DEBE (MUST) rechazarse si el primer método de efectivo de la caja tiene moneda de cobro: en ese método el core registra el vuelto y el arqueo.
+
+#### Scenario: Efectivo en euros primero en la lista
+
+- **WHEN** el método en EUR es el primer método de efectivo de la caja
+- **THEN** no se puede abrir la sesión y el mensaje pide moverlo después del efectivo de la caja
+
+### Requirement: La línea transitoria del cruce en la moneda del diario del método
+
+Si el llamador pasa `transitory_amount_currency` y el diario del método tiene moneda, la línea transitoria del cruce DEBE (MUST) ir en esa moneda y con ese monto, con el signo de su debe/haber, para que la transitoria quede en cero también en ella. Sin él, la línea DEBE (MUST) seguir en la moneda de la compañía. En el cruce combinado, cada pata DEBE (MUST) llevar el suyo y el neto en esa moneda cuenta para no crear el asiento.
+
+#### Scenario: Diario transitorio en la alterna
+
+- **WHEN** se cruzan 100 € (116 de la caja) de un método cuyo diario está en la alterna, pasando `transitory_amount_currency` = 116
+- **THEN** la línea transitoria va en la alterna con `amount_currency` 116 y la del diario real con 100 €, las dos con el mismo debe/haber en la moneda de la compañía
+
+#### Scenario: Sin el monto en la moneda del diario
+
+- **WHEN** se cruza el mismo método sin `transitory_amount_currency`
+- **THEN** la línea transitoria va en la moneda de la compañía, como siempre
+
+#### Scenario: Cruce combinado con venta y reembolso
+
+- **WHEN** el cruce combinado de ese método tiene una venta (116) y un reembolso (−58) en la moneda del diario
+- **THEN** cada pata lleva su línea transitoria en esa moneda con su monto
+
+### Requirement: La sesión trabaja con la tasa del día de su apertura
+
+Al abrir la sesión (`_set_opening_control_data`: caja y kiosko) el sistema DEBE (MUST) guardar en `pos.session.foreign_rate_date` el día del usuario, y la caja DEBE (MUST) usar la tasa de ese día hasta cerrarse. Una corrección de la tasa de ese mismo día entra al recargar los datos; la de otro día, nunca.
+
+#### Scenario: Sesión que pasa la medianoche
+
+- **WHEN** la sesión se abrió el día 1 con tasa 40 y el día 2, ya con tasa 41, se recargan los datos
+- **THEN** la caja, su conversión y la moneda que recibe el PdV siguen con la tasa 40
+
+#### Scenario: Sesión nueva del día siguiente
+
+- **WHEN** el día 2 se abre una sesión nueva
+- **THEN** trabaja con la tasa 41 del día 2
+
+#### Scenario: Corrección de la tasa del mismo día
+
+- **WHEN** con la sesión del día 1 abierta se corrige la tasa del día 1 a 40,5
+- **THEN** al recargar los datos la caja trabaja con 40,5
+
+### Requirement: Día de la tasa de la caja para las conversiones
+
+`pos.session._get_rate_date()` y `pos.config._get_pos_rate_date()` DEBEN (MUST) devolver el día de la tasa de la sesión activa o, sin sesión abierta, el día del usuario. Toda conversión de montos de la caja con la tasa nativa de Odoo DEBE (MUST) usar ese día, no el de hoy.
+
+#### Scenario: Caja con sesión de ayer
+
+- **WHEN** la sesión de la caja se abrió ayer y hoy se pide el día de la tasa
+- **THEN** se obtiene el día de ayer, el de la sesión
+
+#### Scenario: Asiento del cierre después de medianoche
+
+- **WHEN** la sesión abierta el día 1 (tasa 40) se cierra el día 2 (tasa 41)
+- **THEN** el asiento de la sesión, fechado el día 2, lleva la tasa 40
+
+### Requirement: Tasas de las monedas de cobro del día de la sesión
+
+`pos.config.tender_currency_rates` DEBE (MUST) calcularse con el día de la tasa de la caja (`_get_pos_rate_date`), y `check_opening_rate` DEBE (MUST) comparar también las tasas de cobro que tiene cargadas el navegador.
+
+#### Scenario: EUR de una sesión de ayer
+
+- **WHEN** la sesión se abrió ayer con el EUR a 1,10 y hoy está a 1,16
+- **THEN** la caja sigue con 1,10
+
+#### Scenario: Tasa de cobro vieja en el navegador
+
+- **WHEN** el navegador tiene una tasa de cobro del EUR que no es la de la sesión
+- **THEN** la caja no abre y recarga los datos
+
+### Requirement: La caja no abre sin la tasa del día
+
+El sistema NO DEBE (MUST NOT) abrir una sesión cuando la moneda alterna no tiene tasa para el día del usuario: `set_opening_control` lanza un `UserError` y el popup de apertura muestra "Sin tasa del día" sin llamarlo.
+
+#### Scenario: Apertura sin tasa del día
+
+- **WHEN** se confirma la apertura y la moneda alterna no tiene tasa del día
+- **THEN** la sesión sigue en "Control de apertura", sin día de tasa, y se avisa que falta la tasa
+
+### Requirement: La caja no abre con una tasa cargada que no es la de la sesión
+
+Antes de confirmar la apertura el PdV DEBE (MUST) mandar a `pos.session.check_opening_rate` la tasa de la caja y el `rate` de cada moneda cargados. Si alguno no es el de la sesión NO DEBE (MUST NOT) abrir: avisa "Tasa desactualizada" y recarga los datos. Sin conexión NO DEBE (MUST NOT) abrir, porque no puede comparar las tasas: avisa como el core que la caja no se abre sin conexión. Lo que se registra al abrir va en `_beforeOpeningSession`, después del chequeo.
+
+#### Scenario: Caja cargada la noche anterior
+
+- **WHEN** la caja se cargó el día 1 (tasa 40) y se confirma la apertura el día 2 (tasa 41) sin recargar
+- **THEN** la sesión no abre, se avisa la tasa del día y el PdV recarga los datos completos
+
+#### Scenario: Moneda con la tasa de una carga anterior
+
+- **WHEN** la tasa de la caja es la del día pero el `rate` de la moneda alterna cargado es de otro día
+- **THEN** la sesión no abre y el PdV recarga los datos
+
+#### Scenario: Tasa cargada al día
+
+- **WHEN** las tasas cargadas son las de la sesión
+- **THEN** la sesión abre como siempre
+
+#### Scenario: Tasa vieja con órdenes pagadas sin enviar
+
+- **WHEN** la tasa cargada es vieja y el equipo tiene órdenes pagadas sin sincronizar
+- **THEN** la sesión abre para enviarlas y el PdV recarga los datos enseguida
+
+#### Scenario: Apertura sin conexión
+
+- **WHEN** el chequeo de la tasa no llega al servidor (`ConnectionLostError`), aunque la conexión vuelva enseguida
+- **THEN** la sesión no abre, se avisa que la caja no se abre sin conexión y no se ejecuta `_beforeOpeningSession`
+
+#### Scenario: Registro de apertura de otros módulos
+
+- **WHEN** la sesión no abre por la tasa
+- **THEN** no se ejecuta `_beforeOpeningSession` y nada queda registrado
+
+#### Scenario: Kiosko sin tasa del día
+
+- **WHEN** se abre el kiosko (`action_open_wizard`) sin tasa del día
+- **THEN** se lanza el error y no queda sesión
+
+### Requirement: Aviso de sesión de un día anterior
+
+Con la sesión abierta un día anterior al de hoy, el PdV DEBE (MUST) avisar que la sesión cobra con la tasa del día en que se abrió y que se cierre para usar la de hoy, al cargar el PdV y al cobrar, sin bloquear la venta.
+
+#### Scenario: Cobro después de medianoche
+
+- **WHEN** la sesión se abrió ayer y el cajero va a cobrar
+- **THEN** ve el aviso como notificación y la venta sigue con la tasa de la sesión
+
+#### Scenario: Equipo que abrió la sesión sin recargar
+
+- **WHEN** el cajero abre la sesión con el popup y vende sin recargar hasta después de medianoche
+- **THEN** el navegador tiene el día de la tasa (lo lee al abrir) y el aviso sale al cobrar

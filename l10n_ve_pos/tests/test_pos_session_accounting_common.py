@@ -50,27 +50,35 @@ class TestPosSessionAccountingBase(TransactionCase):
     alternate currency difference without them.
     """
 
+    # Company and foreign currency of the fixture, by name: by default the
+    # company in USD with VEF as foreign currency. A subclass can swap them
+    # (the real setup, a company in Bs with USD as foreign currency).
+    company_currency_name = "USD"
+    foreign_currency_name = "VEF"
+
+    @classmethod
+    def _get_fixture_currency(cls, name):
+        currency = (
+            cls.env["res.currency"]
+            .with_context(active_test=False)
+            .search([("name", "=", name)], limit=1)
+        )
+        if currency and not currency.active:
+            currency.active = True
+        return currency
+
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        usd = cls.env.ref("base.USD")
         cls.company = cls.env["res.company"].create(
             {
                 "name": "Test VE Slice C Co",
-                "currency_id": usd.id,
+                "currency_id": cls._get_fixture_currency(cls.company_currency_name).id,
                 "country_id": cls.env.ref("base.ve").id,
             }
         )
 
-
-        vef = (
-            cls.env["res.currency"]
-            .with_context(active_test=False)
-            .search([("name", "=", "VEF")], limit=1)
-        )
-        if vef and not vef.active:
-            vef.active = True
-        cls.foreign_currency = vef
+        cls.foreign_currency = cls._get_fixture_currency(cls.foreign_currency_name)
         cls.company.write({"foreign_currency_id": cls.foreign_currency.id})
 
         Account = cls.env["account.account"]

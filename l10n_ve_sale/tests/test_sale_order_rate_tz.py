@@ -18,6 +18,7 @@ class TestSaleOrderRateTz(TransactionCase):
         cls.company.currency_id = cls.env.ref("base.VEF")
         cls.company.foreign_currency_id = cls.usd
         cls.env.user.tz = "America/Caracas"
+        cls.company.update_sale_order_rate_using_date_order = True
         cls.env = cls.env(context=dict(cls.env.context, tz="America/Caracas"))
         # Solo existe la tasa del día local (26); la del 27 aún no se ha cargado.
         cls.env["res.currency.rate"].create(

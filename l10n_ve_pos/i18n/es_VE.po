@@ -87,6 +87,11 @@ msgid ""
 msgstr "Permite vender kits cuyos productos no están en el almacén principal de la caja."
 
 #. module: l10n_ve_pos
+#: model:ir.model.fields,help:l10n_ve_pos.field_pos_payment__tender_amount
+msgid "Amount the customer paid, in the tender currency."
+msgstr "Monto que pagó el cliente, en la moneda de cobro."
+
+#. module: l10n_ve_pos
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_config__amount_to_zero
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_res_config_settings__amount_to_zero
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
@@ -180,6 +185,12 @@ msgid "Connection error"
 msgstr ""
 
 #. module: l10n_ve_pos
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/services/pos_store.js:0
+msgid "Connection Lost"
+msgstr "Conexión perdida"
+
+#. module: l10n_ve_pos
 #: model:ir.model,name:l10n_ve_pos.model_res_partner
 msgid "Contact"
 msgstr "Contacto"
@@ -216,6 +227,15 @@ msgid "Currency"
 msgstr "Moneda"
 
 #. module: l10n_ve_pos
+#: model:ir.model.fields,help:l10n_ve_pos.field_pos_payment__tender_currency_id
+msgid ""
+"Currency the customer paid in, when it differs from the Point of Sale "
+"currency."
+msgstr ""
+"Moneda en la que pagó el cliente, cuando es distinta a la del Punto de "
+"Venta."
+
+#. module: l10n_ve_pos
 #. odoo-javascript
 #: code:addons/l10n_ve_pos/static/src/overrides/screens/payment_line/payment_line.xml:0
 msgid "Delete"
@@ -243,6 +263,7 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_account_partial_reconcile__display_name
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_account_tax__display_name
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_config__display_name
+#: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_make_payment__display_name
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_order__display_name
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_order_line__display_name
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_payment__display_name
@@ -426,6 +447,7 @@ msgstr "Oculta los productos almacenables sin stock a mano en la ubicación de o
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_account_partial_reconcile__id
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_account_tax__id
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_config__id
+#: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_make_payment__id
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_order__id
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_order_line__id
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_payment__id
@@ -542,6 +564,12 @@ msgstr "No se ha seleccionado un Punto de Venta"
 #: code:addons/l10n_ve_pos/report/report_saledetails.py:0
 msgid "No Taxes"
 msgstr "Sin impuesto"
+
+#. module: l10n_ve_pos
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/screens/payment_screen/payment_screen.js:0
+msgid "No exchange rate"
+msgstr "Sin tasa de cambio"
 
 #. module: l10n_ve_pos
 #. odoo-javascript
@@ -777,6 +805,21 @@ msgstr ""
 " movimientos."
 
 #. module: l10n_ve_pos
+#: model:ir.model.fields,help:l10n_ve_pos.field_pos_config__tender_currency_rates
+msgid ""
+"Rates of the day of the tender currencies of the payment methods of the PoS "
+"against the company currency, by currency id: foreign_rate (tender currency "
+"→ company currency) and foreign_inverse_rate (company currency → tender "
+"currency), same pair as foreign_rate / foreign_inverse_rate. In a PoS in "
+"another currency they only tell whether the currency has a rate of the day."
+msgstr ""
+"Tasas del día de las monedas de cobro de los métodos de pago del PdV contra "
+"la moneda de la compañía, por id de moneda: foreign_rate (moneda de cobro → "
+"moneda de la compañía) y foreign_inverse_rate (moneda de la compañía → "
+"moneda de cobro), el mismo par que foreign_rate / foreign_inverse_rate. En "
+"un PdV en otra moneda solo indican si la moneda tiene tasa del día."
+
+#. module: l10n_ve_pos
 #. odoo-javascript
 #: code:addons/l10n_ve_pos/static/src/overrides/screens/payment_line/payment_line.xml:0
 msgid "Refund"
@@ -793,6 +836,12 @@ msgstr ""
 #: code:addons/l10n_ve_pos/static/src/overrides/screens/payment_line/payment_line.xml:0
 msgid "Refund in process"
 msgstr ""
+
+#. module: l10n_ve_pos
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/screens/payment_status/payment_status.xml:0
+msgid "Remaining in"
+msgstr "Restante en"
 
 #. module: l10n_ve_pos
 #. odoo-javascript
@@ -917,10 +966,35 @@ msgid "Taxes:"
 msgstr "Impuestos:"
 
 #. module: l10n_ve_pos
+#: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_payment__tender_amount
+msgid "Tender Amount"
+msgstr "Monto cobrado"
+
+#. module: l10n_ve_pos
+#: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_payment__tender_currency_id
+msgid "Tender Currency"
+msgstr "Moneda de cobro"
+
+#. module: l10n_ve_pos
+#: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_config__tender_currency_rates
+msgid "Tender Currency Rates"
+msgstr "Tasas de las monedas de cobro"
+
+#. module: l10n_ve_pos
 #. odoo-python
 #: code:addons/l10n_ve_pos/models/product_category.py:0
 msgid "The category %s does not belong to this company."
 msgstr "La categoría %s no pertenece a la compañía actual."
+
+#. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_payment_method.py:0
+msgid ""
+"The cross journal %(journal)s of the payment method %(method)s must be in "
+"%(currency)s, its tender currency."
+msgstr ""
+"El diario de cruce %(journal)s del método de pago %(method)s debe estar en "
+"%(currency)s, su moneda de cobro."
 
 #. module: l10n_ve_pos
 #. odoo-python
@@ -933,6 +1007,63 @@ msgstr ""
 "No se puede crear el asiento de cruce del método de pago %(method)s porque faltan estas cuentas:\n"
 "%(accounts)s\n"
 "Configúrelas en el diario y vuelva a intentarlo."
+
+#. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_config.py:0
+msgid ""
+"The first cash payment method of the Point of Sale %(pos)s must be the one "
+"in %(currency)s: the change is given with it. %(method)s is collected in "
+"%(tender)s, move it after that one in the payment methods list."
+msgstr ""
+"El primer método de pago en efectivo del Punto de Venta %(pos)s debe ser el "
+"de %(currency)s: con él se entrega el vuelto. %(method)s se cobra en "
+"%(tender)s; muévalo después de ese en la lista de métodos de pago."
+
+#. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_payment_method.py:0
+msgid ""
+"The payment method %(method)s cannot be a foreign currency method and have a"
+" tender currency at the same time: the foreign currency method is always "
+"collected in %(foreign)s."
+msgstr ""
+"El método de pago %(method)s no puede ser de moneda alterna y tener moneda "
+"de cobro a la vez: el método de moneda alterna siempre se cobra en "
+"%(foreign)s."
+
+#. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_payment_method.py:0
+msgid ""
+"The payment method %(method)s is a customer account: it cannot have a tender"
+" currency."
+msgstr ""
+"El método de pago %(method)s es una cuenta de cliente: no puede tener moneda"
+" de cobro."
+
+#. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_payment_method.py:0
+msgid ""
+"The payment method %(method)s is collected in %(currency)s and is used in a "
+"Point of Sale whose currency is not the company currency. A tender currency "
+"is only supported in a Point of Sale in the company currency."
+msgstr ""
+"El método de pago %(method)s se cobra en %(currency)s y se usa en un Punto "
+"de Venta cuya moneda no es la de la compañía. La moneda de cobro solo se "
+"admite en un Punto de Venta en la moneda de la compañía."
+
+#. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_payment_method.py:0
+msgid ""
+"The payment method %(method)s is collected in %(currency)s: set its Cross "
+"Journal (the real journal in %(currency)s) and its Cross Account Journal."
+msgstr ""
+"El método de pago %(method)s se cobra en %(currency)s: configure su Diario "
+"afectado de banco o efectivo (el diario real en %(currency)s) y su Diario de"
+" Cruce de Cuentas."
 
 #. module: l10n_ve_pos
 #. odoo-python
@@ -952,6 +1083,12 @@ msgid "The rate that is gonna be always shown to the user."
 msgstr "La tarifa que siempre se mostrará al usuario."
 
 #. module: l10n_ve_pos
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/services/pos_store.js:0
+msgid "The register cannot be opened while offline. Please try again."
+msgstr "La caja no se puede abrir sin conexión. Inténtelo de nuevo."
+
+#. module: l10n_ve_pos
 #. odoo-python
 #: code:addons/l10n_ve_pos/models/pos_config.py:0
 msgid ""
@@ -968,6 +1105,50 @@ msgstr ""
 #: code:addons/l10n_ve_pos/models/pos_config.py:0
 msgid "The session must have a foreign currency or active"
 msgstr "La sesión debe tener una moneda extranjera o estar activa"
+
+#. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_payment_method.py:0
+msgid ""
+"The tender currency of the payment method %(method)s must be a third "
+"currency: %(currency)s is the company currency or its foreign currency."
+msgstr ""
+"La moneda de cobro del método de pago %(method)s debe ser una tercera "
+"moneda: %(currency)s es la moneda de la compañía o su moneda alterna."
+
+#. module: l10n_ve_pos
+#. odoo-javascript
+#. odoo-python
+#: code:addons/l10n_ve_pos/static/src/overrides/screens/payment_screen/payment_screen.js:0
+#: code:addons/l10n_ve_pos/wizard/pos_make_payment.py:0
+msgid ""
+"There is no exchange rate of the day for %(currency)s: the payment method "
+"%(method)s cannot be used. Load the rate and reload the Point of Sale data."
+msgstr ""
+"No hay tasa del día para %(currency)s: no se puede usar el método de pago "
+"%(method)s. Cargue la tasa y vuelva a cargar los datos del Punto de Venta."
+
+#. module: l10n_ve_pos
+#: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_payment_method__tender_currency_id
+msgid "Third Tender Currency"
+msgstr "Tercera moneda de cobro"
+
+#. module: l10n_ve_pos
+#: model:ir.model.fields,help:l10n_ve_pos.field_pos_payment_method__tender_currency_id
+msgid ""
+"Third currency the customer pays in with this method (e.g. EUR in a PoS in "
+"Bs with USD as foreign currency). The cashier types the amount in this "
+"currency and the PoS converts it to its own currency at the rate of the day."
+" The journal of the method is the transitory one in the PoS currency and the"
+" Cross Journal is the real one in this currency. Leave it empty for methods "
+"in the PoS currency or in the foreign currency (Is Foreign Currency)."
+msgstr ""
+"Tercera moneda en la que paga el cliente con este método (p. ej. EUR en un "
+"PdV en Bs con USD como moneda alterna). El cajero teclea el monto en esta "
+"moneda y el PdV lo convierte a su moneda con la tasa del día. El diario del "
+"método es el transitorio en la moneda del PdV y el Diario de cruce es el "
+"real en esta moneda. Déjelo vacío para los métodos en la moneda del PdV o en"
+" la moneda alterna (Es moneda alterna)."
 
 #. module: l10n_ve_pos
 #. odoo-javascript
@@ -1095,3 +1276,89 @@ msgstr ""
 #: code:addons/l10n_ve_pos/static/src/overrides/services/pos_store.js:0
 msgid "ordered %(requested)s, on hand %(available)s"
 msgstr "pedido %(requested)s, a mano %(available)s"
+
+#. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_session.py:0
+msgid ""
+"The register cannot be opened: there is no %(currency)s rate for %(date)s. "
+"Load the rate of the day and try again."
+msgstr ""
+"No se puede abrir la caja: no hay tasa de %(currency)s para el %(date)s. "
+"Carga la tasa del día y vuelve a intentarlo."
+
+#. module: l10n_ve_pos
+#: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_session__foreign_rate_date
+msgid "Rate Date"
+msgstr "Fecha de la tasa"
+
+#. module: l10n_ve_pos
+#: model:ir.model.fields,help:l10n_ve_pos.field_pos_session__foreign_rate_date
+msgid ""
+"Day of the rate the session works with: the day it was opened. Every order "
+"of the session uses the rate of that day, even after midnight."
+msgstr ""
+"Día de la tasa con la que trabaja la sesión: el día en que se abrió. Todas "
+"las órdenes de la sesión usan la tasa de ese día, aun después de medianoche."
+
+#. module: l10n_ve_pos
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/services/pos_store.js:0
+msgid "Session from a previous day"
+msgstr "Sesión de un día anterior"
+
+#. module: l10n_ve_pos
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/services/pos_store.js:0
+msgid "No rate of the day"
+msgstr "Sin tasa del día"
+
+#. module: l10n_ve_pos
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/services/pos_store.js:0
+msgid ""
+"There is no %(currency)s rate for %(date)s. Load the rate of the day before "
+"opening the register."
+msgstr ""
+"No hay tasa de %(currency)s para el %(date)s. Carga la tasa del día antes de "
+"abrir la caja."
+
+#. module: l10n_ve_pos
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/services/pos_store.js:0
+msgid "Outdated rate"
+msgstr "Tasa desactualizada"
+
+#. module: l10n_ve_pos
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/services/pos_store.js:0
+msgid ""
+"This register has an old rate loaded. The rate of the day is %(rate)s "
+"(%(currency)s, %(date)s). The data will be reloaded before opening the "
+"register."
+msgstr ""
+"Esta caja tiene cargada una tasa vieja. La tasa del día es %(rate)s "
+"(%(currency)s, %(date)s). Se recargarán los datos antes de abrir la caja."
+
+#. module: l10n_ve_pos
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/services/pos_store.js:0
+msgid ""
+"This session was opened on %(date)s and every sale uses the rate of that "
+"day. Close it and open a new one to sell with today's rate."
+msgstr ""
+"Esta sesión se abrió el %(date)s y todas sus ventas usan la tasa de ese día. "
+"Ciérrala y abre una nueva para vender con la tasa de hoy."
+
+#. module: l10n_ve_pos
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/services/pos_store.js:0
+msgid ""
+"This register has an old rate loaded and paid orders that were not sent "
+"yet. The register will open to send them and then reload its data with the "
+"rate of the day, %(rate)s (%(currency)s, %(date)s). Do not sell before the "
+"reload."
+msgstr ""
+"Esta caja tiene cargada una tasa vieja y órdenes pagadas sin enviar. La caja "
+"se abrirá para enviarlas y enseguida recargará sus datos con la tasa del "
+"día, %(rate)s (%(currency)s, %(date)s). No vendas antes de la recarga."
