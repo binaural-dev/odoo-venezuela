@@ -1042,6 +1042,29 @@ msgid "Token Auth Tfhka"
 msgstr "Token de Autenticación Tfhka"
 
 #. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_company__token_expiry_tfhka
+msgid "TFHKA Token Expiry"
+msgstr "Vencimiento del Token TFHKA"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,help:l10n_ve_invoice_digital.field_res_company__token_expiry_tfhka
+#: model:ir.model.fields,help:l10n_ve_invoice_digital.field_res_config_settings__token_expiry_tfhka
+msgid ""
+"Expiration (UTC) of the current TFHKA token, as returned by /Autenticacion. "
+"The token is reused until shortly before this date and refreshed "
+"automatically afterwards."
+msgstr ""
+"Vencimiento (UTC) del token TFHKA vigente, según lo devuelve /Autenticacion. "
+"El token se reutiliza hasta poco antes de esta fecha y luego se renueva "
+"automáticamente."
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_config_settings__token_expiry_tfhka
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_res_config_settings_inherit_tfhka
+msgid "Token Expiry"
+msgstr "Vencimiento del Token"
+
+#. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/res_config_settings.py:0
 #: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/res_config_settings.py:0

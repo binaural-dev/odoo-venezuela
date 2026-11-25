@@ -5,4 +5,5 @@
 -- ever reactivated by hand.
 UPDATE res_company
    SET password_tfhka = NULL,
-       token_auth_tfhka = NULL;
+       token_auth_tfhka = NULL,
+       token_expiry_tfhka = NULL;

@@ -9,7 +9,7 @@ from odoo import api, fields, models
 
 _logger = logging.getLogger(__name__)
 
-SENSITIVE_KEYS = {"password", "clave", "authorization"}
+SENSITIVE_KEYS = {"password", "clave", "authorization", "token"}
 PURGE_AFTER_MONTHS = 3
 
 # Tokenizes a pretty-printed JSON string for syntax highlighting. Order

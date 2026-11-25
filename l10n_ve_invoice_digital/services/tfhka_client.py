@@ -41,6 +41,13 @@ class TfhkaApiClient(models.AbstractModel):
         raise UserError(_("The URL is not configured in the company settings."))
 
     def _token(self, company):
+        """Token Bearer vigente de la compañía. Se reutiliza mientras no esté
+        por vencer; si le quedan menos de ``TFHKA_TOKEN_REFRESH_MARGIN`` se
+        renueva antes de la llamada (ticket 16683). El 401 -> renovar ->
+        reintentar una vez de ``_request`` se mantiene como respaldo."""
+        if company._tfhka_token_needs_refresh():
+            _logger.info("TFHKA token of company %s is about to expire: refreshing it before the call.", company.id)
+            company.generate_token_tfhka()
         if company.token_auth_tfhka:
             return company.token_auth_tfhka
         raise ValidationError(_("Configuration error: The authentication token is empty."))
