@@ -17,10 +17,12 @@ carga los datos, y después vive en el navegador (IndexedDB). Casos que lo rompe
    pero si al día siguiente se recarga (entrar desde el backend, "Volver a cargar datos") toma la tasa nueva y
    la sesión mezcla dos tasas.
 3. **Moneda vieja en una caja en Bs.** El core pasa la lista de precios en divisa a la moneda de la caja con el
-   `rate` de `res.currency`, que se carga incremental por `write_date`. Una tasa nueva no cambia el
-   `write_date` de la moneda: una sesión nueva convierte los precios con la tasa de la última carga completa
-   mientras los montos en divisa usan la de `pos.config`. `binaural_pos_multicurrency` ya lo evitaba solo en
-   las cajas en otra moneda.
+   `rate` de `res.currency`. Antes de la tarea 86066 la moneda se cargaba incremental por `write_date`, y una
+   tasa nueva no cambia ese `write_date`: una sesión nueva convertía los precios con la tasa de la última carga
+   completa mientras los montos en divisa usaban la de `pos.config` (versión de Nova). La tarea 86066
+   (odoo-venezuela#1569, en 19.0 desde el 12/11) ya trae la moneda completa en cada carga, pero con el `rate`
+   del momento de la carga: después de medianoche cae en el caso 2. `binaural_pos_multicurrency` ya lo evitaba
+   solo en las cajas en otra moneda.
 4. **Apertura sin tasa del día.** La caja abre con tasa 0 y ninguna orden sincroniza ("No hay una tasa
    asignada…").
 5. **Otra pestaña o equipo** de la misma caja con datos viejos.
@@ -38,15 +40,20 @@ carga los datos, y después vive en el navegador (IndexedDB). Casos que lo rompe
   `binaural_pos_close` (cajón en divisa), en el PR complementario.
 - Se fija el **día**, no el valor: una corrección de la tasa de ese mismo día entra al recargar los datos
   (decisión de Jesús Cegarra, 2026-11-12), como ya hacen las cajas en Bs y `binaural_pos_multicurrency`.
-- `res.currency`: llega completa en cada carga (sin el filtro por `write_date`) y con el `rate` del día de la
-  sesión; la moneda alterna, con la tasa exacta de la caja. El kiosko (`l10n_ve_pos_self_order`) lee las
-  monedas por otra vía (`_load_pos_self_data_read`) y recibe la misma tasa.
+- `res.currency`: llega con el `rate` del día de la sesión (`_apply_pos_session_rates`); la moneda alterna, con
+  la tasa exacta de la caja. El kiosko (`l10n_ve_pos_self_order`) lee las monedas por otra vía
+  (`_load_pos_self_data_read`) y recibe la misma tasa. La carga completa en cada carga (sin el filtro por
+  `write_date`) no es de este cambio: entró a 19.0 con la tarea 86066 (#1569); aquí solo se amplía su
+  comentario con el motivo de este ticket.
 - `pos.session.check_opening_rate`: antes de confirmar la apertura el PdV manda las tasas que tiene cargadas
   (la de la caja y el `rate` de cada moneda). Si no son las de la sesión, el popup muestra "Tasa
   desactualizada" y recarga los datos completos (`reloadData(true)`) en vez de abrir. Si el equipo tiene órdenes
   pagadas sin enviar (solo se envían con la sesión abierta y una recarga las perdería), abre la sesión y
   recarga enseguida. Lo que otros módulos registran al abrir va en el gancho `_beforeOpeningSession` del popup,
   después del chequeo (`binaural_pos_close` registra ahí el cajón en divisa).
+- Sin conexión el chequeo no se puede hacer y la caja no abre, con el mismo aviso del core (code review,
+  2026-11-25). Antes devolvía "ok" y dejaba el aviso al core, pero un RPC fallido no pone el PdV fuera de línea:
+  con una conexión inestable `set_opening_control` podía pasar justo después y la caja abría con la tasa vieja.
 - Después de abrir, el popup lee `foreign_rate_date` de la sesión: el popup del core no recarga los datos y,
   sin el día, el aviso de sesión de un día anterior no saldría en el equipo que la abrió.
 - Al cerrar una sesión que pasó la medianoche, el asiento de la sesión (`_create_account_move`) y los pagos
@@ -63,6 +70,13 @@ carga los datos, y después vive en el navegador (IndexedDB). Casos que lo rompe
 - **Medianoche entre el chequeo y la apertura:** el popup llama a `check_opening_rate` y luego a
   `set_opening_control`; si el día cambia entre las dos llamadas (milisegundos), la sesión queda con el día
   nuevo y el navegador con la tasa anterior hasta recargar. Decisión del usuario (2026-11-12): limitación.
+- **Registro de apertura de otros módulos (`_beforeOpeningSession`):** corre después del chequeo pero antes de
+  `set_opening_control`. Si la apertura falla entre los dos (medianoche entre las llamadas, caída de la
+  conexión, otro error del servidor), lo registrado queda en una sesión que sigue en "Control de apertura". Al
+  reintentar, la diferencia es 0 y `binaural_pos_close` no crea otra línea ni otro cruce; solo repite el
+  mensaje del chatter. No se mueve después de `set_opening_control`: `binaural_pos_close` solo registra los
+  cajones con la sesión en `opening_control`. Antes del cambio se registraba sin chequeo; cerrarlo del todo es
+  abrir los cajones en la misma transacción que `set_opening_control`, en otra tarea (code review, 2026-11-25).
 - **Usuario sin zona horaria:** cae en UTC; si abre entre las 20:00 y las 24:00 de Caracas, la sesión queda
   con el día siguiente (o no abre sin esa tasa). Viene de antes; ahora dura toda la sesión.
 - **Reloj del navegador:** el aviso de sesión de un día anterior compara con la fecha del equipo.
@@ -71,7 +85,7 @@ carga los datos, y después vive en el navegador (IndexedDB). Casos que lo rompe
 
 ## Impact
 
-- **Módulo tocado:** `l10n_ve_pos` (19.0.1.28.2 → 19.0.1.29.0).
+- **Módulo tocado:** `l10n_ve_pos` (19.0.1.30.0 → 19.0.1.31.0).
 - **Despliegue:** `-u l10n_ve_pos` (columna nueva en `pos_session`). Las sesiones abiertas antes del update no
   tienen día guardado: siguen con la tasa del día del usuario hasta cerrarse.
 - **Kiosko:** sin tasa del día no abre (`action_open_wizard` muestra el error). `l10n_ve_pos_self_order`
