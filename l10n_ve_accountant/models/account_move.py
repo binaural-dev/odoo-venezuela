@@ -1538,9 +1538,22 @@ class AccountMove(models.Model):
         "foreign_inverse_rate",
         "foreign_currency_id",
         "foreign_rate",
+        "invoice_date_display",
+        "invoice_payment_term_id",
     )
     def _compute_needed_terms(self):
-        res = super()._compute_needed_terms()
+        # El core cuenta el plazo de pago desde `invoice_date` (aqui, la Fecha de
+        # tasa). El vencimiento debe contarse desde la Fecha de factura
+        # (`invoice_date_display`); se agrupa por esa fecha y se pasa al
+        # `account.payment.term._compute_terms` por contexto.
+        by_date = defaultdict(lambda: self.browse())
+        for invoice in self:
+            ref = invoice.invoice_date_display if invoice.is_invoice(include_receipts=True) else False
+            by_date[ref] |= invoice
+        for ref, invoices in by_date.items():
+            if ref:
+                invoices = invoices.with_context(l10n_ve_term_date_ref=ref)
+            super(AccountMove, invoices)._compute_needed_terms()
         for invoice in self:
             if not isinstance(invoice.needed_terms, dict):
                 continue
@@ -1556,9 +1569,6 @@ class AccountMove(models.Model):
                         balance, invoice.foreign_currency_id,
                         invoice.company_id, rate_date
                     )
-        return res
-
-   
 
     @api.constrains("invoice_line_ids")
     def _check_product_id(self):
