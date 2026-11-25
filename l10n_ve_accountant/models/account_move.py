@@ -1369,6 +1369,23 @@ class AccountMove(models.Model):
         specific to this project) but the call itself is delegated
         directly, with no per-record context."""
         super()._compute_tax_totals()
+        # Draft invoice: core computes amount_residual from tax_totals
+        # (account.move._compute_amount). The summaries of this localization
+        # read amounts of the invoice while building tax_totals
+        # (l10n_ve_accountant: the total in Bs; l10n_ve_igtf: bi_igtf,
+        # payment_state, amount_total), so that read computes the residual with
+        # tax_totals still empty: it is stored as 0 and the draft shows as
+        # "Paid" although its receivable line is still pending. Now that
+        # tax_totals is built, recompute only the drafts left wrong.
+        drafts = self.filtered(
+            lambda move: move.state == 'draft'
+            and move.is_invoice(include_receipts=True)
+            and not move.currency_id.is_zero(move.amount_total)
+            and move.currency_id.is_zero(move.amount_residual)
+        )
+        if drafts:
+            for field_name in ('amount_residual', 'amount_residual_signed', 'payment_state'):
+                self.env.add_to_compute(self._fields[field_name], drafts)
 
 
     @api.onchange("foreign_rate")
