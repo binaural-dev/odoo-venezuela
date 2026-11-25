@@ -10,11 +10,39 @@
                     <div class="o_setting_right_pane">
                         <label for="donation_account_id"/>
                         <div class="text-muted">
-                            Account to be used for donation flow.
+                            Default expense account of the donations in kind (inventory and donation sales). It must be one of the donation expense accounts.
                         </div>
                         <div class="content-group">
                             <div class="mt16">
                                 <field name="donation_account_id"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_settings_donation_expense_account_ids">
+                    <div class="o_setting_right_pane">
+                        <label for="donation_expense_account_ids"/>
+                        <div class="text-muted">
+                            Expense accounts that a donation given can use, in money and in kind. Without accounts there is no restriction.
+                        </div>
+                        <div class="content-group">
+                            <div class="mt16">
+                                <field name="donation_expense_account_ids" widget="many2many_tags"
+                                       domain="[('account_type', '=', 'expense'), ('company_ids', 'parent_of', company_id)]"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_settings_donation_income_account_ids">
+                    <div class="o_setting_right_pane">
+                        <label for="donation_income_account_ids"/>
+                        <div class="text-muted">
+                            Income accounts that identify the entries of the donations received by the company.
+                        </div>
+                        <div class="content-group">
+                            <div class="mt16">
+                                <field name="donation_income_account_ids" widget="many2many_tags"
+                                       domain="[('account_type', '=', 'income'), ('company_ids', 'parent_of', company_id)]"/>
                             </div>
                         </div>
                     </div>

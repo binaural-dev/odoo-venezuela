@@ -55,6 +55,15 @@ class TestPosSessionAccountingBase(TransactionCase):
     # (the real setup, a company in Bs with USD as foreign currency).
     company_currency_name = "USD"
     foreign_currency_name = "VEF"
+    # Whether the journals and the POS config work in the alternate currency
+    # (default) or in the company currency (a company in Bs, as in production).
+    sales_in_foreign = True
+
+    @classmethod
+    def _journal_currency_id(cls):
+        """Currency of the journals and the POS config: the alternate one, or
+        none (the company currency) when ``sales_in_foreign`` is off."""
+        return cls.foreign_currency.id if cls.sales_in_foreign else False
 
     @classmethod
     def _get_fixture_currency(cls, name):
@@ -180,7 +189,7 @@ class TestPosSessionAccountingBase(TransactionCase):
                 "type": "cash",
                 "code": "CSC",
                 "company_id": cls.company.id,
-                "currency_id": cls.foreign_currency.id,
+                "currency_id": cls._journal_currency_id(),
                 "default_account_id": cls.account_cash.id,
             }
         )
@@ -190,7 +199,7 @@ class TestPosSessionAccountingBase(TransactionCase):
                 "type": "cash",
                 "code": "SCC",
                 "company_id": cls.company.id,
-                "currency_id": cls.foreign_currency.id,
+                "currency_id": cls._journal_currency_id(),
                 "default_account_id": cls.account_cash.id,
             }
         )
@@ -228,7 +237,7 @@ class TestPosSessionAccountingBase(TransactionCase):
                 "type": "bank",
                 "code": "BJC",
                 "company_id": cls.company.id,
-                "currency_id": cls.foreign_currency.id,
+                "currency_id": cls._journal_currency_id(),
                 "default_account_id": cls.account_bank.id,
                 "inbound_payment_method_line_ids": [
                     (
@@ -346,7 +355,7 @@ class TestPosSessionAccountingBase(TransactionCase):
                 "type": "sale",
                 "code": "SJC",
                 "company_id": cls.company.id,
-                "currency_id": cls.foreign_currency.id,
+                "currency_id": cls._journal_currency_id(),
             }
         )
         cls.invoice_journal = cls.env["account.journal"].create(
@@ -355,14 +364,14 @@ class TestPosSessionAccountingBase(TransactionCase):
                 "type": "sale",
                 "code": "IJC",
                 "company_id": cls.company.id,
-                "currency_id": cls.foreign_currency.id,
+                "currency_id": cls._journal_currency_id(),
             }
         )
         cls.config = cls.env["pos.config"].create(
             {
                 "name": "C Config",
                 "company_id": cls.company.id,
-                "currency_id": cls.foreign_currency.id,
+                "currency_id": cls._journal_currency_id(),
                 "journal_id": cls.sale_journal.id,
                 "invoice_journal_id": cls.invoice_journal.id,
                 "payment_method_ids": [

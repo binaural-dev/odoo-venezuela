@@ -1126,7 +1126,20 @@ class StockPicking(models.Model):
                 and picking.transfer_reason_id == transfer_between_warehouses_reason
             )
 
-    @api.depends("is_dispatch_guide", "operation_code", "location_dest_id")
+    def _is_point_of_sale_picking(self):
+        """Whether the picking comes from a point of sale order or session."""
+        self.ensure_one()
+        return "pos_order_id" in self._fields and bool(self.pos_order_id or self.pos_session_id)
+
+    def _allowed_reason_ids_depends(self):
+        """The point of sale writes pos_order_id and pos_session_id after creating the picking: the
+        reasons are computed again then, only when point_of_sale is installed."""
+        depends = ["is_dispatch_guide", "operation_code", "location_dest_id"]
+        if "pos_order_id" in self._fields:
+            depends += ["pos_order_id", "pos_session_id"]
+        return depends
+
+    @api.depends(lambda self: self._allowed_reason_ids_depends())
     def _compute_allowed_reason_ids(self):
         for picking in self:
             allowed_reason_ids = []
@@ -1148,7 +1161,9 @@ class StockPicking(models.Model):
             }
 
             is_outgoing = picking.operation_code == "outgoing"
-            has_sale = bool(picking.sale_id)
+            # A point of sale picking is a sale without sale order. point_of_sale is not a
+            # dependency, so its fields are only read when the module is installed.
+            has_sale = bool(picking.sale_id) or picking._is_point_of_sale_picking()
 
             # Outgoing with sale
             if is_outgoing and has_sale:

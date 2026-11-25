@@ -1,11 +1,22 @@
 <odoo>
-    <!-- Actions Report for account.move-->
+    <!-- Donation certificate: the document delivered to the DONOR of a
+         donation RECEIVED by the company (money: journal entry). -->
     <record id="action_donation_certificate_account_move" model="ir.actions.report">
         <field name="name">Donation Certificate</field>
         <field name="model">account.move</field>
         <field name="report_type">qweb-pdf</field>
         <field name="report_name">l10n_ve_donation.donation_certificate_template_account_move</field>
         <field name="report_file">l10n_ve_donation.donation_certificate_template_account_move</field>
+        <field name="print_report_name">"Donation Certificate - " + object.name</field>
+        <field name="paperformat_id" ref="l10n_ve_donation.paperformat_donation_certificate"/>
+    </record>
+
+    <record id="action_donation_certificate_stock_picking" model="ir.actions.report">
+        <field name="name">Donation Certificate</field>
+        <field name="model">stock.picking</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">l10n_ve_donation.donation_certificate_template_stock_picking</field>
+        <field name="report_file">l10n_ve_donation.donation_certificate_template_stock_picking</field>
         <field name="print_report_name">"Donation Certificate - " + object.name</field>
         <field name="paperformat_id" ref="l10n_ve_donation.paperformat_donation_certificate"/>
     </record>

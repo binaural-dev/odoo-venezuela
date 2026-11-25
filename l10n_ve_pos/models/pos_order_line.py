@@ -1,6 +1,12 @@
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
-from odoo.tools import float_compare
+from odoo.tools import float_compare, float_round
+
+
+# Contexto de las escrituras internas de ``foreign_price``: ``write`` va directo
+# a ``super`` y no vuelve a aplicar las reglas A/B (evita la recursión cuando el
+# alterno calculado redondea a 0).
+SKIP_FOREIGN_FILL = "l10n_ve_pos_skip_foreign_fill"
 
 
 class PosOrderLine(models.Model):
@@ -13,30 +19,200 @@ class PosOrderLine(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        """Rellena ``foreign_price`` en las líneas de reembolso creadas desde el PdV.
+        """Completa en el servidor el ``foreign_price`` que el PdV no calculó.
 
-        El flujo de reembolso de Odoo 19 (``TicketScreen.onDoRefund``) crea la
-        línea destino con un ``create`` directo del core que NO pasa por el
-        override JS ``setUnitPrice`` (única vía que fija ``foreign_price`` en el
-        frontend), así que la línea se sincroniza con ``foreign_price = 0``. Ese
-        0 se propaga al asiento de la nota de crédito
-        (``pos.order._get_invoice_lines_values`` copia ``foreign_price`` a la
-        línea contable) y deja los productos en 0,00 en la moneda alterna, con
-        toda la NC descuadrada en USD.
+        ``foreign_price`` solo lo fija el patch de ``l10n_ve_pos`` sobre
+        ``setUnitPrice`` (frontend). Hay líneas que llegan sin pasar por él:
 
-        Reponemos el precio unitario foráneo desde la línea original que se
-        reembolsa (``refunded_orderline_id``), de modo que la NC revierta
-        EXACTAMENTE el monto en USD congelado de la factura de origen —a la tasa
-        del día de la venta, no a la del día del reembolso— (ticket #15106).
-        No sobrescribimos un ``foreign_price`` ya presente (p. ej. el que inyecta
-        ``_prepare_refund_data`` en el reembolso de backend).
+        * Líneas de una orden de venta liquidada en el PdV (``pos_sale``): desde
+          el commit del core ``534aaac9114d`` su ``setUnitPrice`` asigna
+          ``price_unit`` sin llamar a ``super`` cuando hay
+          ``sale_order_line_id``, y el patch de ``l10n_ve_pos`` queda saltado
+          (#16676).
+        * Líneas de reembolso creadas por ``TicketScreen.onDoRefund`` (#15106).
+        * Líneas de descuento global de ``pos_discount`` (#16547).
+
+        Ese 0 se copia a la factura
+        (``pos.order._get_invoice_lines_values``) y deja las líneas de producto
+        en 0,00 en la moneda alterna. Aquí se repone con
+        :meth:`_fill_missing_foreign_price`: nunca se cambia un precio alterno
+        ya presente.
         """
         lines = super().create(vals_list)
-        for line in lines:
-            original = line.refunded_orderline_id
-            if original and not line.foreign_price and original.foreign_price:
-                line.foreign_price = original.foreign_price
+        lines._sync_global_discount_foreign_price()
+        lines._fill_missing_foreign_price()
         return lines
+
+    def write(self, vals):
+        """Mantiene ``foreign_price`` coherente al actualizar líneas (#16676).
+
+        * Regla A: si la actualización trae ``price_unit`` o ``foreign_price``,
+          las líneas que quedan con precio y sin alterno se completan con
+          :meth:`_fill_missing_foreign_price`.
+        * Regla B: si cambia ``price_unit`` y la actualización no trae un
+          ``foreign_price`` distinto del guardado, se recalcula con
+          :meth:`_get_foreign_price_from_price_unit`. Es el caso de una línea de
+          orden de venta (``pos_sale``) ya sincronizada en borrador cuyo precio
+          se edita: ``pos_sale`` cambia ``price_unit`` sin tocar
+          ``foreign_price`` y el PdV manda el precio nuevo con el alterno viejo.
+          Si la actualización trae un alterno distinto del guardado, se respeta.
+        """
+        if self.env.context.get(SKIP_FOREIGN_FILL):
+            # Escritura interna de ``foreign_price``: sin reglas A/B.
+            return super().write(vals)
+        stale_lines = self.browse()
+        if "price_unit" in vals:
+            stale_lines = self._get_lines_with_stale_foreign_price(vals)
+        res = super().write(vals)
+        if {"price_unit", "foreign_price", "product_id", "order_id"} & vals.keys():
+            self._sync_global_discount_foreign_price()
+        if {"price_unit", "foreign_price"} & vals.keys():
+            self._fill_missing_foreign_price()
+        if stale_lines:
+            stale_lines._recompute_foreign_price()
+        return res
+
+    def _get_lines_with_stale_foreign_price(self, vals):
+        """Líneas cuyo precio cambia con ``vals`` sin un ``foreign_price`` nuevo."""
+        env = self.env
+        price_dp = env["decimal.precision"].precision_get("Product Price")
+        foreign_dp = env["decimal.precision"].precision_get("Foreign Product Price")
+        new_price = vals["price_unit"]
+        stale = self.browse()
+        for line in self:
+            if not float_compare(line.price_unit, new_price, precision_digits=price_dp):
+                continue
+            if "foreign_price" in vals and float_compare(
+                line.foreign_price, vals["foreign_price"], precision_digits=foreign_dp
+            ):
+                continue
+            stale |= line
+        return stale
+
+    def _get_foreign_price_from_price_unit(self):
+        """Precio unitario en la moneda alterna con el cálculo del PdV.
+
+        * Caja en la moneda alterna y orden sin tasa: el precio unitario.
+        * Si no: ``price_unit`` × tasa del PdV estampada en la orden
+          (``pos.order.foreign_currency_rate``). Una línea que reembolsa otra
+          (``refunded_orderline_id``) usa la tasa de la orden original, como
+          ``_refundOriginalRate`` en el PdV; la línea de descuento global usa
+          ``pos.order._get_payment_foreign_rate`` (#16547); cualquier otra línea,
+          incl. una nueva en una orden de reembolso, la de su orden. NO es la tasa
+          de la orden de venta (``sale.order``) ni la del día
+          (``res.currency.rate``). Una caja en la moneda alterna estampa tasa 1,
+          así que da el precio unitario.
+
+        Redondeo HALF-UP a la precisión "Foreign Product Price" y con signo.
+        Devuelve ``None`` si la orden no tiene tasa (y la caja no es alterna).
+        Fórmula única compartida con el descuento global (#16547) y la factura
+        (#16676).
+        """
+        self.ensure_one()
+        order = self.order_id
+        precision = self.env["decimal.precision"].precision_get("Foreign Product Price")
+        original_order = self.refunded_orderline_id.order_id
+        if original_order:
+            rate = original_order.foreign_currency_rate or order.foreign_currency_rate
+        elif self._is_global_discount_line():
+            rate = order._get_payment_foreign_rate()
+        else:
+            rate = order.foreign_currency_rate
+        if not rate:
+            foreign_currency = order.config_id.foreign_currency_id
+            if foreign_currency and order.currency_id == foreign_currency:
+                return float_round(self.price_unit, precision_digits=precision)
+            return None
+        return float_round(self.price_unit * rate, precision_digits=precision)
+
+    def _write_foreign_price(self, values_by_line):
+        """Escribe ``foreign_price`` agrupado por valor y solo si cambia.
+
+        Un alterno 0 producto del redondeo es válido: si la línea ya lo tiene no
+        se escribe nada, y las escrituras van con ``SKIP_FOREIGN_FILL`` para no
+        reentrar a las reglas A/B de ``write``.
+        """
+        precision = self.env["decimal.precision"].precision_get("Foreign Product Price")
+        by_value = {}
+        for line, value in values_by_line:
+            if float_compare(line.foreign_price, value, precision_digits=precision):
+                by_value.setdefault(value, self.browse())
+                by_value[value] |= line
+        for value, lines in by_value.items():
+            lines.with_context(**{SKIP_FOREIGN_FILL: True}).write({"foreign_price": value})
+
+    def _recompute_foreign_price(self):
+        """Escribe el cálculo del PdV en las líneas (agrupado por valor)."""
+        computed = [(line, line._get_foreign_price_from_price_unit()) for line in self]
+        self._write_foreign_price([(line, value) for line, value in computed if value is not None])
+
+    def _fill_missing_foreign_price(self):
+        """Completa ``foreign_price`` en las líneas con precio y sin alterno.
+
+        Primero copia el de la línea que se reembolsa (``refunded_orderline_id``,
+        #15106: la NC revierte el USD congelado de la venta). Si sigue en 0,
+        calcula con :meth:`_get_foreign_price_from_price_unit`, que en un
+        reembolso usa la tasa de la venta original. Un alterno presente no se
+        toca, ni una línea con precio 0 o sin tasa. Si el cálculo redondea a 0,
+        la línea queda en 0,00 y es válido (#16676).
+        """
+        to_copy = []
+        to_compute = self.browse()
+        for line in self:
+            if line.foreign_price or not line.price_unit:
+                continue
+            original = line.refunded_orderline_id
+            if original and original.foreign_price:
+                to_copy.append((line, original.foreign_price))
+            else:
+                to_compute |= line
+        self._write_foreign_price(to_copy)
+        to_compute._recompute_foreign_price()
+
+    def _is_global_discount_line(self):
+        """La línea es del producto de descuento global de ``pos_discount``.
+
+        ``discount_product_id`` es un campo de ``pos_discount``, que no es
+        dependencia de ``l10n_ve_pos``: en una base sin ``pos_discount``
+        instalado, ``pos.config`` no lo tiene.
+        """
+        self.ensure_one()
+        config = self.order_id.config_id
+        if "discount_product_id" not in config._fields:
+            return False
+        discount_product = config.discount_product_id
+        return bool(discount_product) and self.product_id == discount_product
+
+    def _sync_global_discount_foreign_price(self):
+        """Fija ``foreign_price`` de las líneas del descuento global a la tasa
+        de la orden (ticket 16547).
+
+        En el PdV, ``pos_discount`` crea esas líneas con precio negativo y, cada
+        vez que cambia la orden, les reasigna ``price_unit`` directo, sin pasar
+        por el ``setUnitPrice`` de ``l10n_ve_pos`` (única vía que calcula
+        ``foreign_price`` en el frontend). Así la línea llegaba con
+        ``foreign_price`` en 0 o con el de un monto anterior, y la factura
+        (``pos.order._get_invoice_lines_values`` copia ``foreign_price`` a la
+        línea contable) quedaba con el alterno sin descontar.
+
+        El servidor manda: ``foreign_price = price_unit × tasa``, con la tasa
+        del PdV estampada en la orden (``pos.order.foreign_currency_rate``) o,
+        en un reembolso, la de la venta original (la misma que usan sus pagos,
+        ver ``pos.order._get_payment_foreign_rate``), redondeado a la precisión
+        "Foreign Product Price" como en el PdV. La fórmula es
+        :meth:`_get_foreign_price_from_price_unit`. Las líneas que
+        reembolsan otra línea (``refunded_orderline_id``) conservan el precio
+        foráneo de la original.
+        """
+        precision = self.env["decimal.precision"].precision_get("Foreign Product Price")
+        for line in self:
+            if line.refunded_orderline_id or not line._is_global_discount_line():
+                continue
+            foreign_price = line._get_foreign_price_from_price_unit()
+            if foreign_price is None:
+                continue
+            if float_compare(line.foreign_price, foreign_price, precision_digits=precision):
+                line.with_context(**{SKIP_FOREIGN_FILL: True}).foreign_price = foreign_price
 
     @api.model
     def _load_pos_data_fields(self, config):
@@ -128,14 +304,7 @@ class PosOrderLine(models.Model):
         precision = self.env["decimal.precision"].precision_get("Product Price")
         for line in self:
             order = line.order_id
-            config = order.config_id
-            # `discount_product_id` is a `pos_discount` field, not a
-            # `l10n_ve_pos` dependency: on a DB without `pos_discount`
-            # installed, `pos.config` doesn't have it at all.
-            if "discount_product_id" not in config._fields:
-                continue
-            discount_product = config.discount_product_id
-            if not discount_product or line.product_id != discount_product:
+            if not line._is_global_discount_line():
                 continue
             if float_compare(line.price_unit, 0.0, precision_digits=precision) <= 0:
                 continue
