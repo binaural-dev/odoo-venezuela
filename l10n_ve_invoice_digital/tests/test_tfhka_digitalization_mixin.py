@@ -97,6 +97,73 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
         self.assertEqual(inv.tfhka_digitalization_error, "sentinel")
 
     # ------------------------------------------------------------------
+    # _tfhka_trigger_queue_cron (ticket 16682: no esperar al próximo ciclo)
+    # ------------------------------------------------------------------
+
+    def _queue_cron(self):
+        return self.env.ref("l10n_ve_invoice_digital.ir_cron_tfhka_digitalization_queue")
+
+    def _queue_cron_trigger_count(self):
+        return self.env["ir.cron.trigger"].sudo().search_count([("cron_id", "=", self._queue_cron().id)])
+
+    def test_enqueue_triggers_queue_cron_immediately(self):
+        inv = self._create_invoice()
+        before = self._queue_cron_trigger_count()
+
+        inv._tfhka_enqueue_digitalization()
+
+        self.assertEqual(inv.tfhka_digitalization_state, "queued")
+        self.assertEqual(self._queue_cron_trigger_count(), before + 1)
+
+    def test_enqueue_triggers_once_for_several_documents(self):
+        invoices = self._create_invoice() | self._create_invoice()
+        before = self._queue_cron_trigger_count()
+
+        invoices._tfhka_enqueue_digitalization()
+
+        self.assertEqual(set(invoices.mapped("tfhka_digitalization_state")), {"queued"})
+        self.assertEqual(self._queue_cron_trigger_count(), before + 1)
+
+    def test_enqueue_does_not_trigger_when_nothing_was_queued(self):
+        inv = self._create_invoice()
+        inv.write({"tfhka_digitalization_state": "processing"})
+        before = self._queue_cron_trigger_count()
+
+        inv._tfhka_enqueue_digitalization()
+
+        self.assertEqual(self._queue_cron_trigger_count(), before)
+
+    def test_enqueue_does_not_trigger_archived_cron(self):
+        # Base neutralizada (copia de producción restaurada): el cron queda
+        # archivado y no debe despertarse por un encolado.
+        self._queue_cron().sudo().active = False
+        inv = self._create_invoice()
+        before = self._queue_cron_trigger_count()
+
+        inv._tfhka_enqueue_digitalization()
+
+        self.assertEqual(inv.tfhka_digitalization_state, "queued")
+        self.assertEqual(self._queue_cron_trigger_count(), before)
+
+    def test_retry_action_triggers_queue_cron(self):
+        inv = self._create_invoice()
+        inv.write({"tfhka_digitalization_state": "error", "tfhka_digitalization_error": "x"})
+        before = self._queue_cron_trigger_count()
+
+        inv.action_tfhka_retry_digitalization()
+
+        self.assertEqual(inv.tfhka_digitalization_state, "queued")
+        self.assertEqual(self._queue_cron_trigger_count(), before + 1)
+
+    def test_retry_action_ignores_records_not_in_error_without_triggering(self):
+        inv = self._create_invoice()
+        before = self._queue_cron_trigger_count()
+
+        inv.action_tfhka_retry_digitalization()
+
+        self.assertEqual(self._queue_cron_trigger_count(), before)
+
+    # ------------------------------------------------------------------
     # _tfhka_process_digitalization
     # ------------------------------------------------------------------
 
