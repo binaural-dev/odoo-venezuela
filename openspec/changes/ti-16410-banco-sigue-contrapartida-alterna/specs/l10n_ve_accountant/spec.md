@@ -66,7 +66,7 @@ Al editar una línea del asiento de un extracto bancario desde el widget de conc
 
 ### Requirement: Monto en moneda del diario de una línea de extracto creada solo en moneda extranjera
 
-Al crear una línea de extracto bancario (`account.bank.statement.line`) con `foreign_currency_id` distinta de la moneda del diario, `amount_currency` distinto de 0 y `amount` en 0 o ausente, el sistema DEBE (MUST) calcular `amount` convirtiendo `amount_currency` a la moneda del diario con la tasa de la fecha del extracto. El sistema NO DEBE (MUST NOT) modificar `amount` cuando el usuario lo informa, cuando no hay moneda extranjera, cuando la moneda extranjera es la del diario o cuando `amount_currency` es 0.
+Al crear o editar en el formulario una línea de extracto bancario (`account.bank.statement.line`) con `foreign_currency_id` distinta de la moneda del diario, `amount_currency` distinto de 0 y `amount` en 0 o ausente, el sistema DEBE (MUST) calcular `amount` convirtiendo `amount_currency` a la moneda del diario con la tasa de la fecha del extracto. El sistema NO DEBE (MUST NOT) modificar `amount` cuando el usuario lo informa, cuando no hay moneda extranjera, cuando la moneda extranjera es la del diario o cuando `amount_currency` es 0.
 
 #### Scenario: Solo el monto en moneda extranjera
 
@@ -77,3 +77,18 @@ Al crear una línea de extracto bancario (`account.bank.statement.line`) con `fo
 
 - **WHEN** se crea una línea con `amount` 10.000 y USD 10,82
 - **THEN** `amount` se guarda como 10.000 sin ajustes
+
+#### Scenario: Último campo editado en el formulario
+
+- **WHEN** en el formulario de la línea el usuario escribe `amount_currency` y luego `amount`
+- **THEN** `amount_currency` se recalcula a la tasa de la fecha y `amount` conserva exactamente lo escrito; si edita primero `amount` y luego `amount_currency`, `amount` se recalcula
+
+#### Scenario: Sin moneda extranjera en el formulario
+
+- **WHEN** la línea no tiene moneda extranjera
+- **THEN** `amount` queda como se escribió
+
+#### Scenario: Cambio de fecha en el formulario
+
+- **WHEN** el usuario cambia la fecha de una línea con moneda extranjera
+- **THEN** `amount_currency` se conserva y `amount` se recalcula con la tasa de la nueva fecha

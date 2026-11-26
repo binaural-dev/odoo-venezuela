@@ -12,9 +12,9 @@ Causas:
 
 - `account.move.line._compute_foreign_debit_credit` depende también de `move_id.line_ids.amount_currency` y `move_id.line_ids.currency_id`: al cambiar la contrapartida, la línea del banco se recalcula con la regla existente.
 - `account.bank.statement.line.edit_reconcile_line` (de `account_accountant`) se sobrescribe: el último campo editado manda. Si cambia el monto en moneda, el balance sale de monto / tasa de la fecha del asiento; si cambia solo el balance o la moneda, el monto en moneda sale de balance × tasa. No se toca si la moneda es la de la compañía ni si la línea ya está conciliada (el monto parcial sigue la tasa del documento). La diferencia contra el extracto queda en la cuenta puente.
-- `account.bank.statement.line.create`: si llega `amount_currency` con moneda extranjera distinta de la del diario y `amount` está en 0 o vacío, `amount` sale del monto en moneda extranjera a la tasa de la fecha del extracto. Un `amount` explícito se respeta.
+- `account.bank.statement.line.create`: si llega `amount_currency` con moneda extranjera distinta de la del diario y `amount` está en 0 o vacío, `amount` sale del monto en moneda extranjera a la tasa de la fecha del extracto. Un `amount` explícito se respeta. Además, en el formulario de la línea dos onchange mantienen coherentes `amount` y `amount_currency` con la tasa de la fecha: el último campo editado manda; al cambiar la fecha o el diario el monto en moneda extranjera se conserva y `amount` sigue la tasa de la nueva fecha (el otro se recalcula y no se reescribe el que el usuario acaba de escribir).
 - `account_accountant` se declara en las dependencias del manifest (ya llegaba por `account_reports`).
-- Versión 19.0.1.0.51. Pruebas: `tests/test_foreign_unbalanced_16410.py` (12 casos).
+- Versión 19.0.1.0.51. Pruebas: `tests/test_foreign_unbalanced_16410.py` (15 casos).
 
 ## Impact
 
