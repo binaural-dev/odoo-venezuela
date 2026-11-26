@@ -102,9 +102,6 @@ Esta localización incluye los siguientes módulos, diseñados para cumplir con 
 - **l10n_ve_stock_purchase**  
    Gestión de compras de inventarios con integración fiscal. Este módulo permite la creación de órdenes de compra y la integración de los movimientos de inventario con el sistema contable y fiscal.
 
-- **l10n_ve_stock_reports**  
-   Informes relacionados con la gestión de inventarios y operaciones fiscales. Este módulo genera reportes detallados que ayudan a las empresas a cumplir con las regulaciones fiscales en términos de inventarios.
-
 - **l10n_ve_studio**  
    Extensión del módulo Studio para personalización de campos y vistas. Permite crear y adaptar rápidamente campos, formularios y vistas para ajustarse a las necesidades de cada negocio.
 
