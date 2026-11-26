@@ -27,3 +27,6 @@ from . import test_igtf_refund_payment_sign
 from . import test_move_form_outstanding_alerts
 
 from . import test_igtf_payment_force_balance
+
+from . import test_igtf_same_date_payment_balance
+from . import test_igtf_bi_igtf_payment_state_order

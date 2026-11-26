@@ -787,6 +787,26 @@ class AccountMove(models.Model):
         partial_reconcile.write({'origin_payment_advanced_payment_id': False})
         origin_payment_id.write({'advanced_move_ids': [(3, partial_reconcile.id)]})
 
+    def _igtf_base_is_computable(self):
+        """¿Se calcula la base de IGTF de esta factura?
+
+        Sí con saldo abierto, o con la factura publicada y conciliada que ya no
+        debe nada. `payment_state` NO sirve de compuerta: es otro campo
+        almacenado y Odoo lo recalcula antes o después de `bi_igtf` según el
+        orden de recálculo, que cambia entre procesos (semilla de hash de
+        Python). Con el saldo en 0 y `payment_state` aún en 'not_paid' la base y
+        el tope quedaban en 0, y como `bi_igtf` no depende de `payment_state` no
+        se volvían a calcular. Se decide con datos que ya están escritos; una
+        factura revertida (`payment_state == 'reversed'`) sigue sin base.
+        """
+        self.ensure_one()
+        if abs(self.amount_residual) > 0:
+            return True
+        if self.state != 'posted' or self.payment_state == 'reversed':
+            return False
+        lines = self.line_ids.filtered(lambda line: line.account_id.reconcile)
+        return bool(lines.matched_debit_ids or lines.matched_credit_ids)
+
     @api.depends('amount_residual')
     def compute_bi_igtf(self):
         """Base imponible de IGTF; busca los parciales de cada pago contra TODAS las cuotas de la factura."""
@@ -796,7 +816,7 @@ class AccountMove(models.Model):
             rec.foreign_bi_igtf = 0.0
             rec.bi_igtf = 0.0
 
-            if abs(rec.amount_residual) > 0 or rec.payment_state in ['paid','in_payment']:
+            if rec._igtf_base_is_computable():
                 rec.igtf_top_aply = abs(rec.amount_total_signed) * (rec.company_id.igtf_percentage / 100)
                 receivable_payable_lines = rec.line_ids.filtered(lambda line: line.account_id.reconcile)
 
