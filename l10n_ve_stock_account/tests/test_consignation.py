@@ -150,6 +150,16 @@ class TestConsignationSaleOrder(TransactionCase):
             "rate": 1.0 / 380.0,
         })
 
+        # `l10n_ve_sale`'s default_rate needs a `res.currency.rate` for
+        # today's date (l10n_ve_rate.compute_rate now requires an exact
+        # match instead of falling back silently).
+        cls.env["res.currency.rate"].create({
+            "currency_id": cls.currency_usd.id,
+            "company_id": cls.company.id,
+            "name": fields.Date.today(),
+            "rate": 1.0 / 380.0,
+        })
+
         cls.partner = cls.env["res.partner"].create({
             "name": "Consignation Customer",
             "default_document": "dispatch_guide",
