@@ -63,3 +63,17 @@ Al editar una línea del asiento de un extracto bancario desde el widget de conc
 
 - **WHEN** se edita una línea en la moneda de la compañía
 - **THEN** los valores enviados se guardan sin ajustes
+
+### Requirement: Monto en moneda del diario de una línea de extracto creada solo en moneda extranjera
+
+Al crear una línea de extracto bancario (`account.bank.statement.line`) con `foreign_currency_id` distinta de la moneda del diario, `amount_currency` distinto de 0 y `amount` en 0 o ausente, el sistema DEBE (MUST) calcular `amount` convirtiendo `amount_currency` a la moneda del diario con la tasa de la fecha del extracto. El sistema NO DEBE (MUST NOT) modificar `amount` cuando el usuario lo informa, cuando no hay moneda extranjera, cuando la moneda extranjera es la del diario o cuando `amount_currency` es 0.
+
+#### Scenario: Solo el monto en moneda extranjera
+
+- **WHEN** se crea una línea con USD 10,82 y sin `amount` en un diario sin moneda, con la tasa del día en 886,2 Bs/$
+- **THEN** `amount` es 9.588,68 Bs, el asiento cuadra en Bs y en $, y al conciliar un pago de 10,82 USD no se genera diferencial cambiario
+
+#### Scenario: Monto en Bs informado
+
+- **WHEN** se crea una línea con `amount` 10.000 y USD 10,82
+- **THEN** `amount` se guarda como 10.000 sin ajustes
