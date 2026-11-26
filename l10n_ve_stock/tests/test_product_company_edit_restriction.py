@@ -151,6 +151,31 @@ class TestProductCompanyEditRestriction(TransactionCase):
         })
         self.assertEqual(template.company_id, other_company)
 
+    def test_create_company_id_skipped_in_install_mode(self):
+        """Module data loading runs with install_mode in the context: XML
+        data files may assign a company to products, and the guard protects
+        user edits, not the module's own data."""
+        other_company = self._create_other_company()
+        # Independent of the company_id guard being tested: multi-company
+        # record rules require the user to belong to a record's company to
+        # create it at all, regardless of the group.
+        self.user.company_ids = [(4, other_company.id)]
+        Template = self.env["product.template"].with_user(self.user)
+        with self.assertRaises(AccessError):
+            Template.create({
+                "name": "Created outside install mode",
+                "type": "consu",
+                "list_price": 1,
+                "company_id": other_company.id,
+            })
+        template = Template.with_context(install_mode=True).create({
+            "name": "Created during module install",
+            "type": "consu",
+            "list_price": 1,
+            "company_id": other_company.id,
+        })
+        self.assertEqual(template.company_id, other_company)
+
     def test_create_without_company_id_is_allowed_without_group(self):
         Template = self.env["product.template"].with_user(self.user)
         template = Template.create({
