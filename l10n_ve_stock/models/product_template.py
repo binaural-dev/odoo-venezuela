@@ -161,6 +161,13 @@ class ProductTemplate(models.Model):
     def _check_company_id_edit_allowed(self, vals):
         if "company_id" not in vals:
             return
+        # Data files loaded while installing or updating the module run with
+        # install_mode in the context: XML data may assign a company to
+        # products, and this guard protects user edits, not the module's own
+        # data. Note that post_init_hook does not inherit install_mode, so
+        # that path remains subject to the guard.
+        if self.env.context.get("install_mode"):
+            return
         if self.env.user.has_group("l10n_ve_stock.group_edit_product_company"):
             return
 
