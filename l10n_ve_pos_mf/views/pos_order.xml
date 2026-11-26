@@ -10,6 +10,28 @@
                 <field name="mf_invoice_number"/>
                 <field name="fiscal_machine"/>
             </xpath>
+            <xpath expr="//sheet" position="before">
+                <div class="alert alert-warning mb-0" role="alert" invisible="not mf_print_verification">
+                    It is not known whether the fiscal printer printed this order: check it
+                    on the fiscal printer and resolve it before printing it again.
+                    <button name="action_mf_resolve_print_verification" type="object"
+                            string="Resolve fiscal print" class="btn-link"
+                            groups="point_of_sale.group_pos_manager"/>
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_pos_order_filter_mf" model="ir.ui.view">
+        <field name="name">pos.order.list.select.mf</field>
+        <field name="model">pos.order</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_order_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='invoiced']" position="before">
+                <filter string="Fiscal print to verify" name="mf_print_verification"
+                        domain="[('mf_print_verification', '!=', False)]"/>
+                <separator/>
+            </xpath>
         </field>
     </record>
 </odoo>

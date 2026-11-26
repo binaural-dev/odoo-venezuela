@@ -384,6 +384,29 @@ class TestAccountMoveLineFixedDiscount(TransactionCase):
         self.assertEqual(line.foreign_subtotal, 3040.0)
         self.assertEqual(line.foreign_price_total, 3526.4)
 
+    def test_effective_discount_percent_uses_fixed_discount(self):
+        """l10n_ve_accountant rebuilds line amounts from
+        `_get_effective_discount_percent()`; with discount_fixed it must be
+        the exact equivalent %, not the native discount (0)."""
+        move, line = self._create_invoice(price_unit=50.0, quantity=3, discount_fixed=15.0)
+        self.assertEqual(line.discount, 0.0)
+        self.assertAlmostEqual(line._get_effective_discount_percent(), 10.0, places=6)
+
+        self.company.discount_type = "percent"
+        move_pct, line_pct = self._create_invoice(price_unit=50.0)
+        line_pct.write({"discount": 5.0})
+        self.assertEqual(line_pct._get_effective_discount_percent(), 5.0)
+
+    def test_sales_details_amounts_with_fixed_discount(self):
+        """Sales Details report (`detailed_amounts`): the fixed discount
+        shows up as discount and the gross is base + discount."""
+        move, line = self._create_invoice(price_unit=50.0, quantity=3, discount_fixed=15.0)
+        amounts = move.detailed_amounts
+        self.assertAlmostEqual(amounts["discount_amount"], 15.0, places=2)
+        self.assertAlmostEqual(amounts["gross_amount"], 150.0, places=2)
+        self.assertAlmostEqual(amounts["gross_discount_amount"], 135.0, places=2)
+        self.assertAlmostEqual(amounts["taxes_amount"], 21.6, places=2)
+
     def test_foreign_subtotal_matches_native_percentage_discount_line(self):
         """Cross-check: fixed-discount line and a directly-percent-discounted
         line must produce identical foreign amounts too, not just native."""

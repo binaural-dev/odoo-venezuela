@@ -2,7 +2,7 @@
 
 ### Requirement: Precio en moneda alterna de las líneas de reembolso
 
-Cuando el PdV crea una línea de reembolso (una `pos.order.line` con `refunded_orderline_id`, creada por el core en `TicketScreen.onDoRefund`) y la línea llega sin precio en moneda alterna (`foreign_price` en 0), el sistema DEBE (MUST) reponer su `foreign_price` con el de la línea original que se reembolsa (`refunded_orderline_id.foreign_price`). El sistema NO DEBE (MUST NOT) sobrescribir un `foreign_price` que la línea ya traiga (p. ej. el que inyecta `_prepare_refund_data` en el reembolso de backend), ni tocar líneas de venta normales (sin `refunded_orderline_id`).
+Cuando el PdV crea una línea de reembolso (una `pos.order.line` con `refunded_orderline_id`, creada por el core en `TicketScreen.onDoRefund`) y la línea llega sin precio en moneda alterna (`foreign_price` en 0), el sistema DEBE (MUST) reponer su `foreign_price` con el de la línea original que se reembolsa (`refunded_orderline_id.foreign_price`). El sistema NO DEBE (MUST NOT) sobrescribir un `foreign_price` que la línea ya traiga (p. ej. el que inyecta `_prepare_refund_data` en el reembolso de backend). Esta regla de copia no toca las líneas de venta normales (sin `refunded_orderline_id`): esas las completa, si llegan sin precio alterno, la regla general "Precio alterno completado en el servidor para las líneas del PdV" (change `pos-sale-precio-foraneo-linea`).
 
 En consecuencia, el asiento de la Nota de Crédito —cuyas líneas de producto derivan su monto en moneda alterna del `foreign_price` de la línea de PdV vía `pos.order._get_invoice_lines_values`— DEBE (MUST) revertir EXACTAMENTE el monto en moneda alterna (USD) de la factura de origen, a la tasa del día de la venta y NO a la del día del reembolso, y NO DEBE (MUST NOT) dejar las líneas de producto en 0,00. Como red de seguridad, `_get_invoice_lines_values` DEBE (MUST) tomar el `foreign_price` de la línea original cuando la línea de reembolso llegue sin él.
 
@@ -21,4 +21,4 @@ La partida doble en la moneda base NO cambia, y el importe en Bs. de todas las l
 #### Scenario: Venta normal
 
 - **WHEN** se crea una línea de venta normal (sin `refunded_orderline_id`)
-- **THEN** su `foreign_price` no es alterado por el backfill de reembolso
+- **THEN** la copia desde la línea original no interviene (si la línea llega sin precio alterno, la completa la regla general de `pos-sale-precio-foraneo-linea`)

@@ -7,13 +7,14 @@ from unittest.mock import patch, MagicMock
 from datetime import datetime, timedelta
 import logging
 import requests
+from odoo.addons.l10n_ve_invoice.tests.common import ForeignRateTransactionCase
 
 from .common import make_compute_rate_tolerant, seed_today_vef_rate
 
 _logger = logging.getLogger(__name__)
 
 @tagged("post_install", "-at_install", "l10n_ve_invoice_digital", "invoice_digital") 
-class TestAccountMoveApiCalls(TransactionCase):
+class TestAccountMoveApiCalls(ForeignRateTransactionCase):
 
     def setUp(self):
         super().setUp()

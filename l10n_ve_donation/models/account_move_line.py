@@ -1,9 +1,30 @@
 from odoo import _, fields, models, api
 from odoo.exceptions import ValidationError, UserError
-import logging
-_logger = logging.getLogger(__name__)
+
 class AccountMoveLine(models.Model):
     _inherit = "account.move.line"
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        """The new lines of a donation entry take the company partner (see
+        `account.move._fill_donation_entry_line_partner()`). It is done after
+        the creation and not in the compute of the field: the web client
+        sends `partner_id: False` for the lines it creates, and a value in
+        the creation values is not computed."""
+        lines = super().create(vals_list)
+        lines.move_id._fill_donation_entry_line_partner()
+        lines.move_id._mark_donation_received_from_statement()
+        return lines
+
+    def write(self, vals):
+        """Reconciling a bank statement line changes the account of its
+        suspense line: if it becomes a received donations account, the entry
+        is a donation received (see
+        `account.move._mark_donation_received_from_statement()`)."""
+        res = super().write(vals)
+        if vals.keys() & {"account_id", "debit", "credit", "balance", "amount_currency"}:
+            self.move_id._mark_donation_received_from_statement()
+        return res
 
     @api.constrains('account_id', 'display_type')
     def _check_payable_receivable(self):

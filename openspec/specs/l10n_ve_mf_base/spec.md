@@ -200,7 +200,7 @@ Los montos `2XX` se envían tal como los trae la orden: cuando hay pago en divis
 #### Scenario: NC sin factura afectada
 
 - **WHEN** falta el número, la fecha o el serial de la factura afectada
-- **THEN** devuelve `success: false` sin enviar ningún comando
+- **THEN** devuelve `success: false` sin abrir ningún documento (solo se envía la lectura S1 previa, que no imprime)
 
 #### Scenario: NC válida
 
@@ -228,7 +228,7 @@ Los montos `2XX` se envían tal como los trae la orden: cuando hay pago en divis
 
 ### Requirement: Identificación fiscal tras imprimir
 
-Tras el `199` final, el driver DEBE (MUST) leer `S1` y devolver en la respuesta el número fiscal del documento (`lastInvoiceNumber`, `lastNCNumber` o `lastDebtNoteNumber` según el tipo), el serial de la máquina (`registeredMachineNumber`) y `reportZ = dailyClosureCounter + 1` (el Z al que pertenecerá el documento). Si el S1 no se puede leer o no devuelve el número, el resultado es `success: false` indicando que el documento se imprimió pero sin datos fiscales.
+Tras el `199` final, el driver DEBE (MUST) leer `S1` y devolver en la respuesta el número fiscal del documento (`lastInvoiceNumber`, `lastNCNumber` o `lastDebtNoteNumber` según el tipo), el serial de la máquina (`registeredMachineNumber`) y `reportZ = dailyClosureCounter + 1`. Si el S1 no se puede leer, el resultado DEBE (MUST) decidirse con la máquina (ver "Resultado verificado del documento fiscal").
 
 #### Scenario: Lectura exitosa del S1
 
@@ -237,8 +237,8 @@ Tras el `199` final, el driver DEBE (MUST) leer `S1` y devolver en la respuesta 
 
 #### Scenario: S1 ilegible tras imprimir
 
-- **WHEN** el S1 falla después del `199`
-- **THEN** el resultado es `success: false` con un mensaje que aclara que el documento sí se imprimió
+- **WHEN** el S1 falla después del `199` y luego la máquina responde
+- **THEN** el resultado es `success: true, printed: true, recovered: true` con el número emitido; si la máquina no vuelve a responder, es `printed: null` con la verificación
 
 ### Requirement: Reimpresión de documentos fiscales
 
@@ -320,3 +320,135 @@ El driver DEBE (MUST) exponer `printReportX()` (comando `I0X`, consulta sin cerr
 
 - **WHEN** la orden trae `has_cashbox = true`
 - **THEN** el comando `w` se envía antes de los comandos de pago
+
+### Requirement: Resultado verificado del documento fiscal
+
+`printInvoice`, `printCreditNote` y `printDebitNote` DEBEN (MUST) tomar una foto de S1 (número, subtotal de ventas, Z y serial) antes de abrir el documento, si la máquina está en reposo. Un éxito NO DEBE (MUST NOT) cambiar. Si la impresión falla después de enviar un pago, DEBEN (MUST) consultar a la máquina y devolver `printed: true` con el número, `printed: false` (no emitido o anulado) o `printed: null` con la verificación.
+
+#### Scenario: Factura exitosa
+
+- **WHEN** la factura se imprime sin errores
+- **THEN** el resultado es el mismo de siempre, sin `printed`, y la única diferencia en la secuencia es la lectura S1 previa
+
+#### Scenario: Pago registrado reportado como fallido
+
+- **GIVEN** que un comando falla después del primer pago y el driver manda `7`
+- **WHEN** S1 muestra el número siguiente y el subtotal de ventas aumentó
+- **THEN** el resultado es `success: true, printed: true, recovered: true` con ese número
+
+#### Scenario: Máquina en reposo sin foto
+
+- **WHEN** la máquina no está en reposo al empezar o S1 no responde
+- **THEN** no hay foto y el resultado es el de siempre
+
+#### Scenario: Falla después de un pago sin foto (riesgo aceptado)
+
+- **GIVEN** que no hubo foto porque la máquina no estaba en reposo al empezar o S1 no respondió
+- **WHEN** la impresión falla después de enviar un pago
+- **THEN** el resultado es el de siempre, sin `printed`, y el PdV deja el pedido pendiente: sin foto no hay contra qué verificarlo
+
+### Requirement: Falla antes de enviar pagos
+
+Si la impresión falla sin haber enviado ningún pago (comandos `2XX…`, `1XX` o `199`), el driver DEBE (MUST) devolver `printed: false` sin consultar nada más: sin pagos el documento no pudo quedar comprometido.
+
+#### Scenario: Falla antes del primer pago
+
+- **WHEN** un ítem falla y la máquina anula el documento
+- **THEN** el resultado es `success: false, printed: false`, aunque el número haya avanzado, y no se lee S1 después de la falla
+
+#### Scenario: Nota de crédito anulada antes de pagar
+
+- **WHEN** una nota de crédito falla antes de enviar pagos
+- **THEN** el resultado es `printed: false`
+
+### Requirement: Contadores contradictorios
+
+Si la máquina aceptó el `199` (cierre) y S1 no muestra el documento, el driver NO DEBE (MUST NOT) responder `printed: false`: DEBE (MUST) devolver `printed: null`, porque un "no impreso" equivocado lleva a reimprimir.
+
+#### Scenario: Cierre aceptado sin cambio en los contadores
+
+- **GIVEN** que la máquina aceptó el `199`
+- **WHEN** S1 muestra el mismo número, o el número siguiente con el mismo subtotal de ventas
+- **THEN** el resultado es `printed: null` con `reason: "unattributable"`
+
+### Requirement: Verificación posterior de un documento sin confirmar
+
+`verifyDocument(verification)` DEBE (MUST) resolver un `printed: null` comparando S1 con la foto; si el documento sigue abierto, lo termina con `7`. Sin pagos enviados (`paymentSent: false`) DEBE (MUST) devolver `printed: false`. Una verificación dañada (sin foto, sin `paymentSent` o `closeAcked` booleanos, o con un `docType` desconocido) DEBE (MUST) ir a revisión manual (`unattributable`) sin consultar la máquina.
+
+#### Scenario: La máquina responde de nuevo
+
+- **GIVEN** un documento sin confirmar porque la máquina dejó de responder tras el cierre
+- **WHEN** se verifica y S1 muestra el número siguiente con el subtotal aumentado
+- **THEN** el resultado es `printed: true` con ese número
+
+#### Scenario: Sin pagos enviados
+
+- **GIVEN** una verificación con `paymentSent: false`
+- **WHEN** S1 muestra el número siguiente con el subtotal aumentado (otro documento)
+- **THEN** el resultado es `printed: false`
+
+#### Scenario: Verificación dañada
+
+- **WHEN** se verifica con `null`, sin foto, sin `paymentSent` o `closeAcked`, o con un `docType` desconocido
+- **THEN** el resultado es `printed: null` con `reason: "unattributable"` y no se envía nada a la máquina
+
+### Requirement: Motivo de un resultado desconocido
+
+Un `printed: null` DEBE (MUST) traer `reason`: `no_response` si la máquina no respondió el estado o S1 (en `verifyDocument`, tras 3 consultas de estado); `document_open` si una nota de crédito o de débito no quedó en reposo después del `7`; `other_printer` si el serial de S1 no es el de la foto (se mira antes que el número); y `unattributable` si el número avanzó más de uno, los contadores no cuadran o S1 respondió sin el contador del documento.
+
+#### Scenario: Se emitió otro documento en el medio
+
+- **WHEN** al verificar el número avanzó dos o más
+- **THEN** el resultado es `printed: null` con `reason: "unattributable"`
+
+#### Scenario: Otra máquina
+
+- **WHEN** el serial de S1 no coincide con el de la foto
+- **THEN** el resultado es `printed: null` con `reason: "other_printer"`
+
+#### Scenario: S1 sin el contador del documento
+
+- **WHEN** al verificar S1 responde, pero sin el número del tipo de documento
+- **THEN** el resultado es `printed: null` con `reason: "unattributable"`, y no `no_response`: esperar a la máquina no lo resuelve
+
+#### Scenario: Máquina muda tras el cierre
+
+- **WHEN** un pago se envió y S1 no responde al terminar
+- **THEN** el resultado es `printed: null` con `reason: "no_response"` y el error original en `original_error`
+
+#### Scenario: Nota de crédito abierta después del 7
+
+- **GIVEN** una nota de crédito con un pago enviado que falla, y la máquina sigue con el documento abierto después del `7`, el `9` y el `199`
+- **WHEN** se averigua el resultado
+- **THEN** es `printed: null` con `reason: "document_open"` sin comparar S1 (no está medido que S1 cuente una NC o ND abierta), y se vuelve a verificar antes de la siguiente impresión
+
+#### Scenario: NC o ND que acepta el 7 y sigue abierta
+
+- **GIVEN** una nota de crédito o de débito con un pago enviado, y la máquina en transacción
+- **WHEN** la máquina responde ACK al `7` pero sigue en transacción (con pagos, el `7` no anula el documento: sigue en la totalización, según el manual de la TFHKA)
+- **THEN** el resultado es `printed: null` con `reason: "document_open"` sin leer S1
+
+#### Scenario: NC que el 7 deja en reposo
+
+- **WHEN** después del `7` la máquina queda en reposo
+- **THEN** se compara S1 como antes: mismo número sin cierre aceptado es `printed: false`, y el número siguiente sin cierre aceptado es `unattributable`
+
+#### Scenario: NC muda después del 7
+
+- **WHEN** la máquina no responde el estado después del `7`
+- **THEN** el resultado es `printed: null` con `reason: "no_response"` sin leer S1
+
+#### Scenario: Factura abierta después del 7
+
+- **WHEN** lo mismo pasa con una factura, haya o no aceptado el `7`
+- **THEN** se compara S1 como siempre: está medido que S1 ya cuenta la factura desde el primer pago
+
+### Requirement: Reporte Z de un documento verificado tarde
+
+Si la verificación concluye `printed: true`, el Reporte Z del resultado DEBE (MUST) ser el contador Z de la foto más uno, aunque se haya hecho un cierre Z antes de verificar.
+
+#### Scenario: Verificación después de un cierre Z
+
+- **GIVEN** una foto con el contador Z 137
+- **WHEN** se verifica después de un Z (S1 con 138) y el documento quedó emitido
+- **THEN** el resultado trae `reportZ = 138`

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="pos_order_mf_verification_wizard_form" model="ir.ui.view">
+        <field name="name">pos.order.mf.verification.wizard.form</field>
+        <field name="model">pos.order.mf.verification.wizard</field>
+        <field name="arch" type="xml">
+            <form>
+                <div class="alert alert-warning" role="alert">
+                    It is not known whether the fiscal printer printed this order.
+                    Check on the fiscal printer whether the expected document was printed
+                    for this order before resolving it.
+                </div>
+                <group>
+                    <field name="order_id"/>
+                    <field name="expected_number"/>
+                    <field name="expected_serial"/>
+                    <field name="result" widget="radio"/>
+                </group>
+                <group invisible="result != 'printed'">
+                    <field name="mf_invoice_number" required="result == 'printed'"/>
+                    <field name="fiscal_machine" required="result == 'printed'"/>
+                    <field name="mf_reportz"/>
+                </group>
+                <footer>
+                    <button name="action_confirm" type="object" string="Confirm" class="btn-primary"/>
+                    <button string="Cancel" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

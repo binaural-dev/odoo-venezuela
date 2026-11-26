@@ -1954,6 +1954,8 @@ class TestRealPortion(TransactionCase):
            multiplicado por la cantidad.
         """
         self._set_usd_rate(50.0)
+        # Otros módulos instalados (p. ej. l10n_ve_pos_mf) la fijan en 2.
+        self.env.ref("l10n_ve_accountant.alternative_price_product").digits = 6
         precision = self.env["decimal.precision"].precision_get(
             "Foreign Product Price"
         )
@@ -2301,6 +2303,8 @@ class TestRealPortion(TransactionCase):
         la precision de la moneda (VEF, 2 decimales).
         """
         self._set_usd_rate(97.531)
+        # Otros módulos instalados (p. ej. l10n_ve_pos_mf) la fijan en 2.
+        self.env.ref("product.decimal_price").digits = 6
 
         specs = [
             (1.0, 33.333333, 0.0, self.tax_16),
