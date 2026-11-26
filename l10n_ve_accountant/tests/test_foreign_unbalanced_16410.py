@@ -266,3 +266,49 @@ class TestForeignUnbalanced16410(TransactionCase):
         self.assertEqual(counterpart.amount_currency, 1700.0)
         self.assertAlmostEqual(counterpart.balance, 1700.0 * 886.2, places=2)
         self.assertAlmostEqual(self._foreign_imbalance(move), 0.0, places=2)
+
+    def _foreign_statement_line(self, **extra):
+        vals = {
+            "journal_id": self.bank.id, "date": self.today,
+            "payment_ref": "pago en $", "foreign_currency_id": self.usd.id,
+            "amount_currency": 10.82,
+        }
+        vals.update(extra)
+        return self.env["account.bank.statement.line"].create(vals)
+
+    def test_09_statement_line_only_in_foreign_currency_gets_its_amount(self):
+        """Una linea de extracto con solo el monto en $ no queda en 0 Bs.
+
+        El core no calcula `amount` desde `amount_currency`: la linea quedaba con 0 Bs,
+        el pago conciliado contra ella mandaba sus Bs al diferencial cambiario.
+        """
+        st_line = self._foreign_statement_line()
+        self.assertAlmostEqual(st_line.amount, 10.82 * 886.2, places=2)
+        bank_line = st_line.move_id.line_ids.filtered(
+            lambda l: l.account_id == self.bank.default_account_id)
+        self.assertAlmostEqual(bank_line.balance, 10.82 * 886.2, places=2)
+        self.assertAlmostEqual(self._foreign_imbalance(st_line.move_id), 0.0, places=2)
+
+    def test_10_statement_line_with_explicit_amount_is_not_touched(self):
+        """Si el usuario da el monto en Bs, se respeta aunque no siga la tasa."""
+        st_line = self._foreign_statement_line(amount=10000.0)
+        self.assertEqual(st_line.amount, 10000.0)
+        self.assertEqual(st_line.amount_currency, 10.82)
+
+    def test_11_statement_line_with_the_form_gets_its_amount(self):
+        """Con el formulario de la linea (journal por defecto) pasa lo mismo."""
+        form = Form(self.env["account.bank.statement.line"].with_context(
+            default_journal_id=self.bank.id))
+        form.payment_ref = "pago en $ (form)"
+        form.foreign_currency_id = self.usd
+        form.amount_currency = 10.82
+        st_line = form.save()
+        self.assertAlmostEqual(st_line.amount, 10.82 * 886.2, places=2)
+
+    def test_12_statement_line_in_the_company_currency_is_not_touched(self):
+        """Sin moneda extranjera `amount` no se completa."""
+        st_line = self.env["account.bank.statement.line"].create({
+            "journal_id": self.bank.id, "date": self.today,
+            "payment_ref": "pago en Bs", "amount": 0.0,
+        })
+        self.assertEqual(st_line.amount, 0.0)

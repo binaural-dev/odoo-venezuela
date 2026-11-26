@@ -1,10 +1,47 @@
-from odoo import fields, models
+from odoo import api, fields, models
 
 
 class AccountBankStatementLine(models.Model):
     _inherit = "account.bank.statement.line"
 
     foreign_amount = fields.Float()
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        return super().create([self._complete_amount_from_foreign(vals) for vals in vals_list])
+
+    @api.model
+    def _complete_amount_from_foreign(self, vals):
+        """Completa `amount` cuando solo llega el monto en moneda extranjera.
+
+        En el core `amount` (moneda del diario) manda y `amount_currency` solo se calcula
+        desde el, nunca al reves. Una linea con USD 10,82 y `amount` en 0 deja el asiento
+        en 0 Bs, y al conciliar el pago el core manda su valor en Bs al diferencial
+        cambiario (ticket #16410). Aqui `amount` sale del monto en moneda extranjera a la
+        tasa de la fecha del extracto.
+        """
+        if vals.get("amount") or not vals.get("foreign_currency_id") or not vals.get("amount_currency"):
+            return vals
+        journal_id = vals.get("journal_id") or self.default_get(["journal_id"]).get("journal_id")
+        journal = (
+            self.env["account.journal"].browse(journal_id)
+            if journal_id
+            else self.env["account.bank.statement"].browse(vals.get("statement_id")).journal_id
+        )
+        if not journal:
+            return vals
+        company = journal.company_id
+        journal_currency = journal.currency_id or company.currency_id
+        foreign_currency = self.env["res.currency"].browse(vals["foreign_currency_id"])
+        if foreign_currency == journal_currency:
+            return vals
+        date = vals.get("date") or fields.Date.context_today(self)
+        return {
+            **vals,
+            "amount": foreign_currency._convert(
+                vals["amount_currency"], journal_currency, company, date
+            ),
+        }
 
     def edit_reconcile_line(self, move_line_id, record_data):
         """Mantiene balance y amount_currency coherentes con la tasa de la fecha del asiento.
