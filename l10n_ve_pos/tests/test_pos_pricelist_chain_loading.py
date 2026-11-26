@@ -18,6 +18,10 @@ class TestPosPricelistChainLoading(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        # Otros módulos instalados (p. ej. l10n_ve_pos_mf) la fijan en 2, y hay módulos que
+        # redondean a esa precisión cada tarifa de la cadena que convierte de moneda. La
+        # prueba compara contra la cadena sin redondear.
+        cls.env.ref("product.decimal_price").digits = 6
         cls.vef = cls.env["res.currency"].with_context(active_test=False).search(
             [("name", "=", "VEF")], limit=1
         )
