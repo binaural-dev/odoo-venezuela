@@ -43,6 +43,47 @@ class AccountBankStatementLine(models.Model):
             ),
         }
 
+    def _foreign_conversion_currencies(self):
+        """Devuelve (moneda del diario, moneda extranjera) si la linea convierte entre ambas."""
+        self.ensure_one()
+        if not self.foreign_currency_id or not self.currency_id or self.foreign_currency_id == self.currency_id:
+            return None
+        return self.currency_id, self.foreign_currency_id
+
+    @api.onchange("amount_currency", "foreign_currency_id", "date", "journal_id")
+    def _onchange_amount_currency_sync_amount(self):
+        """El ultimo campo editado manda: el monto en moneda extranjera fija `amount` (ticket #16410).
+
+        Tambien al cambiar la fecha o el diario: el monto en moneda extranjera es el ancla y el
+        monto en la moneda del diario sigue la tasa de la fecha, como `balance` en un asiento.
+        """
+        for line in self:
+            currencies = line._foreign_conversion_currencies()
+            if currencies and line.amount_currency:
+                journal_currency, foreign_currency = currencies
+                date = line.date or fields.Date.context_today(line)
+                # Ya coherentes (el otro onchange acaba de redondear el monto en moneda): no se pisa `amount`
+                expected = journal_currency._convert(line.amount, foreign_currency, line.company_id, date)
+                if foreign_currency.compare_amounts(expected, line.amount_currency):
+                    line.amount = foreign_currency._convert(
+                        line.amount_currency, journal_currency, line.company_id, date
+                    )
+
+    @api.onchange("amount")
+    def _onchange_amount_sync_amount_currency(self):
+        """El ultimo campo editado manda: `amount` fija el monto en moneda extranjera (ticket #16410)."""
+        for line in self:
+            currencies = line._foreign_conversion_currencies()
+            if currencies and line.amount:
+                journal_currency, foreign_currency = currencies
+                date = line.date or fields.Date.context_today(line)
+                # Ya coherentes (el otro onchange acaba de redondear `amount`): no se pisa el monto en moneda
+                expected = foreign_currency._convert(line.amount_currency, journal_currency, line.company_id, date)
+                if not line.amount_currency or journal_currency.compare_amounts(expected, line.amount):
+                    line.amount_currency = journal_currency._convert(
+                        line.amount, foreign_currency, line.company_id, date
+                    )
+
     def edit_reconcile_line(self, move_line_id, record_data):
         """Mantiene balance y amount_currency coherentes con la tasa de la fecha del asiento.
 

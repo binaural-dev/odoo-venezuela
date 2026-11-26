@@ -302,6 +302,8 @@ class TestForeignUnbalanced16410(TransactionCase):
         form.payment_ref = "pago en $ (form)"
         form.foreign_currency_id = self.usd
         form.amount_currency = 10.82
+        # El onchange completa el Bs antes de guardar
+        self.assertAlmostEqual(form.amount, 10.82 * 886.2, places=2)
         st_line = form.save()
         self.assertAlmostEqual(st_line.amount, 10.82 * 886.2, places=2)
 
@@ -312,3 +314,67 @@ class TestForeignUnbalanced16410(TransactionCase):
             "payment_ref": "pago en Bs", "amount": 0.0,
         })
         self.assertEqual(st_line.amount, 0.0)
+
+    def test_13_form_last_edited_field_wins(self):
+        """En el formulario, el ultimo campo editado manda y el otro sigue la tasa de la fecha."""
+        form = Form(self.env["account.bank.statement.line"].with_context(
+            default_journal_id=self.bank.id))
+        form.payment_ref = "pago en $ (onchange)"
+        form.foreign_currency_id = self.usd
+        form.amount_currency = 10.82
+        self.assertAlmostEqual(form.amount, 10.82 * 886.2, places=2)
+        # Se escribe a mano un monto en Bs distinto: el monto en $ lo sigue
+        form.amount = 10000.0
+        self.assertAlmostEqual(form.amount_currency, 10000.0 / 886.2, places=2)
+        # El onchange del monto en $ no reescribe el Bs que acaba de escribir el usuario
+        self.assertEqual(form.amount, 10000.0)
+        # Se vuelve a editar el monto en $: el Bs lo sigue
+        form.amount_currency = 20.0
+        self.assertAlmostEqual(form.amount, 20.0 * 886.2, places=2)
+        st_line = form.save()
+        self.assertAlmostEqual(st_line.amount, 20.0 * 886.2, places=2)
+        self.assertEqual(st_line.amount_currency, 20.0)
+        # Un Bs que no da un monto en $ exacto se respeta tal cual
+        form = Form(self.env["account.bank.statement.line"].with_context(
+            default_journal_id=self.bank.id))
+        form.payment_ref = "pago en $ (redondeo)"
+        form.foreign_currency_id = self.usd
+        form.amount_currency = 10.82
+        form.amount = 20000.0
+        self.assertEqual(form.amount, 20000.0)
+        self.assertAlmostEqual(form.amount_currency, 20000.0 / 886.2, places=2)
+        self.assertAlmostEqual(self._foreign_imbalance(st_line.move_id), 0.0, places=2)
+
+    def test_14_form_without_foreign_currency_is_not_touched(self):
+        """Sin moneda extranjera el Bs queda como se escribio."""
+        form = Form(self.env["account.bank.statement.line"].with_context(
+            default_journal_id=self.bank.id))
+        form.payment_ref = "pago en Bs (onchange)"
+        form.amount = 12345.67
+        self.assertEqual(form.amount, 12345.67)
+        self.assertEqual(form.save().amount, 12345.67)
+
+    def test_15_form_date_change_recomputes_the_amount_with_the_rate_of_the_date(self):
+        """Al cambiar la fecha, el monto en $ queda y el Bs sigue la tasa de la nueva fecha."""
+        past = self.today - timedelta(days=3)
+        self.env["res.currency.rate"].create([
+            {"name": past, "currency_id": self.vef.id,
+             "inverse_company_rate": 1.0, "company_id": self.company.id},
+            {"name": past, "currency_id": self.usd.id,
+             "inverse_company_rate": 900.0, "company_id": self.company.id},
+        ])
+        form = Form(self.env["account.bank.statement.line"].with_context(
+            default_journal_id=self.bank.id))
+        form.payment_ref = "pago en $ (fecha)"
+        form.foreign_currency_id = self.usd
+        form.amount_currency = 10.82
+        self.assertAlmostEqual(form.amount, 10.82 * 886.2, places=2)
+        form.date = past
+        self.assertEqual(form.amount_currency, 10.82)
+        self.assertAlmostEqual(form.amount, 10.82 * 900.0, places=2)
+        form.date = self.today
+        self.assertAlmostEqual(form.amount, 10.82 * 886.2, places=2)
+        st_line = form.save()
+        self.assertEqual(st_line.amount_currency, 10.82)
+        self.assertAlmostEqual(st_line.amount, 10.82 * 886.2, places=2)
+        self.assertAlmostEqual(self._foreign_imbalance(st_line.move_id), 0.0, places=2)
