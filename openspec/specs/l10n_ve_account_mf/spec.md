@@ -196,6 +196,25 @@ La reimpresión **por fecha** (comandos en minúscula `Rf/Rc/Rt/Rx/Rz/Ra`, Tabla
 - **WHEN** el Z se imprime pero el S1 posterior no se puede leer
 - **THEN** se notifica una advertencia indicando que Odoo no quedó sincronizado
 
+### Requirement: Libro de Ventas con máquina fiscal: líneas propias y Resumen Diario
+
+En el Libro de Ventas de documentos de máquina fiscal, los documentos DEBEN (MUST) agruparse por Reporte Z (serial de la máquina y número de Reporte Z). Dentro de cada Reporte Z, las facturas de consumidores finales ordinarios DEBEN (MUST) acumularse en líneas de «Resumen Diario» por rango consecutivo de número de máquina, y DEBEN (MUST) salir en línea propia, cerrando antes el resumen abierto: las notas de crédito, las notas de débito y los documentos de contribuyentes (RIF «J», contribuyente especial o no ordinario). Una nota de débito es un documento con factura de origen (`debit_origin_id`), sin importar el diario: la marca «Es débito» del diario no decide la línea, porque el diario de ventas puede estar marcado para el diferencial cambiario. En 19 se decidía por la marca del diario, y con el diario de ventas marcado cada factura de consumidor final salía en línea propia (tarea 87657).
+
+#### Scenario: Factura de consumidor final en un diario marcado «Es débito»
+
+- **WHEN** una factura de un consumidor final ordinario, sin `debit_origin_id`, está en un diario de ventas marcado «Es débito»
+- **THEN** se acumula en el Resumen Diario de su Reporte Z, con las demás facturas de consumidores finales
+
+#### Scenario: Nota de débito
+
+- **WHEN** un documento del Reporte Z tiene factura de origen (`debit_origin_id`)
+- **THEN** sale en línea propia como nota de débito, fuera del Resumen Diario, en cualquier diario
+
+#### Scenario: Contribuyente entre consumidores finales
+
+- **WHEN** entre dos facturas de consumidores finales del mismo Reporte Z hay una factura a un contribuyente con RIF «J»
+- **THEN** el libro muestra un Resumen Diario con la primera, la línea propia del contribuyente y otro Resumen Diario con la segunda
+
 ### Requirement: Systray de estado de conexión
 
 El backend DEBE (MUST) mostrar un ítem de systray con el estado de la conexión Web Serial (desconectada/conectando/conectada/error): al cargar la página intenta la reconexión silenciosa a un puerto ya autorizado y verifica que la impresora responda al ENQ; el click conecta manualmente — intento silencioso primero y luego prompt de autorización de puerto (`requestPermission: true`) — o desconecta si ya estaba conectada; y el estado se re-sincroniza con el driver compartido cada 5 segundos para reflejar conexiones hechas por otros componentes.

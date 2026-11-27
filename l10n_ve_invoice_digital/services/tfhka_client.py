@@ -218,8 +218,10 @@ class TfhkaApiClient(models.AbstractModel):
     def authenticate(self, company, payload):
         """POST /Autenticacion. Único punto de salida HTTP para el login de
         company -- antes vivía directamente en ``res.company.generate_token_tfhka``
-        con su propio ``requests.post``, sin pasar por este cliente ni por el
-        guard de ambiente. Transporte puro: devuelve la ``Response`` cruda,
+        con su propio ``requests.post``, sin pasar por este cliente. Sin URL
+        en la compañía (``_base_url``) no sale la llamada: así queda una base
+        neutralizada, cuyo ``neutralize.sql`` borra URL, usuario, clave y
+        token. Transporte puro: devuelve la ``Response`` cruda,
         la interpretación de negocio (guardar token, sincronizar series, ...)
         sigue en ``res.company`` porque necesita escribir en ese registro
         específico."""

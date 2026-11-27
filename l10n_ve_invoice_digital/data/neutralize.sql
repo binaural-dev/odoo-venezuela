@@ -1,8 +1,10 @@
 -- disable_l10n_ve_invoice_digital_integration
--- The digitalization queue cron (ir_cron_tfhka_digitalization_queue) and the
--- in-code guard against database.is_neutralized (tfhka.api.client) already
--- stop outbound calls; this only clears the credentials so a stale token
--- can't be reused if the guard is ever bypassed by hand.
+-- Clear the TFHKA credentials of every company when the database is neutralized (a copy restored
+-- to staging or to a test environment), so the copy cannot reach the provider with the account of
+-- production. This is what keeps the copy off TFHKA: tfhka.api.client needs the URL before any
+-- request (_base_url raises without it) and the token (_token), and the neutralize.sql of the core
+-- deactivates every cron, the digitalization queue included. The client does not check
+-- database.is_neutralized.
 UPDATE res_company
    SET username_tfhka = NULL,
        password_tfhka = NULL,
