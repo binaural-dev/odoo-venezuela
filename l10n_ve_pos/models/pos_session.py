@@ -1152,16 +1152,20 @@ class PosSession(models.Model):
                 combine granularity, where one move spans several customers.
 
         Returns:
-            account.move: the posted cross move.
+            account.move: the cross move, posted unless the company leaves
+            them in draft.
 
         Every line takes ``ref`` as its label (see ``_cross_move_ref``).
 
-        The move is posted right away: a draft cannot be reconciled from the
-        real journal's dashboard, and every session close used to leave its
-        crosses in draft for accounting to post one by one. A line on the
-        real journal's transitory account then gets its statement line in
-        that journal (``_create_cross_real_statement_lines``), reconciled
-        against it right away.
+        By default (``res.company.pos_post_cross_moves``) the move is posted
+        right away: a draft cannot be reconciled from the real journal's
+        dashboard, and every session close used to leave its crosses in draft
+        for accounting to post one by one. Posting it gives a line on the real
+        journal's transitory account its statement line in that journal,
+        reconciled against it (``account.move._post_pos_cross``). A company
+        that leaves them in draft gets that when accounting posts the move.
+        ``pos_cross_session_id`` and ``pos_cross_payment_method_id`` tell the
+        posting which session and method the move crosses.
 
         ``name`` (the move's sequential "Number") is intentionally left
         unset so that on posting Odoo's native ``_compute_name`` assigns the
@@ -1195,10 +1199,12 @@ class PosSession(models.Model):
                 "foreign_currency_id": self.foreign_currency_id.id,
                 "foreign_rate": foreign_rate,
                 "company_id": self.company_id.id,
+                "pos_cross_session_id": self.id,
+                "pos_cross_payment_method_id": payment_method.id,
             }
         )
-        move.action_post()
-        self._create_cross_real_statement_lines(payment_method, move)
+        if self.company_id.pos_post_cross_moves:
+            move.action_post()
         return move.with_env(self.env)
 
     def _create_cross_real_statement_lines(self, payment_method, move):
@@ -1227,16 +1233,28 @@ class PosSession(models.Model):
         Nothing is created if that transitory account is also the one of the
         method's journal: both lines of the cross are then on it and there is
         no way to tell the real one (the configuration needs a transitory
-        account per journal).
+        account per journal). That is read from the move itself, not from the
+        method's accounts: posting a draft later comes without the context
+        the cross was created with (``CROSS_SALE_FROM_JOURNAL_ACCOUNT``).
+
+        Called each time the move is posted (``account.move._post_pos_cross``):
+        a move that already has its statement lines (posted, reset to draft
+        and posted again) gets none new; each of them still open is
+        reconciled against an open cross line it sums zero with.
         """
         self.ensure_one()
         journal = payment_method.cross_journal
         suspense_account = journal.suspense_account_id
-        statement_lines = self.env["account.bank.statement.line"]
-        transitory_account = self._get_cross_transitory_account(payment_method, use_suspense=True)
-        if not suspense_account or suspense_account == transitory_account:
+        statement_lines = move.sudo().pos_cross_real_statement_line_ids
+        if not suspense_account or move.line_ids.account_id == suspense_account:
             return statement_lines
         cross_lines = move.line_ids.filtered(lambda l: l.account_id == suspense_account)
+        if statement_lines:
+            for statement_line in statement_lines:
+                for cross_line in cross_lines.filtered(lambda l: not l.reconciled):
+                    if self._reconcile_statement_line_with_cross(statement_line, cross_line):
+                        break
+            return statement_lines
         vals_list = [
             {
                 "journal_id": journal.id,
@@ -1247,6 +1265,7 @@ class PosSession(models.Model):
                 "partner_id": self._cross_move_header_partner(line.partner_id).id,
                 "amount": line.amount_currency,
                 "foreign_amount": line.foreign_debit - line.foreign_credit,
+                "pos_cross_real_move_id": move.id,
             }
             for line in cross_lines
         ]
@@ -1272,25 +1291,30 @@ class PosSession(models.Model):
         transitoria en cero y la línea conciliada en el tablero de contabilidad,
         sin que nadie tenga que hacerlo a mano desde ahí.
 
-        Solo concilia si la cuenta es conciliable, la línea de extracto tiene una
-        única línea abierta en esa cuenta y ambas suman cero en la moneda de la
-        compañía. Si no, la deja como estaba, para conciliarla a mano. Es el caso
-        de un cruce a una tasa distinta de la del día de la línea de extracto,
-        que convierte a la de su fecha (por ejemplo, un reembolso a la tasa de
-        la venta o una sesión que pasó la medianoche): al conciliarlo a mano,
-        Odoo crea la diferencia en cambio, que aquí no se genera sola.
+        Solo concilia si el cruce está publicado (un borrador se concilia cuando
+        contabilidad lo publica, ``account.move._post_pos_cross``), la cuenta es
+        conciliable, la línea de extracto tiene una única línea abierta en esa
+        cuenta y ambas suman cero en la moneda de la compañía. Si no, la deja
+        como estaba, para conciliarla a mano. Es el caso de un cruce a una tasa
+        distinta de la del día de la línea de extracto, que convierte a la de su
+        fecha (por ejemplo, un reembolso a la tasa de la venta o una sesión que
+        pasó la medianoche): al conciliarlo a mano, Odoo crea la diferencia en
+        cambio, que aquí no se genera sola.
+
+        Devuelve si las concilió.
         """
         account = cross_line.account_id
-        if not account.reconcile or cross_line.reconciled:
-            return
+        if cross_line.parent_state != "posted" or not account.reconcile or cross_line.reconciled:
+            return False
         suspense_line = statement_line.move_id.line_ids.filtered(
             lambda l: l.account_id == account and not l.reconciled
         )
         if len(suspense_line) != 1:
-            return
+            return False
         if not self.company_id.currency_id.is_zero(suspense_line.balance + cross_line.balance):
-            return
+            return False
         (suspense_line | cross_line).sudo().reconcile()
+        return True
 
     def action_pos_session_close(self, balancing_account=False, amount_to_balance=0, bank_payment_method_diffs=None):
         """

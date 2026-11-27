@@ -769,6 +769,71 @@ msgid "Pos Show Just Products With Available Qty"
 msgstr "Mostrar solamente los productos disponibles"
 
 #. module: l10n_ve_pos
+#: model:ir.model.fields,field_description:l10n_ve_pos.field_res_company__pos_post_cross_moves
+#: model:ir.model.fields,field_description:l10n_ve_pos.field_res_config_settings__pos_post_cross_moves
+msgid "Post PoS Cross Moves"
+msgstr "Publicar los cruces del PdV"
+
+#. module: l10n_ve_pos
+#: model:ir.model.fields,help:l10n_ve_pos.field_res_company__pos_post_cross_moves
+#: model:ir.model.fields,help:l10n_ve_pos.field_res_config_settings__pos_post_cross_moves
+msgid ""
+"Post the PoS cross moves as soon as they are created, with the statement "
+"line of the real journal reconciled against them. Unchecked, they are left "
+"in draft and that happens when accounting posts them."
+msgstr ""
+"Publica los cruces del PdV apenas se crean, con la línea de extracto del "
+"diario real conciliada contra ellos. Si se desmarca, quedan en borrador y "
+"eso ocurre cuando contabilidad los publica."
+
+#. module: l10n_ve_pos
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
+msgid ""
+"Post the cross moves of the cash and foreign currency\n"
+"                                    payment methods to their real journal as soon as they are\n"
+"                                    created. Unchecked, they are left in draft until\n"
+"                                    accounting posts them."
+msgstr ""
+"Publica los cruces de los métodos de efectivo y en divisa a su diario real "
+"apenas se crean. Si se desmarca, quedan en borrador hasta que contabilidad "
+"los publica."
+
+#. module: l10n_ve_pos
+#: model:ir.model.fields,field_description:l10n_ve_pos.field_account_move__pos_cross_session_id
+msgid "PoS Cross Session"
+msgstr "Sesión del cruce del PdV"
+
+#. module: l10n_ve_pos
+#: model:ir.model.fields,help:l10n_ve_pos.field_account_move__pos_cross_session_id
+msgid "PoS session whose cross move this is."
+msgstr "Sesión del PdV a la que pertenece este cruce."
+
+#. module: l10n_ve_pos
+#: model:ir.model.fields,field_description:l10n_ve_pos.field_account_move__pos_cross_payment_method_id
+msgid "PoS Cross Payment Method"
+msgstr "Método de pago del cruce del PdV"
+
+#. module: l10n_ve_pos
+#: model:ir.model.fields,help:l10n_ve_pos.field_account_move__pos_cross_payment_method_id
+msgid "Payment method whose money this PoS cross move takes to the real journal."
+msgstr "Método de pago cuyo dinero lleva este cruce del PdV al diario real."
+
+#. module: l10n_ve_pos
+#: model:ir.model.fields,field_description:l10n_ve_pos.field_account_move__pos_cross_real_statement_line_ids
+msgid "PoS Cross Statement Lines"
+msgstr "Líneas de extracto del cruce del PdV"
+
+#. module: l10n_ve_pos
+#: model:ir.model.fields,field_description:l10n_ve_pos.field_account_bank_statement_line__pos_cross_real_move_id
+msgid "PoS Cross Move (Real Journal)"
+msgstr "Cruce del PdV (diario real)"
+
+#. module: l10n_ve_pos
+#: model:ir.model.fields,help:l10n_ve_pos.field_account_bank_statement_line__pos_cross_real_move_id
+msgid "PoS cross move that created this statement line in its real journal."
+msgstr "Cruce del PdV que creó esta línea de extracto en su diario real."
+
+#. module: l10n_ve_pos
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_res_company__pos_unreconcile_moves
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_res_config_settings__pos_unreconcile_moves
 msgid "Pos Unreconcile Moves"

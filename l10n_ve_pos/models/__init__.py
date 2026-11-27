@@ -9,6 +9,7 @@ from . import res_config_settings
 from . import res_company
 from . import pos_payment
 from . import account_move
+from . import account_bank_statement_line
 from . import stock_picking
 from . import product_product
 from . import pos_load_mixin
