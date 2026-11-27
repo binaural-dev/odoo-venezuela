@@ -968,7 +968,13 @@ class AccountRetention(models.Model):
         ).report_action(self, config=False)
 
     def _set_sequence(self):
-        for retention in self.filtered(lambda r: not r.number):
+        # Customer retentions (out_*) are numbered by the customer, who is the
+        # withholding agent: taking a number from our sequence would leave
+        # gaps in the fiscal correlative of the vouchers we issue to suppliers.
+        out_types = ("out_invoice", "out_refund", "out_debit", "out_contingence")
+        for retention in self.filtered(
+            lambda r: not r.number and r.type not in out_types
+        ):
             # Dispatch through get_sequence_<type>_retention() rather than
             # calling get_sequence_retention() directly: modules like
             # binaural_subsidiary_payment_extension override

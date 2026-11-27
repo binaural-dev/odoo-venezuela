@@ -1,10 +1,11 @@
-from odoo.tests import TransactionCase, tagged
+from odoo.tests import tagged
 from odoo import Command, fields
 from unittest.mock import patch
+from odoo.addons.l10n_ve_invoice.tests.common import ForeignRateTransactionCase
 
 
 @tagged("post_install", "-at_install", "l10n_ve_invoice_digital", "move_action_post_alert")
-class TestMoveActionPostAlertWizard(TransactionCase):
+class TestMoveActionPostAlertWizard(ForeignRateTransactionCase):
     def setUp(self):
         super().setUp()
         self.env.user.tz = "America/Caracas"

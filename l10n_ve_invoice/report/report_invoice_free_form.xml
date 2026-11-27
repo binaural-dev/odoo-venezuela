@@ -23,7 +23,7 @@
                                 <t t-if="o.move_type in ['out_refund', 'in_refund']">
                                     NOTA DE CRÉDITO
                                 </t>
-                                <t t-elif="o.journal_id.is_debit">
+                                <t t-elif="o._is_debit_note()">
                                     NOTA DE DÉBITO
                                 </t>
                                 <t t-else="">
@@ -76,7 +76,7 @@
                                     </span>
                                     <br/>
                                 </t>
-                                <t t-elif="o.journal_id.is_debit">
+                                <t t-elif="o._is_debit_note()">
                                     <span><strong>Nota de débito:</strong><t t-if="o.name != '/'" t-out="o.name"/></span>
                                     <br/>
                                     <span>

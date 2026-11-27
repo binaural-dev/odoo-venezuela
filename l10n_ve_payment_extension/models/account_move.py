@@ -562,14 +562,33 @@ class AccountMoveRetention(models.Model):
         res = super().action_post()
         for move in self:
             if (not move.islr_voucher_number and move.generate_islr_retention ):
-                move.auto_create_islr_retention()
+                # Customer draft retentions carry no number (see below), so
+                # islr_voucher_number stays empty: don't create a second draft.
+                if move.move_type not in ("out_invoice", "out_refund") or not (
+                    move.retention_islr_line_ids.retention_id.filtered(
+                        lambda r: r.state != "cancel"
+                    )
+                ):
+                    move.auto_create_islr_retention()
 
             if (move.generate_iva_retention and not move.iva_voucher_number):
                 move._validate_iva_retention()
-                retention = move._create_retention("iva")
-                if not move.company_id.create_retentions_of_suppliers_in_draft and move.move_type in ['in_invoice']:
-                    retention.action_post()
-                move.iva_voucher_number = retention.number
+                if move.move_type in ("out_invoice", "out_refund"):
+                    # Customer invoice: the withholding agent is the customer,
+                    # who issues the voucher number later. The draft is created
+                    # without number (it is not taken from our supplier
+                    # sequence) and iva_voucher_number is filled when the user
+                    # posts it with the real number. As iva_voucher_number
+                    # stays empty, avoid a second draft on a re-post.
+                    if not move.retention_iva_line_ids.retention_id.filtered(
+                        lambda r: r.state != "cancel"
+                    ):
+                        move._create_retention("iva")
+                else:
+                    retention = move._create_retention("iva")
+                    if not move.company_id.create_retentions_of_suppliers_in_draft and move.move_type in ['in_invoice']:
+                        retention.action_post()
+                    move.iva_voucher_number = retention.number
 
             if move.move_type not in ("in_invoice", "in_refund"):
                 continue
