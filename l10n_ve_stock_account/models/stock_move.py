@@ -14,6 +14,20 @@ class StockMove(models.Model):
             line.qty_return = sum(line.returned_move_ids.mapped("quantity"))
 
 
+    def _get_new_picking_values(self):
+        """Flag the new picking as a donation when its moves come from a
+        donation sale order.
+
+        ``stock.picking.is_donation`` is a stored field: it is not derived
+        from the sale order afterwards, so it has to be set here, when the
+        core creates the picking from its moves.
+        """
+        vals = super()._get_new_picking_values()
+        sale_orders = self.group_id.sale_id | self.sale_line_id.order_id
+        if sale_orders and any(sale_orders.mapped("is_donation")):
+            vals["is_donation"] = True
+        return vals
+
     def _get_line_values(self, use_foreign_currency=False):
         """
         Calculate and return all relevant values for a stock move line, including:

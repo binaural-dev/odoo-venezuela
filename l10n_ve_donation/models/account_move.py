@@ -16,22 +16,29 @@ class AccountMove(models.Model):
 
     @api.constrains("is_donation", "line_ids","line_ids.partner_id")
     def _check_partner_donation(self):
-        """Validate that all journal items of a donation move use the company partner."""
+        """Validate journal items of a donation move use the company partner.
+
+        Only the LINES are validated here -- the header (`move.partner_id`)
+        is intentionally NOT constrained to the company partner: it
+        represents the real counterparty (donor, when the company receives;
+        beneficiary, when the company gives), so the donation certificate can
+        show who it actually is instead of always "the company donates to
+        the company".
+
+        The line check itself only applies to move_type == 'entry' (manual
+        journal entries, e.g. the stock.scrap/picking accounting hook) --
+        that is the ONLY flow the donation certificate button is actually
+        reachable from (invoices are out of scope: the invoice itself is
+        already the certificate). For invoice-type moves (out_invoice/out_refund/...),
+        Odoo's own core forces the receivable/payment-term line's partner to
+        match the move's header partner for correct reconciliation -- that
+        is not optional, so once the header is free to be the real
+        beneficiary (see sale_order.py), invoice lines are expected and
+        allowed to follow it, exactly like any regular sale."""
         for move in self:
-            if not move.is_donation:
+            if not move.is_donation or move.move_type != "entry":
                 continue
             company_partner = move.company_id.partner_id or self.env.company.partner_id
-            if move.partner_id and move.partner_id != company_partner:
-                raise ValidationError(
-                    _(
-                        "The contact on move '%(line)s' must be the company partner "
-                        "('%(expected)s') when the entry is a donation. "
-                        "Found: '%(found)s'.",
-                        line=move.name or move.display_name,
-                        expected=company_partner.name,
-                        found=move.partner_id.name,
-                    )
-                )
             for line in move.line_ids.filtered(lambda l: l.partner_id):
                 if line.partner_id != company_partner:
                     raise ValidationError(
