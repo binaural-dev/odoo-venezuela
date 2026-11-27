@@ -186,6 +186,16 @@ class ResPartner(models.Model):
             ):
                 partner.type_person_id = False
 
+    def _get_retention_partner(self):
+        """Partner whose withholding type is used by the IVA retentions.
+
+        The withholding type is a commercial datum: a contact that belongs to a
+        company has none of its own, it reads the one of its commercial partner
+        (the company it belongs to). A standalone partner is its own commercial
+        partner."""
+        self.ensure_one()
+        return self.commercial_partner_id or self
+
     def _apply_default_withholding_type(self):
         """Ticket 86944 (IVA retention table): no IVA is withheld from a formal
         taxpayer; a non resident or a PN Residente is withheld 100% and any other

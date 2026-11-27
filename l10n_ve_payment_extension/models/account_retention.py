@@ -1145,7 +1145,7 @@ class AccountRetention(models.Model):
         Validates the partner has a type person and all the retention lines have a payment concept.
         """
         self.ensure_one()
-        if not self.partner_id.type_person_id:
+        if not self.partner_id._get_retention_partner().type_person_id:
             raise UserError(_("Select a type person"))
         if not any(self.retention_line_ids.filtered(lambda l: l.payment_concept_id)):
             raise UserError(_("Select a payment concept"))
@@ -1239,7 +1239,7 @@ class AccountRetention(models.Model):
         if not any(tax_ids):
             raise UserError(_("The invoice %s has no tax.") % invoice_id.display_name)
 
-        withholding_amount = invoice_id.partner_id.withholding_type_id.value
+        withholding_amount = invoice_id._get_iva_withholding_partner().withholding_type_id.value
         lines_data = []
         tax_groups = invoice_id.tax_totals["subtotals"][0]["tax_groups"]
         for tax_group in tax_groups:

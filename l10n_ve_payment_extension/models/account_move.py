@@ -685,12 +685,29 @@ class AccountMoveRetention(models.Model):
     
         return retention_vals
     
+    def _get_iva_withholding_partner(self, partner=None):
+        """Partner whose withholding type gives the IVA percentage.
+
+        When the company is withheld (sale: out_invoice, out_refund, out_receipt)
+        the percentage is the one of the company (company.partner_id, set from
+        its "condition_withholding_id"), not the one of the customer. When the
+        company withholds (purchase) it is the one of the contact, or the one of
+        its company if the contact belongs to one (it has no fiscal data of its
+        own). `partner` replaces the invoice partner (third-party billing)."""
+        self.ensure_one()
+        if self.move_type in ("out_invoice", "out_refund", "out_receipt"):
+            return self.company_id.partner_id
+        return (partner or self.partner_id)._get_retention_partner()
+
     @api.model
     def _create_retention(self, type_retention):
         
         self.ensure_one()
 
-        if type_retention == "iva" and not self.partner_id.withholding_type_id:
+        if (
+            type_retention == "iva"
+            and not self._get_iva_withholding_partner().withholding_type_id
+        ):
             raise UserError(_("The partner has no withholding type."))
 
         retention_vals = self._prepare_retention_vals(type_retention, False)
@@ -851,7 +868,7 @@ class AccountMoveRetention(models.Model):
                     _("The company must have a journal for ISLR supplier retention.")
                 )
             
-            if not self.partner_id.type_person_id:
+            if not rec.partner_id._get_retention_partner().type_person_id:
                 raise UserError(_("The partner must have a type of person"))
         
             payment_concepts = rec._get_payment_concepts_from_invoice()
@@ -934,6 +951,7 @@ class AccountMoveRetention(models.Model):
                 target = record.partner_id
                 if not target:
                     raise UserError(_("No partner/vendor associated with this invoice."))
+                target = target._get_retention_partner()
                 if not target.type_person_id:
                     raise UserError(_(
                         "The Partner/Vendor '%s' does not have an ISLR 'Type of Person' configured."
