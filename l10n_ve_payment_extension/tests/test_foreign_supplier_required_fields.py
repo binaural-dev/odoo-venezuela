@@ -51,6 +51,30 @@ class TestForeignSupplierRequiredFields(TransactionCase):
         cls.type_person_non_resident = cls.env.ref(
             "l10n_ve_payment_extension.type_person_four_l10n_ve_payment_extension"
         )
+        # With l10n_ve_igtf installed the partner form requires the advance
+        # accounts, which default to the company's ones.
+        company = cls.env.company
+        if "advance_customer_account_id" in company._fields:
+            cls._ensure_advance_accounts(company)
+
+    @classmethod
+    def _ensure_advance_accounts(cls, company):
+        account_model = cls.env["account.account"]
+        values = {}
+        for field, account_type, code in (
+            ("advance_customer_account_id", "liability_current", "TSTADVC"),
+            ("advance_supplier_account_id", "asset_current", "TSTADVS"),
+        ):
+            if not company[field]:
+                values[field] = account_model.create({
+                    "name": "Test advance %s" % code,
+                    "code": code,
+                    "account_type": account_type,
+                    "reconcile": True,
+                    "is_advance_account": True,
+                }).id
+        if values:
+            company.write(values)
 
     def _fill_form(self, supplier=True, country=None, taxpayer_type=None,
                    withholding=False, type_person=None):
