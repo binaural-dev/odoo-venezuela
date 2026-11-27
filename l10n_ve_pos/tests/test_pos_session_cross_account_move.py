@@ -11,6 +11,8 @@ Spec (venta en efectivo entre transitorias, ticket 15219):
 ``openspec/changes/cruce-venta-efectivo-entre-transitorias/specs/l10n_ve_pos/spec.md``
 Spec (fecha del cruce en el dia del usuario, ticket 16145):
 ``openspec/specs/l10n_ve_pos/spec.md``
+Spec (linea de extracto conciliada con su cruce, tarea 86801):
+``openspec/changes/ta-86801-conciliacion-del-cruce/specs/l10n_ve_pos/spec.md``
 """
 
 from datetime import date
@@ -1130,13 +1132,124 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
         self.assertAlmostEqual(st_line.amount, real_leg.amount_currency, places=2)
         self.assertGreater(st_line.amount, 0, "la salida de la caja entra al diario real")
         self.assertAlmostEqual(st_line.foreign_amount, 25.0 * 40.0, places=2)
-        self.assertFalse(st_line.is_reconciled, "queda para conciliarla desde el tablero")
 
+        # Se concilia sola contra su cruce: la transitoria queda saldada.
         st_suspense = st_line.move_id.line_ids.filtered(lambda l: l.account_id == suspense_real)
         self.assertAlmostEqual(st_suspense.balance, -real_leg.balance, places=2)
-        (st_suspense | real_leg).reconcile()
         self.assertTrue(real_leg.reconciled)
         self.assertTrue(st_suspense.reconciled)
+        self.assertEqual(st_suspense.full_reconcile_id, real_leg.full_reconcile_id)
+        self.assertTrue(st_line.is_reconciled, "no queda pendiente en el tablero")
+        self.assertAlmostEqual(self._balance(suspense_real), 0.0, places=2)
+
+    def _cash_cross_out(self, foreign_rate=40.0):
+        """Salida de 25 cruzada con ``use_suspense=True`` a la tasa ``foreign_rate``
+        (la del día es 40)."""
+        session = self._new_session().with_company(self.company)
+        return session._create_cross_move_for(
+            self.split_cash_method,
+            amount=-25.0,
+            foreign_amount=-25.0 * foreign_rate,
+            foreign_rate=foreign_rate,
+            partner=self.env["res.partner"],
+            date=fields.Datetime.now(),
+            ref="Salida",
+            use_suspense=True,
+        )
+
+    def test_cash_cross_statement_line_left_open_without_reconcilable_transitory(self):
+        """Sin "Permitir conciliación" en la transitoria del diario real la línea
+        de extracto se crea igual y queda para conciliarla a mano, sin error."""
+        _suspense_origin, suspense_real = self._configure_use_suspense_accounts(
+            self.split_cash_method
+        )
+        self.assertFalse(suspense_real.reconcile)
+        self._configure_cross(self.split_cash_method)
+
+        move = self._cash_cross_out()
+
+        st_line = self._real_statement_lines()
+        self.assertEqual(len(st_line), 1)
+        self.assertFalse(st_line.is_reconciled)
+        self.assertFalse(move.line_ids.filtered(lambda l: l.account_id == suspense_real).reconciled)
+
+    def test_cash_cross_statement_line_left_open_when_the_rates_differ(self):
+        """Un cruce a otra tasa que la del día (36,5 contra 40) no suma cero en la
+        moneda de la compañía con su línea de extracto, que convierte a la de su
+        fecha: no se concilia solo (crearía una diferencia en cambio) y queda para
+        conciliarlo a mano."""
+        _suspense_origin, suspense_real = self._configure_use_suspense_accounts(
+            self.split_cash_method
+        )
+        suspense_real.reconcile = True
+        self._configure_cross(self.split_cash_method)
+
+        move = self._cash_cross_out(foreign_rate=36.5)
+
+        st_line = self._real_statement_lines()
+        real_leg = move.line_ids.filtered(lambda l: l.account_id == suspense_real)
+        st_suspense = st_line.move_id.line_ids.filtered(lambda l: l.account_id == suspense_real)
+        self.assertAlmostEqual(st_line.amount, real_leg.amount_currency, places=2)
+        self.assertNotAlmostEqual(st_suspense.balance, -real_leg.balance, places=2)
+        self.assertFalse(real_leg.reconciled)
+        self.assertFalse(st_line.is_reconciled)
+
+    def test_cash_cross_statement_line_not_reconciled_twice(self):
+        """Una línea del cruce ya conciliada no se vuelve a conciliar: la línea de
+        extracto nueva queda abierta, sin error."""
+        _suspense_origin, suspense_real = self._configure_use_suspense_accounts(
+            self.split_cash_method
+        )
+        suspense_real.reconcile = True
+        self._configure_cross(self.split_cash_method)
+        move = self._cash_cross_out()
+        real_leg = move.line_ids.filtered(lambda l: l.account_id == suspense_real)
+        self.assertTrue(real_leg.reconciled)
+        extra = self.env["account.bank.statement.line"].with_company(self.company).create(
+            {
+                "journal_id": self.real_bank_journal.id,
+                "amount": real_leg.amount_currency,
+                "payment_ref": "Duplicada",
+            }
+        )
+
+        session = self.env["pos.session"].search([("config_id", "=", self.config.id)], limit=1)
+        session._reconcile_statement_line_with_cross(extra, real_leg)
+
+        self.assertFalse(extra.is_reconciled)
+        self.assertEqual(len(real_leg.full_reconcile_id.reconciled_line_ids), 2)
+
+    def test_combined_cross_reconciles_each_leg_with_its_statement_line(self):
+        """Un cruce combinado con una pata de entradas y otra de salidas crea una
+        línea de extracto por pata y concilia cada una contra la suya."""
+        _suspense_origin, suspense_real = self._configure_use_suspense_accounts(
+            self.combined_cash_method
+        )
+        suspense_real.reconcile = True
+        self._configure_cross(self.combined_cash_method)
+        session = self._new_session().with_company(self.company)
+
+        move = session._create_combined_cross_move(
+            self.combined_cash_method,
+            [
+                {"amount": 50.0, "foreign_amount": 50.0 * 40.0},
+                {"amount": -20.0, "foreign_amount": -20.0 * 40.0},
+            ],
+            foreign_rate=40.0,
+            date=fields.Datetime.now(),
+            ref="Ventas",
+            use_suspense=True,
+        )
+
+        st_lines = self._real_statement_lines()
+        self.assertEqual(len(st_lines), 2)
+        self.assertTrue(all(st_lines.mapped("is_reconciled")))
+        for st_line in st_lines:
+            st_suspense = st_line.move_id.line_ids.filtered(lambda l: l.account_id == suspense_real)
+            leg = st_suspense.full_reconcile_id.reconciled_line_ids - st_suspense
+            self.assertEqual(leg.move_id, move)
+            self.assertAlmostEqual(leg.amount_currency, st_line.amount, places=2)
+        self.assertAlmostEqual(self._balance(suspense_real), 0.0, places=2)
 
     def test_cash_in_and_out_get_one_statement_line_each(self):
         """Una entrada y una salida dan una linea de extracto cada una, con signos
@@ -1308,8 +1421,12 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
     def test_cross_created_by_a_pos_user_without_accounting_rights(self):
         """El cajero (solo usuario del PdV) cruza sin permisos contables: el
         asiento y su linea de extracto se crean y publican en sudo, como el
-        cierre nativo de la sesion."""
-        self._configure_use_suspense_accounts(self.split_cash_method)
+        cierre nativo de la sesion, y la linea de extracto se concilia contra su
+        cruce."""
+        _suspense_origin, suspense_real = self._configure_use_suspense_accounts(
+            self.split_cash_method
+        )
+        suspense_real.reconcile = True
         self._configure_cross(self.split_cash_method)
         cashier = self.env["res.users"].create(
             {
@@ -1341,6 +1458,8 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
         self.assertEqual(move.env.user, cashier, "se devuelve en el entorno de quien llama")
         self.assertEqual(move.sudo().state, "posted")
         self.assertEqual(len(self._real_statement_lines()), 1)
+        real_leg = move.sudo().line_ids.filtered(lambda l: l.account_id == suspense_real)
+        self.assertTrue(real_leg.reconciled)
 
     def test_statement_line_drops_a_partner_of_another_company(self):
         """La linea de extracto, como la cabecera del cruce, no lleva un socio de
