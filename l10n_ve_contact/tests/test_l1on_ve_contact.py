@@ -60,6 +60,7 @@ class TestResPartner(TransactionCase):
     def test_write_same_email_on_already_duplicated_partners(self):
         other = self.env["res.partner"].create({
             "name": "Shares email",
+            "is_company": True,
             "prefix_vat": "J",
             "vat": "900000003",
             "email": "shared@example.com",
@@ -77,6 +78,7 @@ class TestResPartner(TransactionCase):
     def test_write_new_duplicated_email(self):
         self.env["res.partner"].create({
             "name": "Owner",
+            "is_company": True,
             "prefix_vat": "J",
             "vat": "900000004",
             "email": "owner@example.com",
@@ -204,3 +206,55 @@ class TestResPartner(TransactionCase):
             ["prefix_vat"]
         )
         self.assertEqual(defaults["prefix_vat"], "J")
+
+    def test_rif_prefix_must_match_the_contact_type(self):
+        # Task 87829: the rule holds on save, not only in the form.
+        Partner = self.env["res.partner"]
+        with self.assertRaises(ValidationError):
+            Partner.create(
+                {"name": "Company V", "is_company": True, "prefix_vat": "V", "vat": "111111111"}
+            )
+        with self.assertRaises(ValidationError):
+            Partner.create(
+                {"name": "Person J", "is_company": False, "prefix_vat": "J", "vat": "22222222"}
+            )
+        with self.assertRaises(ValidationError):
+            self.partner.is_company = True  # keeps V with a number
+        company = Partner.create(
+            {"name": "Company J", "is_company": True, "prefix_vat": "J", "vat": "333333333"}
+        )
+        self.assertEqual(company.prefix_vat, "J")
+
+    def test_partner_without_number_is_not_checked(self):
+        partner = self.env["res.partner"].create({"name": "No RIF", "is_company": True})
+        self.assertEqual(partner.prefix_vat, "J")
+        # Nor is one without prefix: there is no mismatch to report.
+        partner = self.env["res.partner"].create(
+            {"name": "No prefix", "is_company": True, "prefix_vat": False, "vat": "666666666"}
+        )
+        self.assertFalse(partner.prefix_vat)
+
+    def test_company_partner_accepts_any_prefix(self):
+        # A company can be a legal entity (J) or a sole proprietorship (V).
+        partner = self.env.company.partner_id
+        self.assertEqual(
+            partner.allowed_prefix_vat, ["V", "E", "J", "G", "P", "C"]
+        )
+        partner.write({"vat": "444444444", "prefix_vat": "V"})
+        partner.write({"prefix_vat": "J"})
+
+    def test_prefix_vat_default_on_create_follows_is_company_not_the_context(self):
+        # The contacts of a company are created from its form, with the context
+        # of the action (default_is_company) but as persons.
+        partner_model = self.env["res.partner"].with_context(default_is_company=True)
+        parent = partner_model.create(
+            {"name": "Parent J", "is_company": True, "prefix_vat": "J", "vat": "777777777"}
+        )
+        contact = partner_model.create(
+            {"name": "Contact", "parent_id": parent.id, "is_company": False, "vat": "88888888"}
+        )
+        self.assertEqual(contact.prefix_vat, "V")
+        company = partner_model.create(
+            {"name": "Another company", "is_company": True, "vat": "999999999"}
+        )
+        self.assertEqual(company.prefix_vat, "J")
