@@ -5,6 +5,7 @@ from . import test_pos_session_accounting_common
 from . import test_pos_session_close_foreign_amounts
 from . import test_pos_session_cross_account_move
 from . import test_pos_payment_method_currency
+from . import test_pos_payment_method_currency_access
 from . import test_self_order_foreign_amount
 from . import test_pos_config_convert_precision
 from . import test_pos_refund_foreign_price

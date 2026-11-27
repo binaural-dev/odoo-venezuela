@@ -1,11 +1,10 @@
-# pos-mf-self-order-kiosk-close-z Specification
+# l10n_ve_pos_mf_self_order
 
 ## Purpose
-Cerrar la sesión del Kiosko (`pos_self_order` en modo `kiosk`) con su
-Reporte Z desde el panel de Debug, cuando la máquina fiscal TFHKA está
-conectada al equipo del Kiosko por Web Serial: mismo flujo que el botón
-"Cerrar sesión e imprimir Z" de la caja (`l10n_ve_pos_mf`), con rutas
-públicas limitadas a la caja del Kiosko (ticket 16406).
+
+Lleva la máquina fiscal TFHKA (`l10n_ve_pos_mf`) al Kiosko/Autopedido (`pos_self_order` en modo `kiosk`). Hasta 20 la spec vivía dentro del módulo:
+
+- **pos-mf-self-order-kiosk-close-z**: Cerrar la sesión del Kiosko (`pos_self_order` en modo `kiosk`) con su Reporte Z desde el panel de Debug, cuando la máquina fiscal TFHKA está conectada al equipo del Kiosko por Web Serial: mismo flujo que el botón "Cerrar sesión e imprimir Z" de la caja (`l10n_ve_pos_mf`), con rutas públicas limitadas a la caja del Kiosko (ticket 16406).
 
 ## Requirements
 
