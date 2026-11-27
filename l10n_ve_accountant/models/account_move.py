@@ -6,8 +6,8 @@ from lxml import etree
 from contextlib import ExitStack, contextmanager
 from odoo import _, api, fields, models,Command
 from odoo.exceptions import UserError, ValidationError
-from odoo.tools import float_compare, format_date, index_exists
-from odoo.tools.sql import drop_index
+from odoo.tools import float_compare, format_date
+from odoo.tools.sql import drop_index, index_definition
 from odoo.tools.float_utils import float_round, float_is_zero
 from odoo.tools.misc import formatLang
 from odoo.tools.misc import clean_context
@@ -22,6 +22,13 @@ class AccountMove(models.Model):
     invoice_date = fields.Date(copy=True, string="Rate Date")
     invoice_date_display = fields.Date(string="Invoice Date", default=fields.Date.context_today, copy=True)
     is_purchase_international = fields.Boolean(related="journal_id.is_purchase_international")
+
+    # Different partners share the same document number in the same journal: normal practice in
+    # Venezuela. Replaces core's index on (name, journal_id); see _auto_init.
+    _unique_name = models.UniqueIndex(
+        "(name, partner_id, company_id, journal_id) WHERE (state = 'posted' AND name != '/')",
+        "Another entry with the same name already exists.",
+    )
 
     @api.depends('invoice_date_display', 'company_id', 'move_type', 'taxable_supply_date')
     def _compute_date(self):
@@ -65,72 +72,71 @@ class AccountMove(models.Model):
                 move.company_currency_rate = 1.0
 
     def _auto_init(self):
-        """Replace core's unique index on (name, journal_id) with a wider one that also includes
-        partner_id and company_id, so different partners can share the same document number in
-        the same journal -- normal practice in Venezuela.
+        """Check that the wider unique index declared in _unique_name can be created.
 
-        Runs BEFORE super()._auto_init(): in 19 core declares that index as the table object
-        account_move._unique_name, and the ORM keeps an index of that name that has no comment
-        (Index.apply_to_database). Creating ours first makes core keep it instead of trying to
-        create its narrower one.
-
-        If there are posted entries with the same number for the same partner/journal/company,
-        the index cannot be created: stop with the list of cases instead of renaming them.
+        _unique_name replaces core's index on (name, journal_id) by one that also includes
+        partner_id and company_id. The ORM applies it at the end of super()._auto_init(); with
+        duplicates it would only log an error during an install and leave account_move without a
+        unique index. So, while the index in the database is not the wider one yet, look for
+        posted entries with the same number for the same partner/journal/company first and stop
+        with the list of cases. Nothing is renamed: renaming them changed the number of correct
+        vendor bills.
         """
-        if not index_exists(self.env.cr, "account_move_unique_name_ve"):
-            self.env.cr.execute(
-                """
-                SELECT partner.name, COALESCE(journal.name->>'en_US', journal.name::text),
-                       move.name, COUNT(*)
-                  FROM account_move move
-                  JOIN res_partner partner ON partner.id = move.partner_id
-                  JOIN account_journal journal ON journal.id = move.journal_id
-                 WHERE move.state = 'posted'
-                   AND move.name != '/'
-                   AND move.partner_id IS NOT NULL
-                 GROUP BY move.partner_id, move.journal_id, move.company_id,
-                          move.name, partner.name, journal.name
-                HAVING COUNT(*) > 1
-                 ORDER BY COUNT(*) DESC
-                 LIMIT 20
-                """
-            )
-            collisions = self.env.cr.fetchall()
-            if collisions:
-                detail = "\n".join(
-                    f"- {partner} / {journal} / {name}: {count} entries"
-                    for partner, journal, name, count in collisions
-                )
-                if len(collisions) == 20:
-                    detail += "\n- ... (showing the first 20, there may be more)"
-                raise UserError(
-                    self.env._(
-                        "l10n_ve_accountant: cannot create the "
-                        "account_move_unique_name_ve index because there are "
-                        "accounting entries with the same number for the same "
-                        "partner/journal/company. No data was changed -- review "
-                        "these cases manually before reinstalling the module:\n%s",
-                        detail,
-                    )
-                )
-            drop_index(self.env.cr, "account_move_unique_name", self._table)
-            # account_move_unique_name_ve mirrors account_move_unique_name; it only marks, for the
-            # index_exists check above, that the wider index is already in place.
-            self.env.cr.execute(
-                """
-                CREATE UNIQUE INDEX account_move_unique_name
-                    ON account_move(
-                        name, partner_id, company_id, journal_id
-                    )
-                WHERE state = 'posted' AND name != '/';
-                CREATE UNIQUE INDEX account_move_unique_name_ve
-                    ON account_move(
-                        name, partner_id, company_id, journal_id
-                    )
-                WHERE state = 'posted' AND name != '/';
-                """
-            )
+        cr = self.env.cr
+        definition, _comment = index_definition(cr, "account_move_unique_name")
+        if not definition or "partner_id" not in definition:
+            self._check_unique_name_duplicates()
+            # An index of that name without comment would be kept by the ORM as it is (it is
+            # how support tweaks indexes): drop it so super() creates the wider one.
+            drop_index(cr, "account_move_unique_name", self._table)
+        # Marker of the previous implementation, which created the wider index by hand: the
+        # declared _unique_name replaces it.
+        drop_index(cr, "account_move_unique_name_ve", self._table)
         return super()._auto_init()
+
+    def _check_unique_name_duplicates(self):
+        """Raise if posted entries share number, partner, journal and company (first 20 cases)."""
+        self.env.cr.execute(
+            """
+            SELECT partner.name, COALESCE(journal.name->>'en_US', journal.name::text),
+                   move.name, COUNT(*)
+              FROM account_move move
+              JOIN res_partner partner ON partner.id = move.partner_id
+              JOIN account_journal journal ON journal.id = move.journal_id
+             WHERE move.state = 'posted'
+               AND move.name != '/'
+               AND move.partner_id IS NOT NULL
+             GROUP BY move.partner_id, move.journal_id, move.company_id,
+                      move.name, partner.name, journal.name
+            HAVING COUNT(*) > 1
+             ORDER BY COUNT(*) DESC
+             LIMIT 20
+            """
+        )
+        collisions = self.env.cr.fetchall()
+        if not collisions:
+            return
+        cases = [
+            self.env._(
+                "- %(partner)s / %(journal)s / %(name)s: %(count)s entries",
+                partner=partner,
+                journal=journal,
+                name=name,
+                count=count,
+            )
+            for partner, journal, name, count in collisions
+        ]
+        if len(collisions) == 20:
+            cases.append(self.env._("- ... (showing the first 20, there may be more)"))
+        raise UserError(
+            self.env._(
+                "l10n_ve_accountant: cannot create the unique index on the number of the "
+                "accounting entries because there are posted entries with the same number for "
+                "the same partner/journal/company. No data was changed -- review these cases "
+                "manually before installing or updating the module:\n%(cases)s",
+                cases="\n".join(cases),
+            )
+        )
 
     def default_alternate_currency(self):
         """
