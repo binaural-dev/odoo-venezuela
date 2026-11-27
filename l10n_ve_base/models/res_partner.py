@@ -56,4 +56,11 @@ class ResPartner(models.Model):
         return bool(self.env.cr.fetchone())
 
     def _keep_localization_city_foreign_key(self):
+        # ``pool._foreign_keys`` is private API of the registry of Odoo 20: the keys queued by
+        # ``_auto_init`` and created in ``post_init``. There is no public way to leave one out.
+        # Remove this method, ``_city_key_points_to_localization`` and the override of
+        # ``_auto_init`` when no database keeps the table ``res_country_city``: when every database
+        # of 20 (clients, staging and Odoo.sh) has updated ``l10n_ve_location`` to 20.0.1.0.1 or
+        # later, whose pre-migrate drops it. Until then this never runs on a database that already
+        # moved its cities, because ``_city_key_points_to_localization`` is False there.
         self.pool._foreign_keys.pop((self._table, "city_id"), None)

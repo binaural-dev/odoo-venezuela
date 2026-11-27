@@ -48,7 +48,7 @@ también queda en 0 sin código adicional.
 ## Capabilities
 
 ### New Capabilities
-- `revaluation-entry-alternate-zero`: el asiento de ajuste de monedas no
+- `l10n_ve_accountant` (requisito nuevo): el asiento de ajuste de monedas no
   realizadas y su reversión ajustan solo la moneda de la compañía; todas sus
   líneas quedan con 0 en la moneda alterna.
 

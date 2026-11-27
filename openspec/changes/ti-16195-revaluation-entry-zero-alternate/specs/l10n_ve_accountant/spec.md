@@ -1,4 +1,4 @@
-# Spec delta: revaluation-entry-alternate-zero
+# Spec delta: l10n_ve_accountant (ticket 16195)
 
 ## ADDED Requirements
 
