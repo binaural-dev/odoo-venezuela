@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- noupdate: runs only when the module is installed, so a value an administrator sets later
+         is never overwritten by an update. Instances that already had the module get the limit
+         once from migrations/19.0.1.32.0. -->
+    <data noupdate="1">
+        <function model="pos.config" name="_l10n_ve_set_default_pos_partner_load_limit"/>
+    </data>
+</odoo>

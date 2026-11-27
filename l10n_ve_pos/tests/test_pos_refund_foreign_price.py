@@ -8,6 +8,10 @@ the credit note through ``pos.order._get_invoice_lines_values`` (which copies
 ``pos.order.line.foreign_price`` onto the accounting line), leaving the product
 lines at 0,00 in the alternate currency and the whole NC unbalanced in USD.
 
+Since #16676 the server also completes any sale line saved without
+``foreign_price`` (``pos_sale`` settlement), and a refund whose original is
+also at 0 is computed at the original sale's PdV rate.
+
 These tests cover the fix: ``pos.order.line.create`` backfills ``foreign_price``
 on a refund line from the line being refunded (``refunded_orderline_id``), so the
 credit note reverses the SAME frozen USD unit price as the original sale (the
@@ -106,21 +110,30 @@ class TestPosRefundForeignPrice(TestPosSessionAccountingBase):
 
         self.assertEqual(refund_line.foreign_price, 2.0)
 
-    def test_non_refund_line_foreign_price_untouched(self):
+    def test_sale_line_without_foreign_price_is_filled(self):
         session = self._new_session()
 
-        # A regular sale line (no refunded_orderline_id) is never touched by the
-        # backfill: a legitimately-zero foreign price stays zero.
+        # Una línea de venta sin alterno se completa con precio x tasa del PdV
+        # de la orden (#16676); antes quedaba en 0.
         sale = self._sale_line(self._order_header(session), foreign_price=0.0)
 
-        self.assertEqual(sale.foreign_price, 0.0)
+        self.assertAlmostEqual(sale.foreign_price, sale.price_unit * 36.5)
 
-    def test_refund_line_no_backfill_when_original_has_no_foreign_price(self):
+    def test_refund_line_computed_at_original_rate_when_original_has_no_foreign_price(self):
         session = self._new_session()
         sale = self._sale_line(self._order_header(session), foreign_price=0.0)
+        # Original dañada (anterior al fix): 0 forzado por SQL.
+        self.env.flush_all()
+        self.env.cr.execute(
+            "UPDATE pos_order_line SET foreign_price = 0 WHERE id = %s", (sale.id,)
+        )
+        sale.invalidate_recordset(["foreign_price"])
 
+        # El reembolso se hace a otra tasa: se calcula a la de la venta original.
         refund_line = self._refund_line(
-            self._order_header(session, name="OL/REF-NC"), sale, foreign_price=0.0
+            self._order_header(session, rate=40.0, name="OL/REF-NC"),
+            sale,
+            foreign_price=0.0,
         )
 
-        self.assertEqual(refund_line.foreign_price, 0.0)
+        self.assertAlmostEqual(refund_line.foreign_price, refund_line.price_unit * 36.5)

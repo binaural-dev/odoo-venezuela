@@ -66,6 +66,42 @@ class AccountPayment(models.Model):
         compute="_compute_retention_foreign_amount", store=True, copy=False
     )
 
+    def _get_retention_foreign_rate_date(self):
+        """Fecha de tasa con la que se valora en moneda alterna el asiento de
+        una retencion: la fecha de la factura retenida.
+
+        Es la MISMA regla que usa cada linea del asiento
+        (`account.move.line._get_foreign_rate_date`), que delega aqui para
+        que el importe alterno del pago y el del asiento no puedan divergir.
+        Devuelve False si no aplica (no es retencion, o sus lineas no
+        pertenecen a una unica factura con fecha); en ese caso quien llama
+        usa el criterio por defecto.
+        """
+        self.ensure_one()
+        if not self.is_retention:
+            return False
+        invoice = self.retention_line_ids.mapped("move_id")
+        if len(invoice) != 1:
+            return False
+        return invoice.invoice_date or invoice.date or False
+
+    @api.depends("amount", "currency_id", "date", "is_retention", "retention_line_ids.move_id")
+    def _compute_foreign_amount(self):
+        """El importe alterno de una retencion se convierte con la fecha de
+        tasa de su asiento (la de la factura retenida), no con `date` (la
+        fecha contable de la retencion): con tasas distintas entre ambas
+        fechas el campo quedaba distinto al monto alterno del asiento."""
+        super()._compute_foreign_amount()
+        for payment in self.filtered("is_retention"):
+            rate_date = payment._get_retention_foreign_rate_date()
+            if rate_date and payment.currency_id != payment.foreign_currency_id:
+                payment.foreign_amount = payment.currency_id._convert(
+                    payment.amount,
+                    payment.foreign_currency_id,
+                    payment.company_id,
+                    rate_date,
+                )
+
     def _synchronize_to_moves(self, changed_fields):
         """
         Override the original method to change the name of the move based on the retention type

@@ -14,6 +14,8 @@ Este añade los siguientes campos:
 * Mostrar solamente los productos disponibles: Eliminar automáticamente los productos sin disponibilidad del POS
 * Cantidad en 0 : No permitir ventas si no hay disponibilidad suficiente
 * Permitir crear productos: Mostrar u ocultar la opción de crear productos desde el PdV (apagado por defecto)
+* Clientes cargados en el PoS: el parámetro del sistema point_of_sale.limited_customer_count se lleva a 5000
+  (Odoo trae 100) al instalar o al actualizar a 19.0.1.32.0, sin bajar un valor mayor; después no se vuelve a tocar
 * (res.group) permitir descuentos
 * (res.group) Grupo para administrar cantidades en POS
 * (res.group) Grupo para Cambiar el precio en POS

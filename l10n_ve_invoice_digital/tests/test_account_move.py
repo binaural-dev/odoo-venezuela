@@ -7,11 +7,14 @@ from unittest.mock import patch, MagicMock
 from datetime import datetime, timedelta
 import logging
 import requests
+from odoo.addons.l10n_ve_invoice.tests.common import ForeignRateTransactionCase
+
+from .common import make_compute_rate_tolerant, seed_today_vef_rate
 
 _logger = logging.getLogger(__name__)
 
 @tagged("post_install", "-at_install", "l10n_ve_invoice_digital", "invoice_digital") 
-class TestAccountMoveApiCalls(TransactionCase):
+class TestAccountMoveApiCalls(ForeignRateTransactionCase):
 
     def setUp(self):
         super().setUp()
@@ -28,9 +31,12 @@ class TestAccountMoveApiCalls(TransactionCase):
 
         # En una base sin datos de demo el VEF viene inactivo, y los tests que
         # fuerzan la compañia a VEF (_force_company_currency) no pueden validar
-        # la factura: action_post rechaza las monedas inactivas. No se carga
-        # ninguna tasa a proposito -- los tests de este archivo fijan el rate a
-        # mano (manually_set_rate).
+        # la factura: action_post rechaza las monedas inactivas. Los tests de
+        # este archivo fijan el rate a mano (manually_set_rate) para no
+        # depender del valor de la tasa, pero account_move.create() de
+        # l10n_ve_accountant igual exige que exista una fila en
+        # res.currency.rate para hoy (ver seed_today_vef_rate) -- el valor no
+        # importa, solo que la fila exista.
         self.currency_vef.active = True
 
         self.company.write(
@@ -41,6 +47,8 @@ class TestAccountMoveApiCalls(TransactionCase):
                 "country_id": self.env.ref('base.ve').id,
             }
         )
+        seed_today_vef_rate(self.env, self.company)
+        make_compute_rate_tolerant(self, self.env)
         self.env.user.company_id = self.company.id
 
         # ───────────────────────────────────────────────────── helpers

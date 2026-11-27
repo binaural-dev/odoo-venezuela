@@ -9,6 +9,19 @@ class AccountMove(models.Model):
     convert_currency_from_sale_order = fields.Boolean(
         related="company_id.convert_currency_from_sale_order",
     )
+    use_invoice_rate_from_sale_order = fields.Boolean(
+        related="company_id.use_invoice_rate_from_sale_order",
+    )
+
+    def _is_rate_date_locked(self):
+        """Factura de cliente de una sola orden con "usar la tasa de la orden en la factura"
+        activo: la Rate Date queda en la de la orden y no sigue a la fecha de la factura."""
+        self.ensure_one()
+        return (
+            self.move_type == "out_invoice"
+            and self.company_id.use_invoice_rate_from_sale_order
+            and self.sale_order_count == 1
+        ) or super()._is_rate_date_locked()
 
     def _get_sale_conversion_pricelist_rule(self, line):
         """Regla de tarifa que pisaria la conversion de esta linea, si la hay.

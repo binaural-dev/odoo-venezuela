@@ -392,6 +392,14 @@ class TestKioskInvoiceForeignDebitCredit(TransactionCase):
         it must match ``config._convert(price_unit, ...)`` exactly, the
         formula this module's ``recompute_prices()`` override uses."""
         order = self._create_kiosk_order(qty=1.0, price_unit=1.0)
+        # Desde #16676 el servidor completa el alterno al crear la línea:
+        # se fuerza el 0 por SQL para seguir probando ``recompute_prices``.
+        self.env.flush_all()
+        self.env.cr.execute(
+            "UPDATE pos_order_line SET foreign_price = 0 WHERE id = %s",
+            (order.lines.id,),
+        )
+        order.lines.invalidate_recordset(["foreign_price"])
         self.assertEqual(
             order.lines.foreign_price,
             0.0,
@@ -414,6 +422,18 @@ class TestKioskInvoiceForeignDebitCredit(TransactionCase):
             "test setup must exercise a real, non-zero conversion",
         )
         self.assertEqual(order.lines.foreign_price, expected_foreign_price)
+
+    def test_kiosk_recompute_prices_with_foreign_price_rounded_to_zero(self):
+        """Un alterno que redondea a 0 es válido: ``recompute_prices`` escribe
+        0 en ``foreign_price`` y el servidor no debe recursar (#16676)."""
+        self.env.ref("l10n_ve_accountant.alternative_price_product").digits = 2
+        self._set_bs_per_usd_rate(0.001)
+        self.product.lst_price = 1.0
+        order = self._create_kiosk_order(qty=1.0, price_unit=1.0)
+
+        order.recompute_prices()
+
+        self.assertEqual(order.lines.foreign_price, 0.0)
 
     def test_kiosk_invoice_product_line_foreign_credit_matches_conversion(self):
         """The invoice generated from a Kiosk order must carry the product
@@ -533,11 +553,20 @@ class TestKioskInvoiceForeignDebitCredit(TransactionCase):
     # against — proving the whole Kiosk chain (recompute → invoice line
     # copy → l10n_ve_accountant's tax-engine-driven ``foreign_subtotal``)
     # never drifts from what ``_convert`` says, at ANY of these rates.
+    #
+    # Sin la tasa de hiperinflación (7654321.123456): esta compañía está en
+    # USD, así que la tasa del asiento es USD por Bs (1/7654321 ≈ 1.3e-7) y
+    # con los 6 decimales de "Tasa" queda en 0. Desde el ticket 16384
+    # (``b01efe8f5``, ``account.move._post`` en ``l10n_ve_accountant``) un
+    # asiento sin tasa no se publica, y el pago de la factura falla antes de
+    # llegar a lo que mide este test. Es el mismo piso que documenta
+    # ``FOREIGN_RATE_FIELD_FLOOR`` en ``l10n_ve_pos/tests/
+    # test_pos_config_convert_precision.py``, que sigue cubriendo la
+    # conversión a esa escala sin publicar asientos.
     BS_PER_USD_RATES = [
         0.99999949,  # near 1:1
         36.567891234,  # realistic BCV-shaped rate, many decimals
         189.34567891234,  # realistic, bigger
-        7654321.123456,  # hyperinflation-scale
     ]
     QUANTITIES = [1.0, 3.0, 7.0]
 

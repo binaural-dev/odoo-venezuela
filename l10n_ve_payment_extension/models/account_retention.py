@@ -196,7 +196,11 @@ class AccountRetention(models.Model):
         )
     )
     actual_invoice_ids = fields.Many2many("account.move", string="Actual Invoices", compute="_compute_actual_invoice_ids")
-    available_invoice_ids = fields.Many2many("account.move", string="Available Invoices")
+    available_invoice_ids = fields.Many2many(
+        "account.move",
+        string="Available Invoices",
+        compute="_compute_available_invoice_ids",
+    )
 
     date_emision = fields.Date('Emision Date', default=False)
 
@@ -258,6 +262,63 @@ class AccountRetention(models.Model):
                 retention.foreign_total_retention_amount += line.foreign_retention_amount
 
 
+    @api.depends(
+        "state", "partner_id", "type", "type_retention", "company_id",
+        "is_third_party_retention", "retention_line_ids.move_id",
+    )
+    def _compute_available_invoice_ids(self):
+        """
+        Recomputed every time the form is read, so the selector always offers
+        the current state of the invoices:
+        - third party: the invoices of its own lines;
+        - IVA: the invoices of the partner that can still be retained plus those
+          of its own lines;
+        - ISLR / municipal: not used (they filter with `allowed_lines_move_ids`).
+        """
+        for retention in self:
+            if retention.is_third_party_retention:
+                retention.available_invoice_ids = retention.retention_line_ids.move_id
+            elif retention.type_retention == "iva" and retention.state == "draft" and retention.partner_id:
+                # The invoices already in its own lines always stay valid for the
+                # selector (their IVA voucher number is set once the retention is
+                # created from the invoice, which would otherwise exclude them).
+                retention.available_invoice_ids = (
+                    retention._get_iva_available_invoices() | retention.retention_line_ids.move_id
+                )
+            else:
+                retention.available_invoice_ids = False
+
+    def _get_iva_available_invoices(self, include_own_lines=True):
+        """
+        Posted invoices of the partner with IVA left to retain: no IVA voucher,
+        pending balance and no draft/emitted IVA retention line. The lines of
+        this same retention do not take an invoice away from it unless
+        `include_own_lines` is False.
+        """
+        self.ensure_one()
+        if self.type in ("in_invoice", "in_refund", "in_debit"):
+            move_types = ("in_refund", "in_invoice")
+        else:
+            move_types = ("out_refund", "out_invoice")
+        search_domain = [
+            ("iva_voucher_number", "=", False),
+            ("company_id", "=", self.company_id.id),
+            ("partner_id", "=", self.partner_id.id),
+            ("state", "=", "posted"),
+            ("move_type", "in", move_types),
+            ("amount_residual", ">", 0),
+        ]
+        own = (self | self._origin) if include_own_lines else self.browse()
+        return search_invoices_with_taxes(
+            self.env["account.move"], search_domain
+        ).filtered(
+            lambda i: not any(
+                i.retention_iva_line_ids.filtered(
+                    lambda l: l.state in ("draft", "emitted") and l.retention_id not in own
+                )
+            )
+        )
+
     @api.onchange("partner_id")
     def onchange_partner_id(self):
         """
@@ -288,23 +349,7 @@ class AccountRetention(models.Model):
         # calendar day hasn't rolled over yet (e.g. Caracas, UTC-4, from
         # 20:00 local onward), which would falsely reject this same value.
         self.date_accounting = fields.Date.context_today(self)
-        search_domain = [
-            ('iva_voucher_number', '=', False),
-            ("company_id", "=", self.company_id.id),
-            ("partner_id", "=", self.partner_id.id),
-            ("state", "=", "posted"),
-            ("move_type", "in", ("in_refund", "in_invoice")),
-            ("amount_residual", ">", 0),
-        ]
-        invoices_with_taxes = search_invoices_with_taxes(
-            self.env["account.move"], search_domain
-        ).filtered(
-            lambda i: not any(
-                i.retention_iva_line_ids.filtered(
-                    lambda l: l.state in ("draft", "emitted")
-                )
-            )
-        )
+        invoices_with_taxes = self._get_iva_available_invoices(include_own_lines=False)
         if not any(invoices_with_taxes):
             raise UserError(
                 _("There are no invoices with taxes to be retained for the supplier.")
@@ -316,7 +361,6 @@ class AccountRetention(models.Model):
         for line in lines:
             lines_per_invoice_counter[str(line[2]["move_id"])] += 1
 
-        self.available_invoice_ids = invoices_with_taxes.ids
         return {
             "value": {
                 "retention_line_ids": lines,
@@ -328,23 +372,7 @@ class AccountRetention(models.Model):
 
     def _load_retention_lines_for_iva_customer_retention(self):
         self.ensure_one()
-        search_domain = [
-            ('iva_voucher_number', '=', False),
-            ("company_id", "=", self.company_id.id),
-            ("partner_id", "=", self.partner_id.id),
-            ("state", "=", "posted"),
-            ("move_type", "in", ("out_refund", "out_invoice")),
-            ("amount_residual", ">", 0),
-        ]
-        invoices_with_taxes = search_invoices_with_taxes(
-            self.env["account.move"], search_domain
-        ).filtered(
-            lambda i: not any(
-                i.retention_iva_line_ids.filtered(
-                    lambda l: l.state in ("draft", "emitted")
-                )
-            )
-        )
+        invoices_with_taxes = self._get_iva_available_invoices(include_own_lines=False)
         if not any(invoices_with_taxes):
             raise UserError(
                 _("There are no invoices with taxes to be retained for the customer.")
@@ -356,7 +384,6 @@ class AccountRetention(models.Model):
         for line in lines:
             lines_per_invoice_counter[str(line[2]["move_id"])] += 1
 
-        self.available_invoice_ids = invoices_with_taxes.ids
         return {
             "value": {
                 "retention_line_ids": lines,
@@ -501,6 +528,7 @@ class AccountRetention(models.Model):
 
         for retention in self:
             try:
+                retention._check_iva_lines_have_aliquot()
                 retention._check_duplicate_invoices_all_states()
             except UserError as e:
                 if is_automated:
@@ -517,7 +545,11 @@ class AccountRetention(models.Model):
 
             for move, retention_amount in retention_amounts_by_move.items():
                 invoice_total = abs(move.amount_residual_signed)
-                if invoice_total < retention_amount:
+                # An excess that is only currency rounding is not a real excess.
+                if (
+                    invoice_total < retention_amount
+                    and move._retention_excess_within_currency_precision(retention_amount) is None
+                ):
                     error_msg = _(
                         "The retention amount (%s) cannot be greater than the invoice total signed amount (%s) for invoice %s."
                     ) % (retention_amount, invoice_total, move.name)
@@ -936,7 +968,13 @@ class AccountRetention(models.Model):
         ).report_action(self, config=False)
 
     def _set_sequence(self):
-        for retention in self.filtered(lambda r: not r.number):
+        # Customer retentions (out_*) are numbered by the customer, who is the
+        # withholding agent: taking a number from our sequence would leave
+        # gaps in the fiscal correlative of the vouchers we issue to suppliers.
+        out_types = ("out_invoice", "out_refund", "out_debit", "out_contingence")
+        for retention in self.filtered(
+            lambda r: not r.number and r.type not in out_types
+        ):
             # Dispatch through get_sequence_<type>_retention() rather than
             # calling get_sequence_retention() directly: modules like
             # binaural_subsidiary_payment_extension override
@@ -1175,6 +1213,14 @@ class AccountRetention(models.Model):
             ).js_assign_outstanding_line(lines[0].id)
 
     @api.model
+    def compute_iva_retention_amount(self, tax_amount, withholding_percentage):
+        """Single computation of the IVA retention amount (company currency).
+
+        Used by line loading, retention lines and portals (own percentage).
+        """
+        return abs(tax_amount * (withholding_percentage / 100))
+
+    @api.model
     def compute_retention_lines_data(self, invoice_id, payment=None):
         """
         Computes the retention lines data for the given invoice.
@@ -1197,7 +1243,7 @@ class AccountRetention(models.Model):
             lambda l: l.tax_ids and l.tax_ids[0].amount > 0
         ).mapped("tax_ids")
         if not any(tax_ids):
-            raise UserError(_("The invoice %s has no tax."), invoice_id.number)
+            raise UserError(_("The invoice %s has no tax.") % invoice_id.display_name)
 
         withholding_amount = invoice_id.partner_id.withholding_type_id.value
         lines_data = []
@@ -1207,7 +1253,9 @@ class AccountRetention(models.Model):
             if not taxes:
                 continue
             tax = taxes[0]
-            retention_amount = abs(tax_group["tax_amount"] * (withholding_amount / 100))
+            retention_amount = self.compute_iva_retention_amount(
+                tax_group["tax_amount"], withholding_amount
+            )
             line_data = {
                 "name": _("Iva Retention"),
                 "invoice_type": invoice_id.move_type,
@@ -1551,6 +1599,49 @@ class AccountRetention(models.Model):
         if not is_refund and has_subsidiary and self.env.company.subsidiary:
             res["account_analytic_id"] = move.account_analytic_id.id
 
+        # Declare a currency-rounding difference as a write-off in the payment
+        # itself (native `write_off_line_vals`), so reconciliation closes the invoice.
+        retained_company_currency = sum(abs(a) for a in lines.mapped("retention_amount"))
+        diff = move._retention_difference_within_currency_precision(retained_company_currency)
+        if diff is not None:
+            company_currency = self.company_currency_id
+            # diff = retained - due; counterpart = -liquidity - writeoff, so the
+            # sign flips for inbound and mirrors for outbound.
+            signed_writeoff = -diff if p_type == "inbound" else diff
+            # Credit is a gain, debit is a loss.
+            if signed_writeoff < 0:
+                exchange_account = move.company_id.income_currency_exchange_account_id
+                account_label = _("Exchange Gain Account")
+            else:
+                exchange_account = move.company_id.expense_currency_exchange_account_id
+                account_label = _("Exchange Loss Account")
+            if exchange_account:
+                res["write_off_line_vals"] = [{
+                    "name": _("Currency precision rounding"),
+                    "account_id": exchange_account.id,
+                    "partner_id": move.partner_id.id,
+                    "currency_id": company_currency.id,
+                    "amount_currency": signed_writeoff,
+                    "balance": signed_writeoff,
+                }]
+            else:
+                # No account to record the write-off: fail instead of leaving a
+                # silent residual (which account is needed depends on the sign).
+                raise UserError(
+                    _(
+                        "The company must have an '%(account)s' configured to "
+                        "issue this retention: invoice %(invoice)s has a "
+                        "currency-precision difference of %(amount)s %(currency)s "
+                        "that needs to be recorded there."
+                    )
+                    % {
+                        "account": account_label,
+                        "invoice": move.display_name,
+                        "amount": abs(diff),
+                        "currency": company_currency.name,
+                    }
+                )
+
         # l10n_ve_igtf's js_assign_outstanding_line picks conversion_date over
         # payment.date for the advance-crossing move's date/rate unless this is
         # set, which would misprice the crossed amount against the retention's
@@ -1559,6 +1650,24 @@ class AccountRetention(models.Model):
             res["keep_alter_value_vef"] = True
 
         return res
+
+    def _check_iva_lines_have_aliquot(self):
+        """
+        There is no IVA retention at a 0% aliquot: a line like that has no
+        tax to retain and would hide its invoice from the duplicate checks,
+        which compare by aliquot. Reject it instead of ignoring it.
+        """
+        for retention in self.filtered(lambda r: r.type_retention == "iva"):
+            zero_lines = retention.retention_line_ids.filtered(
+                lambda l: float_is_zero(l.aliquot, precision_digits=2)
+            )
+            if zero_lines:
+                raise UserError(_(
+                    "This retention cannot be posted.\n\n"
+                    "An IVA retention line cannot have a 0%% aliquot (invoice(s): %(invoices)s).\n\n"
+                    "Remove those lines or set the aliquot of the invoice tax.",
+                    invoices=", ".join(zero_lines.move_id.mapped("display_name")),
+                ))
 
     def _check_duplicate_invoices_all_states(self):
         """

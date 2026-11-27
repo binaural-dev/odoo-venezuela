@@ -188,13 +188,13 @@ class TestRetentionResync(RetentionTestCommon):
             "company_id": self.company.id, "partner_id": self.partner_pnr_75.id,
             "date": fields.Date.today(), "date_accounting": fields.Date.today(),
             "retention_line_ids": [
-                Command.create({
+                Command.create({"aliquot": 16.0,
                     "move_id": invoice_1.id, "name": "IVA Line 1",
                     "invoice_total": 232.0, "invoice_amount": 200.0,
                     "retention_amount": 24.0, "foreign_invoice_amount": 200.0,
                     "foreign_retention_amount": 24.0, "foreign_currency_rate": 1.0,
                 }),
-                Command.create({
+                Command.create({"aliquot": 16.0,
                     "move_id": invoice_2.id, "name": "IVA Line 2",
                     "invoice_total": 174.0, "invoice_amount": 150.0,
                     "retention_amount": 18.0, "foreign_invoice_amount": 150.0,

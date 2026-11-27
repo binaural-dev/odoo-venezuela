@@ -219,10 +219,40 @@ class AccountMoveInh(models.Model):
             "is_debit_note": self.is_debit_journal,
         }
 
+    def _mf_check_pos_print_verification(self):
+        """Rechaza imprimir el documento de un pedido del PdV "por verificar".
+
+        El PdV marca así el pedido cuando no supo si la máquina emitió su
+        documento: si lo emitió, imprimirlo aquí lo duplica. Se resuelve en
+        el PdV antes de su siguiente impresión o con el asistente del pedido.
+        Este módulo no depende de l10n_ve_pos_mf, por eso se mira si el campo
+        existe. Tarea 85447.
+        """
+        self.ensure_one()
+        if "pos.order" not in self.env or (
+            "mf_print_verification" not in self.env["pos.order"]._fields
+        ):
+            return
+        # sudo: el contador que imprime la factura puede no tener acceso a los
+        # pedidos del PdV; solo se lee la marca para negarle la impresión.
+        orders = self.env["pos.order"].sudo().search([("account_move", "=", self.id)])
+        pending = orders.filtered("mf_print_verification")[:1]
+        if pending:
+            raise ValidationError(
+                _(
+                    "This document comes from the PoS order %(order)s, and it is not known "
+                    "whether the fiscal printer printed it. It cannot be printed until it is "
+                    "verified: the PoS verifies it before its next print, or a PoS manager "
+                    "resolves it from the order.",
+                    order=pending.display_name,
+                )
+            )
+
     def check_print_out_invoice(self):
         """Valida la factura y construye el payload de impresión fiscal."""
         if self.mf_invoice_number:
             raise ValidationError(_("The invoice has already been printed"))
+        self._mf_check_pos_print_verification()
         if self.state in ["draft", "cancel"]:
             raise ValidationError(_("Cannot print an invoice without validation"))
         if self.invoice_date != fields.Date.context_today(self):
@@ -268,6 +298,7 @@ class AccountMoveInh(models.Model):
         """Valida la NC y construye el payload de impresión fiscal."""
         if self.mf_invoice_number:
             raise ValidationError(_("The invoice has already been printed"))
+        self._mf_check_pos_print_verification()
         if self.invoice_date != fields.Date.context_today(self):
             raise ValidationError(_("The credit note must be made on the same day"))
         if self.state in ["draft", "cancel"]:

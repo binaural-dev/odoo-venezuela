@@ -5,25 +5,38 @@
         <field name="model">account.move</field>
         <field name="inherit_id" ref="account.view_move_form" />
         <field name="arch" type="xml">
-            <xpath expr="//button[@name='button_draft']" position="attributes">
-                <attribute name="invisible">is_donation and state != 'draft' or move_type != 'entry'</attribute>
-            </xpath>
+            <!-- The standard condition of Odoo is kept (only posted entries
+                 that are not reversed yet) and only the donation entries are
+                 hidden to who is not a Donation Manager. -->
             <xpath expr="//button[@name='%(account.action_view_account_move_reversal)d']" position="attributes">
-                <attribute name="invisible">(is_donation and not can_reverse_donation_move)and state != 'draft' or move_type != 'entry'</attribute>
+                <attribute name="invisible">move_type != 'entry' or state != 'posted' or payment_state == 'reversed' or (is_donation and not can_reverse_donation_move)</attribute>
             </xpath>
             <button name="button_draft" position="attributes">
-                <attribute name="invisible">move_type in ['out_invoice', 'out_refund'] or state == 'draft' or is_donation</attribute>
+                <attribute name="invisible">not show_reset_to_draft_button or move_type in ['out_invoice', 'out_refund'] or state == 'draft' or is_donation</attribute>
             </button>
             <xpath expr="//form//header" position="inside">
                 <button
-                    name="print_donation_certificate"
-                    string="Generar Certificado de Donación"
+                    name="print_donation_receipt"
+                    string="Generate Donation Receipt"
                     type="object"
                     class="btn-primary"
-                    invisible="not is_donation or (state != 'posted' or move_type != 'entry')"/>
+                    invisible="not is_donation or (state != 'posted' or move_type != 'entry') or is_stock_valuation_entry or is_incoming_donation or reversed_entry_id"/>
+                <button
+                    name="print_donation_certificate"
+                    string="Generate Donation Certificate"
+                    type="object"
+                    class="btn-primary"
+                    invisible="not is_donation or (state != 'posted' or move_type != 'entry') or is_stock_valuation_entry or not is_incoming_donation or reversed_entry_id"/>
             </xpath>
             <xpath expr="//field[@name='ref']" position="after">
-                <field name="is_donation" readonly="state != 'draft' or move_type != 'entry'" invisible="move_type != 'entry' or not is_donation"/>
+                <field name="can_reverse_donation_move" invisible="1"/>
+                <field name="is_stock_valuation_entry" invisible="1"/>
+                <field name="is_incoming_donation" invisible="1"/>
+                <field name="partner_id" string="Beneficiary"
+                       invisible="not is_donation or move_type != 'entry' or is_incoming_donation"
+                       readonly="state != 'draft'"
+                       options="{'no_quick_create': True}"/>
+                <field name="is_donation" readonly="state != 'draft' or move_type != 'entry'"/>
             </xpath>
         </field>
     </record>
