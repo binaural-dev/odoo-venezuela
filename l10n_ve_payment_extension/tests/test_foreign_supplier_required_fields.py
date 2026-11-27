@@ -93,7 +93,6 @@ class TestForeignSupplierRequiredFields(TransactionCase):
         context = {"default_supplier_rank": 1} if supplier else {}
         form = Form(self.env["res.partner"].with_context(**context))
         form.name = "Foreign Supplier Test %s" % number
-        form.prefix_vat = "J"
         form.vat = "%09d" % (700000000 + number)
         form.street = "Street %s" % number
         form.country_id = country
