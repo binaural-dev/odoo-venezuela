@@ -11,6 +11,8 @@ through the Odoo 19 read-back flow (``_load_pos_data_fields`` +
 from odoo import Command, fields
 from odoo.tests import TransactionCase, tagged
 
+from .test_pos_session_accounting_common import mark_legacy_foreign_currency
+
 
 @tagged("post_install", "-at_install", "l10n_ve_pos", "slice_b")
 class TestPosSerialization(TransactionCase):
@@ -90,7 +92,7 @@ class TestPosSerialization(TransactionCase):
                 "journal_id": cls.cash_journal.id,
             }
         )
-        cls.payment_method.write({"is_foreign_currency": True})
+        mark_legacy_foreign_currency(cls.payment_method)
 
         # --- Product + tax ---
         cls.tax = cls.env["account.tax"].create(

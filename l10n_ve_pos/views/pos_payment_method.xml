@@ -11,8 +11,10 @@
             </xpath>
 
             <xpath expr="//field[@name='receivable_account_id']" position="after">
-                <field name="cross_account_journal" invisible="not is_foreign_currency and not tender_currency_id" />
-                <field name="cross_journal" invisible="not is_foreign_currency and not tender_currency_id" />
+                <field name="cross_account_journal" required="is_foreign_currency"
+                       invisible="not is_foreign_currency and not tender_currency_id"/>
+                <field name="cross_journal" required="is_foreign_currency"
+                       invisible="not is_foreign_currency and not tender_currency_id"/>
             </xpath>
         </field>
     </record>

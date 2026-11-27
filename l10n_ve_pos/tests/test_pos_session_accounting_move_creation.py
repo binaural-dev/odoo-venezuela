@@ -29,7 +29,7 @@ import unittest
 from odoo import fields
 from odoo.tests import tagged
 
-from .test_pos_session_accounting_common import TestPosSessionAccountingBase
+from .test_pos_session_accounting_common import TestPosSessionAccountingBase, mark_legacy_foreign_currency
 
 
 @tagged("post_install", "-at_install", "l10n_ve_pos", "slice_c2")
@@ -201,7 +201,7 @@ class TestPosSessionAccountingMoveCreation(TestPosSessionAccountingBase):
                 "company_id": self.company.id,
             }
         )
-        method_no_journal.write({"is_foreign_currency": True})
+        mark_legacy_foreign_currency(method_no_journal)
         self.config.write(
             {"payment_method_ids": [(4, method_no_journal.id)]}
         )
