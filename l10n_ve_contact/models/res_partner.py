@@ -44,7 +44,22 @@ class ResPartner(models.Model):
         return company_id
 
     def _default_prefix_vat(self):
+        """Default of the form: a new company (default_is_company, e.g. from the
+        Customers action) is J. On save the default is fixed by
+        _add_missing_default_values from the record itself."""
         return "J" if self.env.context.get("default_is_company") else "V"
+
+    @api.model
+    def _add_missing_default_values(self, values):
+        """The action context (default_is_company) also reaches the contacts
+        created from the form of a company, which are persons and have no prefix
+        field in their dialog. When no prefix is given, the default follows the
+        is_company of the record that is being created, not the context."""
+        prefix_given = "prefix_vat" in values
+        values = super()._add_missing_default_values(values)
+        if not prefix_given and "prefix_vat" in values:
+            values["prefix_vat"] = "J" if values.get("is_company") else "V"
+        return values
 
     prefix_vat = fields.Selection(
         [
@@ -66,20 +81,53 @@ class ResPartner(models.Model):
         string="Allowed Prefix VAT",
     )
 
+    def _is_own_company_partner(self):
+        """True if the partner is the one of a company of the database. Its
+        literal is free: a company can be a legal entity (J) or a sole
+        proprietorship of a person (V)."""
+        self.ensure_one()
+        company_partner_ids = self.env["res.company"].sudo().search([]).partner_id.ids
+        return self._origin.id in company_partner_ids
+
+    def _get_allowed_prefix_vat(self):
+        """A company is J (legal), G (government) or C (communal); a person is V
+        (Venezuelan), E (foreigner) or P (passport). A contact that belongs to a
+        company has its own fiscal data: it does not follow its parent."""
+        self.ensure_one()
+        if self._is_own_company_partner():
+            return ["V", "E", "J", "G", "P", "C"]
+        if self.is_company:
+            return ["J", "G", "C"]
+        return ["V", "E", "P"]
+
     @api.depends("is_company")
     def _compute_allowed_prefix_vat(self):
-        """A company is J (legal), G (government) or C (communal);
-        a person is V (Venezuelan), E (foreigner) or P (passport)."""
         for partner in self:
-            partner.allowed_prefix_vat = (
-                ["J", "G", "C"] if partner.is_company else ["V", "E", "P"]
-            )
+            partner.allowed_prefix_vat = partner._get_allowed_prefix_vat()
 
     @api.onchange("is_company")
     def _onchange_is_company_prefix_vat(self):
         for partner in self:
             if partner.prefix_vat not in partner.allowed_prefix_vat:
                 partner.prefix_vat = partner.allowed_prefix_vat[0]
+
+    @api.constrains("prefix_vat", "is_company", "vat")
+    def _check_prefix_vat_by_contact_type(self):
+        """Task 87829: the literal of the RIF must match the contact type. A
+        partner without number is not checked yet."""
+        for partner in self:
+            if not partner.vat or not partner.prefix_vat:
+                continue
+            allowed = partner._get_allowed_prefix_vat()
+            if partner.prefix_vat not in allowed:
+                raise ValidationError(
+                    _(
+                        "The prefix %(prefix)s is not valid for %(name)s: use %(allowed)s.",
+                        prefix=partner.prefix_vat,
+                        name=partner.display_name,
+                        allowed=", ".join(allowed),
+                    )
+                )
 
     @api.constrains("name")
     def _check_name_immutable(self):
