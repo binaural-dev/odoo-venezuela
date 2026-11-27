@@ -1,6 +1,8 @@
-from unittest.mock import patch
+from datetime import timedelta
 
 from odoo import fields
+
+from odoo.addons.l10n_ve_rate.tests.common import ensure_daily_rates
 
 
 def seed_today_vef_rate(env, company, rate=38.0):
@@ -34,26 +36,27 @@ def seed_today_vef_rate(env, company, rate=38.0):
         )
 
 
-def make_compute_rate_tolerant(test_case, env):
-    """Evita que ``res.currency.rate.compute_rate()`` reviente con "no rate
-    assigned" cuando un test usa una fecha/moneda para la que no sembro
-    ninguna tasa -- incluye fechas calculadas en runtime (ej.
-    ``fields.Date.today() - timedelta(days=3)``) que ningun seed fijo puede
-    prever, y monedas puntuales (GBP, etc.) no contempladas arriba. Si
-    existe una tasa real para esa fecha/moneda, se sigue devolviendo esa (no
-    tapa tests que dependen de un valor sembrado especifico); solo cuando no
-    encuentra nada se devuelve un valor dummy (1.0/1.0) en vez de levantar
-    ``UserError``."""
-    Rate = type(env["res.currency.rate"])
-    original = Rate.compute_rate
+def seed_daily_rates(env, company, rate=38.0, days_before=60, days_after=2):
+    """Da a VEF y a USD una tasa en ``company`` para cada dia de la ventana
+    que usan las pruebas, ademas de la de hoy (``seed_today_vef_rate``).
 
-    def _tolerant(self, foreign_currency_id, rate_date, raise_if_not_found=True):
-        if not foreign_currency_id:
-            return original(self, foreign_currency_id, rate_date, raise_if_not_found)
-        return original(
-            self, foreign_currency_id, rate_date, raise_if_not_found=False
-        ) or {"foreign_rate": 1.0, "foreign_inverse_rate": 1.0}
-
-    patcher = patch.object(Rate, "compute_rate", _tolerant)
-    patcher.start()
-    test_case.addCleanup(patcher.stop)
+    La localizacion busca la tasa solo en la fecha exacta del documento
+    (``res.currency.rate.compute_rate``) y, si no la hay, se detiene con «no
+    rate assigned», como en produccion. Las pruebas usan hoy (en UTC y en la
+    zona del usuario, que a partir de las 8 pm de Caracas son dias distintos)
+    y fechas hasta 46 dias atras, asi que cada uno de esos dias necesita su
+    tasa. ``ensure_daily_rates`` le da a cada dia sin tasa la que Odoo usaria
+    ese dia de todos modos (la ultima anterior, o la primera posterior), asi
+    que los montos que calcula el nucleo no cambian, y no toca los dias que ya
+    tienen una: se llama despues de crear las tasas propias de la prueba.
+    """
+    seed_today_vef_rate(env, company, rate=rate)
+    today = fields.Date.context_today(env.user)
+    for currency in (env.ref("base.VEF"), env.ref("base.USD")):
+        ensure_daily_rates(
+            env,
+            currency,
+            company=company,
+            date_from=today - timedelta(days=days_before),
+            date_to=today + timedelta(days=days_after),
+        )

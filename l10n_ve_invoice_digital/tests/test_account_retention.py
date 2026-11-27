@@ -6,7 +6,7 @@ from odoo.addons.l10n_ve_invoice_digital.services.tfhka_service_base import Tfhk
 from unittest.mock import patch, MagicMock
 import logging
 
-from .common import make_compute_rate_tolerant, seed_today_vef_rate
+from .common import seed_daily_rates
 
 _logger = logging.getLogger(__name__)
 
@@ -120,8 +120,7 @@ class TestAccumulatedRate(TransactionCase):
         # fechada *hoy* (ver seed_today_vef_rate): la de arriba es para que
         # las lineas de retencion no violen _constraint_amounts_in_zero, esta
         # es para que la creacion de la factura/retencion en si no reviente.
-        seed_today_vef_rate(self.env, self.company)
-        make_compute_rate_tolerant(self, self.env)
+        seed_daily_rates(self.env, self.company)
 
 
         iva_sequence = self.env["ir.sequence"].create({
