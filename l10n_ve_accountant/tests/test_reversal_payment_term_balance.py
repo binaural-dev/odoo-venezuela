@@ -315,37 +315,42 @@ class TestReversalPaymentTermBalance(TransactionCase):
                 )
                 self._assert_reversal_matches(invoice, credit_note)
 
-    def test_04_distribute_to_lines_ignores_non_rounding_amounts(self):
-        """Un monto muy superior a un ajuste de redondeo no se reparte."""
+    def test_04_oversized_term_remainder_is_not_distributed(self):
+        """Una cuota inflada (estado intermedio) no se reparte entre las cuotas."""
         for move_type in self.MOVE_TYPES:
             with self.subTest(move_type=move_type):
                 invoice = self._create_invoice(move_type, post=False)
                 pt_lines = self._pt_lines(invoice)
-                before = {line.id: line.balance for line in pt_lines}
                 self.assertEqual(len(pt_lines), 2)
+                first = pt_lines[0].with_context(check_move_validity=False)
+                first.balance = first.balance * 2
+                before = {line.id: line.balance for line in pt_lines}
 
-                invoice._distribute_to_lines(
-                    pt_lines, -2494335.91, self.company.currency_id
+                invoice._distribute_invoice_real_portion(
+                    invoice, self.company.currency_id
                 )
 
                 self.assertEqual({line.id: line.balance for line in pt_lines}, before)
 
-    def test_05_distribute_to_lines_still_absorbs_rounding(self):
+    def test_05_term_rounding_difference_is_still_absorbed(self):
         """Una diferencia de redondeo (centimos) si se sigue repartiendo."""
         for move_type in self.MOVE_TYPES:
             with self.subTest(move_type=move_type):
                 invoice = self._create_invoice(move_type, post=False)
                 pt_lines = self._pt_lines(invoice)
-                total_before = sum(pt_lines.mapped("balance"))
+                first = pt_lines[0].with_context(check_move_validity=False)
+                first.balance = first.balance + 0.02
+                self.assertNotAlmostEqual(
+                    sum(invoice.line_ids.mapped("balance")), 0.0, places=2
+                )
 
-                # El reparto mueve solo las cuotas, asi que el asiento queda
-                # momentaneamente desbalanceado: se desactiva la validacion.
-                invoice._distribute_to_lines(
-                    pt_lines.with_context(check_move_validity=False),
-                    0.02,
-                    self.company.currency_id,
+                # Repartir entre dos cuotas mueve una a la vez: se desactiva
+                # la validacion para el estado intermedio.
+                no_check = invoice.with_context(check_move_validity=False)
+                no_check._distribute_invoice_real_portion(
+                    no_check, self.company.currency_id
                 )
 
                 self.assertAlmostEqual(
-                    sum(pt_lines.mapped("balance")), total_before + 0.02, places=2
+                    sum(invoice.line_ids.mapped("balance")), 0.0, places=2
                 )
