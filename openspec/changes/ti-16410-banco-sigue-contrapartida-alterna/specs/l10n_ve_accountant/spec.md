@@ -6,7 +6,7 @@ Cada apunte DEBE (MUST) calcular `foreign_debit`/`foreign_credit` (y su `foreign
 
 En asientos que no son facturas, `_get_non_invoice_foreign_value` DEBE (MUST) devolver, en este orden: el negativo de la suma de `amount_currency` de las líneas en moneda alterna cuando esa suma no es cero y existe exactamente una línea en moneda de la compañía; la conversión del balance a la moneda alterna a la fecha del apunte cuando la moneda de la línea no es la alterna; y en el resto de casos el balance multiplicado por `foreign_inverse_rate`.
 
-El importe alterno de una línea DEBE (MUST) recalcularse cuando cambian `amount_currency` o `currency_id` de las demás líneas de su asiento, porque `_get_non_invoice_foreign_value` mira las líneas hermanas: al conciliar una línea de extracto en Bs y pasar su contrapartida a moneda alterna, la línea del banco deja de tomar su monto a la tasa del día y sigue a su contrapartida, y el asiento cuadra en la moneda alterna (ticket #16410).
+El importe alterno de una línea DEBE (MUST) recalcularse cuando cambian `amount_currency` o `currency_id` de las demás líneas de su asiento, porque `_get_non_invoice_foreign_value` mira las líneas hermanas: al conciliar una línea de extracto en Bs y pasar su contrapartida a moneda alterna, la línea del banco deja de tomar su monto a la tasa del día y sigue a su contrapartida, y el asiento cuadra en la moneda alterna (ticket #16410). Las líneas hermanas DEBEN (MUST) leerse una vez por asiento durante el recálculo, no una vez por línea. (Antes: el importe alterno de una línea solo se recalculaba al cambiar campos de su propia línea.)
 
 #### Scenario: Ajuste manual
 
@@ -88,7 +88,12 @@ Al crear o editar en el formulario una línea de extracto bancario (`account.ban
 - **WHEN** la línea no tiene moneda extranjera
 - **THEN** `amount` queda como se escribió
 
-#### Scenario: Cambio de fecha en el formulario
+#### Scenario: Cambio de fecha o de diario en el formulario
 
-- **WHEN** el usuario cambia la fecha de una línea con moneda extranjera
-- **THEN** `amount_currency` se conserva y `amount` se recalcula con la tasa de la nueva fecha
+- **WHEN** el usuario cambia la fecha o el diario de una línea con moneda extranjera y `amount` distinto de 0
+- **THEN** `amount` se conserva (es lo que movió el banco) y `amount_currency` se recalcula con la tasa de la nueva fecha
+
+#### Scenario: Ajuste manual con una línea hermana que cambia
+
+- **WHEN** una línea con `foreign_credit_adjustment` o con `not_foreign_recalculate` activo y el monto en moneda de su contrapartida cambia
+- **THEN** el importe alterno de esa línea no se modifica

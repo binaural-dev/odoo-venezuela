@@ -2,7 +2,7 @@
 
 A statement line in Bs is created with the suspense account as counterpart (the
 bank line takes its $ at the rate of the day). Reconciling it against an account
-in $ rewrites the counterpart to USD 1.700 for 1.700.000 Bs (the bank's rate).
+in $ rewrites the counterpart to USD 1,700 for 1,700,000 Bs (the bank's rate).
 The bank line has to be recomputed, otherwise the entry is balanced in Bs and
 not in $.
 """
@@ -12,11 +12,11 @@ from odoo import fields
 from odoo.tests import Form, TransactionCase, tagged
 
 
-@tagged("post_install", "-at_install", "foreign_unbalanced_16410")
-class TestForeignUnbalanced16410(TransactionCase):
+@tagged("post_install", "-at_install", "bank_statement_foreign_balance")
+class TestBankStatementForeignBalance(TransactionCase):
     def setUp(self):
         super().setUp()
-        # La pestana de apuntes exige account.group_account_readonly
+        # The journal items tab requires account.group_account_readonly
         self.env.user.write({"group_ids": [
             (4, self.env.ref("account.group_account_readonly").id),
             (4, self.env.ref("account.group_account_user").id),
@@ -35,7 +35,7 @@ class TestForeignUnbalanced16410(TransactionCase):
         Rate = self.env["res.currency.rate"]
         Rate.create({"name": today, "currency_id": self.vef.id,
                      "inverse_company_rate": 1.0, "company_id": self.company.id})
-        # Tasa del dia 886,2 Bs/USD (como en produccion); el banco uso 1000.
+        # Rate of the day 886.2 Bs/USD; the bank used 1000.
         Rate.create({"name": today, "currency_id": self.usd.id,
                      "inverse_company_rate": 886.2, "company_id": self.company.id})
         self.today = today
@@ -51,7 +51,7 @@ class TestForeignUnbalanced16410(TransactionCase):
             "name": "Out", "payment_type": "outbound", "payment_account_id": acc_bank.id,
             "payment_method_id": self.env.ref("account.account_payment_method_manual_out").id,
         })
-        # Sin moneda en el diario, como los de produccion: acepta lineas en USD.
+        # No currency on the journal, like the real ones: it accepts lines in USD.
         self.bank = self.env["account.journal"].create({
             "name": "Banco Bs", "type": "bank", "code": "BBS",
             "default_account_id": acc_bank.id,
@@ -91,9 +91,9 @@ class TestForeignUnbalanced16410(TransactionCase):
         self.assertAlmostEqual(self._foreign_imbalance(move), 0.0, places=2)
 
     def test_02_statement_counterpart_moved_to_usd_with_form(self):
-        """The entry of the statement line, edited so its counterpart is USD 1.700."""
+        """The entry of the statement line, edited so its counterpart is USD 1,700."""
         move = self._statement_line().move_id
-        # Al crearse, el banco toma el $ a la tasa del dia: 1.700.000 / 886,2
+        # On creation the bank line takes the $ at the rate of the day: 1,700,000 / 886.2
         bank_line = move.line_ids.filtered(lambda l: l.account_id == self.bank.default_account_id)
         self.assertAlmostEqual(bank_line.foreign_credit, 1700000.0 / 886.2, places=2)
         move.button_draft()
@@ -119,15 +119,13 @@ class TestForeignUnbalanced16410(TransactionCase):
         return move, counterpart, remainder
 
     def test_03_edit_with_forced_balance_follows_the_rate_of_the_date(self):
-        """USD 1.700 with a balance forced to 1.700.000 Bs is set back to the rate of the day.
+        """USD 1,700 with a balance forced to 1,700,000 Bs is set back to the rate of the day.
 
         The edit dialog lets the user type both fields, and the core stored them as they
-        came (implicit rate 1000 against 886,2 of the day). The amount in USD wins, the
-        balance is USD 1.700 x 886,2 and the difference stays in the suspense account.
+        came (implicit rate 1000 against 886.2 of the day). The amount in USD wins, the
+        balance is USD 1,700 x 886.2 and the difference stays in the suspense account.
         """
         st_line = self._statement_line()
-        if not hasattr(st_line, "edit_reconcile_line"):
-            self.skipTest("account_accountant (enterprise) is not installed")
         move, counterpart, remainder = self._edit_suspense(st_line, {
             "account_id": self.counterpart.id,
             "currency_id": self.usd.id,
@@ -144,8 +142,6 @@ class TestForeignUnbalanced16410(TransactionCase):
     def test_04_edit_only_the_balance_recomputes_the_amount_in_currency(self):
         """Only the balance (and the currency) changes: the USD amount follows the rate."""
         st_line = self._statement_line()
-        if not hasattr(st_line, "edit_reconcile_line"):
-            self.skipTest("account_accountant (enterprise) is not installed")
         move, counterpart, remainder = self._edit_suspense(st_line, {
             "account_id": self.counterpart.id,
             "currency_id": self.usd.id,
@@ -159,8 +155,6 @@ class TestForeignUnbalanced16410(TransactionCase):
     def test_05_edit_only_the_amount_recomputes_the_balance(self):
         """Only the USD amount changes: the balance follows the rate, the rest is suspense."""
         st_line = self._statement_line()
-        if not hasattr(st_line, "edit_reconcile_line"):
-            self.skipTest("account_accountant (enterprise) is not installed")
         move, counterpart, remainder = self._edit_suspense(st_line, {
             "account_id": self.counterpart.id,
             "currency_id": self.usd.id,
@@ -173,8 +167,6 @@ class TestForeignUnbalanced16410(TransactionCase):
     def test_06_edit_in_company_currency_is_not_touched(self):
         """A line in the currency of the company keeps what the user sent."""
         st_line = self._statement_line()
-        if not hasattr(st_line, "edit_reconcile_line"):
-            self.skipTest("account_accountant (enterprise) is not installed")
         move, counterpart, remainder = self._edit_suspense(st_line, {
             "account_id": self.counterpart.id,
         })
@@ -186,8 +178,6 @@ class TestForeignUnbalanced16410(TransactionCase):
     def test_07_edit_dialog_with_the_real_form(self):
         """The dialog: USD + amount gives the balance by onchange, forcing it is set back."""
         st_line = self._statement_line()
-        if not hasattr(st_line, "edit_reconcile_line"):
-            self.skipTest("account_accountant (enterprise) is not installed")
         fields_to_send = ("account_id", "currency_id", "amount_currency", "balance")
 
         def open_dialog(line, edit):
@@ -226,7 +216,7 @@ class TestForeignUnbalanced16410(TransactionCase):
         st_line.edit_reconcile_line(counterpart.id, changes)
         move = st_line.move_id
         counterpart = move.line_ids.filtered(lambda l: l.account_id == self.counterpart)
-        # Only the balance changed, so the USD amount follows it: 1.700.000 / 886,2.
+        # Only the balance changed, so the USD amount follows it: 1,700,000 / 886.2.
         self.assertAlmostEqual(counterpart.balance, 1700000.0, places=2)
         self.assertAlmostEqual(counterpart.amount_currency, 1700000.0 / 886.2, places=2)
         self.assertAlmostEqual(self._foreign_imbalance(move), 0.0, places=2)
@@ -234,8 +224,6 @@ class TestForeignUnbalanced16410(TransactionCase):
     def test_08_reconcile_usd_line_without_editing(self):
         """Without editing anything the widget already follows the rate of the date."""
         st_line = self._statement_line()
-        if not hasattr(st_line, "set_line_bank_statement_line"):
-            self.skipTest("account_accountant (enterprise) is not installed")
         past = self.today - timedelta(days=10)
         self.env["res.currency.rate"].create([
             {"name": past, "currency_id": self.vef.id,
@@ -277,10 +265,10 @@ class TestForeignUnbalanced16410(TransactionCase):
         return self.env["account.bank.statement.line"].create(vals)
 
     def test_09_statement_line_only_in_foreign_currency_gets_its_amount(self):
-        """Una linea de extracto con solo el monto en $ no queda en 0 Bs.
+        """A statement line with only the amount in $ does not stay at 0 Bs.
 
-        El core no calcula `amount` desde `amount_currency`: la linea quedaba con 0 Bs,
-        el pago conciliado contra ella mandaba sus Bs al diferencial cambiario.
+        The core does not compute `amount` from `amount_currency`: the line stayed at 0 Bs
+        and the payment reconciled against it sent its Bs to the exchange difference.
         """
         st_line = self._foreign_statement_line()
         self.assertAlmostEqual(st_line.amount, 10.82 * 886.2, places=2)
@@ -290,25 +278,25 @@ class TestForeignUnbalanced16410(TransactionCase):
         self.assertAlmostEqual(self._foreign_imbalance(st_line.move_id), 0.0, places=2)
 
     def test_10_statement_line_with_explicit_amount_is_not_touched(self):
-        """Si el usuario da el monto en Bs, se respeta aunque no siga la tasa."""
+        """An explicit amount in Bs is respected even if it does not follow the rate."""
         st_line = self._foreign_statement_line(amount=10000.0)
         self.assertEqual(st_line.amount, 10000.0)
         self.assertEqual(st_line.amount_currency, 10.82)
 
     def test_11_statement_line_with_the_form_gets_its_amount(self):
-        """Con el formulario de la linea (journal por defecto) pasa lo mismo."""
+        """The same happens with the line form (default journal)."""
         form = Form(self.env["account.bank.statement.line"].with_context(
             default_journal_id=self.bank.id))
         form.payment_ref = "pago en $ (form)"
         form.foreign_currency_id = self.usd
         form.amount_currency = 10.82
-        # El onchange completa el Bs antes de guardar
+        # The onchange fills the Bs before saving
         self.assertAlmostEqual(form.amount, 10.82 * 886.2, places=2)
         st_line = form.save()
         self.assertAlmostEqual(st_line.amount, 10.82 * 886.2, places=2)
 
     def test_12_statement_line_in_the_company_currency_is_not_touched(self):
-        """Sin moneda extranjera `amount` no se completa."""
+        """Without a foreign currency `amount` is not completed."""
         st_line = self.env["account.bank.statement.line"].create({
             "journal_id": self.bank.id, "date": self.today,
             "payment_ref": "pago en Bs", "amount": 0.0,
@@ -316,25 +304,25 @@ class TestForeignUnbalanced16410(TransactionCase):
         self.assertEqual(st_line.amount, 0.0)
 
     def test_13_form_last_edited_field_wins(self):
-        """En el formulario, el ultimo campo editado manda y el otro sigue la tasa de la fecha."""
+        """In the form the last edited field wins and the other follows the rate of the date."""
         form = Form(self.env["account.bank.statement.line"].with_context(
             default_journal_id=self.bank.id))
         form.payment_ref = "pago en $ (onchange)"
         form.foreign_currency_id = self.usd
         form.amount_currency = 10.82
         self.assertAlmostEqual(form.amount, 10.82 * 886.2, places=2)
-        # Se escribe a mano un monto en Bs distinto: el monto en $ lo sigue
+        # A different amount in Bs is typed: the amount in $ follows it
         form.amount = 10000.0
         self.assertAlmostEqual(form.amount_currency, 10000.0 / 886.2, places=2)
-        # El onchange del monto en $ no reescribe el Bs que acaba de escribir el usuario
+        # The onchange of the amount in $ does not rewrite the Bs the user has just typed
         self.assertEqual(form.amount, 10000.0)
-        # Se vuelve a editar el monto en $: el Bs lo sigue
+        # The amount in $ is edited again: the Bs follows it
         form.amount_currency = 20.0
         self.assertAlmostEqual(form.amount, 20.0 * 886.2, places=2)
         st_line = form.save()
         self.assertAlmostEqual(st_line.amount, 20.0 * 886.2, places=2)
         self.assertEqual(st_line.amount_currency, 20.0)
-        # Un Bs que no da un monto en $ exacto se respeta tal cual
+        # A Bs amount that does not give an exact $ amount is respected as it is
         form = Form(self.env["account.bank.statement.line"].with_context(
             default_journal_id=self.bank.id))
         form.payment_ref = "pago en $ (redondeo)"
@@ -346,7 +334,7 @@ class TestForeignUnbalanced16410(TransactionCase):
         self.assertAlmostEqual(self._foreign_imbalance(st_line.move_id), 0.0, places=2)
 
     def test_14_form_without_foreign_currency_is_not_touched(self):
-        """Sin moneda extranjera el Bs queda como se escribio."""
+        """Without a foreign currency the Bs stays as typed."""
         form = Form(self.env["account.bank.statement.line"].with_context(
             default_journal_id=self.bank.id))
         form.payment_ref = "pago en Bs (onchange)"
@@ -354,8 +342,8 @@ class TestForeignUnbalanced16410(TransactionCase):
         self.assertEqual(form.amount, 12345.67)
         self.assertEqual(form.save().amount, 12345.67)
 
-    def test_15_form_date_change_recomputes_the_amount_with_the_rate_of_the_date(self):
-        """Al cambiar la fecha, el monto en $ queda y el Bs sigue la tasa de la nueva fecha."""
+    def test_15_form_date_change_recomputes_the_amount_in_currency(self):
+        """Changing the date keeps the Bs amount (what the bank moved) and recomputes the $ amount."""
         past = self.today - timedelta(days=3)
         self.env["res.currency.rate"].create([
             {"name": past, "currency_id": self.vef.id,
@@ -368,13 +356,42 @@ class TestForeignUnbalanced16410(TransactionCase):
         form.payment_ref = "pago en $ (fecha)"
         form.foreign_currency_id = self.usd
         form.amount_currency = 10.82
-        self.assertAlmostEqual(form.amount, 10.82 * 886.2, places=2)
+        bs = 10.82 * 886.2
+        self.assertAlmostEqual(form.amount, bs, places=2)
         form.date = past
-        self.assertEqual(form.amount_currency, 10.82)
-        self.assertAlmostEqual(form.amount, 10.82 * 900.0, places=2)
+        self.assertAlmostEqual(form.amount, bs, places=2)
+        self.assertAlmostEqual(form.amount_currency, bs / 900.0, places=2)
         form.date = self.today
-        self.assertAlmostEqual(form.amount, 10.82 * 886.2, places=2)
+        self.assertAlmostEqual(form.amount, bs, places=2)
+        self.assertAlmostEqual(form.amount_currency, bs / 886.2, places=2)
         st_line = form.save()
-        self.assertEqual(st_line.amount_currency, 10.82)
-        self.assertAlmostEqual(st_line.amount, 10.82 * 886.2, places=2)
+        self.assertAlmostEqual(st_line.amount, bs, places=2)
         self.assertAlmostEqual(self._foreign_imbalance(st_line.move_id), 0.0, places=2)
+
+    def test_16_manual_alternate_amounts_survive_a_change_in_a_sibling_line(self):
+        """A manual adjustment or a frozen line is not overwritten when a sibling line changes."""
+        move = self.env["account.move"].create({
+            "move_type": "entry", "journal_id": self.bank.id, "date": self.today,
+            "line_ids": [
+                (0, 0, {"account_id": self.bank.default_account_id.id, "credit": 886200.0}),
+                (0, 0, {"account_id": self.counterpart.id, "currency_id": self.usd.id,
+                        "amount_currency": 1000.0}),
+            ]})
+        bank = move.line_ids.filtered(lambda l: l.account_id == self.bank.default_account_id)
+        usd_line = move.line_ids - bank
+        self.assertAlmostEqual(bank.foreign_credit, 1000.0, places=2)
+        bank.foreign_credit_adjustment = 1200.0
+        self.assertAlmostEqual(bank.foreign_credit, 1200.0, places=2)
+        # The counterpart changes: the manual adjustment wins over the rule of the sibling lines
+        move.write({"line_ids": [
+            (1, usd_line.id, {"amount_currency": 1100.0}),
+            (1, bank.id, {"credit": 974820.0}),
+        ]})
+        self.assertAlmostEqual(bank.foreign_credit, 1200.0, places=2)
+        # A line excluded from the recalculation keeps its value too
+        bank.write({"foreign_credit_adjustment": 0.0, "not_foreign_recalculate": True, "foreign_credit": 900.0})
+        move.write({"line_ids": [
+            (1, usd_line.id, {"amount_currency": 1000.0}),
+            (1, bank.id, {"credit": 886200.0}),
+        ]})
+        self.assertAlmostEqual(bank.foreign_credit, 900.0, places=2)

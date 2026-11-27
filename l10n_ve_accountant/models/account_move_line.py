@@ -239,16 +239,33 @@ class AccountMoveLine(models.Model):
         # fixed here. Force it to be recomputed from them.
         self.env.add_to_compute(self._fields["foreign_balance"], self)
 
-    def _get_non_invoice_foreign_value(self):
-        """Foreign value (signed) for non-invoice entries."""
+    def _get_foreign_sibling_values(self):
+        """Return (number of lines in the company currency, sum of the amount in the alternate
+        currency of the lines in that currency) of the entry of this line.
+
+        While `_compute_foreign_debit_credit` runs they are read once per entry
+        (`foreign_sibling_cache` in the context) and not once per line: reading the sibling
+        lines for every line is quadratic in the number of lines of the entry.
+        """
+        cache = self.env.context.get("foreign_sibling_cache")
+        key = self.move_id.id
+        if cache is not None and key in cache:
+            return cache[key]
         foreign_lines = self.move_id.line_ids.filtered(
             lambda l: l.currency_id == l.company_id.foreign_currency_id
         )
         currency_lines = self.move_id.line_ids.filtered(
             lambda l: l.currency_id == l.company_id.currency_id
         )
-        balance = sum(foreign_lines.mapped("amount_currency"))
-        if balance and len(currency_lines) == 1:
+        result = (len(currency_lines), sum(foreign_lines.mapped("amount_currency")))
+        if cache is not None:
+            cache[key] = result
+        return result
+
+    def _get_non_invoice_foreign_value(self):
+        """Foreign value (signed) for non-invoice entries."""
+        currency_lines_count, balance = self._get_foreign_sibling_values()
+        if balance and currency_lines_count == 1:
             return -balance
 
         return self.company_id.currency_id._convert(
@@ -333,18 +350,18 @@ class AccountMoveLine(models.Model):
         "foreign_credit_adjustment",
         "move_id.invoice_date",
         "move_id.date",
-        # `_get_non_invoice_foreign_value` mira las lineas hermanas: si las
-        # demas estan en la moneda alterna, la unica linea en moneda de la
-        # compania toma su monto con signo contrario. Sin estas dependencias,
-        # cambiar la contrapartida a USD despues de crear el asiento (p. ej.
-        # al conciliar una linea de extracto en Bs) dejaba la linea del banco
-        # con el monto a la tasa del dia y el asiento descuadrado en alterna
-        # (ticket #16410).
+        # `_get_non_invoice_foreign_value` looks at the sibling lines: when the
+        # others are in the alternate currency, the only line in the company
+        # currency takes their amount with the opposite sign. Without these
+        # dependencies, moving the counterpart to USD after the entry was created
+        # (e.g. when reconciling a bank statement line in Bs) left the bank line
+        # at the rate of the day and the entry unbalanced in the alternate
+        # currency (ticket #16410).
         "move_id.line_ids.amount_currency",
         "move_id.line_ids.currency_id",
     )
     def _compute_foreign_debit_credit(self):
-        for line in self:
+        for line in self.with_context(foreign_sibling_cache={}):
             if line._skip_foreign_compute():
                 continue
             value = line._get_foreign_value()

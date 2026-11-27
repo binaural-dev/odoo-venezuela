@@ -12,13 +12,14 @@ class AccountBankStatementLine(models.Model):
 
     @api.model
     def _complete_amount_from_foreign(self, vals):
-        """Completa `amount` cuando solo llega el monto en moneda extranjera.
+        """Fill `amount` when only the amount in the foreign currency is given.
 
-        En el core `amount` (moneda del diario) manda y `amount_currency` solo se calcula
-        desde el, nunca al reves. Una linea con USD 10,82 y `amount` en 0 deja el asiento
-        en 0 Bs, y al conciliar el pago el core manda su valor en Bs al diferencial
-        cambiario (ticket #16410). Aqui `amount` sale del monto en moneda extranjera a la
-        tasa de la fecha del extracto.
+        In the core `amount` (journal currency) drives and `amount_currency` is only
+        computed from it, never the other way around. A line created with a foreign amount
+        and `amount` at 0 produces an entry of 0 in the company currency on both of its
+        lines, and reconciling a payment against it sends the whole value of the payment to
+        the exchange difference account (ticket #16410). Here `amount` is the foreign amount
+        converted at the rate of the statement date. An explicit `amount` is respected.
         """
         if vals.get("amount") or not vals.get("foreign_currency_id") or not vals.get("amount_currency"):
             return vals
@@ -44,40 +45,47 @@ class AccountBankStatementLine(models.Model):
         }
 
     def _foreign_conversion_currencies(self):
-        """Devuelve (moneda del diario, moneda extranjera) si la linea convierte entre ambas."""
+        """Return (journal currency, foreign currency) if the line converts between them."""
         self.ensure_one()
         if not self.foreign_currency_id or not self.currency_id or self.foreign_currency_id == self.currency_id:
             return None
         return self.currency_id, self.foreign_currency_id
 
-    @api.onchange("amount_currency", "foreign_currency_id", "date", "journal_id")
+    @api.onchange("amount_currency", "foreign_currency_id")
     def _onchange_amount_currency_sync_amount(self):
-        """El ultimo campo editado manda: el monto en moneda extranjera fija `amount` (ticket #16410).
+        """The foreign amount drives: `amount` follows the rate of the date (ticket #16410).
 
-        Tambien al cambiar la fecha o el diario: el monto en moneda extranjera es el ancla y el
-        monto en la moneda del diario sigue la tasa de la fecha, como `balance` en un asiento.
+        It is not triggered by the date or the journal: there the amount in the journal
+        currency, which is what the bank moved, wins (see the onchange of `amount`).
         """
         for line in self:
             currencies = line._foreign_conversion_currencies()
             if currencies and line.amount_currency:
                 journal_currency, foreign_currency = currencies
                 date = line.date or fields.Date.context_today(line)
-                # Ya coherentes (el otro onchange acaba de redondear el monto en moneda): no se pisa `amount`
+                # Already coherent (the other onchange has just rounded the foreign amount):
+                # do not overwrite `amount`
                 expected = journal_currency._convert(line.amount, foreign_currency, line.company_id, date)
                 if foreign_currency.compare_amounts(expected, line.amount_currency):
                     line.amount = foreign_currency._convert(
                         line.amount_currency, journal_currency, line.company_id, date
                     )
 
-    @api.onchange("amount")
+    @api.onchange("amount", "date", "journal_id")
     def _onchange_amount_sync_amount_currency(self):
-        """El ultimo campo editado manda: `amount` fija el monto en moneda extranjera (ticket #16410)."""
+        """The journal-currency amount drives: `amount_currency` follows the rate of the date.
+
+        Changing the date or the journal keeps `amount`, which is what the bank moved and
+        what the statement balance is built from, and recomputes the foreign amount
+        (ticket #16410).
+        """
         for line in self:
             currencies = line._foreign_conversion_currencies()
             if currencies and line.amount:
                 journal_currency, foreign_currency = currencies
                 date = line.date or fields.Date.context_today(line)
-                # Ya coherentes (el otro onchange acaba de redondear `amount`): no se pisa el monto en moneda
+                # Already coherent (the other onchange has just rounded `amount`): do not
+                # overwrite the foreign amount
                 expected = foreign_currency._convert(line.amount_currency, journal_currency, line.company_id, date)
                 if not line.amount_currency or journal_currency.compare_amounts(expected, line.amount):
                     line.amount_currency = journal_currency._convert(
@@ -85,24 +93,25 @@ class AccountBankStatementLine(models.Model):
                     )
 
     def edit_reconcile_line(self, move_line_id, record_data):
-        """Mantiene balance y amount_currency coherentes con la tasa de la fecha del asiento.
+        """Keep `balance` and `amount_currency` coherent with the rate of the entry date.
 
-        El dialogo "Editar linea" del widget de conciliacion deja editar a la vez el
-        balance (Bs) y el monto en otra moneda, y el core guarda ambos tal cual:
-        quedaba, por ejemplo, USD 1.700 con 1.700.000 Bs (tasa implicita 1000) cuando
-        la tasa de la fecha era 924,3534. Aqui el ultimo campo editado manda, como el
-        onchange del core en un asiento manual (ticket #16410).
+        The "Edit line" dialog of the reconciliation widget lets the user edit the balance
+        (company currency) and the amount in another currency at the same time, and the
+        core stores both as they come: e.g. USD 1,700 with 1,700,000 Bs (implicit rate
+        1000) when the rate of the date was 924.3534. Here the last edited field wins, as
+        the onchange of the core does in a manual entry (ticket #16410).
         """
         record_data = self._sync_edited_line_amounts(move_line_id, record_data)
         return super().edit_reconcile_line(move_line_id, record_data)
 
     def _sync_edited_line_amounts(self, move_line_id, record_data):
-        """Completa `record_data` para que balance y monto en moneda sigan la tasa de la fecha.
+        """Complete `record_data` so balance and amount in currency follow the rate of the date.
 
-        - Cambia el monto en moneda: el balance sale de monto / tasa.
-        - Cambia solo el balance o la moneda: el monto en moneda sale de balance * tasa.
-        - No se toca si la moneda es la de la compania o si la linea ya esta conciliada
-          (el monto parcial a conciliar sigue la tasa del documento, no la de la fecha).
+        - The amount in currency changes: the balance is amount / rate.
+        - Only the balance or the currency changes: the amount in currency is balance * rate.
+        - Nothing is done if the currency is the company one or the line is already
+          reconciled (the partial amount to reconcile follows the rate of the document,
+          not the one of the date).
         """
         self.ensure_one()
         line = self.env["account.move.line"].browse(move_line_id)
