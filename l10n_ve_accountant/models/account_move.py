@@ -2599,6 +2599,12 @@ class AccountMove(models.Model):
     def _distribute_to_lines(self, lines, amount, currency):
         if currency.is_zero(amount) or not lines:
             return
+        # Esta distribucion solo absorbe diferencias de redondeo. Un monto
+        # grande indica un estado intermedio (p.ej. nota de credito en
+        # creacion con lineas de producto aun sin balance) y repartirlo
+        # corrompe las lineas por cobrar -> "El asiento no esta balanceado".
+        if abs(amount) > currency.rounding * 100 * max(len(lines), 1):
+            return
 
         sign = 1 if amount > 0 else -1
         abs_amount = abs(amount)

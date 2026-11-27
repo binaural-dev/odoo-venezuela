@@ -34,3 +34,4 @@ from . import test_invoice_details_report
 from . import test_invoice_list_columns
 from . import test_invoice_due_date_display
 from . import test_bank_statement_foreign_balance
+from . import test_reversal_payment_term_balance
