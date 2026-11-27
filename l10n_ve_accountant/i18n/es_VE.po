@@ -2198,3 +2198,19 @@ msgid ""
 "is posted."
 msgstr ""
 "No hay tasa para la fecha %(date)s; se calculará al publicar el asiento."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+msgid ""
+"l10n_ve_accountant: cannot create the account_move_unique_name_ve index "
+"because there are accounting entries with the same number for the same "
+"partner/journal/company. No data was changed -- review these cases manually "
+"before reinstalling the module:\n"
+"%s"
+msgstr ""
+"l10n_ve_accountant: no se puede crear el índice account_move_unique_name_ve "
+"porque existen asientos contables con el mismo número para el mismo "
+"proveedor/diario/compañía. No se modificó ningún dato -- revisar manualmente "
+"estos casos antes de reinstalar el módulo:\n"
+"%s"
