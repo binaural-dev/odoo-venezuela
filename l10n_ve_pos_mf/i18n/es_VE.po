@@ -444,3 +444,14 @@ msgstr "La máquina fiscal no respondió a tiempo"
 #, python-format
 msgid "Error with the tax machine"
 msgstr "Error con la máquina fiscal"
+
+#. module: l10n_ve_pos_mf
+#. odoo-python
+#: code:addons/l10n_ve_pos_mf/models/pos_payment_method.py:0
+#, python-format
+msgid ""
+"El método de pago '%(name)s' tiene activado IGTF. El Código de Impresora "
+"Fiscal debe estar entre 20 y 24. Valor actual: '%(code)s'."
+msgstr ""
+"El método de pago '%(name)s' tiene activado IGTF. El Código de Impresora "
+"Fiscal debe estar entre 20 y 24. Valor actual: '%(code)s'."
