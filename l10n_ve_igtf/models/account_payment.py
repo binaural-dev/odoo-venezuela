@@ -181,7 +181,13 @@ class AccountPaymentAndIgtf(models.Model):
                     else:
                         fechas_lista = set(rec.invoices_origin_ids.mapped('invoice_date'))
                         conversion_date = rec.env.context.get('l10n_ve_conversion_date') or rec.date
-                        if abs(total_base_residual) - abs(vals[0]['balance']) <= 0.1 and len(fechas_lista) == 1 and conversion_date in fechas_lista:
+                        if (
+                            len(fechas_lista) == 1
+                            and conversion_date in fechas_lista
+                            and rec._same_date_payment_covers_residual(
+                                abs(vals[0]['balance']), total_base_residual, conversion_date,
+                            )
+                        ):
 
                             # FIX balances when diference is decimal
                            
@@ -271,9 +277,21 @@ class AccountPaymentAndIgtf(models.Model):
             # much larger, intentional diff that must NOT be forced to the full
             # invoice residual; leave the wizard/core's own already-correct
             # values alone in that case.
-            if not rec._is_same_within_rounding(current, expected, comp_curr):
-                continue
             conversion_date = rec.env.context.get('l10n_ve_conversion_date') or rec.date
+            # El criterio en la moneda del pago solo aplica el mismo día de la
+            # factura; con fechas distintas queda la tolerancia estricta en Bs.
+            invoice_dates = set(rec.invoices_origin_ids.mapped('invoice_date'))
+            same_date = len(invoice_dates) == 1 and conversion_date in invoice_dates
+            if same_date:
+                covers = rec._same_date_payment_covers_residual(
+                    abs(current), residual_abs, conversion_date,
+                    payment_amount=abs(cpart.get('amount_currency', 0.0)),
+                    bs_tolerance=comp_curr.rounding,
+                )
+            else:
+                covers = rec._is_same_within_rounding(current, expected, comp_curr)
+            if not covers:
+                continue
 
             # Force counterpart to match the invoice residual (solo balance)
             cpart['balance'] = expected
@@ -431,6 +449,38 @@ class AccountPaymentAndIgtf(models.Model):
                     })
         return vals
   
+    def _same_date_payment_covers_residual(
+        self, balance, residual, conversion_date, payment_amount=None, bs_tolerance=0.1,
+    ):
+        """True si un pago del wizard hecho el mismo día de la factura cubre
+        la deuda: sus Bs. (``balance``) igualan el residual de la factura
+        (``residual``, en Bs.) dentro del redondeo, medido en Bs. o en la moneda
+        del pago.
+
+        En Bs. la tolerancia es la histórica (0,10). En la moneda del pago es
+        un redondeo de esa moneda (un centavo de USD son varios Bs., y es lo
+        más fino que el usuario puede digitar): así el pago de USD 1.000,00 de
+        una factura de USD 1.000,00 cuyas líneas redondeadas suman Bs. 1,03 más
+        que USD x tasa cierra la factura sin nota ni asiento de diferencial.
+        Un pago que no cubre la deuda (parcial) o que la excede no se fuerza.
+        """
+        self.ensure_one()
+        comp_curr = self.company_id.currency_id
+        if abs(abs(residual) - abs(balance)) <= bs_tolerance + 1e-6:
+            return True
+        currency = self.currency_id
+        if currency == comp_curr:
+            return False
+        invoices = self.invoices_origin_ids
+        if invoices and invoices.mapped('currency_id') == currency:
+            residual_in_payment_curr = abs(sum(invoices.mapped('amount_residual')))
+        else:
+            residual_in_payment_curr = comp_curr._convert(
+                abs(residual), currency, self.company_id, conversion_date,
+            )
+        amount = self.amount if payment_amount is None else payment_amount
+        return self._is_same_within_rounding(abs(amount), residual_in_payment_curr, currency)
+
     def _is_same_within_rounding(self, amount1, amount2, currency, tolerance_units=1):
         """Return True if amount1 and amount2 differ by at most
         `tolerance_units` rounding units of `currency` (inclusive).
@@ -549,7 +599,7 @@ class AccountPaymentAndIgtf(models.Model):
                         if conversion_date != rec.date: 
                             vals[1].update({"amount_currency": credit_line,"balance": -amount})
                         else:
-                            vals[1].update({"amount_currency": credit_line,"balance": -total_base_residual})
+                            vals[1].update({"amount_currency": credit_line,"balance": -base_residual})
 
                 
                 if write_off_line_vals:
@@ -669,7 +719,7 @@ class AccountPaymentAndIgtf(models.Model):
                         if conversion_date != rec.date:
                             vals[1].update({"amount_currency": debit_line, "balance": amount})
                         else:
-                            vals[1].update({"amount_currency": debit_line, "balance": total_base_residual})
+                            vals[1].update({"amount_currency": debit_line, "balance": base_residual})
                 
                 if write_off_line_vals:
                     # Recalculate write-off balance to compensate the adjusted counterpart
@@ -679,11 +729,14 @@ class AccountPaymentAndIgtf(models.Model):
                         if v is not vals[2]
                     ) + igtf_base
 
+                    # Misma dirección que el balance de arriba (+ igtf_base): en un
+                    # pago saliente la línea de IGTF se agrega como débito, así que
+                    # su monto en divisa también se suma, no se resta.
                     amout_currency_no_writeoff = sum(
                         v.get('amount_currency', 0) 
                         for v in vals
                         if v is not vals[2]
-                    ) - rec.igtf_amount
+                    ) + rec.igtf_amount
 
                     vals[2]['balance'] = -net_no_writeoff
                     if vals[2]['balance'] != 0:
