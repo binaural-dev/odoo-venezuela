@@ -2168,3 +2168,31 @@ msgstr ""
 "No puede confirmar un pago con un importe de 0.0. Si el pago se convirtió a "
 "%(currency)s, el importe convertido es menor a la unidad mínima de la moneda "
 "(%(rounding)s) y se redondeó a cero."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+msgid "- %(partner)s / %(journal)s / %(name)s: %(count)s entries"
+msgstr "- %(partner)s / %(journal)s / %(name)s: %(count)s asientos"
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+msgid "- ... (showing the first 20, there may be more)"
+msgstr "- ... (se muestran los primeros 20, puede haber más)"
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+msgid ""
+"l10n_ve_accountant: cannot create the unique index on the number of the "
+"accounting entries because there are posted entries with the same number "
+"for the same partner/journal/company. No data was changed -- review these "
+"cases manually before installing or updating the module:\n"
+"%(cases)s"
+msgstr ""
+"l10n_ve_accountant: no se puede crear el índice único sobre el número de los "
+"asientos contables porque existen asientos publicados con el mismo número "
+"para el mismo proveedor/diario/compañía. No se modificó ningún dato -- "
+"revisar manualmente estos casos antes de instalar o actualizar el módulo:\n"
+"%(cases)s"
