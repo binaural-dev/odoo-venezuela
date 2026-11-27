@@ -642,6 +642,10 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
         contable, y eso es lo buscado: delata la configuracion incompleta en
         vez de esconderla, igual que ya hace el cruce del cash in/out.
         Decision del ticket 15219.
+
+        Desde el ticket 15399 esa configuracion ya no se puede guardar
+        (``pos.payment.method._check_distinct_suspense_accounts``): la prueba
+        iguala las transitorias por SQL, como un metodo guardado antes.
         """
         self._configure_cross(self.split_cash_method)
         shared_suspense = self.env["account.account"].create(
@@ -652,8 +656,15 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
                 "company_ids": [(6, 0, [self.company.id])],
             }
         )
-        self.split_cash_method.journal_id.suspense_account_id = shared_suspense.id
-        self.real_bank_journal.suspense_account_id = shared_suspense.id
+        self.env.flush_all()
+        self.env.cr.execute(
+            "UPDATE account_journal SET suspense_account_id = %s WHERE id IN %s",
+            (
+                shared_suspense.id,
+                (self.split_cash_method.journal_id.id, self.real_bank_journal.id),
+            ),
+        )
+        self.env.invalidate_all()
         session = self._new_session().with_company(self.company)
         order = self._create_paid_order(
             session,
