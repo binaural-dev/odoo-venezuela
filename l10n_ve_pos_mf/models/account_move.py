@@ -1,9 +1,5 @@
 from odoo import fields, models, api
 
-import logging
-
-_logger = logging.getLogger(__name__)
-
 
 class AccountMoveInh(models.Model):
     _inherit = "account.move"
@@ -34,12 +30,57 @@ class AccountMoveInh(models.Model):
         data = response.get("data") or {}
         machine_serial = data.get("_registeredMachineNumber") or serial
 
+        last_z_number = self._get_last_z_order_number(machine_serial)
         pos_order_ids = self.env["pos.order"].search(
-            ["&", ("fiscal_machine", "=", machine_serial), ("mf_reportz", "=", False)]
+            [("fiscal_machine", "=", machine_serial), ("mf_reportz", "=", False)]
         )
-        _logger.info(pos_order_ids)
+        last_number = (
+            self._max_mf_invoice_number_for_order_z(machine_serial, last_z_number)
+            if last_z_number is not None
+            else None
+        )
+        pos_order_ids = pos_order_ids.filtered(
+            lambda o: self._mf_invoice_number_after(o, last_number)
+        )
 
         for order in pos_order_ids:
-            order.write({"mf_reportz": int(z_number) + 1})
+            order.write({"mf_reportz": int(z_number)})
 
         return z_number
+
+    def _parse_mf_invoice_number(self, order):
+        try:
+            return int(order.mf_invoice_number)
+        except (TypeError, ValueError):
+            return None
+
+    def _mf_invoice_number_after(self, order, last_number):
+        number = self._parse_mf_invoice_number(order)
+        if number is None:
+            return False
+        if last_number is None:
+            return True
+        return number > last_number
+
+    def _get_last_z_order_number(self, serial):
+        self.env.cr.execute(
+            """
+            SELECT MAX(
+                CASE WHEN mf_reportz ~ '^[0-9]+$'
+                     THEN mf_reportz::integer
+                     ELSE NULL
+                END
+            )
+            FROM pos_order
+            WHERE fiscal_machine = %s AND company_id = %s
+            """,
+            (serial, self.env.company.id),
+        )
+        return self.env.cr.fetchone()[0]
+
+    def _max_mf_invoice_number_for_order_z(self, serial, z_number):
+        orders = self.env["pos.order"].search(
+            [("fiscal_machine", "=", serial), ("mf_reportz", "=", str(z_number))]
+        )
+        numbers = [n for n in (self._parse_mf_invoice_number(o) for o in orders) if n is not None]
+        return max(numbers) if numbers else None
