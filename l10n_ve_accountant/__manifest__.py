@@ -7,11 +7,12 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
-    "version": "19.0.1.0.48",
+    "version": "19.0.1.0.49",
     "depends": [
         "base",
         "web",
         "account",
+        "account_accountant",
         "account_reports",
         "purchase",
         "sale",
