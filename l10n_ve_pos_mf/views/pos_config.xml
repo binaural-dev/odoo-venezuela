@@ -64,9 +64,15 @@
                 </setting>
 
                 <!-- Setting: Línea tradicional -->
-                <setting string="Línea Tradicional" 
+                <setting string="Línea Tradicional"
                          help="Activar si la impresora usa formato de línea tradicional (solo para modelos antiguos)">
                     <field name="traditional_line"/>
+                </setting>
+
+                <!-- Setting: Descuento por línea vía comando q- -->
+                <setting string="Descuento por línea en el ticket fiscal (comando q-)"
+                         help="Imprime el descuento de cada línea como 'DESC' con su monto exacto debajo del producto, usando el comando 'q-' del protocolo TFHKA. Actívalo solo después de validar que la impresora fiscal de este cliente acepta el comando.">
+                    <field name="mf_line_discount_via_q_command"/>
                 </setting>
 
                 <!-- Ayuda rápida -->
