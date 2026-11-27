@@ -880,6 +880,15 @@ msgid "Order Is Consignment"
 msgstr "La orden es consignación"
 
 #. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.l10n_ve_stock_inherit_l10n_ve_stock_account
+msgid ""
+"Outgoing dispatch guides need driver, driver ID number and vehicle plate to "
+"be validated."
+msgstr ""
+"Las guías de despacho de salida requieren conductor, cédula del conductor y "
+"placa del vehículo para poder validarse."
+
+#. module: l10n_ve_stock_account
 #: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__stock_picking__type_of_return__partial
 msgid "Partial"
 msgstr "Parcial"
