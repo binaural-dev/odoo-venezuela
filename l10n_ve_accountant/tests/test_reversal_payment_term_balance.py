@@ -46,6 +46,10 @@ class TestReversalPaymentTermBalance(TransactionCase):
             "120000", "Receivable", "asset_receivable", reconcile=True
         )
         self.acc_inc = self._get_or_create("400000", "Income", "income")
+        self.acc_exp = self._get_or_create("500000", "Expense", "expense")
+        self.acc_pay = self._get_or_create(
+            "210000", "Payable", "liability_payable", reconcile=True
+        )
         self.acc_tax = self._get_or_create(
             "200000", "Tax Payable", "liability_current", reconcile=True
         )
@@ -62,6 +66,18 @@ class TestReversalPaymentTermBalance(TransactionCase):
             }
         )
 
+        self.purchase_journal = self.env["account.journal"].search(
+            [("type", "=", "purchase"), ("company_id", "=", self.company.id)], limit=1
+        ) or self.env["account.journal"].sudo().create(
+            {
+                "name": "Purchases Test",
+                "code": "PRTST",
+                "type": "purchase",
+                "company_id": self.company.id,
+                "default_account_id": self.acc_exp.id,
+            }
+        )
+
         tax_group = self.env["account.tax.group"].create(
             {
                 "name": "IVA",
@@ -69,59 +85,27 @@ class TestReversalPaymentTermBalance(TransactionCase):
                 "country_id": self.country_ve.id,
             }
         )
-        self.tax_16 = (
-            self.env["account.tax"]
-            .with_company(self.company)
-            .create(
-                {
-                    "name": "IVA 16% reverso",
-                    "amount": 16.0,
-                    "amount_type": "percent",
-                    "type_tax_use": "sale",
-                    "company_id": self.company.id,
-                    "tax_group_id": tax_group.id,
-                    "invoice_repartition_line_ids": [
-                        (0, 0, {"repartition_type": "base", "factor_percent": 100.0}),
-                        (
-                            0,
-                            0,
-                            {
-                                "repartition_type": "tax",
-                                "factor_percent": 100.0,
-                                "account_id": self.acc_tax.id,
-                            },
-                        ),
-                    ],
-                    "refund_repartition_line_ids": [
-                        (0, 0, {"repartition_type": "base", "factor_percent": 100.0}),
-                        (
-                            0,
-                            0,
-                            {
-                                "repartition_type": "tax",
-                                "factor_percent": 100.0,
-                                "account_id": self.acc_tax.id,
-                            },
-                        ),
-                    ],
-                }
-            )
-        )
+        self.tax_by_type = {
+            "out_invoice": self._create_tax(tax_group, "sale"),
+            "in_invoice": self._create_tax(tax_group, "purchase"),
+        }
         self.product = self.env["product.product"].create(
             {
                 "name": "Producto reverso",
                 "type": "service",
                 "list_price": 74.2,
                 "property_account_income_id": self.acc_inc.id,
+                "property_account_expense_id": self.acc_exp.id,
                 "taxes_id": [(5, 0, 0)],
                 "supplier_taxes_id": [(5, 0, 0)],
             }
         )
         self.partner = self.env["res.partner"].create(
             {
-                "name": "Cliente reverso",
+                "name": "Contacto reverso",
                 "country_id": self.country_ve.id,
                 "property_account_receivable_id": self.acc_rec.id,
+                "property_account_payable_id": self.acc_pay.id,
             }
         )
         self.term_30_70 = self.env["account.payment.term"].create(
@@ -135,6 +119,36 @@ class TestReversalPaymentTermBalance(TransactionCase):
         )
 
     # -- helpers -----------------------------------------------------------
+
+    def _create_tax(self, tax_group, type_tax_use):
+        repartition = [
+            (0, 0, {"repartition_type": "base", "factor_percent": 100.0}),
+            (
+                0,
+                0,
+                {
+                    "repartition_type": "tax",
+                    "factor_percent": 100.0,
+                    "account_id": self.acc_tax.id,
+                },
+            ),
+        ]
+        return (
+            self.env["account.tax"]
+            .with_company(self.company)
+            .create(
+                {
+                    "name": f"IVA 16% reverso {type_tax_use}",
+                    "amount": 16.0,
+                    "amount_type": "percent",
+                    "type_tax_use": type_tax_use,
+                    "company_id": self.company.id,
+                    "tax_group_id": tax_group.id,
+                    "invoice_repartition_line_ids": repartition,
+                    "refund_repartition_line_ids": repartition,
+                }
+            )
+        )
 
     def _get_or_create(self, code, name, acc_type, reconcile=False):
         acc = self.env["account.account"].search(
@@ -152,11 +166,12 @@ class TestReversalPaymentTermBalance(TransactionCase):
             )
         return acc
 
-    def _set_usd_rate(self, vef_per_usd):
+    def _set_usd_rate(self, vef_per_usd, date=None):
+        date = date or self.today
         Rate = self.env["res.currency.rate"]
         rate = Rate.search(
             [
-                ("name", "=", self.today),
+                ("name", "=", date),
                 ("currency_id", "=", self.currency_usd.id),
                 ("company_id", "=", self.company.id),
             ],
@@ -167,14 +182,15 @@ class TestReversalPaymentTermBalance(TransactionCase):
         else:
             Rate.create(
                 {
-                    "name": self.today,
+                    "name": date,
                     "currency_id": self.currency_usd.id,
                     "inverse_company_rate": vef_per_usd,
                     "company_id": self.company.id,
                 }
             )
 
-    def _create_invoice(self, post=True):
+    def _create_invoice(self, move_type="out_invoice", post=True, invoice_date=None):
+        is_sale = move_type == "out_invoice"
         lines = [
             (5.4, 74.2),
             (5.4, 74.2),
@@ -185,11 +201,14 @@ class TestReversalPaymentTermBalance(TransactionCase):
         ]
         invoice = self.env["account.move"].create(
             {
-                "move_type": "out_invoice",
+                "move_type": move_type,
                 "partner_id": self.partner.id,
-                "journal_id": self.sale_journal.id,
+                "journal_id": (
+                    self.sale_journal if is_sale else self.purchase_journal
+                ).id,
                 "currency_id": self.currency_usd.id,
-                "invoice_date": self.today,
+                "invoice_date": invoice_date or self.today,
+                "ref": "REV-16790",
                 "invoice_payment_term_id": self.term_30_70.id,
                 "invoice_line_ids": [
                     Command.create(
@@ -197,8 +216,8 @@ class TestReversalPaymentTermBalance(TransactionCase):
                             "product_id": self.product.id,
                             "quantity": qty,
                             "price_unit": price,
-                            "account_id": self.acc_inc.id,
-                            "tax_ids": [(6, 0, self.tax_16.ids)],
+                            "account_id": (self.acc_inc if is_sale else self.acc_exp).id,
+                            "tax_ids": [(6, 0, self.tax_by_type[move_type].ids)],
                         }
                     )
                     for qty, price in lines
@@ -243,75 +262,90 @@ class TestReversalPaymentTermBalance(TransactionCase):
         self.assertAlmostEqual(credit_note.amount_total, invoice.amount_total, places=2)
 
     # -- tests -------------------------------------------------------------
+    # Todas las pruebas corren para facturas de venta y de compra.
+
+    MOVE_TYPES = {"out_invoice": "out_refund", "in_invoice": "in_refund"}
 
     def test_01_reverse_moves_two_term_lines_is_balanced(self):
-        """Revertir una factura con terminos 30/70 no debe desbalancear el asiento."""
-        invoice = self._create_invoice()
-        credit_note = invoice._reverse_moves(
-            [{"date": self.today, "journal_id": invoice.journal_id.id}], cancel=False
-        )
-        self.assertEqual(credit_note.move_type, "out_refund")
-        self._assert_reversal_matches(invoice, credit_note)
+        """Revertir una factura (venta/compra) con terminos 30/70 no desbalancea."""
+        for move_type, refund_type in self.MOVE_TYPES.items():
+            with self.subTest(move_type=move_type):
+                invoice = self._create_invoice(move_type)
+                credit_note = invoice._reverse_moves(
+                    [{"date": self.today, "journal_id": invoice.journal_id.id}],
+                    cancel=False,
+                )
+                self.assertEqual(credit_note.move_type, refund_type)
+                self._assert_reversal_matches(invoice, credit_note)
 
     def test_02_reversal_wizard_is_balanced(self):
-        """El mismo caso desde el asistente 'Nota de credito' de la factura."""
-        invoice = self._create_invoice()
-        wizard = (
-            self.env["account.move.reversal"]
-            .with_context(active_model="account.move", active_ids=invoice.ids)
-            .create(
-                {
-                    "move_ids": [Command.set(invoice.ids)],
-                    "date": self.today,
-                    "journal_id": invoice.journal_id.id,
-                }
-            )
-        )
-        action = wizard.refund_moves()
-        credit_note = self.env["account.move"].browse(action["res_id"])
-        self.assertEqual(credit_note.move_type, "out_refund")
-        # El asistente genera la nota de credito con una sola linea por cobrar.
-        self._assert_reversal_matches(invoice, credit_note, same_term_lines=False)
+        """El mismo caso desde el asistente de reversion de la factura."""
+        for move_type, refund_type in self.MOVE_TYPES.items():
+            with self.subTest(move_type=move_type):
+                invoice = self._create_invoice(move_type)
+                wizard = (
+                    self.env["account.move.reversal"]
+                    .with_context(active_model="account.move", active_ids=invoice.ids)
+                    .create(
+                        {
+                            "move_ids": [Command.set(invoice.ids)],
+                            "date": self.today,
+                            "journal_id": invoice.journal_id.id,
+                        }
+                    )
+                )
+                action = wizard.refund_moves()
+                credit_note = self.env["account.move"].browse(action["res_id"])
+                self.assertEqual(credit_note.move_type, refund_type)
+                # El asistente genera la nota con una sola linea por cobrar/pagar.
+                self._assert_reversal_matches(
+                    invoice, credit_note, same_term_lines=False
+                )
 
     def test_03_reversal_with_different_date_is_balanced(self):
         """La fecha de reversion distinta a la de la factura tampoco desbalancea."""
-        invoice = self._create_invoice()
-        credit_note = invoice._reverse_moves(
-            [
-                {
-                    "date": self.today + timedelta(days=1),
-                    "journal_id": invoice.journal_id.id,
-                }
-            ],
-            cancel=False,
-        )
-        self._assert_reversal_matches(invoice, credit_note)
+        for move_type in self.MOVE_TYPES:
+            with self.subTest(move_type=move_type):
+                invoice_date = self.today - timedelta(days=5)
+                self._set_usd_rate(881.8769, invoice_date)
+                invoice = self._create_invoice(move_type, invoice_date=invoice_date)
+                credit_note = invoice._reverse_moves(
+                    [{"date": self.today, "journal_id": invoice.journal_id.id}],
+                    cancel=False,
+                )
+                self._assert_reversal_matches(invoice, credit_note)
 
     def test_04_distribute_to_lines_ignores_non_rounding_amounts(self):
         """Un monto muy superior a un ajuste de redondeo no se reparte."""
-        invoice = self._create_invoice(post=False)
-        pt_lines = self._pt_lines(invoice)
-        before = {line.id: line.balance for line in pt_lines}
-        self.assertEqual(len(pt_lines), 2)
+        for move_type in self.MOVE_TYPES:
+            with self.subTest(move_type=move_type):
+                invoice = self._create_invoice(move_type, post=False)
+                pt_lines = self._pt_lines(invoice)
+                before = {line.id: line.balance for line in pt_lines}
+                self.assertEqual(len(pt_lines), 2)
 
-        invoice._distribute_to_lines(pt_lines, -2494335.91, self.company.currency_id)
+                invoice._distribute_to_lines(
+                    pt_lines, -2494335.91, self.company.currency_id
+                )
 
-        self.assertEqual({line.id: line.balance for line in pt_lines}, before)
+                self.assertEqual({line.id: line.balance for line in pt_lines}, before)
 
     def test_05_distribute_to_lines_still_absorbs_rounding(self):
         """Una diferencia de redondeo (centimos) si se sigue repartiendo."""
-        invoice = self._create_invoice(post=False)
-        pt_lines = self._pt_lines(invoice)
-        total_before = sum(pt_lines.mapped("balance"))
+        for move_type in self.MOVE_TYPES:
+            with self.subTest(move_type=move_type):
+                invoice = self._create_invoice(move_type, post=False)
+                pt_lines = self._pt_lines(invoice)
+                total_before = sum(pt_lines.mapped("balance"))
 
-        # El reparto mueve solo las cuotas, asi que el asiento queda
-        # momentaneamente desbalanceado: se desactiva la validacion.
-        invoice._distribute_to_lines(
-            pt_lines.with_context(check_move_validity=False),
-            0.02,
-            self.company.currency_id,
-        )
+                # El reparto mueve solo las cuotas, asi que el asiento queda
+                # momentaneamente desbalanceado: se desactiva la validacion.
+                invoice._distribute_to_lines(
+                    pt_lines.with_context(check_move_validity=False),
+                    0.02,
+                    self.company.currency_id,
+                )
 
-        self.assertAlmostEqual(
-            sum(pt_lines.mapped("balance")), total_before + 0.02, places=2
-        )
+                self.assertAlmostEqual(
+                    sum(pt_lines.mapped("balance")), total_before + 0.02, places=2
+                )
