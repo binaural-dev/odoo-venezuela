@@ -21,11 +21,21 @@ staging posconsultoria).
   ventas del efectivo sin cajón.
 - `binaural_pos_close` usa el mismo método para conciliar la línea de la
   entrada/salida en el diario del cajón contra su cruce.
-- No se crean asientos nuevos ni cambia cuándo llega el dinero al diario real.
+- No se crean asientos nuevos.
+- Opción de la compañía "Publicar los cruces del PdV" (`pos_post_cross_moves`,
+  marcada por defecto) en Ajustes, Configuración del PdV. Marcada, el cruce se
+  publica al crearse, como hasta ahora. Desmarcada, queda en borrador y sin la
+  línea del diario real; cuando contabilidad lo publica se crea esa línea y se
+  concilia (`account.move._post_pos_cross`). El cruce guarda su sesión y su
+  método (`pos_cross_session_id`, `pos_cross_payment_method_id`) y la línea su
+  cruce (`pos_cross_real_move_id`): publicarlo otra vez no la duplica.
 
 ## Impact
 
-- `l10n_ve_pos/models/pos_session.py`
+- `l10n_ve_pos/models/pos_session.py`, `account_move.py`,
+  `account_bank_statement_line.py`, `res_company.py`, `res_config_settings.py`
+- `l10n_ve_pos/views/res_config_settings.xml`, `i18n/es_VE.po`
+- Campos nuevos: hay que actualizar el módulo.
 - `l10n_ve_pos/tests/test_pos_session_cross_account_move.py`
 - Cuentas transitorias sin "Permitir conciliación": todo sigue como antes.
 - Con el módulo `accountant` (enterprise), la línea de extracto que crea un

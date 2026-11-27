@@ -2,7 +2,7 @@
 
 ### Requirement: Línea de extracto del cruce en el diario real
 
-Por cada línea de un cruce sobre la Cuenta transitoria del `cross_journal` el sistema DEBE (MUST) crear en ese diario una línea de extracto con el mismo monto en la moneda del diario, la misma alterna, el mismo socio, la fecha del cruce y su `ref` como etiqueta, y DEBE (MUST) conciliarla enseguida contra su línea del cruce, uno a uno, cuando esa transitoria permite conciliación y las dos suman cero en la moneda de la compañía; si no, la DEBE (MUST) dejar sin conciliar y sin error. NO DEBE (MUST NOT) crearla si esa transitoria es también la del diario del método.
+Al publicarse un cruce, por cada una de sus líneas sobre la Cuenta transitoria del `cross_journal` el sistema DEBE (MUST) crear en ese diario una línea de extracto, una sola vez, con el mismo monto en la moneda del diario, la misma alterna, el mismo socio, la fecha del cruce y su `ref` como etiqueta, y DEBE (MUST) conciliarla enseguida contra su línea del cruce, uno a uno, cuando esa transitoria permite conciliación y las dos suman cero en la moneda de la compañía; si no, la DEBE (MUST) dejar sin conciliar y sin error. NO DEBE (MUST NOT) crearla si esa transitoria es también la del diario del método.
 
 #### Scenario: Salida de efectivo cruzada
 
@@ -39,3 +39,30 @@ Por cada línea de un cruce sobre la Cuenta transitoria del `cross_journal` el s
 
 - **WHEN** el diario del método y el `cross_journal` tienen la misma Cuenta transitoria
 - **THEN** el cruce se crea y no se crea ninguna línea de extracto
+
+## ADDED Requirements
+
+### Requirement: Publicación de los cruces configurable
+
+La compañía DEBE (MUST) tener la opción "Publicar los cruces del PdV" (`res.company.pos_post_cross_moves`), marcada por defecto. Marcada, el sistema DEBE (MUST) publicar cada cruce al crearlo. Desmarcada, DEBE (MUST) dejarlo en borrador, sin su línea de extracto en el diario real, y DEBE (MUST) crearla y conciliarla cuando el cruce se publica.
+
+#### Scenario: Compañía nueva
+
+- **WHEN** se crea una compañía
+- **THEN** la opción viene marcada y sus cruces se publican al crearse
+
+#### Scenario: Cruce en borrador
+
+- **WHEN** la opción está desmarcada y se cruza una salida de efectivo
+- **THEN** el cruce queda en borrador con su sesión y su método, y el `cross_journal` no tiene línea de extracto
+
+#### Scenario: Contabilidad publica el borrador
+
+- **WHEN** contabilidad publica ese cruce
+- **THEN** se crea su línea de extracto en el `cross_journal`, conciliada contra él, y la transitoria queda en cero
+
+#### Scenario: Publicado otra vez
+
+- **WHEN** el cruce se pasa a borrador y se publica otra vez
+- **THEN** sigue con una sola línea de extracto, conciliada
+
