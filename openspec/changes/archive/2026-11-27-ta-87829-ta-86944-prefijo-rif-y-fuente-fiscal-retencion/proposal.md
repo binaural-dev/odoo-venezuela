@@ -21,7 +21,7 @@ La revisión de Saul al PR 1657 (tareas #87829 y #86944) pidió cuatro cosas:
 ## Impact
 
 - Specs afectadas: `l10n_ve_contact` (prefijo por tipo de contacto y contacto hijo) y `l10n_ve_payment_extension` (fuente de la información fiscal de la retención).
-- Versiones de manifest: `l10n_ve_contact` 19.0.1.9.1 y `l10n_ve_payment_extension` 19.0.2.2.11.
+- Versiones de manifest: `l10n_ve_contact` 19.0.1.9.2 y `l10n_ve_payment_extension` 19.0.2.2.12.
 - Sin migración de datos: un contacto ya guardado con un prefijo que ahora no pasa la restricción solo se detecta al editarlo.
 - Los tests de `l10n_ve_sale` e `l10n_ve_invoice_digital` que crean J sin `is_company` fallarán con la restricción.
 - Una compañía sin `condition_withholding_id` no puede generar retenciones de IVA de venta hasta configurarla.

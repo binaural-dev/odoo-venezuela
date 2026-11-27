@@ -14,4 +14,4 @@
 
 - [x] 3.1 Tests del prefijo en servidor y del defecto según el contexto.
 - [x] 3.2 Tests de IVA e ISLR de un contacto hijo y del IVA de venta desde la compañía.
-- [x] 3.3 Subir `l10n_ve_contact` a 19.0.1.9.1 y `l10n_ve_payment_extension` a 19.0.2.2.11.
+- [x] 3.3 Subir `l10n_ve_contact` a 19.0.1.9.2 y `l10n_ve_payment_extension` a 19.0.2.2.12.
