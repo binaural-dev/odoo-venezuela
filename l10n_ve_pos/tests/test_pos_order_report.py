@@ -26,13 +26,15 @@ class TestPosOrderReport(TestPosSessionAccountingBase):
             }
         )
 
-    def _create_order(self, qty, price_unit, tax_amount, refunded_line=None):
+    def _create_order(self, qty, price_unit, tax_amount, refunded_line=None, rate=None):
         """Create an order with a single line priced in Bs.
 
         No foreign amount is written on the line: the report must derive it
         from the line amounts and the frozen rate of the order, just like the
-        POS does.
+        POS does. ``rate`` overrides the order's ``foreign_currency_rate``
+        (e.g. a refund made on another day).
         """
+        rate = self.FOREIGN_RATE if rate is None else rate
         subtotal = qty * price_unit
         total = subtotal + tax_amount
         line_vals = {
@@ -51,8 +53,8 @@ class TestPosOrderReport(TestPosSessionAccountingBase):
                 "session_id": self.session.id,
                 "partner_id": self.company.partner_id.id,
                 "pricelist_id": self.company.partner_id.property_product_pricelist.id,
-                "foreign_currency_rate": self.FOREIGN_RATE,
-                "foreign_amount_total": total * self.FOREIGN_RATE,
+                "foreign_currency_rate": rate,
+                "foreign_amount_total": total * rate,
                 "amount_total": total,
                 "amount_tax": tax_amount,
                 "amount_paid": total,
@@ -108,6 +110,47 @@ class TestPosOrderReport(TestPosSessionAccountingBase):
         )
         self._assert_amount(net_untaxed, 50.0, "Net foreign untaxed")
         self._assert_amount(net_total, 58.0, "Net foreign total")
+
+    def test_report_refund_uses_original_sale_rate(self):
+        """A refund made at another rate is valued at the original sale's rate.
+
+        The sale of 4,000 Bs + 640 Bs tax is made at 40 Bs/$ (100 $ / 116 $)
+        and fully refunded another day at 50 Bs/$. The refund must subtract
+        100 $ / 116 $ (not 80 $ / 92.80 $), so the net USD of the pair is 0,
+        matching the invoice and its credit note.
+        """
+        sale = self._create_order(qty=2.0, price_unit=2000.0, tax_amount=640.0)
+        refund = self._create_order(
+            qty=-2.0,
+            price_unit=2000.0,
+            tax_amount=-640.0,
+            refunded_line=sale.lines,
+            rate=0.02,
+        )
+        report = self._report_line(refund.lines)
+
+        self._assert_amount(report.foreign_untaxed_total, -100.0, "Refund foreign untaxed total")
+        self._assert_amount(report.foreign_total_billed, -116.0, "Refund foreign total billed")
+
+        [(net_untaxed, net_total)] = self.env["report.pos.order"]._read_group(
+            [("order_id", "in", (sale | refund).ids)],
+            aggregates=["foreign_untaxed_total:sum", "foreign_total_billed:sum"],
+        )
+        self._assert_amount(net_untaxed, 0.0, "Net foreign untaxed")
+        self._assert_amount(net_total, 0.0, "Net foreign total")
+
+    def test_report_order_without_rate_reports_zero(self):
+        """An order without ``foreign_currency_rate`` reports 0 in USD.
+
+        This is the expected behavior: there is no rate to convert with, and
+        the line must still appear with its Bs amounts.
+        """
+        order = self._create_order(qty=1.0, price_unit=2000.0, tax_amount=320.0, rate=0.0)
+        report = self._report_line(order.lines)
+
+        self.assertTrue(report, "The order line must appear in report.pos.order")
+        self._assert_amount(report.foreign_untaxed_total, 0.0, "Foreign untaxed total")
+        self._assert_amount(report.foreign_total_billed, 0.0, "Foreign total billed")
 
     def test_report_views_label_measures_with_foreign_currency(self):
         """Pivot and graph views label the USD measures with the currency name."""
