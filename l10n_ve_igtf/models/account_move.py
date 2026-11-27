@@ -63,10 +63,38 @@ class AccountMove(models.Model):
         # chained after this one (l10n_ve_payment_extension) keep extending it.
         super()._compute_payments_widget_reconciled_info()
         # What this module adds: only posted invoices show reconciled payments
-        # (account also builds the widget for draft ones).
+        # (account also builds the widget for draft ones) and every payment line
+        # carries can_open_move, which decides if the popover shows the "View"
+        # button. Some account builds do not compute it, so it is completed here
+        # with the same rule as account (setdefault keeps the value if it exists).
+        can_read_accounting = self.env.user.has_group('account.group_account_readonly')
         for move in self:
             if move.state != 'posted':
                 move.invoice_payments_widget = False
+                continue
+            widget = move.invoice_payments_widget
+            if not widget or not widget.get('content'):
+                continue
+            counterpart_moves = self.env['account.move'].browse(
+                [vals['move_id'] for vals in widget['content'] if vals.get('move_id')]
+            )
+            moves_by_id = {m.id: m for m in counterpart_moves}
+            content = []
+            for vals in widget['content']:
+                vals = dict(vals)
+                counterpart = moves_by_id.get(vals.get('move_id'))
+                vals.setdefault(
+                    'can_open_move',
+                    bool(
+                        can_read_accounting
+                        or (counterpart and (
+                            counterpart.origin_payment_id
+                            or counterpart.is_invoice(include_receipts=True)
+                        ))
+                    ),
+                )
+                content.append(vals)
+            move.invoice_payments_widget = {**widget, 'content': content}
 
     # UNRECONCILED ADVANCE PAYMENTS
     def _compute_payments_widget_to_reconcile_info_advance_payment(self):
