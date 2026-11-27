@@ -28,7 +28,11 @@ staging posconsultoria).
 - `l10n_ve_pos/models/pos_session.py`
 - `l10n_ve_pos/tests/test_pos_session_cross_account_move.py`
 - Cuentas transitorias sin "Permitir conciliación": todo sigue como antes.
-- Con el módulo `accountant` (enterprise), Odoo marca como no revisada
-  (`checked`) la línea de extracto que crea un usuario sin permisos contables y
-  la muestra como no conciliada mientras no se revise, aunque su transitoria lo
-  esté. No se cambia aquí: queda para la prueba con un cajero.
+- Con el módulo `accountant` (enterprise), la línea de extracto que crea un
+  usuario sin permisos contables (el cajero, con Facturación o Gerente de PdV)
+  queda sin revisar (`checked`): su transitoria se concilia y el dinero llega a
+  la cuenta principal del diario real, pero el tablero la muestra pendiente
+  hasta que contabilidad la marca revisada. Decisión del 2026-11-27: se deja
+  así, es el control estándar de Odoo y el paso en que contabilidad confirma
+  que el dinero llegó (pasa igual con la línea que crea el core para la
+  entrada/salida). No se marca revisada desde el código.

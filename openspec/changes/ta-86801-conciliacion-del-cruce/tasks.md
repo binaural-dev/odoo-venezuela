@@ -13,6 +13,6 @@
 - [x] 2.5 Cruce combinado: cada pata con su línea de extracto
 - [x] 2.6 Cajero sin permisos contables: se concilia en sudo
 
-## 3. Pendiente
+## 3. Revisión en enterprise
 
-- [ ] 3.1 Prueba con un cajero en un staging con `accountant`: si la línea no revisada (`checked`) queda pendiente en el tablero
+- [x] 3.1 Cajero con `accountant`: la transitoria queda conciliada y la línea sin revisar (`checked`) espera la revisión de contabilidad; se deja así (ver proposal)
