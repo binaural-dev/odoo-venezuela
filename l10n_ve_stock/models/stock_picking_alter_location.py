@@ -166,6 +166,24 @@ class StockPickingAlterLocation(models.Model):
         )
         return alt_line
 
+    def _post_merged_lines_message(self, location, quantities, total_qty):
+        """Leave in the chatter the repeated lines merged by the 19.0.1.0.13 upgrade."""
+        self.ensure_one()
+
+        def format_qty(qty):
+            return f"{float(qty or 0):g}"
+
+        self.message_post(
+            body=_(
+                "The location %(location)s was repeated in the other locations of the "
+                "product with quantities %(quantities)s. The lines were merged into one "
+                "with %(total)s when updating the module.",
+                location=location.display_name,
+                quantities=", ".join(format_qty(qty) for qty in quantities),
+                total=format_qty(total_qty),
+            )
+        )
+
     def action_internal_transfer(self, from_location_id, to_location_id, transfer_quantity):
         self.ensure_one()
         user = self.env.user
