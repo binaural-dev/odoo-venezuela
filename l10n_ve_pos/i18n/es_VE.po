@@ -1058,6 +1058,16 @@ msgstr ""
 #. odoo-python
 #: code:addons/l10n_ve_pos/models/pos_payment_method.py:0
 msgid ""
+"The foreign currency payment method %(method)s requires a Cross Journal "
+"and a Cross Account Journal."
+msgstr ""
+"El método de pago %(method)s en moneda alterna requiere un Diario afectado "
+"de banco o efectivo y un Diario de Cruce de Cuentas."
+
+#. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_payment_method.py:0
+msgid ""
 "The payment method %(method)s is collected in %(currency)s: set its Cross "
 "Journal (the real journal in %(currency)s) and its Cross Account Journal."
 msgstr ""

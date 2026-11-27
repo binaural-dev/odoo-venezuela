@@ -66,6 +66,17 @@
       alterna con la transitoria por defecto en los dos diarios; diario en USD en una caja en Bs) dan el error al
       guardar el método, no al abrir la caja. Probado por el usuario
 
+## 7. Diarios de cruce obligatorios para moneda alterna
+
+- [x] 7.1 Exigir `cross_account_journal` y `cross_journal` en `models/pos_payment_method.py` y
+      `views/pos_payment_method.xml` cuando el método se marca en moneda alterna.
+- [x] 7.2 Traducir el error en `i18n/es_VE.po` y actualizar el escenario de configuración incompleta.
+- [x] 7.3 Verificar en Odoo los casos de creación, activación y eliminación de un diario, y los métodos
+      antiguos sin cruce en `tests/test_pos_payment_method_validations.py` y
+      `tests/test_pos_session_cross_account_move.py`. Suite `/l10n_ve_pos`: 275 pruebas en verde.
+- [x] 7.4 Actualizar `l10n_ve_pos` en `poscon2_ti16547_test` y verificar la vista resuelta y el mensaje
+      en español desde Odoo, con rollback de los datos de prueba.
+
 ## Workflow follow-up
 
 - PR a `19.0` con "Ticket: https://binaural.odoo.com/odoo/all-tickets/15399".

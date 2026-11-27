@@ -79,19 +79,12 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
             }
         )
 
-    def _configure_cross(self, method, *, cross_account_journal=True, cross_journal=True):
-        """Wire up a payment method for the cross move.
-
-        ``is_foreign_currency`` is the only switch that arms the flow (the
-        base fixture already sets it on all four methods), so this helper
-        only has to fill in the two journals. Passing either flag as False
-        leaves that journal empty, which is the "incomplete configuration"
-        case the flow must skip in silence.
-        """
-        vals = {}
-        vals["cross_account_journal"] = self.cross_account_journal.id if cross_account_journal else False
-        vals["cross_journal"] = self.real_bank_journal.id if cross_journal else False
-        method.write(vals)
+    def _configure_cross(self, method):
+        """Provide both journals for a foreign method to cross."""
+        method.write({
+            "cross_account_journal": self.cross_account_journal.id,
+            "cross_journal": self.real_bank_journal.id,
+        })
 
     def _cross_moves(self):
         return self.env["account.move"].search(
@@ -844,17 +837,19 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
         self.assertEqual(len(self._cross_moves()), 0)
 
     def test_no_cross_move_when_journal_missing(self):
-        """Falta un diario de cruce: no crea nada ni rompe."""
+        """Un método antiguo sin uno de sus diarios omite el cruce."""
         for missing in ("cross_account_journal", "cross_journal"):
             with self.subTest(missing=missing):
                 # Odoo bloquea escribir sobre un pos.payment.method mientras
                 # tenga una sesion abierta -- configurar ANTES de abrir la
                 # sesion de esta iteracion.
-                self._configure_cross(
-                    self.split_bank_method,
-                    cross_account_journal=(missing != "cross_account_journal"),
-                    cross_journal=(missing != "cross_journal"),
+                self._configure_cross(self.split_bank_method)
+                self.split_bank_method.flush_recordset([missing])
+                self.env.cr.execute(
+                    SQL("UPDATE pos_payment_method SET %s = NULL WHERE id = %s",
+                        SQL.identifier(missing), self.split_bank_method.id)
                 )
+                self.split_bank_method.invalidate_recordset([missing])
                 session = self._new_session().with_company(self.company)
                 self._create_paid_order(
                     session,

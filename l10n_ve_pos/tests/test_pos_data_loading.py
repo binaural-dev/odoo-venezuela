@@ -1,6 +1,8 @@
 from odoo import fields
 from odoo.tests import TransactionCase, tagged
 
+from .test_pos_session_accounting_common import mark_legacy_foreign_currency
+
 
 @tagged("post_install", "-at_install", "l10n_ve_pos", "slice_a")
 class TestPosDataLoading(TransactionCase):
@@ -79,7 +81,7 @@ class TestPosDataLoading(TransactionCase):
                 .id,
             }
         )
-        cls.payment_method.write({"is_foreign_currency": True})
+        mark_legacy_foreign_currency(cls.payment_method)
         cls.partner = cls.env["res.partner"].create(
             {
                 "name": "Test Partner VE",
