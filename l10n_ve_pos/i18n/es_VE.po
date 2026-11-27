@@ -185,6 +185,12 @@ msgid "Connection error"
 msgstr ""
 
 #. module: l10n_ve_pos
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/services/pos_store.js:0
+msgid "Connection Lost"
+msgstr "Conexión perdida"
+
+#. module: l10n_ve_pos
 #: model:ir.model,name:l10n_ve_pos.model_res_partner
 msgid "Contact"
 msgstr "Contacto"
@@ -1078,6 +1084,12 @@ msgid "The rate that is gonna be always shown to the user."
 msgstr "La tarifa que siempre se mostrará al usuario."
 
 #. module: l10n_ve_pos
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/services/pos_store.js:0
+msgid "The register cannot be opened while offline. Please try again."
+msgstr "La caja no se puede abrir sin conexión. Inténtelo de nuevo."
+
+#. module: l10n_ve_pos
 #. odoo-python
 #: code:addons/l10n_ve_pos/models/pos_config.py:0
 msgid ""
@@ -1373,3 +1385,27 @@ msgstr "Subtotal %s"
 #: code:addons/l10n_ve_pos/report/pos_order_report.py:0
 msgid "Total %s"
 msgstr "Total %s"
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_payment_method.py:0
+msgid ""
+"The journal %(journal)s and the cross journal %(cross_journal)s of the "
+"payment method %(method)s use the same suspense account %(account)s. Each "
+"journal must have its own suspense account."
+msgstr ""
+"El diario %(journal)s y el diario afectado de banco o efectivo "
+"%(cross_journal)s del método de pago %(method)s usan la misma cuenta "
+"transitoria %(account)s. Cada diario debe tener su propia cuenta transitoria."
+
+#. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_payment_method.py:0
+msgid ""
+"The journal %(journal)s of the payment method %(method)s is in "
+"%(journal_currency)s, but the Point of Sale %(pos)s works in "
+"%(pos_currency)s. The journal of a payment method must be in the currency "
+"of its Point of Sale."
+msgstr ""
+"El diario %(journal)s del método de pago %(method)s está en "
+"%(journal_currency)s, pero el punto de venta %(pos)s trabaja en "
+"%(pos_currency)s. El diario de un método de pago debe estar en la moneda de "
+"su punto de venta."

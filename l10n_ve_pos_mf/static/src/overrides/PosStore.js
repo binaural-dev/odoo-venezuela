@@ -818,14 +818,21 @@ patch(PosStore.prototype, {
    */
   async _mfApplyPrintVerification(uuid, resolved) {
     const order = this.models["pos.order"].getBy("uuid", uuid);
+    const previous = order && {
+      fiscal_machine: order.fiscal_machine,
+      mf_invoice_number: order.mf_invoice_number,
+      mf_reportz: order.mf_reportz,
+      mf_print_verification: order.mf_print_verification,
+    };
     if (order) {
       if (resolved.printed && !order.mf_invoice_number) {
         this.set_data_from_fiscal_machine(order, resolved);
       }
       order.mf_print_verification = false;
     }
+    let saved;
     try {
-      return await this.data.call("pos.order", "mf_resolve_print_verification", [
+      saved = await this.data.call("pos.order", "mf_resolve_print_verification", [
         uuid,
         resolved,
       ]);
@@ -833,6 +840,27 @@ patch(PosStore.prototype, {
       console.warn("MF:: No se pudo guardar la verificación de la impresión", uuid, error);
       return false;
     }
+    if (saved?.manual_review) {
+      // El servidor no aceptó el número (otra máquina, anterior a la foto o
+      // de otro documento): el pedido sigue por verificar y sin número, y lo
+      // resuelve el gerente con el asistente. Sale de la cola. #85447
+      if (order) {
+        order.fiscal_machine = previous.fiscal_machine;
+        order.mf_invoice_number = previous.mf_invoice_number;
+        order.mf_reportz = previous.mf_reportz;
+        order.mf_print_verification = previous.mf_print_verification;
+      }
+      this._mfShowError(
+        _t("Fiscal print to verify"),
+        _t(
+          "The fiscal printer reported order %(order)s as printed, but its fiscal number was " +
+            "not applied: %(reason)s It stays to verify: resolve it from the order in the backend.",
+          { order: this._mfOrderLabel(uuid), reason: saved.reason || "" }
+        )
+      );
+      return true;
+    }
+    return saved;
   },
 
   /**

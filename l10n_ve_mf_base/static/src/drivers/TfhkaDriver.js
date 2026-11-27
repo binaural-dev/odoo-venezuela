@@ -1797,13 +1797,23 @@ export class TfhkaDriver {
             // Quedó abierto: "7" lo anula si no hubo pagos y lo termina como
             // válido si los hubo. Lo que haya pasado se mide con S1.
             const closed = await this.abortTransaction();
-            if (!closed && verification.docType !== "invoice") {
-                // Sigue abierto. Que S1 ya cuente el documento abierto está
-                // medido solo para facturas: con una NC o ND, "mismo número"
-                // no prueba que no se emitió. Se reintenta antes de la
-                // siguiente impresión, que tampoco podría salir con el
-                // documento abierto (el PdV lo trata como `no_response`).
-                return { printed: null, reason: "document_open", s1: null };
+            if (verification.docType !== "invoice") {
+                // Que S1 ya cuente el documento abierto está medido solo para
+                // facturas: con una NC o ND, "mismo número" no prueba que no
+                // se emitió, así que S1 solo se mira con la máquina en reposo.
+                // `abortTransaction` da true con el ACK del "7" (o del "9" o
+                // el "199"), y con pagos el "7" no anula el documento: sigue
+                // en la totalización (manual TFHKA, medios de pago). Se
+                // reintenta antes de la siguiente impresión, que tampoco
+                // podría salir con el documento abierto (el PdV lo trata
+                // como `no_response`).
+                const after = closed ? await this._statusAfterAbort() : status;
+                if (!after) {
+                    return { printed: null, reason: "no_response", s1: null };
+                }
+                if (!this._isWaitingState(after.raw?.sts1)) {
+                    return { printed: null, reason: "document_open", s1: null };
+                }
             }
         }
         const s1 = await this._readS1Data();
@@ -1811,6 +1821,20 @@ export class TfhkaDriver {
             return { printed: null, reason: "no_response", s1: null };
         }
         return { ...this._compareDocumentSnapshot(verification, s1.data), s1: s1.data };
+    }
+
+    /**
+     * Estado después del "7" de `_documentOutcome`, con el mismo margen que
+     * antes del "7" para que la máquina termine de imprimir el cierre.
+     * @returns {Promise<Object|null>} null si la máquina no respondió
+     */
+    async _statusAfterAbort() {
+        let status = await this.getStatus();
+        for (let attempt = 0; attempt < 4 && status && this._isTransactionState(status.raw?.sts1); attempt++) {
+            await new Promise((resolve) => setTimeout(resolve, this.retryDelay));
+            status = await this.getStatus();
+        }
+        return status;
     }
 
     /**

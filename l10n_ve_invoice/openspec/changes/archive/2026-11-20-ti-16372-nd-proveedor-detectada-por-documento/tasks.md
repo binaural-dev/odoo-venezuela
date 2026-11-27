@@ -1,0 +1,14 @@
+- [x] `account.move._is_debit_note()` (debit_origin_id o diario is_debit; nunca una NC)
+- [x] Comprobante de retención de IVA, TXT de retenciones, libros y formato libre usan `_is_debit_note()`
+- [x] Título "Nota de débito de proveedor" en el PDF estándar + traducción es_VE
+- [x] Tests (manual con Form, automática al publicar, líneas intercaladas, is_debit, cliente, TXT, libro, PDF)
+- [x] Pruebas de l10n_ve_invoice_digital que fallaban por falta de tasa: `ForeignRateTransactionCase` (el de l10n_ve_invoice en base)
+- [x] `l10n_ve_igtf`: xpath de alertas por condición y no por posición (el aviso de l10n_ve_sale se perdía)
+- [x] Prueba en l10n_ve_igtf que inserta un alert-info de un tercero y verifica que sobrevive y que las 4 variantes quedan en su sitio (falla con el xpath posicional)
+- [x] Bump de versión `l10n_ve_invoice` `19.0.1.0.31`, `l10n_ve_payment_extension` `19.0.2.2.10`, `l10n_ve_igtf` `19.0.1.2.23` y `l10n_ve_invoice_digital` `19.0.1.4.9`
+- [x] Columna TD del comprobante de ISLR por `_is_debit_note()`
+- [x] Título del PDF sin reemplazar el del núcleo (conserva la traducción de "Vendor Bill" en todos los idiomas)
+- [x] `l10n_ve_igtf_note_debit`: aviso de IGTF pendiente por condición y no por posición
+- [x] `integra-addons` `binaural_third_party_invoice`: factura afectada por `_is_debit_note()` (binaural-dev/integra-addons#3319, fuera del alcance del ticket, se mergea después de este PR)
+- [x] Fecha propia de la ND por el asistente en las pruebas; NC por el asistente de reversión
+- [x] Fuera de este PR: confirmar con el cliente las dos fechas (ND A798 y ND de cliente 00092780) y la ruta fiscal / Reporte Z

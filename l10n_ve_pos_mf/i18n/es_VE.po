@@ -694,7 +694,7 @@ msgstr "El número fiscal solo puede tener dígitos."
 
 #. module: l10n_ve_pos_mf
 #. odoo-python
-#: code:addons/l10n_ve_pos_mf/wizard/pos_order_mf_verification_wizard.py:0
+#: code:addons/l10n_ve_pos_mf/models/pos_order.py:0
 msgid "The fiscal number %(number)s of the fiscal printer %(serial)s already belongs to %(owner)s. Check on the fiscal printer which document belongs to this order."
 msgstr "El número fiscal %(number)s de la máquina fiscal %(serial)s ya es de %(owner)s. Revise en la máquina fiscal qué documento corresponde a este pedido."
 
@@ -748,13 +748,13 @@ msgstr "Verificar impresión"
 
 #. module: l10n_ve_pos_mf
 #. odoo-python
-#: code:addons/l10n_ve_pos_mf/wizard/pos_order_mf_verification_wizard.py:0
+#: code:addons/l10n_ve_pos_mf/models/pos_order.py:0
 msgid "The document could only be printed on the fiscal printer %(expected)s, the one connected when it was printed."
 msgstr "El documento solo pudo emitirse en la máquina fiscal %(expected)s, la que estaba conectada al imprimirlo."
 
 #. module: l10n_ve_pos_mf
 #. odoo-python
-#: code:addons/l10n_ve_pos_mf/wizard/pos_order_mf_verification_wizard.py:0
+#: code:addons/l10n_ve_pos_mf/models/pos_order.py:0
 msgid "The fiscal number must be greater than %(last)s, the last number of the fiscal printer before printing this order."
 msgstr "El número fiscal tiene que ser mayor que %(last)s, el último número de la máquina fiscal antes de imprimir este pedido."
 
@@ -803,3 +803,15 @@ msgstr ""
 "pueden no cuadrar con el documento fiscal.\n"
 "\n"
 "El cambio quedará registrado en el historial de esta precisión."
+
+#. module: l10n_ve_pos_mf
+#. odoo-python
+#: code:addons/l10n_ve_pos_mf/models/pos_order.py:0
+msgid "Fiscal print verified by the PoS with the fiscal printer, but not applied: the fiscal printer reported number %(number)s (fiscal printer %(serial)s). %(reason)s The order stays to verify until a PoS manager resolves it from the order. Reading of the fiscal printer before the print: last number %(last)s, fiscal printer %(before_serial)s, Z counter %(closures)s."
+msgstr "Impresión fiscal verificada por el PdV con la máquina fiscal, pero no aplicada: la máquina fiscal informó el número %(number)s (máquina fiscal %(serial)s). %(reason)s El pedido sigue por verificar hasta que un gerente del PdV lo resuelva desde el pedido. Lectura de la máquina fiscal antes de la impresión: último número %(last)s, máquina fiscal %(before_serial)s, contador Z %(closures)s."
+
+#. module: l10n_ve_pos_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf/static/src/overrides/PosStore.js:0
+msgid "The fiscal printer reported order %(order)s as printed, but its fiscal number was not applied: %(reason)s It stays to verify: resolve it from the order in the backend."
+msgstr "La máquina fiscal informó el pedido %(order)s como emitido, pero su número fiscal no se aplicó: %(reason)s Sigue por verificar: resuélvalo desde el pedido en el backend."

@@ -17,12 +17,17 @@ El sistema DEBE (MUST) proveer el modelo `transfer.reason` con las razones carga
 
 ### Requirement: Razones de traslado permitidas según la operación
 
-El campo `allowed_reason_ids` de `stock.picking` (`_compute_allowed_reason_ids`) DEBE (MUST) limitar las razones seleccionables según la operación: salida con venta ofrece `sale` (asignada por defecto solo si el traslado aún no tiene razón) y `export`, o solo `self_consumption` si es donación; salida sin venta ofrece `self_consumption`, `other_causes`, `repair_improvement` y `external_storage`; interno ofrece `consignment`, `transfer` y `other_causes`, forzando `consignment` y `is_consignment_readonly` cuando el almacén del destino es de consignación; si el destino no es de consignación y el traslado no tiene una razón permitida, se asigna la razón interna por defecto de la compañía (`internal_transfer_reason_id`) o, si no hay, `transfer`, nunca `consignment` por posición. Si la razón asignada no está entre las permitidas, se reemplaza por la primera permitida. Cuando no se calculó ninguna razón permitida —caso de las entradas (`incoming`) y de cualquier otro código de operación— el campo DEBE (MUST) quedar con TODAS las razones del catálogo, no vacío.
+El campo `allowed_reason_ids` de `stock.picking` (`_compute_allowed_reason_ids`) DEBE (MUST) limitar las razones seleccionables según la operación: salida con venta ofrece `sale` (asignada por defecto solo si el traslado aún no tiene razón) y `export`, o solo `self_consumption` si es donación; una salida del punto de venta (con `pos_order_id` o `pos_session_id`, campos que solo se leen si `point_of_sale` está instalado, vía `_is_point_of_sale_picking`) se trata como salida con venta aunque no tenga `sale_id`, y como el punto de venta asigna esos campos después de crear el traslado, el cómputo depende de ellos cuando existen; salida sin venta ofrece `self_consumption`, `other_causes`, `repair_improvement` y `external_storage`; interno ofrece `consignment`, `transfer` y `other_causes`, forzando `consignment` y `is_consignment_readonly` cuando el almacén del destino es de consignación; si el destino no es de consignación y el traslado no tiene una razón permitida, se asigna la razón interna por defecto de la compañía (`internal_transfer_reason_id`) o, si no hay, `transfer`, nunca `consignment` por posición. Si la razón asignada no está entre las permitidas, se reemplaza por la primera permitida. Cuando no se calculó ninguna razón permitida —caso de las entradas (`incoming`) y de cualquier otro código de operación— el campo DEBE (MUST) quedar con TODAS las razones del catálogo, no vacío.
 
 #### Scenario: Despacho de una venta
 
 - **WHEN** un traslado de salida proviene de una orden de venta y no es donación
 - **THEN** las razones disponibles son venta y exportación, con venta asignada por defecto
+
+#### Scenario: Venta del punto de venta
+
+- **WHEN** un traslado de salida proviene de una orden o sesión del punto de venta, sin orden de venta
+- **THEN** las razones disponibles son venta y exportación, y una razón de autoconsumo se reemplaza por venta
 
 #### Scenario: Traslado interno hacia almacén de consignación
 
@@ -315,6 +320,20 @@ La constraint `_check_internal_location_only` de `stock.location` DEBE (MUST) ex
 - **WHEN** se crea una ubicación en el almacén de consignación sin `partner_id`
 - **THEN** se lanza un error de validación
 
+### Requirement: Ubicaciones del traslado sin recalcular sus movimientos
+
+`_compute_location_id` de `stock.picking` DEBE (MUST) llenar la ubicación de origen y la de destino solo mientras estén vacías y el traslado esté en borrador o en espera, cada una por separado: llenar el destino NO DEBE (MUST NOT) cambiar el origen ya elegido. El origen sale de la consignación del cliente (ver «Ubicación origen desde la consignación del cliente») o, si no aplica, del tipo de operación, del contacto o de proveedores. Sus dependencias DEBEN (MUST) limitarse a `picking_type_id` y `partner_id`, como en el nativo. NO DEBE (MUST NOT) depender de `sale_id`: este depende de `move_ids`, y editar un movimiento desde el formulario del traslado recalcularía la ubicación de origen de los movimientos, que en Odoo 19 se calcula desde la del traslado. Por ejemplo, la línea de una recepción de subcontratación tomaría la ubicación del proveedor en lugar de la de subcontratación, y Odoo borraría su vínculo con la orden de subcontratación.
+
+#### Scenario: Editar la cantidad de un movimiento
+
+- **WHEN** desde el formulario se edita la cantidad de un movimiento cuya ubicación de origen difiere de la del traslado
+- **THEN** el movimiento conserva su ubicación de origen
+
+#### Scenario: Origen elegido antes del tipo de operación
+
+- **WHEN** en un traslado nuevo se elige la ubicación de origen y después el tipo de operación
+- **THEN** se conserva el origen elegido y el destino toma el del tipo de operación
+
 ### Requirement: Validación de stock en ventas de consignación
 
 En órdenes de venta cuyo almacén es de consignación, el sistema DEBE (MUST) exigir —vía la constraint `_check_consignation_warehouse` de `sale.order` y las constraints `_check_product_in_consignation` y `_check_quantity_in_consignation` de `sale.order.line`— que para cada producto no servicio exista al menos un quant con cantidad positiva en alguna ubicación interna cuyo `partner_id` sea el cliente de la orden, y que la cantidad de la línea no supere `free_qty_today`. La búsqueda de quants NO se restringe al almacén de consignación: basta cualquier ubicación interna asignada a ese cliente; y `free_qty_today` es la disponibilidad estándar de `sale_stock`, no la existencia consignada de esa ubicación.
@@ -349,12 +368,27 @@ Cuando un traslado tiene razón consignación, es guía de despacho y `is_consig
 
 ### Requirement: Ubicación origen desde la consignación del cliente
 
-Para traslados en borrador o confirmados sin ubicación origen cuya venta es de consignación, `_compute_location_id` DEBE (MUST) asignar como origen la ubicación interna de consignación asignada al cliente de la orden.
+Para traslados en borrador o en espera sin ubicación origen cuya venta es de consignación, `_compute_location_id` DEBE (MUST) asignar como origen la ubicación interna asignada al cliente de la orden dentro del almacén de consignación. La búsqueda DEBE (MUST) filtrar por `warehouse_id.is_consignation_warehouse`, porque `is_consignation_warehouse` de `stock.location` no se guarda y no se puede buscar. Si el cliente no tiene ninguna ubicación ahí, el origen DEBE (MUST) ser el del tipo de operación. Como el origen solo se llena si está vacío, la venta solo cuenta si se elige antes que el tipo de operación; la entrega que se crea al confirmar la venta ya trae su origen desde la regla del almacén de consignación y no se modifica.
+
+#### Scenario: Venta de consignación antes del tipo de operación
+
+- **WHEN** en un traslado nuevo se elige una venta de consignación y después el tipo de operación
+- **THEN** la ubicación origen es la del cliente en el almacén de consignación
+
+#### Scenario: Cliente sin ubicación en el almacén de consignación
+
+- **WHEN** el cliente de la venta de consignación solo tiene ubicaciones fuera del almacén de consignación
+- **THEN** la ubicación origen es la del tipo de operación
+
+#### Scenario: Venta asignada después del tipo de operación
+
+- **WHEN** en un traslado nuevo se elige el tipo de operación y después una venta de consignación
+- **THEN** la ubicación origen sigue siendo la del tipo de operación
 
 #### Scenario: Entrega de una venta de consignación
 
-- **WHEN** se genera el traslado de una venta de consignación
-- **THEN** la ubicación origen es la ubicación de consignación del cliente
+- **WHEN** se confirma una venta en el almacén de consignación y se edita la cantidad de su entrega
+- **THEN** la entrega y sus movimientos salen del stock del almacén de consignación
 
 ### Requirement: Donación con cliente de la compañía y razón autoconsumo
 

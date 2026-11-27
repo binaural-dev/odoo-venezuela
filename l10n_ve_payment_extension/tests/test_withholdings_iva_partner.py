@@ -473,7 +473,7 @@ class TestRetention(RetentionTestCommon):
         self.assertEqual(ret.partner_id, invoice.partner_id)
         self.assertEqual(ret.state, "draft",
                          "Customer retention must stay in draft on creation")
-        self.assertTrue(ret.number, "Customer retention gets auto-number in draft")
+        self.assertFalse(ret.number, "Customer retention draft takes no number from our sequence")
         self.assertEqual(ret.company_currency_id, self.currency_vef)
         self.assertEqual(ret.foreign_currency_id, self.currency_usd)
         self.assertEqual(ret.total_invoice_amount, 1000.0)
@@ -502,8 +502,8 @@ class TestRetention(RetentionTestCommon):
         self.assertAlmostEqual(line.foreign_iva_amount, 160.0 / self.rate, places=2)
 
         # invoice
-        self.assertTrue(invoice.iva_voucher_number,
-                        "Customer invoice gets voucher number even on draft retention")
+        self.assertFalse(invoice.iva_voucher_number,
+                         "Customer invoice gets no voucher number until the customer's one is typed in")
         self.assertEqual(invoice.count_iva_retention, 1)
         self.assertFalse(invoice.has_emited_iva_retention)
 
@@ -523,9 +523,9 @@ class TestRetention(RetentionTestCommon):
         self.assertEqual(ret.state, "draft")
         self.assertEqual(ret.total_retention_amount, 0.0,
                          "Customer retention amount must be 0 in draft")
-        self.assertTrue(ret.number, "Customer retention has number in draft")
-        self.assertTrue(invoice.iva_voucher_number,
-                        "Invoice gets voucher number from draft retention")
+        self.assertFalse(ret.number, "Customer retention draft takes no number from our sequence")
+        self.assertFalse(invoice.iva_voucher_number,
+                         "Invoice gets the voucher number only when the retention is posted")
 
         # Posting a customer retention with 0 amount now fails earlier, at
         # the explicit zero-amount guard in action_post (rule from helpdesk

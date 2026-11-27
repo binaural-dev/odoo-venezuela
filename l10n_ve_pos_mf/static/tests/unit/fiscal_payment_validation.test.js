@@ -254,6 +254,31 @@ describe("l10n_ve_pos_mf pedidos por verificar", () => {
         expect(calls.filter(([name]) => name === "verifyDocument").length).toBe(1);
         expect(PrintVerificationQueue.getAll()).toEqual([]);
     });
+
+    test("si el servidor no acepta el número, el pedido sigue por verificar y la venta se imprime", async () => {
+        allowTranslations();
+        const previous = queuePrevious();
+        const verified = { success: true, printed: true, invoiceNumber: "527", serial: "Z1A", reportZ: 138 };
+        const reason = "The fiscal number 527 of the fiscal printer Z1A already belongs to Orden B.";
+        const { store, calls, dialogs } = makeStore({
+            verifyResponse: verified,
+            orders: [previous],
+            rpc: async () => ({ manual_review: true, reason }),
+        });
+
+        const result = await store.pushToMF(makeOrder([[BS_CASH, 100]]));
+
+        expect(result.valid).toBe(true);
+        expect(calls.map(([name]) => name)).toEqual(["verifyDocument", "rpc", "printInvoice"]);
+        // El pedido no se queda con el número que rechazó el servidor.
+        expect(previous.mf_invoice_number).toBe(undefined);
+        expect(previous.fiscal_machine).toBe(undefined);
+        expect(previous.mf_print_verification).toEqual(VERIFICATION);
+        expect(dialogs.length).toBe(1);
+        expect(dialogs[0]).toInclude("Orden previa");
+        expect(dialogs[0]).toInclude(reason);
+        expect(PrintVerificationQueue.getAll()).toEqual([]);
+    });
 });
 
 describe("l10n_ve_pos_mf volver a validar no reimprime", () => {
@@ -277,6 +302,26 @@ describe("l10n_ve_pos_mf volver a validar no reimprime", () => {
         expect(order.mf_invoice_number).toBe("527");
         expect(order.mf_print_verification).toBe(false);
         expect(synced.length).toBe(1);
+    });
+
+    test("un pedido cuyo número no aceptó el servidor no se reimprime y se sincroniza por verificar", async () => {
+        allowTranslations();
+        const order = flaggedOrder();
+        const verified = { success: true, printed: true, invoiceNumber: "527", serial: "Z1A", reportZ: 138 };
+        const { store, printed, dialogs, synced } = makeStore({
+            verifyResponse: verified,
+            orders: [order],
+            rpc: async () => ({ manual_review: true, reason: "Already used." }),
+        });
+
+        await makeValidation(store, order).finalizeValidation();
+
+        expect(printed).toEqual([]);
+        expect(order.mf_invoice_number).toBe(undefined);
+        expect(order.mf_print_verification).toEqual(VERIFICATION);
+        expect(dialogs.length).toBe(2);
+        expect(synced.length).toBe(1);
+        expect(order.state).toBe("paid");
     });
 
     test("un pedido por verificar sin resolver no se reimprime y se sincroniza pendiente", async () => {

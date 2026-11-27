@@ -65,7 +65,7 @@ class TxtWizard(models.TransientModel):
             line_data["Fecha de factura"] = line.move_id.invoice_date_display.strftime("%Y-%m-%d")
             line_data["Tipo de operación"] = "C"
             
-            if line.move_id.journal_id.is_debit:
+            if line.move_id._is_debit_note():
                 line_data["Tipo de documento"] = document_types["in_debit"]
                 line_data["Número del documento afectado"] = line.move_id.debit_origin_id.name or "0"
             else:

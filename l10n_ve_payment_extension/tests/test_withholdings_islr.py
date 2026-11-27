@@ -246,8 +246,8 @@ class TestISLRRetention(RetentionTestCommon):
         invoice.with_context(move_action_post_alert=True).action_post()
 
         self.assertEqual(invoice.count_islr_retention, 1)
-        self.assertTrue(invoice.islr_voucher_number,
-                        "Customer invoice gets ISLR voucher number even on draft retention")
+        self.assertFalse(invoice.islr_voucher_number,
+                         "Customer invoice gets no ISLR voucher number until the customer's one is typed in")
         self.assertFalse(invoice.has_emited_islr_retention,
                          "Customer must not have emitted ISLR retention")
         ret = invoice.retention_islr_line_ids[0].retention_id
@@ -255,7 +255,7 @@ class TestISLRRetention(RetentionTestCommon):
                          "Customer ISLR retention must stay in draft")
         self.assertEqual(ret.type_retention, "islr")
         self.assertEqual(ret.type, "out_invoice")
-        self.assertTrue(ret.number, "Customer ISLR retention gets auto-number in draft")
+        self.assertFalse(ret.number, "Customer ISLR retention draft takes no number from our sequence")
         # No payments in draft for ISLR customer (unlike IVA)
         self.assertFalse(ret.payment_ids,
                          "No payments exist for customer ISLR draft retention")
@@ -278,7 +278,7 @@ class TestISLRRetention(RetentionTestCommon):
         self.assertEqual(ret.partner_id, invoice.partner_id)
         self.assertEqual(ret.state, "draft",
                          "Customer ISLR retention must stay in draft")
-        self.assertTrue(ret.number, "Customer ISLR retention gets auto-number in draft")
+        self.assertFalse(ret.number, "Customer ISLR retention draft takes no number from our sequence")
         self.assertFalse(ret.payment_ids,
                          "No payments for customer ISLR in draft")
         self.assertTrue(ret.retention_line_ids)
@@ -316,8 +316,8 @@ class TestISLRRetention(RetentionTestCommon):
         self.assertEqual(ret.foreign_total_retention_amount, 0.0)
 
         # invoice
-        self.assertTrue(invoice.islr_voucher_number,
-                        "Customer invoice gets ISLR voucher number even on draft retention")
+        self.assertFalse(invoice.islr_voucher_number,
+                         "Customer invoice gets no ISLR voucher number until the customer's one is typed in")
         self.assertEqual(invoice.count_islr_retention, 1)
         self.assertFalse(invoice.has_emited_islr_retention)
 
@@ -334,7 +334,7 @@ class TestISLRRetention(RetentionTestCommon):
 
         # Verify draft state — all amounts are 0 (customer ISLR not auto-computed)
         self.assertEqual(ret.state, "draft")
-        self.assertTrue(ret.number, "Customer retention has number in draft")
+        self.assertFalse(ret.number, "Customer retention draft takes no number from our sequence")
         self.assertEqual(ret.total_retention_amount, 0.0,
                          "Customer ISLR has 0 amount in draft (no auto-concept match)")
         self.assertFalse(ret.payment_ids)

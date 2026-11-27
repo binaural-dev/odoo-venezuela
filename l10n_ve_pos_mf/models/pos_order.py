@@ -168,7 +168,10 @@ class PosOrderInherit(models.Model):
         :return: True si ya no queda nada por aplicar (también si el pedido
             no estaba marcado, por ejemplo porque se resolvió desde el
             backend); False si el pedido todavía no está en el servidor (el
-            PdV lo reintenta después de sincronizar)
+            PdV lo reintenta después de sincronizar); o
+            {"manual_review": True, "reason"} si el número no puede ser de
+            este pedido (los mismos chequeos del asistente): no se aplica, el
+            pedido sigue por verificar y queda para el asistente
         """
         if not isinstance(resolved, dict) or not isinstance(resolved.get("printed"), bool):
             raise UserError(_("Invalid fiscal print verification result."))
@@ -187,6 +190,14 @@ class PosOrderInherit(models.Model):
         reportz = resolved.get("reportZ") or False
         kept_number = order.mf_invoice_number
         if resolved["printed"] and not kept_number:
+            # El navegador arma `resolved`: se valida como lo que escribe a
+            # mano el gerente, para no darle el número de otro documento.
+            problem = order._mf_check_fiscal_number(number, serial, order.mf_print_verification)
+            if problem:
+                order._mf_log_rejected_print_verification(
+                    order.mf_print_verification, number, serial, problem
+                )
+                return {"manual_review": True, "reason": problem}
             order.write_mf_invoice_data(number, serial, reportz)
         order._mf_log_print_verification(
             order.mf_print_verification,
@@ -321,6 +332,81 @@ class PosOrderInherit(models.Model):
             if same_number(move.mf_invoice_number) and move._mf_fiscal_document_type() == doc_type:
                 return move.display_name
         return False
+
+    def _mf_check_fiscal_number(self, number, serial, verification):
+        """Motivo por el que un número fiscal no puede ser el del documento
+        por verificar de este pedido, o False si puede serlo. Lo usan el
+        asistente y la resolución del PdV (`mf_resolve_print_verification`).
+        Tarea 85447.
+
+        - El documento solo pudo salir en la máquina de la foto: un error de
+          tipeo en el serial también esquivaría el chequeo de duplicados.
+        - Con un número posterior al que tenía la máquina antes de imprimirlo.
+        - Que no sea de otro pedido o factura de esa máquina y ese tipo de
+          documento.
+
+        :param number: número fiscal, solo dígitos
+        :param serial: serial de la máquina; vacío si el driver no lo leyó
+            (se compara entonces con la máquina de la foto)
+        :param verification: el `mf_print_verification` del pedido
+        :return: el motivo (texto para el usuario) o False
+        """
+        self.ensure_one()
+        verification = verification or {}
+        before = verification.get("before") or {}
+        expected_serial = (before.get("serial") or "").strip()
+        serial = (serial or "").strip()
+        if expected_serial and serial and serial != expected_serial:
+            return _(
+                "The document could only be printed on the fiscal printer %(expected)s, "
+                "the one connected when it was printed.",
+                expected=expected_serial,
+            )
+        last_number = before.get("number")
+        if isinstance(last_number, int) and int(number) <= last_number:
+            return _(
+                "The fiscal number must be greater than %(last)s, the last number of the "
+                "fiscal printer before printing this order.",
+                last=last_number,
+            )
+        # El número esperado es el siguiente al de la foto, y si la máquina
+        # emitió algo más en el medio ese número puede ser de otro documento.
+        machine = serial or expected_serial
+        if machine:
+            doc_type = verification.get("docType") or self._mf_fiscal_document_type()
+            owner = self._mf_fiscal_number_owner(number, machine, doc_type)
+            if owner:
+                return _(
+                    "The fiscal number %(number)s of the fiscal printer %(serial)s already "
+                    "belongs to %(owner)s. Check on the fiscal printer which document "
+                    "belongs to this order.",
+                    number=number,
+                    serial=machine,
+                    owner=owner,
+                )
+        return False
+
+    def _mf_log_rejected_print_verification(self, verification, number, serial, reason):
+        """Deja en el chatter que el PdV verificó la impresión con la máquina
+        pero el número no se aplicó (ver `_mf_check_fiscal_number`): el pedido
+        sigue por verificar para el asistente. Tarea 85447."""
+        self.ensure_one()
+        before = (verification or {}).get("before") or {}
+        body = _(
+            "Fiscal print verified by the PoS with the fiscal printer, but not applied: the "
+            "fiscal printer reported number %(number)s (fiscal printer %(serial)s). %(reason)s "
+            "The order stays to verify until a PoS manager resolves it from the order. Reading "
+            "of the fiscal printer before the print: last number %(last)s, fiscal printer "
+            "%(before_serial)s, Z counter %(closures)s.",
+            number=number,
+            serial=serial or "-",
+            reason=reason,
+            last=before.get("number", "-"),
+            before_serial=before.get("serial") or "-",
+            closures=before.get("dailyClosureCounter", "-"),
+        )
+        # sudo: como en `_mf_log_print_verification`. Autor: quien verificó.
+        self.sudo().message_post(body=body, author_id=self.env.user.partner_id.id)
 
     def action_mf_resolve_print_verification(self):
         """Abre el asistente para resolver a mano un pedido por verificar."""

@@ -341,6 +341,12 @@ El driver DEBE (MUST) exponer `printReportX()` (comando `I0X`, consulta sin cerr
 - **WHEN** la máquina no está en reposo al empezar o S1 no responde
 - **THEN** no hay foto y el resultado es el de siempre
 
+#### Scenario: Falla después de un pago sin foto (riesgo aceptado)
+
+- **GIVEN** que no hubo foto porque la máquina no estaba en reposo al empezar o S1 no respondió
+- **WHEN** la impresión falla después de enviar un pago
+- **THEN** el resultado es el de siempre, sin `printed`, y el PdV deja el pedido pendiente: sin foto no hay contra qué verificarlo
+
 ### Requirement: Falla antes de enviar pagos
 
 Si la impresión falla sin haber enviado ningún pago (comandos `2XX…`, `1XX` o `199`), el driver DEBE (MUST) devolver `printed: false` sin consultar nada más: sin pagos el documento no pudo quedar comprometido.
@@ -388,7 +394,7 @@ Si la máquina aceptó el `199` (cierre) y S1 no muestra el documento, el driver
 
 ### Requirement: Motivo de un resultado desconocido
 
-Un `printed: null` DEBE (MUST) traer `reason`: `no_response` si la máquina no respondió el estado o S1 (en `verifyDocument`, tras 3 consultas de estado); `document_open` si una nota de crédito o de débito sigue abierta después de que el `7` no la pudo terminar; `other_printer` si el serial de S1 no es el de la foto (se mira antes que el número); y `unattributable` si el número avanzó más de uno, los contadores no cuadran o S1 respondió sin el contador del documento.
+Un `printed: null` DEBE (MUST) traer `reason`: `no_response` si la máquina no respondió el estado o S1 (en `verifyDocument`, tras 3 consultas de estado); `document_open` si una nota de crédito o de débito no quedó en reposo después del `7`; `other_printer` si el serial de S1 no es el de la foto (se mira antes que el número); y `unattributable` si el número avanzó más de uno, los contadores no cuadran o S1 respondió sin el contador del documento.
 
 #### Scenario: Se emitió otro documento en el medio
 
@@ -416,9 +422,25 @@ Un `printed: null` DEBE (MUST) traer `reason`: `no_response` si la máquina no r
 - **WHEN** se averigua el resultado
 - **THEN** es `printed: null` con `reason: "document_open"` sin comparar S1 (no está medido que S1 cuente una NC o ND abierta), y se vuelve a verificar antes de la siguiente impresión
 
+#### Scenario: NC o ND que acepta el 7 y sigue abierta
+
+- **GIVEN** una nota de crédito o de débito con un pago enviado, y la máquina en transacción
+- **WHEN** la máquina responde ACK al `7` pero sigue en transacción (con pagos, el `7` no anula el documento: sigue en la totalización, según el manual de la TFHKA)
+- **THEN** el resultado es `printed: null` con `reason: "document_open"` sin leer S1
+
+#### Scenario: NC que el 7 deja en reposo
+
+- **WHEN** después del `7` la máquina queda en reposo
+- **THEN** se compara S1 como antes: mismo número sin cierre aceptado es `printed: false`, y el número siguiente sin cierre aceptado es `unattributable`
+
+#### Scenario: NC muda después del 7
+
+- **WHEN** la máquina no responde el estado después del `7`
+- **THEN** el resultado es `printed: null` con `reason: "no_response"` sin leer S1
+
 #### Scenario: Factura abierta después del 7
 
-- **WHEN** lo mismo pasa con una factura
+- **WHEN** lo mismo pasa con una factura, haya o no aceptado el `7`
 - **THEN** se compara S1 como siempre: está medido que S1 ya cuenta la factura desde el primer pago
 
 ### Requirement: Reporte Z de un documento verificado tarde

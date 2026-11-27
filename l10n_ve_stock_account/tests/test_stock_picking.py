@@ -472,6 +472,29 @@ class TestStockPickingCoverage(StockAccountTestCommon):
         picking._compute_allowed_reason_ids()
         self.assertIn(self.reason_self_consumption.id, picking.allowed_reason_ids.ids)
 
+    def test_compute_allowed_reasons_point_of_sale(self):
+        """A point of sale picking is a sale without sale order: sale replaces self consumption."""
+        picking = self._create_internal_picking(reason=self.reason_self_consumption)
+        picking.operation_code = "outgoing"
+        picking.sale_id = False
+        with patch.object(type(picking), "_is_point_of_sale_picking", return_value=True):
+            picking._compute_allowed_reason_ids()
+        self.assertEqual(picking.transfer_reason_id, self.reason_sale)
+        self.assertIn(self.reason_export.id, picking.allowed_reason_ids.ids)
+        self.assertNotIn(self.reason_self_consumption.id, picking.allowed_reason_ids.ids)
+
+    def test_allowed_reasons_depend_on_point_of_sale_fields_only_when_installed(self):
+        """The point of sale sets its fields after creating the picking, so the reasons depend
+        on them; without point_of_sale the fields do not exist and are not dependencies."""
+        Picking = self.env["stock.picking"]
+        depends = Picking._allowed_reason_ids_depends()
+        self.assertIn("operation_code", depends)
+        self.assertEqual("pos_order_id" in depends, "pos_order_id" in Picking._fields)
+
+    def test_is_point_of_sale_picking_without_point_of_sale_order(self):
+        picking = self._create_outgoing_picking(validate=False)
+        self.assertFalse(picking._is_point_of_sale_picking())
+
     def test_compute_allowed_reasons_internal(self):
         picking = self._create_internal_picking(reason=self.reason_transfer_bw)
         picking._compute_allowed_reason_ids()
