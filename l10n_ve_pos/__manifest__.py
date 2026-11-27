@@ -3,12 +3,19 @@
     "summary": """
         Módulo de POS (Punto de Venta) en Venezuela
     """,
+    "description": """
+Propósito
+---------
+Adaptaciones del Punto de Venta (PoS) a la normativa venezolana: moneda
+alterna en pagos y cierre de sesión, retenciones y comprobantes fiscales
+propios del PoS, y validaciones de stock por almacén.
+""",
     "license": "LGPL-3",
-    "author": "binaural-dev",
+    "author": "Binauraldev",
     "support": "contacto@binaural.dev",
     "category": "Point of Sale",
     "website": "https://binauraldev.com/",
-    "version": "17.0.0.2.0",
+    "version": "17.0.0.2.1",
     # any module necessary for this one to work correctly
     "depends": [
         "base",
