@@ -25,6 +25,9 @@ class ResConfigSettings(models.TransientModel):
     pos_unreconcile_moves = fields.Boolean(
         related="company_id.pos_unreconcile_moves", readonly=False
     )
+    pos_post_cross_moves = fields.Boolean(
+        related="company_id.pos_post_cross_moves", readonly=False
+    )
     activate_barcode_strict_mode = fields.Boolean(
         related="pos_config_id.activate_barcode_strict_mode", readonly=False
     )

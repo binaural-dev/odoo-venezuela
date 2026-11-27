@@ -23,6 +23,21 @@
                             </div>
                         </div>
                         <div class="col-12 col-lg-6 o_setting_box"
+                            id="l10n_ve_pos_div_pos_post_cross_moves">
+                            <div class="o_setting_left_pane">
+                                <field name="pos_post_cross_moves" />
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="pos_post_cross_moves" />
+                                <div class="text-muted">
+                                    Post the cross moves of the cash and foreign currency
+                                    payment methods to their real journal as soon as they are
+                                    created. Unchecked, they are left in draft until
+                                    accounting posts them.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6 o_setting_box"
                             id="l10n_ve_pos_div_pos_config_id">
                             <div class="o_setting_left_pane" />
                             <div class="o_setting_right_pane">
