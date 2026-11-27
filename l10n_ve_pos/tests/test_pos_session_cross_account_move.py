@@ -1157,6 +1157,58 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
             use_suspense=True,
         )
 
+    def test_cross_moves_are_posted_by_default(self):
+        """La opción de publicar los cruces viene marcada en una compañía nueva."""
+        company = self.env["res.company"].create({"name": "C Compania nueva 86801"})
+        self.assertTrue(company.pos_post_cross_moves)
+
+    def _draft_cash_cross_out(self):
+        """Salida cruzada con la compañía que deja los cruces en borrador."""
+        _suspense_origin, suspense_real = self._configure_use_suspense_accounts(
+            self.split_cash_method
+        )
+        suspense_real.reconcile = True
+        self._configure_cross(self.split_cash_method)
+        self.company.pos_post_cross_moves = False
+        return self._cash_cross_out(), suspense_real
+
+    def test_cross_left_in_draft_without_its_statement_line(self):
+        """Sin "Publicar los cruces del PdV" el cruce queda en borrador, sabe de
+        qué sesión y método es, y todavía no crea la línea del diario real."""
+        move, _suspense_real = self._draft_cash_cross_out()
+
+        self.assertEqual(move.state, "draft")
+        self.assertEqual(move.pos_cross_payment_method_id, self.split_cash_method)
+        self.assertTrue(move.pos_cross_session_id)
+        self.assertFalse(self._real_statement_lines())
+
+    def test_posting_the_draft_cross_creates_and_reconciles_its_statement_line(self):
+        """Cuando contabilidad publica el borrador se crea la línea del diario
+        real, conciliada contra el cruce, como si se hubiera publicado solo."""
+        move, suspense_real = self._draft_cash_cross_out()
+
+        move.action_post()
+
+        st_line = self._real_statement_lines()
+        self.assertEqual(len(st_line), 1)
+        self.assertEqual(st_line.pos_cross_real_move_id, move)
+        self.assertEqual(st_line.payment_ref, "Salida")
+        self.assertTrue(st_line.is_reconciled)
+        self.assertAlmostEqual(self._balance(suspense_real), 0.0, places=2)
+
+    def test_posting_the_cross_again_keeps_one_statement_line(self):
+        """Publicado, pasado a borrador y publicado otra vez: sigue con una sola
+        línea en el diario real, conciliada."""
+        move, _suspense_real = self._draft_cash_cross_out()
+        move.action_post()
+
+        move.button_draft()
+        move.action_post()
+
+        st_line = self._real_statement_lines()
+        self.assertEqual(len(st_line), 1)
+        self.assertTrue(st_line.is_reconciled)
+
     def test_cash_cross_statement_line_left_open_without_reconcilable_transitory(self):
         """Sin "Permitir conciliación" en la transitoria del diario real la línea
         de extracto se crea igual y queda para conciliarla a mano, sin error."""
