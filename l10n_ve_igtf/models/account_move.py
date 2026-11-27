@@ -800,7 +800,9 @@ class AccountMove(models.Model):
         factura revertida (`payment_state == 'reversed'`) sigue sin base.
         """
         self.ensure_one()
-        if abs(self.amount_residual) > 0:
+        # Lo que ya se aceptaba antes sigue aceptándose (saldo abierto o estado
+        # de pago ya actualizado); lo nuevo es solo el caso del estado viejo.
+        if abs(self.amount_residual) > 0 or self.payment_state in ('paid', 'in_payment'):
             return True
         if self.state != 'posted' or self.payment_state == 'reversed':
             return False
