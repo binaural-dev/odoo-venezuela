@@ -224,6 +224,9 @@ class TestRetention(RetentionTestCommon):
         self.assertEqual(ret.total_iva_amount, 160.0)
 
     def test_iva_customer_pnr_100_amounts(self):
+        self.company.partner_id.withholding_type_id = self.env.ref(
+            "l10n_ve_payment_extension.account_withholding_type_100"
+        )
         invoice = self._create_invoice_reten_iva(
             amount=1000.0, partner=self.partner_pnr_100,
             out_invoice="out_invoice", journal=self.sale_journal,
@@ -235,7 +238,7 @@ class TestRetention(RetentionTestCommon):
         line = invoice.retention_iva_line_ids[0]
         self.assertEqual(
             line.related_percentage_tax_base, 100.0,
-            "Withholding % must be 100 for partner_pnr_100")
+            "Withholding % must be 100 for the company")
         self.assertEqual(line.invoice_amount, 1000.0)
         self.assertEqual(line.iva_amount, 160.0)
         self.assertEqual(line.invoice_total, 1160.0)
@@ -245,6 +248,9 @@ class TestRetention(RetentionTestCommon):
         self.assertEqual(ret.total_retention_amount, 0.0)
 
     def test_iva_customer_pnnr_100_amounts(self):
+        self.company.partner_id.withholding_type_id = self.env.ref(
+            "l10n_ve_payment_extension.account_withholding_type_100"
+        )
         invoice = self._create_invoice_reten_iva(
             amount=2000.0, partner=self.partner_pnnr_100,
             out_invoice="out_invoice", journal=self.sale_journal,
@@ -256,7 +262,7 @@ class TestRetention(RetentionTestCommon):
         line = invoice.retention_iva_line_ids[0]
         self.assertEqual(
             line.related_percentage_tax_base, 100.0,
-            "Withholding % must be 100 for partner_pnnr_100")
+            "Withholding % must be 100 for the company")
         self.assertEqual(line.invoice_amount, 2000.0)
         self.assertEqual(line.iva_amount, 320.0,
                          "IVA must be 320 (16% of 2000)")
@@ -276,6 +282,9 @@ class TestRetention(RetentionTestCommon):
             "taxpayer_type": "formal",
             "withholding_type_id": wt_50.id,
         })
+        # When the company is withheld the percentage is the one of the company,
+        # not the one of the customer's file.
+        self.company.partner_id.withholding_type_id = wt_50
         invoice = self._create_invoice_reten_iva(
             amount=1000.0, partner=partner_50,
             out_invoice="out_invoice", journal=self.sale_journal,
@@ -287,7 +296,7 @@ class TestRetention(RetentionTestCommon):
         line = invoice.retention_iva_line_ids[0]
         self.assertEqual(
             line.related_percentage_tax_base, 50.0,
-            "Withholding % must be 50 for custom partner")
+            "Withholding % must be 50 for the company")
         self.assertEqual(line.iva_amount, 160.0)
         self.assertEqual(line.invoice_amount, 1000.0)
         ret = line.retention_id
