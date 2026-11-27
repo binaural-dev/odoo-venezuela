@@ -1385,6 +1385,8 @@ msgstr "Subtotal %s"
 #: code:addons/l10n_ve_pos/report/pos_order_report.py:0
 msgid "Total %s"
 msgstr "Total %s"
+
+#. module: l10n_ve_pos
 #. odoo-python
 #: code:addons/l10n_ve_pos/models/pos_payment_method.py:0
 msgid ""
