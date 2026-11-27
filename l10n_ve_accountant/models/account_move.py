@@ -78,47 +78,57 @@ class AccountMove(models.Model):
                 move.company_currency_rate = 1.0
 
     def _auto_init(self):
-        res = super()._auto_init()
+        """Replace core's unique index on (name, journal_id) with a wider one that also includes
+        partner_id and company_id, so different partners can share the same document number in
+        the same journal -- normal practice in Venezuela.
+
+        Runs BEFORE super()._auto_init(): in 19 core declares that index as the table object
+        account_move._unique_name, and the ORM keeps an index of that name that has no comment
+        (Index.apply_to_database). Creating ours first makes core keep it instead of trying to
+        create its narrower one.
+
+        If there are posted entries with the same number for the same partner/journal/company,
+        the index cannot be created: stop with the list of cases instead of renaming them.
+        """
         if not index_exists(self.env.cr, "account_move_unique_name_ve"):
-            drop_index(self.env.cr, "account_move_unique_name", self._table)
-            # Make all values of `name` different (naming them `name (1)`, `name (2)`...) so that
-            # we can add the following UNIQUE INDEX
             self.env.cr.execute(
                 """
-                WITH duplicated_sequence AS (
-                    SELECT name, partner_id, state, journal_id
-                    FROM account_move
-                    WHERE state = 'posted'
-                    AND name != '/'
-                    AND move_type IN ('in_invoice', 'in_refund', 'in_receipt')
-                GROUP BY partner_id, journal_id, name, state
-                    HAVING COUNT(*) > 1
-                ),
-                to_update AS (
-                    SELECT move.id,
-                        move.name,
-                        move.state,
-                        move.date,
-                        row_number() OVER(PARTITION BY move.name, move.partner_id, move.partner_id, move.date) AS row_seq
-                        FROM duplicated_sequence
-                        JOIN account_move move ON move.name = duplicated_sequence.name
-                                            AND move.partner_id = duplicated_sequence.partner_id
-                                            AND move.state = duplicated_sequence.state
-                                            AND move.journal_id = duplicated_sequence.journal_id
-                ),
-                new_vals AS (
-                    SELECT id,
-                            name || ' (' || (row_seq-1)::text || ')' AS name
-                        FROM to_update
-                        WHERE row_seq > 1
-                )
-                UPDATE account_move
-                SET name = new_vals.name
-                FROM new_vals
-                WHERE account_move.id = new_vals.id;
-            """
+                SELECT partner.name, COALESCE(journal.name->>'en_US', journal.name::text),
+                       move.name, COUNT(*)
+                  FROM account_move move
+                  JOIN res_partner partner ON partner.id = move.partner_id
+                  JOIN account_journal journal ON journal.id = move.journal_id
+                 WHERE move.state = 'posted'
+                   AND move.name != '/'
+                   AND move.partner_id IS NOT NULL
+                 GROUP BY move.partner_id, move.journal_id, move.company_id,
+                          move.name, partner.name, journal.name
+                HAVING COUNT(*) > 1
+                 ORDER BY COUNT(*) DESC
+                 LIMIT 20
+                """
             )
-
+            collisions = self.env.cr.fetchall()
+            if collisions:
+                detail = "\n".join(
+                    f"- {partner} / {journal} / {name}: {count} entries"
+                    for partner, journal, name, count in collisions
+                )
+                if len(collisions) == 20:
+                    detail += "\n- ... (showing the first 20, there may be more)"
+                raise UserError(
+                    self.env._(
+                        "l10n_ve_accountant: cannot create the "
+                        "account_move_unique_name_ve index because there are "
+                        "accounting entries with the same number for the same "
+                        "partner/journal/company. No data was changed -- review "
+                        "these cases manually before reinstalling the module:\n%s",
+                        detail,
+                    )
+                )
+            drop_index(self.env.cr, "account_move_unique_name", self._table)
+            # account_move_unique_name_ve mirrors account_move_unique_name; it only marks, for the
+            # index_exists check above, that the wider index is already in place.
             self.env.cr.execute(
                 """
                 CREATE UNIQUE INDEX account_move_unique_name
@@ -131,9 +141,9 @@ class AccountMove(models.Model):
                         name, partner_id, company_id, journal_id
                     )
                 WHERE state = 'posted' AND name != '/';
-            """
+                """
             )
-        return res
+        return super()._auto_init()
 
     def default_alternate_currency(self):
         """
