@@ -298,3 +298,9 @@ msgstr ""
 #: model:res.groups,name:l10n_ve_contact.group_edit_partner_name_immutable
 msgid "Edit contact name with transactions"
 msgstr "Editar el nombre de contactos con transacciones"
+
+#. module: l10n_ve_contact
+#. odoo-python
+#: code:addons/l10n_ve_contact/models/res_partner.py:0
+msgid "The prefix %(prefix)s is not valid for %(name)s: use %(allowed)s."
+msgstr "El prefijo %(prefix)s no es válido para %(name)s: use %(allowed)s."
