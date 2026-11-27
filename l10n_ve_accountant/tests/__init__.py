@@ -33,3 +33,4 @@ from . import test_entry_deferred_rate
 from . import test_invoice_details_report
 from . import test_invoice_list_columns
 from . import test_invoice_due_date_display
+from . import test_account_move_unique_name_index
