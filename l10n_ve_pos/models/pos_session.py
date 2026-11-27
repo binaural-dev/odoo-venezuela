@@ -1160,8 +1160,8 @@ class PosSession(models.Model):
         real journal's dashboard, and every session close used to leave its
         crosses in draft for accounting to post one by one. A line on the
         real journal's transitory account then gets its statement line in
-        that journal (``_create_cross_real_statement_lines``), the one to
-        reconcile it against from the dashboard.
+        that journal (``_create_cross_real_statement_lines``), reconciled
+        against it right away.
 
         ``name`` (the move's sequential "Number") is intentionally left
         unset so that on posting Odoo's native ``_compute_name`` assigns the
@@ -1211,10 +1211,12 @@ class PosSession(models.Model):
         cash sales, cash in/out, see ``_get_cross_real_account``), and no
         other movement takes it on to the real journal's own account: its
         dashboard had nothing to reconcile and the statement lines had to be
-        entered by hand. Each statement line is left to reconcile against its
-        own cross line, one to one: Odoo does not reconcile a statement line
-        against several lines of its own transitory account ("the journal
-        entry must always have only one suspense line").
+        entered by hand. Each statement line is reconciled right away against
+        its own cross line (``_reconcile_statement_line_with_cross``), one to
+        one: Odoo does not reconcile a statement line against several lines
+        of its own transitory account ("the journal entry must always have
+        only one suspense line"). ``create`` returns the lines in the order of
+        ``vals_list``, the order of ``cross_lines``.
 
         The statement line moves the real journal's account by the same
         amount, in that journal's currency (the ``amount_currency`` of the
@@ -1234,6 +1236,7 @@ class PosSession(models.Model):
         transitory_account = self._get_cross_transitory_account(payment_method, use_suspense=True)
         if not suspense_account or suspense_account == transitory_account:
             return statement_lines
+        cross_lines = move.line_ids.filtered(lambda l: l.account_id == suspense_account)
         vals_list = [
             {
                 "journal_id": journal.id,
@@ -1245,16 +1248,49 @@ class PosSession(models.Model):
                 "amount": line.amount_currency,
                 "foreign_amount": line.foreign_debit - line.foreign_credit,
             }
-            for line in move.line_ids.filtered(lambda l: l.account_id == suspense_account)
+            for line in cross_lines
         ]
         if not vals_list:
             return statement_lines
-        return (
+        statement_lines = (
             statement_lines.sudo()
             .with_company(self.company_id)
             .with_context(no_retrieve_partner=True)
             .create(vals_list)
         )
+        for statement_line, cross_line in zip(statement_lines, cross_lines):
+            self._reconcile_statement_line_with_cross(statement_line, cross_line)
+        return statement_lines
+
+    def _reconcile_statement_line_with_cross(self, statement_line, cross_line):
+        """Concilia la línea de extracto ``statement_line`` contra la línea del
+        cruce ``cross_line`` que mueve el mismo dinero en la misma cuenta
+        transitoria.
+
+        La línea de extracto deja su contrapartida en la transitoria de su diario
+        y el cruce la saldó con el signo contrario: conciliarlas deja la
+        transitoria en cero y la línea conciliada en el tablero de contabilidad,
+        sin que nadie tenga que hacerlo a mano desde ahí.
+
+        Solo concilia si la cuenta es conciliable, la línea de extracto tiene una
+        única línea abierta en esa cuenta y ambas suman cero en la moneda de la
+        compañía. Si no, la deja como estaba, para conciliarla a mano. Es el caso
+        de un cruce a una tasa distinta de la del día de la línea de extracto,
+        que convierte a la de su fecha (por ejemplo, un reembolso a la tasa de
+        la venta o una sesión que pasó la medianoche): al conciliarlo a mano,
+        Odoo crea la diferencia en cambio, que aquí no se genera sola.
+        """
+        account = cross_line.account_id
+        if not account.reconcile or cross_line.reconciled:
+            return
+        suspense_line = statement_line.move_id.line_ids.filtered(
+            lambda l: l.account_id == account and not l.reconciled
+        )
+        if len(suspense_line) != 1:
+            return
+        if not self.company_id.currency_id.is_zero(suspense_line.balance + cross_line.balance):
+            return
+        (suspense_line | cross_line).sudo().reconcile()
 
     def action_pos_session_close(self, balancing_account=False, amount_to_balance=0, bank_payment_method_diffs=None):
         """
