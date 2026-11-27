@@ -67,3 +67,20 @@ class TestContingencyNameEditable(TransactionCase):
             self.assertFalse(form.is_contingency)
             with self.assertRaises(AssertionError):
                 form.name = "OSLT/2026/00099"
+
+    def test_number_hint_is_the_preview_or_a_format_example(self):
+        """The number field always has a hint: the sequence preview when Odoo
+        gives one, an example of the format otherwise. Odoo 20 no longer falls
+        back to the static placeholder of the view when the preview is empty."""
+        first = self._invoice(self.sale_journal)
+        self.assertTrue(first.name_placeholder, "Precondition: a journal without numbers previews the next one")
+        self.assertEqual(first.name_placeholder_hint, first.name_placeholder)
+
+        self._invoice(self.contingency_journal, name="3536", correlative="3536")
+        moved = self._invoice(self.other_sale_journal)
+        with Form(moved) as form:
+            form.journal_id = self.contingency_journal
+            self.assertFalse(form.name_placeholder, "Precondition: no sequence preview")
+            self.assertEqual(form.name_placeholder_hint, "JRNL/2016/00001")
+            form.name = "3537"
+            form.correlative = "3537"

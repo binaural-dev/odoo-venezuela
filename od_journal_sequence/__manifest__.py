@@ -2,7 +2,7 @@
 
 {
     "name": "Journal Sequence For Odoo 18",
-    "version": "19.0.1.0.0",
+    "version": "20.0.1.0.0",
     "category": "Accounting",
     "summary": "Odoo Journal Sequence, Journal Entry Sequence, Odoo 18 Journal Sequence, Journal Sequence For Invoice",
     "description": "Odoo Journal Sequence, Journal Entry Sequence, Odoo 18 Journal Sequence, Journal Sequence For Invoice",
@@ -12,7 +12,7 @@
     "live_test_url": "https://www.youtube.com/watch?v=z-xZwCah7wM",
     "depends": ["account"],
     "data": [
-        "security/ir.model.access.csv",
+        "security/ir.access.csv",
         "views/account_journal.xml",
         "views/account_move.xml",
     ],
@@ -21,5 +21,6 @@
     "currency": "USD",
     "post_init_hook": "create_journal_sequences",
     "images": ["static/description/banner.png"],
-    "installable": False,
+    "installable": True,
+    "binaural_migrated": True,
 }

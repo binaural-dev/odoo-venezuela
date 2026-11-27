@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Configura la moneda alterna (foreign currency) de cada compañía y centraliza el cálculo de la tasa y la tasa inversa que el resto de la localización usa para llevar la contabilidad espejo en la segunda moneda. Extiende `res.company`, `res.config.settings` y `res.currency.rate`. Depende de `base` y `l10n_ve_base`; módulos como `l10n_ve_accountant`, `l10n_ve_invoice` y `l10n_ve_currency_rate_live` consumen sus campos y métodos.
+Configura la moneda alterna (foreign currency) de cada compañía y centraliza el cálculo de la tasa y la tasa inversa que el resto de la localización usa para llevar la contabilidad espejo en la segunda moneda. Extiende `res.company`, `res.config.settings`, `res.currency` y `res.currency.rate`. Depende de `base` y `l10n_ve_base`; módulos como `l10n_ve_accountant`, `l10n_ve_invoice` y `l10n_ve_currency_rate_live` consumen sus campos y métodos.
 
 ## Requirements
 
@@ -151,3 +151,17 @@ El método DEBE (MUST) lanzar `UserError` («No hay una tasa asignada, configúr
 
 - **WHEN** se invoca `compute_rate` con `rate_date` vacío
 - **THEN** busca la tasa del «hoy» del usuario (`context_today`)
+
+### Requirement: La tasa de un día rige ese mismo día en las conversiones de Odoo
+
+Las conversiones de moneda de Odoo (`res.currency._convert` y todo lo que use `res.currency._get_rates`) DEBEN (MUST) usar, para una fecha D, la última tasa con fecha igual o anterior a D, como en Odoo 19, para todas las monedas y no solo la moneda alterna. Odoo 20 toma la última tasa estrictamente anterior a la fecha, así que una tasa con fecha D solo regiría desde D + 1; en Venezuela la tasa del BCV de un día rige ese mismo día, y `compute_rate` de esta localización lee la tasa de la fecha exacta, así que los montos que convierte Odoo y los de la moneda alterna deben salir con la misma tasa.
+
+#### Scenario: Conversión con la tasa publicada ese día
+
+- **WHEN** hay una tasa de USD con fecha 2026-11-10 y otra con fecha 2026-11-09, y se convierte un monto con fecha 2026-11-10
+- **THEN** Odoo usa la tasa del 2026-11-10, la misma que devuelve `compute_rate` para esa fecha
+
+#### Scenario: Día sin tasa
+
+- **WHEN** se convierte un monto con una fecha sin tasa propia, con tasas en días anteriores
+- **THEN** Odoo usa la última tasa anterior a esa fecha, como en 19 (`compute_rate`, en cambio, sigue exigiendo la tasa de la fecha exacta)

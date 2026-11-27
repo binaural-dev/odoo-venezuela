@@ -19,3 +19,30 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:l10n_ve_base.res_config_settings_view_form_binaural_base
 msgid "Binaural Settings"
 msgstr "Configuración Binaural"
+#. module: l10n_ve_base
+#: model:ir.model.fields.selection,name:l10n_ve_base.selection__ir_module_module__migration_state__migrated
+#: model_terms:ir.ui.view,arch_db:l10n_ve_base.view_module_filter_migration_state
+msgid "Migrated"
+msgstr "Migrado"
+
+#. module: l10n_ve_base
+#: model:ir.model.fields,help:l10n_ve_base.field_ir_module_module__migration_state
+msgid ""
+"Migrated: the manifest of the module says it is migrated to this version of "
+"Odoo (key binaural_migrated). Pending migration: a module that is not from "
+"Odoo and cannot be installed in this version yet."
+msgstr ""
+"Migrado: el manifiesto del módulo dice que está migrado a esta versión de "
+"Odoo (clave binaural_migrated). Pendiente de migrar: un módulo que no es de "
+"Odoo y todavía no se puede instalar en esta versión."
+
+#. module: l10n_ve_base
+#: model:ir.model.fields,field_description:l10n_ve_base.field_ir_module_module__migration_state
+msgid "Migration State"
+msgstr "Estado de migración"
+
+#. module: l10n_ve_base
+#: model:ir.model.fields.selection,name:l10n_ve_base.selection__ir_module_module__migration_state__pending
+#: model_terms:ir.ui.view,arch_db:l10n_ve_base.view_module_filter_migration_state
+msgid "Pending migration"
+msgstr "Pendiente de migrar"

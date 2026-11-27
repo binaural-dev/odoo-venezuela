@@ -85,7 +85,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             return super(AccountPaymentRegisterIgtf, other_wizards)._compute_amount()
 
         for wizard in igtf_wizards:
-            total_amount_values = wizard._get_total_amounts_to_pay(wizard.batches)
+            total_amount_values = wizard._get_total_amounts_to_pay(wizard._get_batches())
             if not wizard.journal_id or not wizard.currency_id or not wizard.payment_date or not wizard.is_igtf:
                 wizard.amount = wizard.amount or 0.0
                 wizard.igtf_to_show = 0.0
@@ -102,7 +102,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                 wizard.igtf_to_show = abs(igtf)
                 wizard.igtf_amount = abs(igtf)
 
-                total_amount_values = wizard._get_total_amounts_to_pay(wizard.batches)
+                total_amount_values = wizard._get_total_amounts_to_pay(wizard._get_batches())
                 is_different = wizard.currency_id.compare_amounts(
                     wizard.amount, total_amount_values['amount_by_default'] + abs(igtf)
                 ) != 0
@@ -138,7 +138,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
 
         for wizard in igtf_wizards:
             if wizard.payment_date:
-                total_amount_values = wizard._get_total_amounts_to_pay(wizard.batches)
+                total_amount_values = wizard._get_total_amounts_to_pay(wizard._get_batches())
                 igtf = 0.0
                 move_ids = self.get_moves()
                 for rec in move_ids:
@@ -191,7 +191,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             super(AccountPaymentRegisterIgtf, other_wizards)._onchange_amount()
 
         for payment in igtf_wizards:
-            total_amount_values = payment._get_total_amounts_to_pay(payment.batches)
+            total_amount_values = payment._get_total_amounts_to_pay(payment._get_batches())
             move_ids = self.get_moves()
             igtf = 0.0
             for rec in move_ids:
@@ -235,7 +235,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
     def _compute_journal_id(self):
         for wizard in self:
             if wizard.can_edit_wizard:
-                batch = wizard.batches[0]
+                batch = wizard._get_batches()[0]
                 wizard.journal_id = wizard._get_batch_journal(batch)
             else:
                 wizard.journal_id = self.env['account.journal'].search([

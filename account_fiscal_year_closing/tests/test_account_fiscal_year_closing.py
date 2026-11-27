@@ -31,8 +31,8 @@ class TestAccountFiscalYearClosing(AccountTestInvoicingCommon):
                 "name": "Test Account manager",
                 "login": "accountmanager",
                 "password": "accountmanager",
-                "groups_id": [
-                    (6, 0, cls.env.user.groups_id.ids),
+                "group_ids": [
+                    (6, 0, cls.env.user.group_ids.ids),
                     (4, cls.env.ref("account.group_account_manager").id),
                 ],
                 "company_ids": [(6, 0, cls.account_user.company_ids.ids)],
@@ -185,9 +185,11 @@ class TestAccountFiscalYearClosing(AccountTestInvoicingCommon):
         return invoice
 
     def test_account_closing(self):
+        # base.res_partner_4 is demo data: the CI database has no demo data.
+        self.partner = self.env["res.partner"].create({"name": "Fiscal Year Closing Partner"})
         # create a supplier invoice
         supplier_invoice = self.create_simple_invoice(
-            self.the_day, self.env.ref("base.res_partner_4"), "in_invoice"
+            self.the_day, self.partner, "in_invoice"
         )
         self.assertTrue(
             (supplier_invoice.state == "draft"), "Supplier invoice state is not Draft"
@@ -203,7 +205,7 @@ class TestAccountFiscalYearClosing(AccountTestInvoicingCommon):
 
         # create a customer invoice
         customer_invoice = self.create_simple_invoice(
-            self.the_day, self.env.ref("base.res_partner_4"), "out_invoice"
+            self.the_day, self.partner, "out_invoice"
         )
         self.assertTrue(
             (customer_invoice.state == "draft"), "Customer invoice state is not Draft"

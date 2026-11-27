@@ -2,18 +2,23 @@
 
 ## Purpose
 
-Aporta la división político-territorial de Venezuela: modelos maestros de ciudades (`res.country.city`), municipios (`res.country.municipality`) y parroquias (`res.country.parish`), la data precargada de estados, municipios y parroquias del país, los campos correspondientes en el contacto (`res.partner`) y la reescritura del bloque de dirección del formulario de contacto. Depende de `base` y `contacts`, declara `pre_init_hook` y publica los tres catálogos como menús bajo `contacts.menu_localisation` sin restricción de grupos. `l10n_ve_contact` agrega tracking sobre los campos que este módulo define en el contacto.
+Aporta la división político-territorial de Venezuela: modelos maestros de municipios (`res.country.municipality`) y parroquias (`res.country.parish`), la data precargada de estados, municipios y parroquias del país, los campos correspondientes en el contacto (`res.partner`) y la reescritura del bloque de dirección del formulario de contacto. Las ciudades son las de Odoo (`res.city`, del módulo `base_address_extended`): desde 20 el módulo ya no tiene un modelo de ciudades propio. Depende de `base`, `contacts` y `base_address_extended`, declara `pre_init_hook` y publica las ciudades y los dos catálogos como menús bajo `contacts.menu_localisation` sin restricción de grupos. `l10n_ve_contact` agrega tracking sobre los campos que este módulo define en el contacto.
 
 ## Requirements
 
-### Requirement: Catálogo de ciudades único por estado y país
+### Requirement: Las ciudades son las de Odoo
 
-El modelo `res.country.city` DEBE (MUST) exigir nombre, país y estado, e impedir vía constraint SQL `name_uniq` (`unique (name, country_id, state_id)`) registrar dos ciudades con el mismo nombre para el mismo estado y país.
+El catálogo de ciudades DEBE (MUST) ser el modelo `res.city` de Odoo (`base_address_extended`, que Odoo 20 instala siempre con `account`): nombre y país obligatorios, estado opcional y código postal opcional. La entrada de menú Contactos → Localización → Cities (acción `action_res_country_city`, que conserva su id porque otros módulos la usan) DEBE (MUST) abrir `res.city` con las vistas de Odoo. En 19 el módulo tenía su propio modelo `res.country.city`, con estado obligatorio y una restricción de unicidad por nombre, estado y país; `res.city` no tiene esa restricción y muestra el código postal junto al nombre si se carga.
 
-#### Scenario: Ciudad duplicada
+#### Scenario: Abrir el catálogo de ciudades
+
+- **WHEN** un usuario interno entra a Contactos → Localización → Cities
+- **THEN** ve la lista de ciudades de Odoo (`res.city`), con su país, estado y código postal
+
+#### Scenario: Ciudad con el mismo nombre, estado y país
 
 - **WHEN** se crea una ciudad con un nombre ya registrado para el mismo estado y país
-- **THEN** la creación es rechazada por la restricción de unicidad
+- **THEN** la ciudad se guarda, porque `res.city` no tiene restricción de unicidad (en 19 se rechazaba)
 
 ### Requirement: Catálogo de municipios único y normalizado
 
@@ -50,7 +55,7 @@ El modelo `res.country.parish` DEBE (MUST) exigir `name`, `code` y el municipio 
 
 ### Requirement: Ubicación venezolana en el contacto
 
-El contacto (`res.partner`) DEBE (MUST) contar con los campos `city_id` (Many2one a `res.country.city`), `municipality` (Many2one a `res.country.municipality`) y `parish_id` (Many2one a `res.country.parish`, con domain de campo `[('municipality_id', '=', municipality)]`), y el campo estándar `city` se redefine como related almacenado de `city_id.name` (etiqueta "City related"), es decir deja de ser un texto libre.
+El contacto (`res.partner`) DEBE (MUST) contar con los campos `city_id` (Many2one a `res.city`, el campo que define `base_address_extended`; el módulo solo le pone la etiqueta "City"), `municipality` (Many2one a `res.country.municipality`) y `parish_id` (Many2one a `res.country.parish`, con domain de campo `[('municipality_id', '=', municipality)]`), y el campo estándar `city` se redefine como related almacenado de `city_id.name` (etiqueta "City related"), es decir deja de ser un texto libre. `city` DEBE (MUST) seguir siendo texto plano, no traducible, aunque el nombre de `res.city` sí lo sea.
 
 #### Scenario: Selección de parroquia
 
@@ -61,6 +66,11 @@ El contacto (`res.partner`) DEBE (MUST) contar con los campos `city_id` (Many2on
 
 - **WHEN** se asigna una ciudad en `city_id`
 - **THEN** el campo `city` del contacto refleja el nombre de esa ciudad y no puede escribirse directamente
+
+#### Scenario: Ciudad con nombre traducido
+
+- **WHEN** una ciudad de `res.city` tiene su nombre traducido a otro idioma
+- **THEN** `city` del contacto guarda un único texto, el nombre de la ciudad, sin traducciones
 
 ### Requirement: Dirección venezolana obligatoria en el formulario de contacto
 
@@ -78,7 +88,7 @@ La vista `view_form_res_partner_inherited` DEBE (MUST) ocultar (`invisible="1"`)
 
 ### Requirement: Data geográfica de Venezuela precargada
 
-El módulo DEBE (MUST) cargar como data 25 registros de `res.country.state` con país `base.ve` y su código (p. ej. "Distrito Capital"/DC), 334 `res.country.municipality` (cada uno con un único estado asignado vía `[(6, 0, [ref(...)])]` y `country_id` = `base.ve`) y 1319 `res.country.parish` vinculadas a su municipio. **No** se precarga ninguna `res.country.city`: el catálogo de ciudades queda vacío tras la instalación, aunque el formulario de contacto exija `city_id`.
+El módulo DEBE (MUST) cargar como data 25 registros de `res.country.state` con país `base.ve` y su código (p. ej. "Distrito Capital"/DC), 334 `res.country.municipality` (cada uno con un único estado asignado vía `[(6, 0, [ref(...)])]` y `country_id` = `base.ve`) y 1319 `res.country.parish` vinculadas a su municipio. El módulo **no** carga ciudades (`res.city`): si ningún otro módulo las carga, el catálogo de ciudades de Venezuela queda vacío tras la instalación, aunque el formulario de contacto exija `city_id`.
 
 #### Scenario: Instalación del módulo
 
@@ -92,12 +102,19 @@ El módulo DEBE (MUST) cargar como data 25 registros de `res.country.state` con 
 
 ### Requirement: Acceso de los usuarios internos a los catálogos
 
-La ACL del módulo DEBE (MUST) otorgar a los usuarios internos (`base.group_user`) permisos completos (leer, escribir, crear y eliminar) sobre `res.country.city`, `res.country.municipality` y `res.country.parish`, y los menús Cities / Municipalities / Parish se publican bajo Contactos → Localización sin restricción adicional de grupo.
+La ACL del módulo DEBE (MUST) otorgar a los usuarios internos (`base.group_user`) permisos completos (leer, escribir, crear y eliminar) sobre `res.city`, `res.country.municipality`, `res.country.parish` y `res.partner.zone`, y los menús Cities / Municipalities / Parish / Zone se publican bajo Contactos → Localización sin restricción adicional de grupo.
+
+`res.city` es un modelo de Odoo, que por sí solo deja administrar las ciudades únicamente a los administradores de contactos. El permiso completo para todo usuario interno es intencional: conserva lo que permitía 19 con `res.country.city`, porque el formulario de contacto exige una ciudad y el catálogo nace vacío, y quien captura el contacto tiene que poder crearla. Un usuario que no es interno (portal) DEBE (MUST) seguir sin poder crear, modificar ni eliminar ciudades.
 
 #### Scenario: Usuario interno gestiona catálogos
 
-- **WHEN** un usuario interno crea, modifica o elimina una ciudad, municipio o parroquia
+- **WHEN** un usuario interno sin permisos de administrador de contactos crea, modifica o elimina una ciudad, municipio o parroquia
 - **THEN** la operación es permitida por la ACL
+
+#### Scenario: Usuario de portal intenta gestionar ciudades
+
+- **WHEN** un usuario de portal intenta crear, modificar o eliminar una ciudad
+- **THEN** Odoo lanza un error de acceso (`AccessError`) y la ciudad no cambia
 
 ### Requirement: Migración de identificadores desde binaural_location
 
@@ -112,3 +129,29 @@ El `pre_init_hook` del módulo DEBE (MUST) ejecutar tres `UPDATE ir_model_data S
 
 - **WHEN** la base migrada tenía xml_ids con otro prefijo (por ejemplo de ciudades)
 - **THEN** el hook no los reasigna, porque solo cubre estados, parroquias y municipios
+
+### Requirement: Las ciudades de 19 pasan a las ciudades de Odoo
+
+Al actualizar el módulo a 20.0.1.0.1 o posterior en una base que tiene la tabla `res_country_city` (una base que viene de 19, o una de 20 creada antes de este cambio), la migración previa DEBE (MUST):
+
+- copiar cada ciudad a `res.city` con su nombre, país y estado, o reusar una ciudad de `res.city` que ya tenga el mismo nombre, estado y país;
+- hacer que toda columna que apuntaba a una ciudad vieja (la ciudad de los contactos y la de cualquier otro módulo) apunte a su ciudad nueva;
+- pasar los identificadores externos (xmlid) de las ciudades viejas a sus ciudades nuevas;
+- borrar la tabla `res_country_city`, porque Odoo no borra la tabla de un modelo que ya no está en el código.
+
+En una base que no tiene la tabla, la migración no hace nada.
+
+#### Scenario: Contactos con ciudad en una base que viene de 19
+
+- **WHEN** se actualiza `l10n_ve_location` en una base cuyos contactos tienen ciudades de `res.country.city`
+- **THEN** cada contacto conserva su ciudad, ahora como registro de `res.city`, y la tabla `res_country_city` deja de existir
+
+#### Scenario: La ciudad ya existe en Odoo
+
+- **WHEN** una ciudad vieja tiene el mismo nombre, estado y país que una ciudad que ya está en `res.city`
+- **THEN** no se crea una ciudad repetida: los contactos pasan a apuntar a la que ya existía
+
+#### Scenario: Orden de la actualización
+
+- **WHEN** una base de 20 todavía tiene las ciudades viejas
+- **THEN** la primera actualización tiene que ser la de `l10n_ve_location` (el build normal de Odoo.sh), no `update all`; mientras tanto `l10n_ve_base` conserva la clave de `city_id` hacia las ciudades viejas para que actualizar otros módulos no falle (ver la spec de `l10n_ve_base`)

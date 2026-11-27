@@ -1,6 +1,5 @@
 from odoo import api, fields, models,  Command, _
 from odoo.tools.sql import column_exists, create_column
-from odoo.tools import formatLang, float_repr
 from odoo.exceptions import UserError
 
 import logging
@@ -37,7 +36,7 @@ class AccountMove(models.Model):
     alter_bi_igtf = fields.Float('IGTF Apply',copy=False ,compute='compute_bi_igtf',store=True)
     foreign_bi_igtf = fields.Float('Foreigh Base imp Igtf',copy=False, compute='compute_bi_igtf',store=True)
 
-    invoice_outstanding_credits_debits_widget_advance_payment = fields.Binary(
+    invoice_outstanding_credits_debits_widget_advance_payment = fields.Json(
         compute="_compute_payments_widget_to_reconcile_info_advance_payment",
     )
     origin_payment_advanced_payment_id = fields.Many2one("account.payment",copy=False)
@@ -59,53 +58,17 @@ class AccountMove(models.Model):
     # RECONCILED PAYMENTS and advances ON INVOICE
     @api.depends('move_type', 'line_ids.amount_residual')
     def _compute_payments_widget_reconciled_info(self):
-        
+        """Show the reconciled payments on posted invoices only.
+
+        This used to be a full copy of the core method. Odoo 20 groups the exchange entries in
+        ``exchange_info`` and builds each row in ``_prepare_payments_widget_reconciled_info``, so
+        the core computes the widget and only the posted-only rule is kept here.
+        """
+        super()._compute_payments_widget_reconciled_info()
         for move in self:
-            payments_widget_vals = {'title': _('Less Payment'), 'outstanding': False, 'content': []}
-
-            if move.state == 'posted' and move.is_invoice(include_receipts=True):
-                reconciled_vals = []
-                reconciled_partials = move.sudo()._get_all_reconciled_invoice_partials()
-                for reconciled_partial in reconciled_partials:
-                    counterpart_line = reconciled_partial['aml']
-                    if counterpart_line.move_id.ref:
-                        reconciliation_ref = '%s (%s)' % (counterpart_line.move_id.name, counterpart_line.move_id.ref)
-                    else:
-                        reconciliation_ref = counterpart_line.move_id.name
-                    if counterpart_line.amount_currency and counterpart_line.currency_id != counterpart_line.company_id.currency_id:
-                        foreign_currency = counterpart_line.currency_id
-                    else:
-                        foreign_currency = False
-                    
-
-                    reconciled_vals.append({
-                        'name': counterpart_line.name,
-                        'journal_name': counterpart_line.journal_id.name,
-                        'company_name': counterpart_line.journal_id.company_id.name if counterpart_line.journal_id.company_id != move.company_id else False,
-                        'amount': reconciled_partial['amount'],
-                        'currency_id': move.company_id.currency_id.id if reconciled_partial['is_exchange'] else reconciled_partial['currency'].id,
-                        'date': counterpart_line.date,
-                        'partial_id': reconciled_partial['partial_id'],
-                        'account_payment_id': counterpart_line.payment_id.id,
-                        'payment_method_name': counterpart_line.payment_id.payment_method_line_id.name,
-                        'move_id': counterpart_line.move_id.id,
-                        # ``is_refund`` es requerido por account/views/report_invoice.xml en Odoo 19
-                        # (template account.report_invoice_document itera payments_vals y accede
-                        # a payment_vals['is_refund']).
-                        'is_refund': counterpart_line.move_id.move_type in ['in_refund', 'out_refund'],
-                        'ref': reconciliation_ref,
-                        # these are necessary for the views to change depending on the values
-                        'is_exchange': reconciled_partial['is_exchange'],
-                        'amount_company_currency': formatLang(self.env, abs(counterpart_line.balance), currency_obj=counterpart_line.company_id.currency_id),
-                        'amount_foreign_currency': foreign_currency and formatLang(self.env, abs(counterpart_line.amount_currency), currency_obj=foreign_currency)
-                    })
-                payments_widget_vals['content'] = reconciled_vals
-
-            if payments_widget_vals['content']:
-                move.invoice_payments_widget = payments_widget_vals
-            else:
+            if move.state != 'posted':
                 move.invoice_payments_widget = False
-    
+
     # UNRECONCILED ADVANCE PAYMENTS
     def _compute_payments_widget_to_reconcile_info_advance_payment(self):
         for move in self:
@@ -198,6 +161,10 @@ class AccountMove(models.Model):
 
                     payments_widget_vals['content'].append({
                         'journal_name': line.ref or line.move_id.name,
+                        'move_name': line.move_id.name,
+                        'ref': line.ref or "",
+                        'date': fields.Date.to_string(line.date),
+                        'account_payment_id': line.payment_id.id,
                         "amount": amount,
                         "id": line.id,
                         "move_id": line.move_id.id,
@@ -306,6 +273,10 @@ class AccountMove(models.Model):
 
                     payments_widget_vals['content'].append({
                         "journal_name": line.ref or line.move_id.name,
+                        "move_name": line.move_id.name,
+                        "ref": line.ref or "",
+                        "date": fields.Date.to_string(line.date),
+                        "account_payment_id": line.payment_id.id,
                         "amount": amount,
                         "id": line.id,
                         "move_id": line.move_id.id,
@@ -786,6 +757,24 @@ class AccountMove(models.Model):
         partial_reconcile.button_cancel()
         partial_reconcile.write({'origin_payment_advanced_payment_id': False})
         origin_payment_id.write({'advanced_move_ids': [(3, partial_reconcile.id)]})
+
+    def _compute_amount(self):
+        """Recompute what was computed from the amounts while these were being computed.
+
+        The amounts of a draft move come from ``tax_totals``, whose IGTF summary reads ``bi_igtf``,
+        and ``bi_igtf`` reads ``payment_state``. Both depend on ``amount_residual``: when they are
+        still pending at that point they are computed from the residual amount of before, and
+        nothing computes them again, so a settled invoice stays partially paid.
+        """
+        dependents = [
+            field
+            for field in (self._fields["payment_state"], *self.pool.field_computed[self._fields["bi_igtf"]])
+            if field.store
+        ]
+        pending = {field: self.env.records_to_compute(field) & self for field in dependents}
+        super()._compute_amount()
+        for field, records in pending.items():
+            self.env.add_to_compute(field, self.env.not_to_compute(field, records))
 
     @api.depends('amount_residual')
     def compute_bi_igtf(self):
