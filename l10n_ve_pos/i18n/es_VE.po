@@ -1058,6 +1058,16 @@ msgstr ""
 #. odoo-python
 #: code:addons/l10n_ve_pos/models/pos_payment_method.py:0
 msgid ""
+"The foreign currency payment method %(method)s requires a Cross Journal "
+"and a Cross Account Journal."
+msgstr ""
+"El método de pago %(method)s en moneda alterna requiere un Diario afectado "
+"de banco o efectivo y un Diario de Cruce de Cuentas."
+
+#. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_payment_method.py:0
+msgid ""
 "The payment method %(method)s is collected in %(currency)s: set its Cross "
 "Journal (the real journal in %(currency)s) and its Cross Account Journal."
 msgstr ""
@@ -1362,3 +1372,29 @@ msgstr ""
 "Esta caja tiene cargada una tasa vieja y órdenes pagadas sin enviar. La caja "
 "se abrirá para enviarlas y enseguida recargará sus datos con la tasa del "
 "día, %(rate)s (%(currency)s, %(date)s). No vendas antes de la recarga."
+
+#. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_payment_method.py:0
+msgid ""
+"The journal %(journal)s and the cross journal %(cross_journal)s of the "
+"payment method %(method)s use the same suspense account %(account)s. Each "
+"journal must have its own suspense account."
+msgstr ""
+"El diario %(journal)s y el diario afectado de banco o efectivo "
+"%(cross_journal)s del método de pago %(method)s usan la misma cuenta "
+"transitoria %(account)s. Cada diario debe tener su propia cuenta transitoria."
+
+#. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_payment_method.py:0
+msgid ""
+"The journal %(journal)s of the payment method %(method)s is in "
+"%(journal_currency)s, but the Point of Sale %(pos)s works in "
+"%(pos_currency)s. The journal of a payment method must be in the currency "
+"of its Point of Sale."
+msgstr ""
+"El diario %(journal)s del método de pago %(method)s está en "
+"%(journal_currency)s, pero el punto de venta %(pos)s trabaja en "
+"%(pos_currency)s. El diario de un método de pago debe estar en la moneda de "
+"su punto de venta."

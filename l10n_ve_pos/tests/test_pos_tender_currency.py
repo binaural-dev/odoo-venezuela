@@ -347,8 +347,9 @@ class TestPosTenderCurrency(TestPosSessionAccountingBase):
                 self.split_bank_method.tender_currency_id = currency
 
     def test_tender_currency_is_not_compatible_with_foreign_currency_flag(self):
-        with self.assertRaises(ValidationError):
-            self.split_bank_method.write({"is_foreign_currency": True, "tender_currency_id": self.eur.id})
+        with self.assertRaises(ValidationError) as raised:
+            self.eur_method.is_foreign_currency = True
+        self.assertIn("cannot be a foreign currency method", str(raised.exception))
 
     def test_cross_journal_must_be_in_the_tender_currency(self):
         self.assertNotEqual(self.bank_journal.currency_id, self.eur)

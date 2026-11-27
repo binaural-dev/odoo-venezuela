@@ -48,3 +48,4 @@ Que las dos cuentas transitorias de un método sean la misma cuenta es una confi
 
 - **WHEN** el diario del método y el `cross_journal` apuntan a la misma Cuenta transitoria (el defecto de Odoo)
 - **THEN** el asiento se crea igual, con sus dos patas sobre esa cuenta y sin efecto contable
+- **AND** desde el ticket 15399 un método así ya no se puede guardar (change `ti-15399-validaciones-metodo-pago-pdv`): el escenario aplica a los métodos guardados antes de esa regla
