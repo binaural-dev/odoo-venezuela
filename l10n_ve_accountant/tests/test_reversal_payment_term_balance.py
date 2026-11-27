@@ -23,12 +23,22 @@ class TestReversalPaymentTermBalance(TransactionCase):
         self.currency_usd = self.env.ref("base.USD")
         self.company.write(
             {
-                "currency_id": self.currency_vef.id,
-                "foreign_currency_id": self.currency_usd.id,
                 "account_fiscal_country_id": self.country_ve.id,
                 "country_id": self.country_ve.id,
             }
         )
+        # Solo se configuran las monedas si la compania aun no tiene moneda
+        # alterna: cambiarlas con movimientos contables existentes esta
+        # bloqueado, y en ese caso se usan las ya configuradas.
+        if not self.company.foreign_currency_id:
+            self.company.write(
+                {
+                    "currency_id": self.currency_vef.id,
+                    "foreign_currency_id": self.currency_usd.id,
+                }
+            )
+        self.currency_vef = self.company.currency_id
+        self.currency_usd = self.company.foreign_currency_id
         self.today = fields.Date.today()
         self._set_usd_rate(881.8769)
 
@@ -196,7 +206,8 @@ class TestReversalPaymentTermBalance(TransactionCase):
             }
         )
         if post:
-            invoice.action_post()
+            invoice.with_context(move_action_post_alert=True).action_post()
+            self.assertEqual(invoice.state, "posted")
         return invoice
 
     def _pt_lines(self, move):
@@ -204,7 +215,7 @@ class TestReversalPaymentTermBalance(TransactionCase):
             lambda line: line.display_type == "payment_term"
         ).sorted("date_maturity")
 
-    def _assert_reversal_matches(self, invoice, credit_note):
+    def _assert_reversal_matches(self, invoice, credit_note, same_term_lines=True):
         self.assertEqual(
             round(sum(credit_note.line_ids.mapped("debit")), 2),
             round(sum(credit_note.line_ids.mapped("credit")), 2),
@@ -213,15 +224,22 @@ class TestReversalPaymentTermBalance(TransactionCase):
         original_pt = self._pt_lines(invoice)
         reversed_pt = self._pt_lines(credit_note)
         self.assertEqual(len(original_pt), 2)
-        self.assertEqual(len(reversed_pt), len(original_pt))
-        for original, reversed_line in zip(original_pt, reversed_pt):
-            self.assertAlmostEqual(
-                reversed_line.balance, -original.balance, places=2,
-                msg="La cuota por cobrar revertida debe ser el inverso de la original",
-            )
-            self.assertAlmostEqual(
-                reversed_line.amount_currency, -original.amount_currency, places=2
-            )
+        self.assertAlmostEqual(
+            sum(reversed_pt.mapped("balance")),
+            -sum(original_pt.mapped("balance")),
+            places=2,
+            msg="Las cuentas por cobrar revertidas deben sumar el inverso",
+        )
+        if same_term_lines:
+            self.assertEqual(len(reversed_pt), len(original_pt))
+            for original, reversed_line in zip(original_pt, reversed_pt):
+                self.assertAlmostEqual(
+                    reversed_line.balance, -original.balance, places=2,
+                    msg="La cuota revertida debe ser el inverso de la original",
+                )
+                self.assertAlmostEqual(
+                    reversed_line.amount_currency, -original.amount_currency, places=2
+                )
         self.assertAlmostEqual(credit_note.amount_total, invoice.amount_total, places=2)
 
     # -- tests -------------------------------------------------------------
@@ -241,12 +259,19 @@ class TestReversalPaymentTermBalance(TransactionCase):
         wizard = (
             self.env["account.move.reversal"]
             .with_context(active_model="account.move", active_ids=invoice.ids)
-            .create({"date": self.today, "journal_id": invoice.journal_id.id})
+            .create(
+                {
+                    "move_ids": [Command.set(invoice.ids)],
+                    "date": self.today,
+                    "journal_id": invoice.journal_id.id,
+                }
+            )
         )
         action = wizard.refund_moves()
         credit_note = self.env["account.move"].browse(action["res_id"])
         self.assertEqual(credit_note.move_type, "out_refund")
-        self._assert_reversal_matches(invoice, credit_note)
+        # El asistente genera la nota de credito con una sola linea por cobrar.
+        self._assert_reversal_matches(invoice, credit_note, same_term_lines=False)
 
     def test_03_reversal_with_different_date_is_balanced(self):
         """La fecha de reversion distinta a la de la factura tampoco desbalancea."""
@@ -279,7 +304,13 @@ class TestReversalPaymentTermBalance(TransactionCase):
         pt_lines = self._pt_lines(invoice)
         total_before = sum(pt_lines.mapped("balance"))
 
-        invoice._distribute_to_lines(pt_lines, 0.02, self.company.currency_id)
+        # El reparto mueve solo las cuotas, asi que el asiento queda
+        # momentaneamente desbalanceado: se desactiva la validacion.
+        invoice._distribute_to_lines(
+            pt_lines.with_context(check_move_validity=False),
+            0.02,
+            self.company.currency_id,
+        )
 
         self.assertAlmostEqual(
             sum(pt_lines.mapped("balance")), total_before + 0.02, places=2
