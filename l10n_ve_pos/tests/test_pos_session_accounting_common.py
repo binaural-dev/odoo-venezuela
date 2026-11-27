@@ -13,6 +13,17 @@ Doc:   ``.../specs/pos-odoo19-session-accounting/key-map.md``
 
 from odoo import Command, fields
 from odoo.tests import TransactionCase
+from odoo.tools import SQL
+
+
+def mark_legacy_foreign_currency(methods):
+    """Simulate methods saved before journals became mandatory."""
+    methods.flush_recordset(["is_foreign_currency"])
+    methods.env.cr.execute(
+        SQL("UPDATE pos_payment_method SET is_foreign_currency = TRUE WHERE id IN %s", tuple(methods.ids))
+    )
+    methods.invalidate_recordset(["is_foreign_currency"])
+    methods.modified(["is_foreign_currency"])
 
 
 class TestPosSessionAccountingBase(TransactionCase):
@@ -212,7 +223,6 @@ class TestPosSessionAccountingBase(TransactionCase):
                 "journal_id": cls.cash_journal.id,
             }
         )
-        cls.combined_cash_method.write({"is_foreign_currency": True})
         cls.split_cash_method = cls.env["pos.payment.method"].create(
             {
                 "name": "C Split Cash",
@@ -222,7 +232,6 @@ class TestPosSessionAccountingBase(TransactionCase):
                 "journal_id": cls.split_cash_journal.id,
             }
         )
-        cls.split_cash_method.write({"is_foreign_currency": True})
 
         # --- Bank journal (C2 split + combine) ---
         # A bank journal in Odoo 19 must have BOTH inbound and outbound
@@ -271,7 +280,6 @@ class TestPosSessionAccountingBase(TransactionCase):
                 "outstanding_account_id": cls.account_bank.id,
             }
         )
-        cls.combined_bank_method.write({"is_foreign_currency": True})
         cls.split_bank_method = cls.env["pos.payment.method"].create(
             {
                 "name": "C Split Bank",
@@ -282,7 +290,9 @@ class TestPosSessionAccountingBase(TransactionCase):
                 "outstanding_account_id": cls.account_bank.id,
             }
         )
-        cls.split_bank_method.write({"is_foreign_currency": True})
+        mark_legacy_foreign_currency(
+            cls.combined_cash_method | cls.split_cash_method | cls.combined_bank_method | cls.split_bank_method
+        )
 
         # --- Tax + product (needed for any order) ---
         cls.tax_group = cls.env["account.tax.group"].create(

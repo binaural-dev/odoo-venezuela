@@ -1,6 +1,6 @@
 ## Why
 
-El ticket 15399 pide dos validaciones al crear o editar un método de pago del PdV (`pos.payment.method`):
+El ticket 15399 pide validaciones al crear o editar un método de pago del PdV (`pos.payment.method`):
 
 1. **Cuentas transitorias iguales.** Nada impide que el diario del método (`journal_id`) y su diario afectado de
    banco o efectivo (`cross_journal`) tengan la misma cuenta transitoria (`suspense_account_id`). Es además lo
@@ -13,6 +13,8 @@ El ticket 15399 pide dos validaciones al crear o editar un método de pago del P
    (p. ej. un diario en USD en una caja en Bs). El error del core («All payment methods must be in the same
    currency as the Sales Journal…», `pos.config._check_currencies`) aparece solo al guardar la caja o al abrir la
    sesión, no al guardar el método.
+3. **Diarios de cruce faltantes.** Un método marcado en moneda alterna se puede guardar sin alguno de
+   esos diarios. Si falta uno, el cruce se omite al cierre.
 
 ## What Changes
 
@@ -23,12 +25,14 @@ El ticket 15399 pide dos validaciones al crear o editar un método de pago del P
   afectado.
 - `l10n_ve_pos` (`pos.payment.method`): un método no se guarda si su diario tiene una moneda distinta de la de
   alguna de sus cajas. Un diario sin moneda se acepta. Es la regla del core, revisada también desde el método.
+- `l10n_ve_pos` (`pos.payment.method`): al marcar moneda alterna, el formulario pide ambos diarios de cruce.
+  El modelo exige ambos al activar la opción o cambiar cualquiera de esos diarios.
 - Traducciones `es_VE` de los mensajes nuevos.
 - Pruebas nuevas en `l10n_ve_pos`, y una prueba existente del cruce se ajusta (ver tasks.md, 4.2).
 - Versión de `l10n_ve_pos`: el siguiente parche disponible en `19.0`.
 
-El código vino de un parche probado en el staging `19posconsultoria` (shell con rollback). Ese parche agregaba una
-tercera regla: el diario de un método en moneda alterna o con moneda de cobro debía estar en la moneda de la
+El código inicial vino de un parche probado en el staging `19posconsultoria` (shell con rollback). Ese parche exigía
+que el diario de un método en moneda alterna o con moneda de cobro estuviera en la moneda de la
 compañía aunque el método no tuviera caja. Este change la quita (design.md, D3).
 
 ## Capabilities
@@ -39,7 +43,7 @@ compañía aunque el método no tuviera caja. Este change la quita (design.md, D
 
 ### Modified Capabilities
 
-- `l10n_ve_pos`: dos requirements nuevos de validación del método de pago. El escenario «Las dos transitorias son
+- `l10n_ve_pos`: tres requisitos nuevos de validación del método de pago. El escenario «Las dos transitorias son
   la misma cuenta» del change abierto `cruce-venta-efectivo-entre-transitorias` se aclara: sigue valiendo para
   los métodos guardados antes de esta regla.
 
@@ -49,14 +53,16 @@ compañía aunque el método no tuviera caja. Este change la quita (design.md, D
 - **Lo ya guardado no se revalida.** Un método que hoy tiene las dos transitorias iguales, o un diario en otra
   moneda que su caja, sigue funcionando hasta que se le cambie un diario, la moneda alterna, la moneda de cobro o
   la caja (design.md, D4).
+- Los métodos en moneda alterna guardados antes de la regla siguen omitiendo el cruce si les falta un diario.
+  El modelo exige completarlos cuando se vuelve a activar la moneda alterna o se cambia uno de los diarios.
 - **Cambio de moneda de un diario.** Si se cambia la moneda de un diario que ya usa un método, el método no se
   revalida. Lo sigue atajando el core al guardar la caja o al abrir la sesión, como hoy.
 
 ## Impact
 
-- **Código:** `l10n_ve_pos/models/pos_payment_method.py` (dos `@api.constrains`),
+- **Código:** `l10n_ve_pos/models/pos_payment_method.py`,
   `l10n_ve_pos/models/account_journal.py` (archivo nuevo), `l10n_ve_pos/models/__init__.py`,
-  `l10n_ve_pos/i18n/es_VE.po`. Sin vistas, datos, JS ni migración.
+  `l10n_ve_pos/views/pos_payment_method.xml` y `l10n_ve_pos/i18n/es_VE.po`. Sin datos, JS ni migración.
 - **Pruebas:** archivo nuevo `l10n_ve_pos/tests/test_pos_payment_method_validations.py`. Se ajusta
   `test_cash_sale_emits_the_move_even_when_both_suspense_accounts_match` en
   `l10n_ve_pos/tests/test_pos_session_cross_account_move.py`.

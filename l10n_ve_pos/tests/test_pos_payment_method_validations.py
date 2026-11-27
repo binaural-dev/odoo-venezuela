@@ -6,6 +6,7 @@
 2. El diario del método tiene que estar en la moneda de cada una de sus cajas
    (la regla del core ``pos.config._check_currencies``), revisado también al
    guardar el método y no solo al guardar la caja o al abrir la sesión.
+3. Un método en moneda alterna debe tener los dos diarios de cruce.
 
 La compañía está en Bs con USD de alterna, como en producción: los diarios del
 fixture y la caja trabajan en la moneda de la compañía.
@@ -21,6 +22,7 @@ from .test_pos_session_accounting_common import TestPosSessionAccountingBase
 
 SAME_SUSPENSE = "use the same suspense account"
 OTHER_CURRENCY = "must be in the currency of its Point of Sale"
+MISSING_JOURNALS = "requires a Cross Journal and a Cross Account Journal"
 
 
 @tagged("post_install", "-at_install", "l10n_ve_pos")
@@ -145,10 +147,31 @@ class TestPosPaymentMethodValidations(TestPosSessionAccountingBase):
         self.real_journal.suspense_account_id = self.suspense_other
         self.assertEqual(method.cross_journal.suspense_account_id, self.suspense_other)
 
-    def test_incomplete_configuration_is_saved(self):
-        """Sin diario afectado o sin transitoria en el diario del método no hay
-        nada que comparar: lo reporta la apertura de la sesión."""
-        self._foreign_method(cross_journal=False)
+    def test_foreign_currency_requires_both_cross_journals_on_create(self):
+        for missing in ("cross_journal", "cross_account_journal"):
+            with self.subTest(missing=missing), self._rejected(MISSING_JOURNALS):
+                self._foreign_method(**{missing: False})
+
+    def test_enabling_foreign_currency_requires_cross_journals(self):
+        method = self._foreign_method(
+            is_foreign_currency=False, cross_journal=False, cross_account_journal=False
+        )
+        with self._rejected(MISSING_JOURNALS):
+            method.is_foreign_currency = True
+        method.write({
+            "is_foreign_currency": True,
+            "cross_journal": self.real_journal.id,
+            "cross_account_journal": self.cross_account_journal.id,
+        })
+        self.assertTrue(method.is_foreign_currency)
+
+    def test_foreign_currency_rejects_removing_either_cross_journal(self):
+        method = self._foreign_method()
+        for missing in ("cross_journal", "cross_account_journal"):
+            with self.subTest(missing=missing), self._rejected(MISSING_JOURNALS):
+                method.write({missing: False})
+
+    def test_missing_suspense_account_is_allowed_on_method(self):
         journal = self._cash_journal("T Sin transitoria", "TS150")
         journal.suspense_account_id = False
         self.real_journal.suspense_account_id = False
@@ -226,6 +249,6 @@ class TestPosPaymentMethodValidations(TestPosSessionAccountingBase):
         """Sin caja no se valida la moneda, tampoco en un método en moneda
         alterna; se valida cuando se le agrega una caja."""
         usd_journal = self._cash_journal("T Efectivo USD alterna", "TA150", currency=self.usd)
-        method = self._foreign_method(journal_id=usd_journal.id, cross_journal=False)
+        method = self._foreign_method(journal_id=usd_journal.id)
         with self._rejected(OTHER_CURRENCY):
             method.config_ids = [Command.link(self.config.id)]

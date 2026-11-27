@@ -23,6 +23,16 @@ class PosPaymentMethod(models.Model):
 
     cross_journal = fields.Many2one("account.journal", domain=[("type", "in", ("bank", "cash"))])
 
+    @api.constrains("is_foreign_currency", "cross_account_journal", "cross_journal")
+    def _check_foreign_currency_cross_journals(self):
+        for method in self.filtered("is_foreign_currency"):
+            if not (method.cross_account_journal and method.cross_journal):
+                raise ValidationError(_(
+                    "The foreign currency payment method %(method)s requires a Cross Journal "
+                    "and a Cross Account Journal.",
+                    method=method.name,
+                ))
+
     @api.constrains(
         "tender_currency_id", "is_foreign_currency", "journal_id", "cross_journal",
         "cross_account_journal", "company_id", "config_ids",

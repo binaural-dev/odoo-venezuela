@@ -1,5 +1,35 @@
 ## ADDED Requirements
 
+### Requirement: Diarios obligatorios para un método en moneda alterna
+
+Un método de pago con `is_foreign_currency` DEBE (MUST) tener Diario de Cruce de Cuentas (`cross_account_journal`) y Diario afectado de banco o efectivo (`cross_journal`) al activar la moneda alterna o editar alguno de esos diarios.
+
+#### Scenario: Falta uno o ambos diarios
+
+- **WHEN** se marca moneda alterna en un método nuevo o existente sin uno o ambos diarios de cruce
+- **THEN** el formulario exige los dos campos y el servidor rechaza el guardado con un mensaje que indica los diarios requeridos
+
+#### Scenario: Se borra un diario
+
+- **WHEN** se intenta quitar uno de los diarios de cruce de un método que mantiene la moneda alterna marcada
+- **THEN** se rechaza el guardado
+
+#### Scenario: Ambos diarios configurados
+
+- **WHEN** se guarda un método en moneda alterna con ambos diarios de cruce y las demás validaciones satisfechas
+- **THEN** el método se guarda, incluso sin una caja asignada
+
+#### Scenario: Método sin moneda alterna
+
+- **WHEN** se guarda un método sin moneda alterna ni moneda de cobro
+- **THEN** puede guardarse sin diarios de cruce
+
+#### Scenario: Método antiguo sin diarios de cruce
+
+- **WHEN** ya existía un método en moneda alterna al que le faltaba un diario de cruce
+- **THEN** la actualización conserva el registro. Si el operador abre su formulario para editarlo, los campos obligatorios solicitan completar los diarios al guardar
+- **AND** mientras el método siga incompleto, su cruce se omite al cerrar la sesión
+
 ### Requirement: Cuentas transitorias distintas en los dos diarios del cruce
 
 Un método de pago (`pos.payment.method`) en moneda alterna (`is_foreign_currency`) o con moneda de cobro (`tender_currency_id`) NO DEBE (MUST NOT) quedar con su diario (`journal_id`) y su diario afectado (`cross_journal`) en la misma cuenta transitoria (`suspense_account_id`), ni al guardar el método ni al cambiar la transitoria de uno de sus diarios.
@@ -24,10 +54,10 @@ Un método de pago (`pos.payment.method`) en moneda alterna (`is_foreign_currenc
 - **WHEN** el diario y el diario afectado de un método en moneda alterna tienen cada uno su cuenta transitoria
 - **THEN** el método y los diarios se guardan
 
-#### Scenario: Configuración incompleta
+#### Scenario: Diario sin cuenta transitoria
 
-- **WHEN** un método en moneda alterna no tiene diario afectado, o su diario no tiene cuenta transitoria
-- **THEN** se guarda: esa configuración incompleta la reporta la apertura de la sesión
+- **WHEN** un método en moneda alterna tiene sus dos diarios de cruce, pero su diario no tiene cuenta transitoria
+- **THEN** la regla de transitorias distintas permite guardarlo. La validación de apertura aplica a los métodos que resulten elegibles para cruce
 
 #### Scenario: Método sin cruce
 
