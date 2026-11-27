@@ -8,12 +8,65 @@ Adapta los contactos (`res.partner`) a la identificación fiscal venezolana: pre
 
 ### Requirement: Prefijo de identificación fiscal
 
-Cada contacto DEBE (MUST) tener un campo `prefix_vat` de selección con los valores `V`, `E`, `J`, `G`, `P` y `C`, con `V` como valor por defecto y `tracking=True`, mostrado junto al `vat` en el formulario de contacto.
+Cada contacto DEBE (MUST) tener un campo `prefix_vat` de selección con los valores `V`, `E`, `J`, `G`, `P` y `C`, con `tracking=True`, mostrado junto al `vat` en el formulario de contacto. El valor por defecto DEBE (MUST) seguir al tipo del registro: `V` para una persona y `J` para una empresa (`is_company` verdadero). Al guardar, el defecto se fija en `_add_missing_default_values` a partir de los valores del propio registro, y no del contexto de la acción, de modo que un contacto persona creado desde la acción de Clientes (`default_is_company`) o como hijo de una empresa queda en `V`.
 
 #### Scenario: Contacto nuevo
 
 - **WHEN** se abre el formulario de un contacto nuevo
 - **THEN** el prefijo aparece preseleccionado en `V` junto al campo de RIF/cédula
+
+#### Scenario: Empresa nueva
+
+- **WHEN** se crea un contacto con `is_company` verdadero sin indicar prefijo
+- **THEN** el prefijo queda en `J`
+
+#### Scenario: Contacto persona creado con el contexto de empresa
+
+- **WHEN** se crea un contacto con `is_company` falso, sin prefijo, desde una acción cuyo contexto trae `default_is_company`
+- **THEN** el prefijo queda en `V`
+
+### Requirement: Prefijo permitido según el tipo de contacto
+
+El prefijo del RIF DEBE (MUST) corresponder al tipo de contacto (tarea 87829), calculado en `allowed_prefix_vat` (JSON, no almacenado, dependiente de `is_company`): una empresa solo puede ser `J`, `G` o `C`; una persona solo puede ser `V`, `E` o `P`. El partner de una compañía de la base (`res.company`) DEBE (MUST) aceptar los seis, porque puede ser persona jurídica o firma personal. La restricción `_check_prefix_vat_by_contact_type` (`@api.constrains` sobre `prefix_vat`, `is_company` y `vat`) DEBE (MUST) rechazar con `ValidationError` el guardado, también por importación o API, de un contacto con RIF cuyo prefijo no esté permitido; un contacto sin `vat` o sin prefijo no se valida. Al cambiar `is_company`, el `onchange` DEBE (MUST) pasar el prefijo al primero permitido si el actual deja de serlo. La regla se evalúa sobre el propio contacto: un contacto hijo de una empresa se valida como persona o empresa según su propio `is_company`, y no hereda el prefijo del padre.
+
+#### Scenario: Prefijo de empresa en una persona
+
+- **WHEN** se guarda un contacto persona con prefijo `J` y `vat`
+- **THEN** se lanza `ValidationError` indicando que el prefijo no es válido y los permitidos (`V, E, P`)
+
+#### Scenario: Prefijo de persona en una empresa
+
+- **WHEN** se guarda un contacto con `is_company` verdadero, prefijo `V` y `vat`
+- **THEN** se lanza `ValidationError` con los permitidos `J, G, C`
+
+#### Scenario: Partner de la propia compañía
+
+- **WHEN** se guarda el partner de una compañía de la base con cualquiera de los seis prefijos
+- **THEN** el guardado se completa
+
+#### Scenario: Contacto sin número
+
+- **WHEN** se guarda un contacto sin `vat`, aunque su prefijo no corresponda
+- **THEN** no se valida el prefijo
+
+#### Scenario: Cambio de persona a empresa
+
+- **WHEN** en el formulario se marca como empresa un contacto con prefijo `V`
+- **THEN** el prefijo pasa a `J`
+
+### Requirement: Contacto hijo de una empresa
+
+Un contacto hijo de una empresa (`parent_id`) DEBE (MUST) seguir la sincronización comercial estándar de Odoo: el número `vat` se copia de la empresa al crear el hijo y se mantiene sincronizado en ambos sentidos, mientras que `prefix_vat`, `type_person_id`, `withholding_type_id` y `taxpayer_type` NO DEBEN (MUST NOT) sincronizarse ni heredarse; son datos propios del contacto. Este módulo no agrega `prefix_vat` a `_commercial_fields`.
+
+#### Scenario: Hijo de una empresa J
+
+- **WHEN** se crea un contacto persona hijo de una empresa con prefijo `J` y `vat` 507654321
+- **THEN** el hijo queda con prefijo `V` y el mismo `vat` 507654321
+
+#### Scenario: Cambio del número de la empresa
+
+- **WHEN** se cambia el `vat` de la empresa
+- **THEN** el `vat` del hijo se actualiza y su prefijo se mantiene
 
 ### Requirement: Autocompletado del nombre desde el CNE
 
