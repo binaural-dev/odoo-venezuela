@@ -1,6 +1,6 @@
 from odoo import api, fields, models,  Command, _
 from odoo.tools.sql import column_exists, create_column
-from odoo.tools import formatLang, float_repr
+from odoo.tools import float_repr
 from odoo.exceptions import UserError
 
 import logging
@@ -59,53 +59,15 @@ class AccountMove(models.Model):
     # RECONCILED PAYMENTS and advances ON INVOICE
     @api.depends('move_type', 'line_ids.amount_residual')
     def _compute_payments_widget_reconciled_info(self):
-        
+        # Account builds the widget (every key, can_open_move included) and the modules
+        # chained after this one (l10n_ve_payment_extension) keep extending it.
+        super()._compute_payments_widget_reconciled_info()
+        # What this module adds: only posted invoices show reconciled payments
+        # (account also builds the widget for draft ones).
         for move in self:
-            payments_widget_vals = {'title': _('Less Payment'), 'outstanding': False, 'content': []}
-
-            if move.state == 'posted' and move.is_invoice(include_receipts=True):
-                reconciled_vals = []
-                reconciled_partials = move.sudo()._get_all_reconciled_invoice_partials()
-                for reconciled_partial in reconciled_partials:
-                    counterpart_line = reconciled_partial['aml']
-                    if counterpart_line.move_id.ref:
-                        reconciliation_ref = '%s (%s)' % (counterpart_line.move_id.name, counterpart_line.move_id.ref)
-                    else:
-                        reconciliation_ref = counterpart_line.move_id.name
-                    if counterpart_line.amount_currency and counterpart_line.currency_id != counterpart_line.company_id.currency_id:
-                        foreign_currency = counterpart_line.currency_id
-                    else:
-                        foreign_currency = False
-                    
-
-                    reconciled_vals.append({
-                        'name': counterpart_line.name,
-                        'journal_name': counterpart_line.journal_id.name,
-                        'company_name': counterpart_line.journal_id.company_id.name if counterpart_line.journal_id.company_id != move.company_id else False,
-                        'amount': reconciled_partial['amount'],
-                        'currency_id': move.company_id.currency_id.id if reconciled_partial['is_exchange'] else reconciled_partial['currency'].id,
-                        'date': counterpart_line.date,
-                        'partial_id': reconciled_partial['partial_id'],
-                        'account_payment_id': counterpart_line.payment_id.id,
-                        'payment_method_name': counterpart_line.payment_id.payment_method_line_id.name,
-                        'move_id': counterpart_line.move_id.id,
-                        # ``is_refund`` es requerido por account/views/report_invoice.xml en Odoo 19
-                        # (template account.report_invoice_document itera payments_vals y accede
-                        # a payment_vals['is_refund']).
-                        'is_refund': counterpart_line.move_id.move_type in ['in_refund', 'out_refund'],
-                        'ref': reconciliation_ref,
-                        # these are necessary for the views to change depending on the values
-                        'is_exchange': reconciled_partial['is_exchange'],
-                        'amount_company_currency': formatLang(self.env, abs(counterpart_line.balance), currency_obj=counterpart_line.company_id.currency_id),
-                        'amount_foreign_currency': foreign_currency and formatLang(self.env, abs(counterpart_line.amount_currency), currency_obj=foreign_currency)
-                    })
-                payments_widget_vals['content'] = reconciled_vals
-
-            if payments_widget_vals['content']:
-                move.invoice_payments_widget = payments_widget_vals
-            else:
+            if move.state != 'posted':
                 move.invoice_payments_widget = False
-    
+
     # UNRECONCILED ADVANCE PAYMENTS
     def _compute_payments_widget_to_reconcile_info_advance_payment(self):
         for move in self:
