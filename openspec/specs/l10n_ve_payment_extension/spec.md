@@ -112,7 +112,7 @@ Al cambiar el partner, `onchange_partner_id` DEBE (MUST) primero validar los dia
 
 ### Requirement: Cálculo de la retención IVA por grupo de impuestos
 
-El sistema DEBE (MUST) calcular cada línea de retención IVA por grupo de impuesto de la factura, recorriendo solo los grupos que tengan impuestos con monto mayor a cero en las líneas de la factura: `iva_amount` es el impuesto del grupo, `invoice_amount` su base imponible, `invoice_total` el total de la factura, `aliquot` la alícuota del primer impuesto del grupo, `related_percentage_tax_base` el porcentaje del tipo de retención y `retention_amount = |iva_amount × porcentaje / 100|`, con los equivalentes en moneda alterna calculados con el mismo porcentaje (sin valor absoluto). El porcentaje se toma del `withholding_type_id.value` del partner **de la factura** en `compute_retention_lines_data`, mientras que el onchange por línea (`_onchange_move_id`) prefiere el partner del comprobante y cae en el de la factura solo si el comprobante no tiene partner; si no hay tipo de retención el porcentaje usado es 0 y la línea queda en 0 sin error. El módulo instala los tipos de retención `75%` y `100%` como data. Una factura sin impuestos con monto mayor a cero DEBE (MUST) interrumpir el cálculo, aunque el mensaje de error se arma con `invoice_id.number` —campo inexistente en `account.move`— por lo que la interrupción se manifiesta como error de atributo y no como el `UserError` previsto; en el onchange de la línea el mismo caso solo devuelve un aviso "The invoice has no tax." sin bloquear. El error explícito por partner sin tipo de retención existe únicamente en la creación de retenciones IVA desde la factura (`_create_retention`).
+El sistema DEBE (MUST) calcular cada línea de retención IVA por grupo de impuesto de la factura, recorriendo solo los grupos que tengan impuestos con monto mayor a cero en las líneas de la factura: `iva_amount` es el impuesto del grupo, `invoice_amount` su base imponible, `invoice_total` el total de la factura, `aliquot` la alícuota del primer impuesto del grupo, `related_percentage_tax_base` el porcentaje del tipo de retención y `retention_amount = |iva_amount × porcentaje / 100|`, con los equivalentes en moneda alterna calculados con el mismo porcentaje (sin valor absoluto). El porcentaje se toma del `withholding_type_id.value` del partner fiscal de la factura (`_get_iva_withholding_partner`, ver el requisito de fuente fiscal) en `compute_retention_lines_data`, mientras que el onchange por línea (`_onchange_move_id`) prefiere el partner del comprobante y cae en el de la factura solo si el comprobante no tiene partner; si no hay tipo de retención el porcentaje usado es 0 y la línea queda en 0 sin error. El módulo instala los tipos de retención `75%` y `100%` como data. Una factura sin impuestos con monto mayor a cero DEBE (MUST) interrumpir el cálculo, aunque el mensaje de error se arma con `invoice_id.number` —campo inexistente en `account.move`— por lo que la interrupción se manifiesta como error de atributo y no como el `UserError` previsto; en el onchange de la línea el mismo caso solo devuelve un aviso "The invoice has no tax." sin bloquear. El error explícito por partner sin tipo de retención existe únicamente en la creación de retenciones IVA desde la factura (`_create_retention`).
 
 #### Scenario: Contribuyente especial al 75%
 
@@ -121,7 +121,7 @@ El sistema DEBE (MUST) calcular cada línea de retención IVA por grupo de impue
 
 #### Scenario: Partner sin tipo de retención al crear desde la factura
 
-- **WHEN** se genera la retención IVA desde una factura (`_create_retention`) cuyo partner no tiene `withholding_type_id`
+- **WHEN** se genera la retención IVA desde una factura (`_create_retention`) cuyo partner fiscal no tiene `withholding_type_id`
 - **THEN** se lanza un `UserError` indicando que el partner no tiene tipo de retención
 
 #### Scenario: Partner sin tipo de retención al cargar líneas
@@ -155,7 +155,7 @@ El respeto del flag `auto_fill_retention_amount_iva` DEBE (MUST) depender de la 
 
 ### Requirement: Parámetros ISLR según el tipo de persona del sujeto retenido
 
-Al asignar un concepto de pago a una línea ISLR, el sistema DEBE (MUST) tomar los parámetros (`pay_from`, `percentage_tax_base`, porcentaje y sustraendo de la tarifa) de la línea de concepto (`payment.concept.line`) cuyo `type_person_id` coincide con el tipo de persona del sujeto: el del partner del comprobante (o de la factura) en retenciones de proveedor, y el del partner de la propia compañía en retenciones de cliente (`out_invoice`). Emitir una retención ISLR DEBE (MUST) exigir que el sujeto tenga `type_person_id` y que las líneas tengan concepto de pago.
+Al asignar un concepto de pago a una línea ISLR, el sistema DEBE (MUST) tomar los parámetros (`pay_from`, `percentage_tax_base`, porcentaje y sustraendo de la tarifa) de la línea de concepto (`payment.concept.line`) cuyo `type_person_id` coincide con el tipo de persona del sujeto: el del partner del comprobante (o de la factura) en retenciones de proveedor, y el del partner de la propia compañía en retenciones de cliente (`out_invoice`). Si el contacto del comprobante es hijo de una empresa, se usa el tipo de persona de la empresa a la que pertenece (`_get_retention_partner`). Emitir una retención ISLR DEBE (MUST) exigir que el sujeto tenga `type_person_id` y que las líneas tengan concepto de pago.
 
 #### Scenario: Concepto con línea para el tipo de persona
 
@@ -278,7 +278,7 @@ Una factura DEBE (MUST) considerarse elegible para retención ISLR (`is_isrl_ret
 
 ### Requirement: Validaciones para generar la retención ISLR desde la factura
 
-El método `validate_islr` DEBE (MUST) exigir que la factura esté publicada, que tenga al menos una línea cuyo producto tenga concepto de pago (aquí **sin** exigir que el producto sea de tipo servicio, a diferencia del cálculo de `is_isrl_retention_available`), que el sujeto (el partner de la compañía en facturas de cliente `out_invoice`, el proveedor en las demás) exista y tenga tipo de persona, y que la factura no tenga ya una retención ISLR emitida (considerando solo retenciones no canceladas); si existe una en borrador, se reutiliza y se abre en lugar de crear otra.
+El método `validate_islr` DEBE (MUST) exigir que la factura esté publicada, que tenga al menos una línea cuyo producto tenga concepto de pago (aquí **sin** exigir que el producto sea de tipo servicio, a diferencia del cálculo de `is_isrl_retention_available`), que el sujeto (el partner de la compañía en facturas de cliente `out_invoice`, el proveedor en las demás, o la empresa a la que pertenece si es un contacto hijo) exista y tenga tipo de persona, y que la factura no tenga ya una retención ISLR emitida (considerando solo retenciones no canceladas); si existe una en borrador, se reutiliza y se abre en lugar de crear otra.
 
 #### Scenario: Factura con retención ISLR ya emitida
 
@@ -673,7 +673,7 @@ Las relaciones de `account.retention.line` DEBEN (MUST) declararse con `ondelete
 
 ### Requirement: Propagación de la condición de retención de la compañía al contacto
 
-Al escribir `condition_withholding_id` en `res.company`, el sistema DEBE (MUST) copiar ese valor al `withholding_type_id` del partner de la compañía, de modo que el porcentaje usado en las retenciones IVA de cliente (que se lee del partner) quede alineado con la configuración de la compañía.
+Al escribir `condition_withholding_id` en `res.company`, el sistema DEBE (MUST) copiar ese valor al `withholding_type_id` del partner de la compañía, de modo que el porcentaje usado en las retenciones IVA de cliente (que se lee del partner de la compañía) quede alineado con la configuración de la compañía. La copia ocurre solo en el `write` de la compañía: una compañía que nunca se editó queda sin tipo de retención y no puede generar retenciones IVA de cliente hasta configurarla.
 
 #### Scenario: Cambio de la condición de retención en ajustes
 
@@ -684,6 +684,119 @@ Al escribir `condition_withholding_id` en `res.company`, el sistema DEBE (MUST) 
 
 - **WHEN** se escribe la condición de retención en una compañía sin partner asociado
 - **THEN** la escritura se completa sin propagar el valor
+
+### Requirement: Tipo de persona permitido según el tipo de contacto
+
+El dominio de `type_person_id` en el formulario del contacto DEBE (MUST) ofrecer solo los tipos de persona activos que corresponden a `is_company`, calculados en `allowed_type_person_ids`: una persona (`is_company` falso) solo puede ser `PN Residente` o `PN No Residente`; una compañía solo puede ser alguno de los demás tipos, todos personas jurídicas (`PJ Domiciliada`, `PJ No Domiciliada`, `Instituciones Financieras No Domiciliadas`, `Otras PJ No Domiciliada` y `PJ Empresa Emisora De Radio Domiciliada`). Al cambiar `is_company`, el `onchange` DEBE (MUST) vaciar `type_person_id` si el tipo elegido deja de estar permitido.
+
+#### Scenario: Contacto de tipo persona
+
+- **WHEN** se abre el selector de tipo de persona de un contacto con `is_company` falso
+- **THEN** solo se ofrecen `PN Residente` y `PN No Residente`
+
+#### Scenario: Contacto de tipo compañía
+
+- **WHEN** se abre el selector de tipo de persona de un contacto con `is_company` verdadero
+- **THEN** se ofrecen los cinco tipos de persona jurídica y no los dos de persona natural
+
+#### Scenario: Cambio de persona a compañía
+
+- **WHEN** un contacto con tipo `PN Residente` cambia a compañía
+- **THEN** `type_person_id` queda vacío
+
+### Requirement: Tipo de contribuyente según el tipo de persona
+
+El campo `taxpayer_type` del contacto DEBE (MUST) ofrecer solo `ordinary` y `formal` cuando el tipo de persona es `PN Residente` (`allowed_taxpayer_types`, aplicado con el widget `filterable_selection`), y al elegir `PN Residente` con contribuyente `special` el `onchange` DEBE (MUST) pasarlo a `ordinary`. Para un tipo de persona no residente (`PN No Residente`, `PJ No Domiciliada`, `Instituciones Financieras No Domiciliadas` y `Otras PJ No Domiciliada`) el campo DEBE (MUST) ocultarse y quedar en `ordinary` al elegir el tipo, y una restricción (`_check_non_resident_taxpayer_type`) DEBE (MUST) rechazar el guardado de un no residente con contribuyente `special`, también por importación o API. El contacto de la propia compañía no se modifica por estas reglas.
+
+#### Scenario: PN Residente no ofrece contribuyente especial
+
+- **WHEN** el tipo de persona del contacto es `PN Residente`
+- **THEN** el selector de tipo de contribuyente ofrece solo `ordinary` y `formal`
+
+#### Scenario: Elegir PN Residente con contribuyente especial
+
+- **WHEN** un contacto con contribuyente `special` cambia su tipo de persona a `PN Residente`
+- **THEN** `taxpayer_type` pasa a `ordinary`
+
+#### Scenario: Tipo de persona no residente
+
+- **WHEN** se elige un tipo de persona no residente
+- **THEN** el campo de contribuyente se oculta y `taxpayer_type` queda en `ordinary`
+
+#### Scenario: No residente con contribuyente especial
+
+- **WHEN** se guarda un contacto no residente con `taxpayer_type` en `special`
+- **THEN** se lanza un `ValidationError` indicando que un contacto no residente no puede ser contribuyente especial
+
+### Requirement: Tipo de retención por defecto del contacto según la tabla de retención de IVA
+
+El método `_apply_default_withholding_type`, disparado por el `onchange` de `type_person_id` y de `taxpayer_type`, DEBE (MUST) fijar `withholding_type_id` según la tabla de retención de IVA validada por funcional en la tarea 86944: no se propone ningún valor mientras el contacto no tenga tipo de persona; con contribuyente `formal` queda vacío porque no cobra IVA; un tipo de persona no residente tiene siempre 100 %; `PN Residente` tiene 100 % por defecto; cualquier otro residente (`PJ Domiciliada` y `PJ Empresa Emisora De Radio Domiciliada`) tiene 75 % por defecto. Un valor ya elegido (75 % o 100 %) DEBE (MUST) conservarse al cambiar el tipo de persona o de contribuyente, salvo para un no residente o un contribuyente `formal`. El contacto de la propia compañía NO DEBE (MUST NOT) modificarse, porque su tipo de retención viene de la configuración de la compañía. La regla vive en el formulario: la creación por importación o API no ejecuta los `onchange`.
+
+En la vista, `withholding_type_id` DEBE (MUST) ocultarse únicamente con contribuyente `formal`, ser obligatorio para un contribuyente `special` residente y para `PN Residente` (siempre que no sea el contacto de la compañía, donde es de solo lectura) y opcional en el resto.
+
+#### Scenario: Contacto nuevo sin tipo de persona
+
+- **WHEN** se abre un contacto nuevo y todavía no se elige el tipo de persona
+- **THEN** `withholding_type_id` queda vacío
+
+#### Scenario: PJ Domiciliada con contribuyente ordinario o especial
+
+- **WHEN** un contacto con tipo `PJ Domiciliada` tiene contribuyente `ordinary` o `special` y el campo está vacío
+- **THEN** `withholding_type_id` toma el valor de 75 % y el campo es visible y editable a 100 %
+
+#### Scenario: Contribuyente formal
+
+- **WHEN** un contacto residente tiene contribuyente `formal`
+- **THEN** `withholding_type_id` queda vacío y el campo se oculta
+
+#### Scenario: PN Residente
+
+- **WHEN** un contacto de tipo `PN Residente` con contribuyente `ordinary` tiene el campo vacío
+- **THEN** `withholding_type_id` toma el valor de 100 % y el campo es obligatorio
+
+#### Scenario: Tipo de persona no residente
+
+- **WHEN** se elige un tipo de persona no residente
+- **THEN** `withholding_type_id` queda en 100 %, aunque tuviera otro valor, para que la retención de IVA de sus facturas pueda generarse
+
+#### Scenario: Valor elegido a mano
+
+- **WHEN** un contacto `PJ Domiciliada` con 100 % elegido a mano pasa de contribuyente `special` a `ordinary`
+- **THEN** `withholding_type_id` se conserva en 100 %
+
+#### Scenario: Del contribuyente formal al ordinario
+
+- **WHEN** un contacto `PJ Domiciliada` pasa de contribuyente `formal` a `ordinary`
+- **THEN** `withholding_type_id`, vacío, vuelve a tomar el valor por defecto de 75 %
+
+#### Scenario: Contacto de la propia compañía
+
+- **WHEN** se evalúa el contacto de la propia compañía
+- **THEN** `withholding_type_id` no se modifica y el campo es de solo lectura
+
+### Requirement: Fuente de la información fiscal de la retención según el flujo y el contacto
+
+La información fiscal que usa una retención DEBE (MUST) resolverse en tiempo de ejecución, sin copiar datos al contacto hijo ni agregar campos. Para la retención de IVA, `account.move._get_iva_withholding_partner(partner=None)` DEBE (MUST) devolver el partner de la compañía en facturas de venta (`out_invoice`, `out_refund`, `out_receipt`), porque el porcentaje lo define la condición de retención de la compañía (`condition_withholding_id`), y en facturas de compra el contacto de la factura (o `partner`, si se indica) resuelto con `res.partner._get_retention_partner()`. `_get_retention_partner()` DEBE (MUST) devolver el `commercial_partner_id` del contacto, o el propio contacto si no pertenece a una empresa. Este partner fiscal se usa en `_create_retention`, `compute_retention_lines_data`, el onchange de la línea de retención y el reporte de líneas de retención (`retention_line_report`, que une la compañía en ventas y el partner comercial en compras). Para el ISLR, el tipo de persona (`_get_islr_type_person_id`, `validate_islr`, `_validate_islr_retention_fields` y el TXT del wizard) se toma del contacto resuelto con `_get_retention_partner()` en compras, y de la compañía en `out_invoice`. Un contacto hijo NO DEBE (MUST NOT) recibir un error por no tener datos fiscales propios mientras su empresa los tenga. Las notas de crédito de cliente (`out_refund`) siguen hoy la rama del cliente en el ISLR; ese caso queda fuera de este requisito.
+
+#### Scenario: Compra a un contacto hijo de una empresa
+
+- **WHEN** se publica una factura de proveedor de un contacto hijo sin tipo de retención propio, cuya empresa tiene 75 %
+- **THEN** la retención de IVA se genera con 75 % y la factura se publica sin error
+
+#### Scenario: Venta a un cliente con retención de IVA
+
+- **WHEN** se genera la retención de IVA de una factura de venta
+- **THEN** el porcentaje sale del tipo de retención del partner de la compañía, aunque el cliente tenga otro valor en su ficha
+
+#### Scenario: Venta con la compañía sin condición de retención
+
+- **WHEN** se genera la retención de IVA de una factura de venta y el partner de la compañía no tiene `withholding_type_id`
+- **THEN** se lanza un `UserError` indicando que el partner no tiene tipo de retención
+
+#### Scenario: ISLR de un contacto hijo
+
+- **WHEN** se valida la retención ISLR de una factura de proveedor de un contacto hijo sin tipo de persona propio
+- **THEN** se usa el tipo de persona de su empresa para emparejar el concepto de pago y no se lanza error por tipo de persona
 
 ### Requirement: Los montos de una línea de retención de IVA de proveedor deben ser de solo lectura
 

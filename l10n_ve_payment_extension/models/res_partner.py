@@ -1,4 +1,5 @@
-from odoo import api, models, fields
+from odoo import _, api, fields, models
+from odoo.exceptions import ValidationError
 
 
 class ResPartner(models.Model):
@@ -99,3 +100,152 @@ class ResPartner(models.Model):
     def _compute_is_foreign_partner(self):
         # Only adds type_person_id to the dependencies of l10n_ve_tax_payer.
         super()._compute_is_foreign_partner()
+
+    allowed_type_person_ids = fields.Many2many(
+        "type.person",
+        compute="_compute_allowed_type_person_ids",
+        string="Allowed Type Persons",
+    )
+    is_non_resident_person = fields.Boolean(
+        compute="_compute_is_non_resident_person",
+        string="Is Non Resident Person",
+    )
+    is_natural_resident_person = fields.Boolean(
+        compute="_compute_is_natural_resident_person",
+        string="Is Natural Resident Person",
+    )
+
+    allowed_taxpayer_types = fields.Json(
+        compute="_compute_allowed_taxpayer_types",
+        string="Allowed Taxpayer Types",
+    )
+
+    @api.depends("type_person_id")
+    def _compute_allowed_taxpayer_types(self):
+        """Ticket 86944: a PN Residente is never a special taxpayer."""
+        for partner in self:
+            partner.allowed_taxpayer_types = (
+                ["ordinary", "formal"]
+                if partner.is_natural_resident_person
+                else ["ordinary", "formal", "special"]
+            )
+
+    def _get_allowed_type_persons(self):
+        """Ticket 86944: a person can only be PN Residente or PN No Residente;
+        every other type is a legal entity (PJ) and belongs to a company."""
+        self.ensure_one()
+        if self.is_company:
+            return self._get_type_persons_by_xmlid(
+                (
+                    "type_person_three_l10n_ve_payment_extension",
+                    "type_person_four_l10n_ve_payment_extension",
+                    "type_person_five_l10n_ve_payment_extension",
+                    "type_person_six_l10n_ve_payment_extension",
+                    "type_person_seven_l10n_ve_payment_extension",
+                )
+            )
+        return self._get_type_persons_by_xmlid(
+            (
+                "type_person_l10n_ve_payment_extension",
+                "type_person_two_l10n_ve_payment_extension",
+            )
+        )
+
+    @api.depends("is_company")
+    def _compute_allowed_type_person_ids(self):
+        for partner in self:
+            partner.allowed_type_person_ids = partner._get_allowed_type_persons()
+
+    @api.depends("type_person_id")
+    def _compute_is_non_resident_person(self):
+        non_resident_persons = self._get_non_resident_type_persons()
+        for partner in self:
+            partner.is_non_resident_person = bool(
+                partner.type_person_id
+                and partner.type_person_id in non_resident_persons
+                and not partner._is_company_partner()
+            )
+
+    @api.depends("type_person_id")
+    def _compute_is_natural_resident_person(self):
+        natural_resident = self.env.ref(
+            "l10n_ve_payment_extension.type_person_l10n_ve_payment_extension",
+            raise_if_not_found=False,
+        )
+        for partner in self:
+            partner.is_natural_resident_person = bool(
+                natural_resident and partner.type_person_id == natural_resident
+            )
+
+    @api.onchange("is_company")
+    def _onchange_is_company_type_person(self):
+        for partner in self:
+            if (
+                partner.type_person_id
+                and partner.type_person_id not in partner._get_allowed_type_persons()
+            ):
+                partner.type_person_id = False
+
+    def _get_retention_partner(self):
+        """Partner whose withholding type is used by the IVA retentions.
+
+        The withholding type is a commercial datum: a contact that belongs to a
+        company has none of its own, it reads the one of its commercial partner
+        (the company it belongs to). A standalone partner is its own commercial
+        partner."""
+        self.ensure_one()
+        return self.commercial_partner_id or self
+
+    def _apply_default_withholding_type(self):
+        """Ticket 86944 (IVA retention table): no IVA is withheld from a formal
+        taxpayer; a non resident or a PN Residente is withheld 100% and any other
+        resident 75%. A value already chosen (75% or 100%) is kept, except for a
+        non resident one, which is always 100%. Nothing is set until the person
+        type is chosen. The partner of a company is left as it is: its withholding
+        type comes from the company configuration."""
+        for partner in self:
+            if partner._is_company_partner() or not partner.type_person_id:
+                continue
+            if (
+                partner.withholding_type_id
+                and partner.taxpayer_type != "formal"
+                and not partner.is_non_resident_person
+            ):
+                continue
+            if partner.taxpayer_type == "formal":
+                xmlid = False
+            elif partner.is_non_resident_person or partner.is_natural_resident_person:
+                xmlid = "account_withholding_type_100"
+            else:
+                xmlid = "account_withholding_type_75"
+            partner.withholding_type_id = xmlid and self.env.ref(
+                "l10n_ve_payment_extension." + xmlid
+            )
+
+    @api.onchange("type_person_id")
+    def _onchange_type_person_taxpayer_withholding(self):
+        """A non resident partner has neither taxpayer type nor withholding type
+        (ticket 86944)."""
+        for partner in self:
+            if partner._is_company_partner():
+                continue
+            if partner.is_non_resident_person or (
+                partner.is_natural_resident_person
+                and partner.taxpayer_type == "special"
+            ):
+                partner.taxpayer_type = "ordinary"
+        self._apply_default_withholding_type()
+
+    @api.onchange("taxpayer_type")
+    def _onchange_taxpayer_type_withholding_type(self):
+        self._apply_default_withholding_type()
+
+    @api.constrains("type_person_id", "taxpayer_type")
+    def _check_non_resident_taxpayer_type(self):
+        # Only the special taxpayer type is rejected: existing flows (IVA
+        # retentions) still read the withholding type of non resident partners.
+        for partner in self:
+            if partner.is_non_resident_person and partner.taxpayer_type == "special":
+                raise ValidationError(
+                    _("A non resident partner cannot be a special taxpayer.")
+                )

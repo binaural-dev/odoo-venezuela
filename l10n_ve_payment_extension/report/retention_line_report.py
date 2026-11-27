@@ -111,7 +111,13 @@ class RetentionLineReport(models.Model):
             JOIN account_retention_line rl ON r.id = rl.retention_id
             JOIN account_move i ON rl.move_id = i.id
             JOIN res_partner p ON r.partner_id = p.id
-            JOIN account_withholding_type w ON p.withholding_type_id = w.id
+            JOIN res_company co ON co.id = r.company_id
+            JOIN res_partner cp ON cp.id = CASE
+                WHEN r.type IN ('out_invoice', 'out_refund', 'out_debit')
+                THEN co.partner_id
+                ELSE p.commercial_partner_id
+            END
+            JOIN account_withholding_type w ON cp.withholding_type_id = w.id
         """
 
     def _where(self):

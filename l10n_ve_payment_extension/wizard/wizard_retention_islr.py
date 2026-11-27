@@ -207,7 +207,7 @@ class RetentionIslrReport(models.TransientModel):
         alicuota = ""
 
         for l_pay_concept_id in ret_line_id.payment_concept_id.line_payment_concept_ids:
-            if l_pay_concept_id.type_person_id.name == ret_id.partner_id.type_person_id.name:
+            if l_pay_concept_id.type_person_id.name == ret_id.partner_id._get_retention_partner().type_person_id.name:
                 concept = l_pay_concept_id.code
                 alicuota = l_pay_concept_id.tariff_id.percentage if l_pay_concept_id.tariff_id else ""
                 break

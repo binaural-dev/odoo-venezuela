@@ -225,11 +225,14 @@ class AccountRetentionLine(models.Model):
                 if record.retention_id and record.retention_id.partner_id
                 else invoice_id.partner_id
             )
-            withholding_amount = (
-                withholding_partner.withholding_type_id.value
-                if withholding_partner and withholding_partner.withholding_type_id
-                else 0
+            withholding_type = (
+                invoice_id._get_iva_withholding_partner(
+                    withholding_partner
+                ).withholding_type_id
+                if withholding_partner
+                else False
             )
+            withholding_amount = withholding_type.value if withholding_type else 0
 
             tax_groups_and_taxes = record._get_iva_tax_groups_and_taxes(invoice_id)
 
@@ -276,11 +279,14 @@ class AccountRetentionLine(models.Model):
                 if record.retention_id.partner_id
                 else invoice_id.partner_id
             )
-            withholding_amount = (
-                withholding_partner.withholding_type_id.value
-                if withholding_partner and withholding_partner.withholding_type_id
-                else 0
+            withholding_type = (
+                invoice_id._get_iva_withholding_partner(
+                    withholding_partner
+                ).withholding_type_id
+                if withholding_partner
+                else False
             )
+            withholding_amount = withholding_type.value if withholding_type else 0
 
             tax_groups_and_taxes = record._get_iva_tax_groups_and_taxes(invoice_id)
             match = next(
@@ -470,10 +476,10 @@ class AccountRetentionLine(models.Model):
             return self.company_id.partner_id.type_person_id
 
         if self.retention_id and self.retention_id.partner_id:
-            return self.retention_id.partner_id.type_person_id
+            return self.retention_id.partner_id._get_retention_partner().type_person_id
 
         if self.move_id and self.move_id.partner_id:
-            return self.move_id.partner_id.type_person_id
+            return self.move_id.partner_id._get_retention_partner().type_person_id
 
         return self.env["type.person"]
 
