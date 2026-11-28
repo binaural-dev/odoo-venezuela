@@ -1,5 +1,5 @@
 import { patch } from "@web/core/utils/patch";
-import { useState, onWillUnmount } from "@odoo/owl";
+import { onWillUnmount, proxy } from "@odoo/owl";
 import { _t } from "@web/core/l10n/translation";
 import { formatProductName } from "@pos_self_order/app/utils";
 import { ProductListPage } from "@pos_self_order/app/pages/product_list_page/product_list_page";
@@ -12,14 +12,20 @@ patch(ProductListPage.prototype, {
     setup() {
         super.setup();
         // Only used when the catalog is hidden (scan / search only mode).
-        this.searchState = useState({ query: "" });
+        this.searchState = proxy({ query: "" });
         // In scan/search-only mode a barcode scan should keep the customer on
         // this screen (the order builds up in the in-place summary) instead of
         // jumping to the cart. The router honours this flag; see
         // overrides/self_order_router_service.js.
         this.router.suppressScanCartNav = this.hideCatalog;
+        this.selfOrder.kioskOnProductSelected = () => {
+            if (this.hideCatalog) {
+                this.searchState.query = "";
+            }
+        };
         onWillUnmount(() => {
             this.router.suppressScanCartNav = false;
+            this.selfOrder.kioskOnProductSelected = null;
         });
     },
 
@@ -72,7 +78,7 @@ patch(ProductListPage.prototype, {
         }
         const results = [];
         for (const tmpl of this.selfOrder.models["product.template"].getAll()) {
-            if (!tmpl.self_order_available) {
+            if (!tmpl.self_order_available || tmpl._is_pos_special_product) {
                 continue;
             }
             const haystack = [tmpl.name, tmpl.display_name, tmpl.barcode, tmpl.default_code]
@@ -172,6 +178,9 @@ patch(ProductListPage.prototype, {
         if (selfOrder.rpcLoading || !selfOrder.verifyCart()) {
             return;
         }
+        if (!(await selfOrder.canProceedToPay())) {
+            return;
+        }
 
         const order = selfOrder.currentOrder;
         const partner = order.partner_id || {};
@@ -222,14 +231,5 @@ patch(ProductListPage.prototype, {
             return [];
         }
         return super.getSubCategories();
-    },
-
-    selectProduct(product, target) {
-        super.selectProduct(product, target);
-        // Reset the search after adding a simple product so the next scan/search
-        // starts from a clean box (configurable/combo products navigate away).
-        if (this.hideCatalog) {
-            this.searchState.query = "";
-        }
     },
 });

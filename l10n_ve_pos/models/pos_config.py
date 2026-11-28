@@ -202,23 +202,26 @@ class PosConfig(models.Model):
     def _check_cross_move_accounts(self):
         """Refuse to open a session whose cross moves would miss an account.
 
-        Same idea as the native ``_check_profit_loss_cash_journal``: a
-        foreign-currency method with both cross journals set will need the
-        accounts listed by ``pos.session._get_cross_move_missing_accounts``
-        (on opening, with the foreign cash drawer's opening difference, and on
-        closing). Without them the cross move used to be built with a NULL
-        ``account_id`` and the opening crashed on
-        ``account_move_line_check_accountable_required_fields``.
+        Same idea as the native ``_check_profit_loss_cash_journal``: a payment
+        method with both cross journals set for one of its foreign currencies
+        will need the accounts listed by
+        ``pos.session._get_cross_move_missing_accounts`` (on opening, with the
+        foreign cash drawer's opening difference, and on closing). Without them
+        the cross move used to be built with a NULL ``account_id`` and the
+        opening crashed on ``account_move_line_check_accountable_required_fields``.
         """
         self.ensure_one()
         # A virtual session of this config: which methods cross depends on the
         # session (e.g. its currency), and other modules extend that per session.
         session = self.env["pos.session"].new({"config_id": self.id})
         missing = [
-            f"- {method.name} → {account}"
+            f"- {method.name} ({setting.currency_id.name}) → {account}"
             for method in self.payment_method_ids
-            if session._is_cross_move_eligible(method)
-            for account in session._get_cross_move_missing_accounts(method)
+            for setting in method.currency_setting_ids
+            if session._is_cross_move_eligible(method, setting.currency_id)
+            for account in session._get_cross_move_missing_accounts(
+                method, setting.currency_id
+            )
         ]
         if missing:
             raise ValidationError(

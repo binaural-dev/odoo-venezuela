@@ -1,6 +1,8 @@
+from datetime import timezone
+from zoneinfo import ZoneInfo
+
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
-import pytz
 
 import logging
 
@@ -36,7 +38,7 @@ class PosOrderInherit(models.Model):
         for values, order in zip(result, orders):
             values["payment_lines"] = [
                 {
-                    "payment_method_code": payment.payment_method_id.code_fiscal_printer,
+                    "payment_method_code": payment._get_fiscal_code(),
                     "payment_method_name": payment.payment_method_id.name,
                     "amount": payment.amount,
                 }
@@ -68,16 +70,16 @@ class PosOrderInherit(models.Model):
 
         invoice_datetime = fields.Datetime.to_datetime(invoice_datetime)
         if invoice_datetime and invoice_datetime.tzinfo is None:
-            invoice_datetime = pytz.UTC.localize(invoice_datetime)
+            invoice_datetime = invoice_datetime.replace(tzinfo=timezone.utc)
 
         tz_name = self.user_id.tz or self.env.user.tz or "America/Caracas"
         try:
-            timezone = pytz.timezone(tz_name)
+            user_tz = ZoneInfo(tz_name)
         except Exception:
-            timezone = pytz.timezone("America/Caracas")
+            user_tz = ZoneInfo("America/Caracas")
 
         if invoice_datetime:
-            res["invoice_date"] = invoice_datetime.astimezone(timezone).date()
+            res["invoice_date"] = invoice_datetime.astimezone(user_tz).date()
 
         res["cashbox_id"] = self.config_id.id
         res["mf_serial"] = self.fiscal_machine

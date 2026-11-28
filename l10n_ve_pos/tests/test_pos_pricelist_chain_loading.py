@@ -95,7 +95,7 @@ class TestPosPricelistChainLoading(TransactionCase):
                         0,
                         {
                             "applied_on": "3_global",
-                            "compute_price": "formula",
+                            "compute_price": "discount",
                             "base": "pricelist",
                             "base_pricelist_id": cls.pl_usd.id,
                         },
@@ -115,7 +115,7 @@ class TestPosPricelistChainLoading(TransactionCase):
                         0,
                         {
                             "applied_on": "3_global",
-                            "compute_price": "formula",
+                            "compute_price": "discount",
                             "base": "pricelist",
                             "base_pricelist_id": cls.pl_eur.id,
                         },
@@ -137,7 +137,7 @@ class TestPosPricelistChainLoading(TransactionCase):
         cls.payment_method = cls.env["pos.payment.method"].create(
             {
                 "name": "Efectivo Bs",
-                "is_cash_count": True,
+                "type": "cash",
                 "company_id": cls.company.id,
                 "journal_id": cls.env["account.journal"]
                 .create(
@@ -155,8 +155,9 @@ class TestPosPricelistChainLoading(TransactionCase):
             {
                 "name": "Test POS Chain",
                 "company_id": cls.company.id,
-                "journal_id": journal.id,
-                "invoice_journal_id": cls.env["account.journal"]
+                "default_partner_id": cls.company.partner_id.id,
+                "closing_journal_id": journal.id,
+                "journal_id": cls.env["account.journal"]
                 .create(
                     {
                         "name": "POS Chain Invoice",
@@ -207,7 +208,7 @@ class TestPosPricelistChainLoading(TransactionCase):
                             0,
                             {
                                 "applied_on": "3_global",
-                                "compute_price": "formula",
+                                "compute_price": "discount",
                                 "base": "pricelist",
                                 "base_pricelist_id": self.pl_vef.id,
                             },
@@ -238,7 +239,7 @@ class TestPosPricelistChainLoading(TransactionCase):
 
     def test_load_data_includes_the_whole_pricelist_chain(self):
         """La lista base de segundo nivel debe llegar a la caja."""
-        data = self.session.load_data([])
+        data = self.session.load_data({"only_records": True})
         loaded_ids = {p["id"] for p in data["product.pricelist"]}
         self.assertIn(self.pl_vef.id, loaded_ids)
         self.assertIn(self.pl_eur.id, loaded_ids)
@@ -250,7 +251,7 @@ class TestPosPricelistChainLoading(TransactionCase):
 
     def test_load_data_includes_fixed_items_of_the_base_pricelist(self):
         """Los items donde viven los precios fijos deben viajar también."""
-        data = self.session.load_data([])
+        data = self.session.load_data({"only_records": True})
         usd_items = [
             item
             for item in data["product.pricelist.item"]

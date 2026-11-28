@@ -85,12 +85,11 @@ class TestPosSerialization(TransactionCase):
         cls.payment_method = cls.env["pos.payment.method"].create(
             {
                 "name": "Slice B Cash",
-                "is_cash_count": True,
+                "type": "cash",
                 "company_id": cls.company.id,
                 "journal_id": cls.cash_journal.id,
             }
         )
-        cls.payment_method.write({"is_foreign_currency": True})
 
         # --- Product + tax ---
         cls.tax = cls.env["account.tax"].create(
@@ -149,7 +148,7 @@ class TestPosSerialization(TransactionCase):
                 # configuration). Reusing the sale tax for both is enough:
                 # this product is never actually purchased in these tests.
                 "taxes_id": [(6, 0, cls.tax.ids)],
-                "supplier_taxes_id": [(6, 0, cls.tax.ids)],
+                "supplier_taxes_id": [(6, 0, cls.purchase_tax.ids)],
             }
         )
         # `property_account_income_id` is company_dependent. Set it FOR the
@@ -182,9 +181,10 @@ class TestPosSerialization(TransactionCase):
             {
                 "name": "Slice B Config",
                 "company_id": cls.company.id,
+                "default_partner_id": cls.company.partner_id.id,
                 "currency_id": cls.foreign_currency.id,
-                "journal_id": cls.sale_journal.id,
-                "invoice_journal_id": cls.invoice_journal.id,
+                "closing_journal_id": cls.sale_journal.id,
+                "journal_id": cls.invoice_journal.id,
                 "payment_method_ids": [(6, 0, cls.payment_method.ids)],
             }
         )
@@ -225,7 +225,6 @@ class TestPosSerialization(TransactionCase):
                 "amount_tax": 16.0,
                 "amount_paid": 0.0,
                 "amount_return": 0.0,
-                "last_order_preparation_change": "{}",
             }
         )
         read_records = self.env["pos.order"]._load_pos_data_read(order, self.config)
@@ -305,7 +304,6 @@ class TestPosSerialization(TransactionCase):
                     }],
                 ],
                 "payment_ids": payment_ids,
-                "last_order_preparation_change": "{}",
             }
 
         # First sync: create the draft order.
@@ -394,14 +392,13 @@ class TestPosSerialization(TransactionCase):
                 "amount_tax": 0.0,
                 "amount_paid": 0.0,
                 "amount_return": 0.0,
-                "last_order_preparation_change": "{}",
             }
         )
 
         # Should not raise. Under the previous VE-only override this
         # crashed inside res.partner._load_pos_data_domain because
         # pos.order did not expose partner_id.
-        response = session.load_data(models_to_load=[])
+        response = session.load_data({"only_records": True})
         self.assertIn("pos.order", response)
         self.assertIn("res.partner", response)
         for order_payload in response["pos.order"]:
@@ -527,7 +524,6 @@ class TestPosSerialization(TransactionCase):
                 "amount_tax": 24.0,
                 "amount_paid": 0.0,
                 "amount_return": 0.0,
-                "last_order_preparation_change": "{}",
             }
         )
         # Manually create the payment so we can attach foreign fields
@@ -634,7 +630,6 @@ class TestPosSerialization(TransactionCase):
                 "amount_tax": 16.0,
                 "amount_paid": 0.0,
                 "amount_return": 0.0,
-                "last_order_preparation_change": "{}",
             }
         )
         original_line = order.lines[0]

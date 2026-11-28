@@ -72,6 +72,10 @@ class TestPosSessionAccountingBase(TransactionCase):
             vef.active = True
         cls.foreign_currency = vef
         cls.company.write({"foreign_currency_id": cls.foreign_currency.id})
+        # The fixture runs the register in the company's foreign currency (VEF)
+        # and takes payments in the company currency (USD): that is a foreign
+        # currency for the order, whatever the names.
+        cls.payment_currency = usd
 
         Account = cls.env["account.account"]
         cls.account_receivable = Account.create(
@@ -189,23 +193,23 @@ class TestPosSessionAccountingBase(TransactionCase):
         cls.combined_cash_method = cls.env["pos.payment.method"].create(
             {
                 "name": "C Combined Cash",
-                "is_cash_count": True,
+                "type": "cash",
                 "split_transactions": False,
                 "company_id": cls.company.id,
                 "journal_id": cls.cash_journal.id,
             }
         )
-        cls.combined_cash_method.write({"is_foreign_currency": True})
+        cls._accept_foreign_currency(cls.combined_cash_method)
         cls.split_cash_method = cls.env["pos.payment.method"].create(
             {
                 "name": "C Split Cash",
-                "is_cash_count": True,
+                "type": "cash",
                 "split_transactions": True,
                 "company_id": cls.company.id,
                 "journal_id": cls.split_cash_journal.id,
             }
         )
-        cls.split_cash_method.write({"is_foreign_currency": True})
+        cls._accept_foreign_currency(cls.split_cash_method)
 
         # --- Bank journal (C2 split + combine) ---
         # A bank journal in Odoo 19 must have BOTH inbound and outbound
@@ -247,25 +251,25 @@ class TestPosSessionAccountingBase(TransactionCase):
         cls.combined_bank_method = cls.env["pos.payment.method"].create(
             {
                 "name": "C Combined Bank",
-                "is_cash_count": False,
+                "type": "bank",
                 "split_transactions": False,
                 "company_id": cls.company.id,
                 "journal_id": cls.bank_journal.id,
                 "outstanding_account_id": cls.account_bank.id,
             }
         )
-        cls.combined_bank_method.write({"is_foreign_currency": True})
+        cls._accept_foreign_currency(cls.combined_bank_method)
         cls.split_bank_method = cls.env["pos.payment.method"].create(
             {
                 "name": "C Split Bank",
-                "is_cash_count": False,
+                "type": "bank",
                 "split_transactions": True,
                 "company_id": cls.company.id,
                 "journal_id": cls.bank_journal.id,
                 "outstanding_account_id": cls.account_bank.id,
             }
         )
-        cls.split_bank_method.write({"is_foreign_currency": True})
+        cls._accept_foreign_currency(cls.split_bank_method)
 
         # --- Tax + product (needed for any order) ---
         cls.tax_group = cls.env["account.tax.group"].create(
@@ -324,7 +328,7 @@ class TestPosSessionAccountingBase(TransactionCase):
                 # purchase tax configured). This product is only ever sold
                 # via POS in these tests, never purchased, so reusing the
                 # same tax record here is enough to satisfy the constraint.
-                "supplier_taxes_id": [(6, 0, cls.tax.ids)],
+                "supplier_taxes_id": [(6, 0, cls.purchase_tax.ids)],
             }
         )
         cls.product.with_company(cls.company).write(
@@ -354,16 +358,16 @@ class TestPosSessionAccountingBase(TransactionCase):
             {
                 "name": "C Config",
                 "company_id": cls.company.id,
+                "default_partner_id": cls.company.partner_id.id,
                 "currency_id": cls.foreign_currency.id,
-                "journal_id": cls.sale_journal.id,
-                "invoice_journal_id": cls.invoice_journal.id,
+                "closing_journal_id": cls.sale_journal.id,
+                "journal_id": cls.invoice_journal.id,
                 "payment_method_ids": [
                     (
                         6,
                         0,
                         [
                             cls.combined_cash_method.id,
-                            cls.split_cash_method.id,
                             cls.combined_bank_method.id,
                             cls.split_bank_method.id,
                         ],
@@ -371,10 +375,31 @@ class TestPosSessionAccountingBase(TransactionCase):
                 ],
             }
         )
+        cls._link_extra_cash_method(cls.config, cls.split_cash_method)
 
     # ------------------------------------------------------------------
     # Helpers
     # ------------------------------------------------------------------
+    @classmethod
+    def _accept_foreign_currency(cls, method):
+        """The method takes payments in ``payment_currency``, other than the
+        currency of the order."""
+        method.write({"currency_ids": [Command.set(cls.payment_currency.ids)]})
+
+    @classmethod
+    def _link_extra_cash_method(cls, config, method):
+        """Odoo 20 allows one cash payment method per config. The cross move
+        works per payment method and never reads the config, so these tests
+        link a second cash method straight in the relation table to exercise
+        it next to the first one."""
+        cls.env.cr.execute(
+            "INSERT INTO pos_config_pos_payment_method_rel "
+            "(pos_config_id, pos_payment_method_id) VALUES (%s, %s)",
+            (config.id, method.id),
+        )
+        config.invalidate_recordset(["payment_method_ids"])
+        method.invalidate_recordset(["config_ids"])
+
     @classmethod
     def _create_rate_of_day(cls, rate):
         """VEF rate dated the user's today, the date of the moves these tests create.
@@ -410,6 +435,7 @@ class TestPosSessionAccountingBase(TransactionCase):
         invoiced=False,
         name="OL/C",
         partner_id=None,
+        payment_currency=True,
     ):
         """Create a single paid order with one line and one payment.
 
@@ -453,20 +479,25 @@ class TestPosSessionAccountingBase(TransactionCase):
                 "amount_tax": tax_amount,
                 "amount_paid": 0.0,
                 "amount_return": 0.0,
-                "last_order_preparation_change": "{}",
             }
         )
-        order.add_payment(
-            {
-                "name": f"{name}/P",
-                "pos_order_id": order.id,
-                "amount": amount,
-                "payment_method_id": method.id,
-                "payment_date": order.date_order,
-                "foreign_rate": foreign_rate,
-                "foreign_amount": amount * foreign_rate,
-            }
-        )
+        payment_vals = {
+            "name": f"{name}/P",
+            "pos_order_id": order.id,
+            "amount": amount,
+            "payment_method_id": method.id,
+            "payment_date": order.date_order,
+            "foreign_rate": foreign_rate,
+            "foreign_amount": amount * foreign_rate,
+        }
+        if payment_currency and cls.payment_currency in method.currency_ids:
+            payment_vals.update(
+                {
+                    "foreign_currency_id": cls.payment_currency.id,
+                    "amount_currency": amount * foreign_rate,
+                }
+            )
+        order.add_payment(payment_vals)
         if invoiced:
             # Draft invoice (must not be posted) to flip ``is_invoiced`` without
             # tripping ``pos.payment._check_amount`` (which blocks edits on
@@ -481,3 +512,71 @@ class TestPosSessionAccountingBase(TransactionCase):
             order.write({"account_move": invoice.id})
         order.write({"state": "paid"})
         return order
+
+
+class TestPosSessionClosingBase(TestPosSessionAccountingBase):
+    """Fixture to close a session end to end in Odoo 20: one config with one
+    cash and one bank payment method, the only combination the core admits."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls._create_rate_of_day(1.0)
+        cash_journal = cls.env["account.journal"].create(
+            {
+                "name": "C Close Cash Journal",
+                "type": "cash",
+                "code": "CCLS",
+                "company_id": cls.company.id,
+                "currency_id": cls.foreign_currency.id,
+                "default_account_id": cls.account_cash.id,
+                "profit_account_id": cls.account_exchange_gain.id,
+                "loss_account_id": cls.account_exchange_loss.id,
+            }
+        )
+        cls.cash_method = cls.env["pos.payment.method"].create(
+            {
+                "name": "C Close Cash",
+                "type": "cash",
+                "company_id": cls.company.id,
+                "journal_id": cash_journal.id,
+            }
+        )
+        cls.bank_method = cls.env["pos.payment.method"].create(
+            {
+                "name": "C Close Bank",
+                "type": "bank",
+                "company_id": cls.company.id,
+                "journal_id": cls.bank_journal.id,
+                "outstanding_account_id": cls.account_bank.id,
+            }
+        )
+        cls.close_config = cls.env["pos.config"].create(
+            {
+                "name": "C Close Config",
+                "company_id": cls.company.id,
+                "default_partner_id": cls.company.partner_id.id,
+                "currency_id": cls.foreign_currency.id,
+                "closing_journal_id": cls.sale_journal.id,
+                "journal_id": cls.invoice_journal.id,
+                "payment_method_ids": [
+                    Command.set([cls.cash_method.id, cls.bank_method.id])
+                ],
+            }
+        )
+
+    def _open_session(self):
+        session = self.env["pos.session"].create(
+            {
+                "config_id": self.close_config.id,
+                "user_id": self.env.ref("base.user_admin").id,
+            }
+        )
+        session.with_company(self.company).set_opening_control(0, "")
+        return session.with_company(self.company)
+
+    def _close(self, session, counted):
+        result = session.close_session_from_ui({self.cash_method.id: counted})
+        self.assertTrue(result["status"], result)
+        return session
+

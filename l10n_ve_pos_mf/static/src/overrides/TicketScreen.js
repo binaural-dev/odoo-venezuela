@@ -22,9 +22,9 @@ patch(TicketScreen, {
  * maquina fiscal, por ejemplo cuando el cierre de sesion se bloquea por
  * pedidos sin facturar (ver ClosePosPopup.closeSessionAndPrintZ).
  *
- * Migración 17 → 19: this._state.ui.filter → this.state.filter; el cache
- * de órdenes sincronizadas ahora vive en los modelos del POS
- * (pos.models["pos.order"]) y se refresca con pos.data.loadServerOrders.
+ * Odoo 20: el core solo trae del servidor las ordenes de los filtros
+ * SYNCED y CANCELLED (`_updateSyncedOrders`), asi que el filtro hace la misma
+ * consulta (`search_order_ids` en estado pagado) con su dominio extra.
  */
 patch(TicketScreen.prototype, {
     _getFilterOptions() {
@@ -33,27 +33,41 @@ patch(TicketScreen.prototype, {
         return options;
     },
 
-    async onFilterSelected(selectedFilter) {
-        await super.onFilterSelected(...arguments);
-        if (this.state.filter === "UNFISCALIZED") {
-            await this._fetchSyncedOrders();
-        }
-    },
-
-    async onSearch(search) {
-        await super.onSearch(...arguments);
-        if (this.state.filter === "UNFISCALIZED") {
-            this.pos.screenState.ticketSCreen.offsetByDomain = {};
-            await this._fetchSyncedOrders();
-        }
-    },
-
     _computeSyncedOrdersDomain() {
         const domain = super._computeSyncedOrdersDomain();
         if (this.state.filter === "UNFISCALIZED") {
             return [...domain, ["mf_invoice_number", "=", false]];
         }
         return domain;
+    },
+
+    async _updateSyncedOrders() {
+        if (this.state.filter !== "UNFISCALIZED") {
+            return super._updateSyncedOrders(...arguments);
+        }
+        const screenState = this.pos.screenState.ticketScreen;
+        const domain = this._computeSyncedOrdersDomain();
+        const key = JSON.stringify(domain);
+        const { ordersInfo, totalCount } = await this.pos.data.call(
+            "pos.order",
+            "search_order_ids",
+            [],
+            {
+                config_id: this.pos.config.id,
+                domain,
+                limit: this.state.nbrByPage,
+                offset: screenState.offsetByDomain[key] || 0,
+                state_filter: "paid",
+            }
+        );
+        screenState.offsetByDomain[key] =
+            (screenState.offsetByDomain[key] || 0) + ordersInfo.length;
+        screenState.totalCount = totalCount;
+
+        const idsToLoad = ordersInfo.map((info) => info[0]);
+        if (idsToLoad.length) {
+            await this.pos.data.loadServerOrders([["id", "in", idsToLoad]]);
+        }
     },
 
     getFilteredOrderList() {
@@ -68,18 +82,5 @@ patch(TicketScreen.prototype, {
             );
         }
         return super.getFilteredOrderList();
-    },
-
-    /**
-     * Callback invocado por PrintPendingOrderButton tras imprimir con exito.
-     * Recarga el pedido desde el backend para que la lista de "Pendientes
-     * por facturar" deje de mostrarlo.
-     * @param {number} orderId - id backend (pos.order) del pedido impreso
-     */
-    async onOrderFiscalized(orderId) {
-        if (orderId) {
-            await this.pos.data.loadServerOrders([["id", "=", orderId]]);
-        }
-        await this._fetchSyncedOrders();
     },
 });

@@ -1,3 +1,4 @@
+import { PosPayment } from "@point_of_sale/app/models/pos_payment";
 import { comp, EQ, GT, LT } from "@point_of_sale/app/utils/numbers";
 import { roundPrecision } from "@web/core/utils/numbers";
 
@@ -90,5 +91,26 @@ export function makeOrderStub({
         _convertForeignOrderAmount: (v) =>
             exact > 0 ? round(v * exact) : round(v * effRate),
         get_effective_foreign_multiplier: () => (exact > 0 ? 1 / exact : 1 / effRate),
+    };
+}
+
+// Stub de pos.payment: los datos son del caso y los métodos de conversión son
+// los reales del parche de l10n_ve_pos (`import "@l10n_ve_pos/overrides/models/
+// payment_model"` antes de usarlo). `usesAlternateEngine` es la moneda foránea
+// de la compañía; `currency` es la del pago.
+export function makePaymentStub(order, extra = {}) {
+    const proto = PosPayment.prototype;
+    return {
+        pos_order_id: order,
+        amount: 0,
+        foreign_amount: 0,
+        amount_currency: 0,
+        usesAlternateEngine: true,
+        currency: order?._getForeignCurrencyRecord?.(),
+        _localToPaymentCurrency: proto._localToPaymentCurrency,
+        _paymentCurrencyToLocal: proto._paymentCurrencyToLocal,
+        _stampForeignAmount: proto._stampForeignAmount,
+        _recomputeForeignFromLocal: proto._recomputeForeignFromLocal,
+        ...extra,
     };
 }

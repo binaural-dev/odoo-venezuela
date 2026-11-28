@@ -1,12 +1,14 @@
-
 <odoo>
     <record id="pos_payment_method_view_form" model="ir.ui.view">
         <field name="name">pos.payment.method.form</field>
         <field name="model">pos.payment.method</field>
-        <field name="inherit_id" ref="point_of_sale.pos_payment_method_view_form"/> 
+        <field name="inherit_id" ref="l10n_ve_pos.pos_payment_method_view_form"/>
         <field name="arch" type="xml">
           <xpath expr="//field[@name='journal_id']" position="after">
               <field name="code_fiscal_printer"/>
+          </xpath>
+          <xpath expr="//field[@name='currency_setting_ids']/list/field[@name='cross_journal']" position="after">
+              <field name="code_fiscal_printer" placeholder="Código del método"/>
           </xpath>
         </field>
     </record>

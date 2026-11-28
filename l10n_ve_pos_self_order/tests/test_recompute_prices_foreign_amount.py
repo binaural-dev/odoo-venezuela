@@ -92,10 +92,19 @@ class TestRecomputePricesForeignAmount(TransactionCase):
                 "company_id": cls.company.id,
             }
         )
+        purchase_tax = cls.env["account.tax"].create(
+            {
+                "name": "Self Order Recompute Purchase Tax",
+                "amount": 0.0,
+                "type_tax_use": "purchase",
+                "tax_group_id": tax_group.id,
+                "company_id": cls.company.id,
+            }
+        )
         cls.company.write(
             {
                 "account_sale_tax_id": cls.tax.id,
-                "account_purchase_tax_id": cls.tax.id,
+                "account_purchase_tax_id": purchase_tax.id,
             }
         )
         # `l10n_ve_stock` only lets a product be created with the `company_id`
@@ -147,23 +156,18 @@ class TestRecomputePricesForeignAmount(TransactionCase):
         cls.cash_method = cls.env["pos.payment.method"].create(
             {
                 "name": "Self Order Recompute Cash",
-                "is_cash_count": True,
+                "type": "cash",
                 "company_id": cls.company.id,
                 "journal_id": cls.cash_journal.id,
             }
         )
         cls.config = cls.env["pos.config"].create(
             {
+                "default_partner_id": cls.company.partner_id.id,
                 "name": "Self Order Recompute Config",
                 "company_id": cls.company.id,
                 "currency_id": cls.foreign_currency.id,
                 "journal_id": cls.sale_journal.id,
-                # invoice_journal_id has the SAME ambient-company default
-                # pitfall as payment_method_ids below
-                # (point_of_sale/models/pos_config.py:90-95) — left unset
-                # it silently pulls in a journal from a DIFFERENT company
-                # and _check_company() rejects the whole record.
-                "invoice_journal_id": cls.sale_journal.id,
                 "payment_method_ids": [(6, 0, [cls.cash_method.id])],
             }
         )
@@ -196,7 +200,6 @@ class TestRecomputePricesForeignAmount(TransactionCase):
                 "amount_tax": 0.0,
                 "amount_paid": 0.0,
                 "amount_return": 0.0,
-                "last_order_preparation_change": "{}",
                 "lines": [
                     Command.create(
                         {

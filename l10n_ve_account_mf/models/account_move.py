@@ -264,6 +264,22 @@ class AccountMoveInh(models.Model):
                 },
             }
 
+    @api.model
+    def _mf_pos_payment_fiscal_code(self, payment):
+        """Fiscal printer code of a POS payment of the order a credit note comes
+        from. A payment that knows its own (``_get_fiscal_code``, defined by
+        ``l10n_ve_pos_mf`` per payment method and currency) answers for itself;
+        otherwise the code of the method or of its journal, like the fiscal
+        machine of the sale. Duck-typed so this module does not depend on POS."""
+        method = payment.payment_method_id
+        code = payment._get_fiscal_code() if hasattr(payment, "_get_fiscal_code") else False
+        return (
+            code
+            or getattr(method, "code_fiscal_printer", False)
+            or method.journal_id.payment_method
+            or "01"
+        )
+
     def check_print_out_refund(self):
         """Valida la NC y construye el payload de impresión fiscal."""
         if self.mf_invoice_number:
@@ -301,15 +317,10 @@ class AccountMoveInh(models.Model):
 
         if pos_order and pos_order.payment_ids:
             for payment in pos_order.payment_ids:
-                fiscal_method = (
-                    getattr(payment.payment_method_id, "code_fiscal_printer", False)
-                    or payment.payment_method_id.journal_id.payment_method
-                    or "01"
-                )
                 payment_lines.append(
                     {
                         "amount": abs(payment.amount or 0.0),
-                        "payment_method": fiscal_method,
+                        "payment_method": self._mf_pos_payment_fiscal_code(payment),
                     }
                 )
         else:

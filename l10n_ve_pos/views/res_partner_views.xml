@@ -2,11 +2,13 @@
     <!--
         Formulario reducido de contacto SOLO para el PdV.
 
-        En Odoo 19 el PdV ya no tiene un componente propio de edición de
-        contacto: abre la acción `point_of_sale.res_partner_action_edit_pos`
-        (target="new") y renderiza dentro de un diálogo la vista form que esa
-        acción indique (ver pos_store.js). Por defecto esa acción usa
-        `base.view_partner_form`, el formulario COMPLETO de backoffice.
+        En Odoo 20 el PdV abre la acción que devuelve
+        `res.partner.action_open_partner_view` (target="new") y renderiza
+        dentro de un diálogo la vista form que esa acción indique (ver
+        pos_store.js). Por defecto esa acción usa
+        `point_of_sale.view_partner_form_pos_ui`, que no hereda del formulario
+        de backoffice y por eso no lleva los campos de `l10n_ve_contact` ni de
+        `l10n_ve_location`. `models/res_partner.py` la cambia a esta vista.
 
         Esta vista hereda de `base.view_partner_form` con `mode="primary"`,
         lo que la convierte en una vista raíz independiente: Odoo primero
@@ -54,20 +56,5 @@
                  PdV, así que se elimina en bloque. -->
             <xpath expr="//notebook" position="replace"/>
         </field>
-    </record>
-
-    <!--
-        Override de la acción que el PdV abre para crear/editar un cliente
-        (point_of_sale.res_partner_action_edit_pos, definida en
-        point_of_sale/views/res_partner_views.xml). Le apuntamos al formulario
-        reducido de arriba y marcamos el contexto para que
-        `res.partner.default_get` (ver models/res_partner.py) sepa que debe
-        precargar estado/ciudad/municipio/parroquia/C.P. desde la dirección
-        de la compañía. Esta acción es exclusiva del PdV: no se usa en
-        ningún otro punto del backoffice.
-    -->
-    <record id="point_of_sale.res_partner_action_edit_pos" model="ir.actions.act_window">
-        <field name="view_id" ref="l10n_ve_pos.view_partner_form_pos"/>
-        <field name="context">{'l10n_ve_pos_partner_defaults': True}</field>
     </record>
 </odoo>

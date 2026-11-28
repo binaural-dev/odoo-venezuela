@@ -1,6 +1,6 @@
 /** @odoo-module */
 
-import { Component, useState, onWillStart } from "@odoo/owl";
+import { Component, onWillStart, proxy, t, useProps } from "@odoo/owl";
 import { Dialog } from "@web/core/dialog/dialog";
 import { useService } from "@web/core/utils/hooks";
 import { rpc } from "@web/core/network/rpc";
@@ -22,11 +22,11 @@ import { _t } from "@web/core/l10n/translation";
 export class KioskOrdersDialog extends Component {
     static components = { Dialog };
     static template = "l10n_ve_pos_self_order.KioskOrdersDialog";
-    static props = { close: Function };
+    props = useProps({ close: t.function() });
 
     setup() {
         this.selfOrder = useService("self_order");
-        this.state = useState({ selectedUuid: null, busy: false, message: "", loading: true });
+        this.state = proxy({ selectedUuid: null, busy: false, message: "", loading: true });
         // Cargar del SERVIDOR las órdenes de la sesión (persistencia real: no
         // dependen de lo que quede en memoria del cliente, que se pierde al
         // iniciar una orden nueva o recargar). connectNewData las mete al modelo.
@@ -87,7 +87,7 @@ export class KioskOrdersDialog extends Component {
         if (!order) {
             return "none";
         }
-        if (order.state === "invoiced" || order.is_invoiced) {
+        if (order.state === "invoiced" || order.is_singly_invoiced) {
             return "invoiced";
         }
         return "pending_invoice";

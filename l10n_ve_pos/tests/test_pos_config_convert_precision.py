@@ -120,13 +120,13 @@ class TestPosConfigConvertPrecision(TransactionCase):
             {
                 "name": f"{journal_name} Config",
                 "company_id": company.id,
-                "journal_id": journal.id,
-                # invoice_journal_id has the SAME ambient-company default
-                # pitfall as payment_method_ids below
-                # (point_of_sale/models/pos_config.py:90-95) — left unset
+                "default_partner_id": company.partner_id.id,
+                "closing_journal_id": journal.id,
+                # journal_id has the SAME ambient-company default
+                # pitfall as payment_method_ids below — left unset
                 # it silently pulls in a journal from a DIFFERENT company
                 # and _check_company() rejects the whole record.
-                "invoice_journal_id": journal.id,
+                "journal_id": journal.id,
                 # payment_method_ids' default is computed from
                 # self.env.company (the ambient company), NOT from the
                 # company_id assigned above (point_of_sale/models/

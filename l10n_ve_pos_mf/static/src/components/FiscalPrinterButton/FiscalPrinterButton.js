@@ -1,6 +1,6 @@
 /** @odoo-module */
 
-import { Component, onMounted, onWillUnmount, useState } from "@odoo/owl";
+import { Component, onMounted, onWillUnmount, proxy, useProps } from "@odoo/owl";
 import { usePos } from "@point_of_sale/app/hooks/pos_hook";
 import { TfhkaDriver } from "@l10n_ve_mf_base/drivers/TfhkaDriver";
 
@@ -20,11 +20,11 @@ import { TfhkaDriver } from "@l10n_ve_mf_base/drivers/TfhkaDriver";
  */
 export class FiscalPrinterButton extends Component {
     static template = "l10n_ve_pos_mf.FiscalPrinterButton";
-    static props = {};
+    props = useProps();
 
     setup() {
         this.pos = usePos();
-        this.state = useState({ status: "disconnected" });
+        this.state = proxy({ status: "disconnected" });
         this._onSerialConnect = this._onSerialConnect.bind(this);
         this._onSerialDisconnect = this._onSerialDisconnect.bind(this);
         this._onFiscalStatus = this._onFiscalStatus.bind(this);

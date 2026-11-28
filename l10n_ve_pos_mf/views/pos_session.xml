@@ -5,8 +5,9 @@
         <field name="model">pos.session</field>
         <field name="inherit_id" ref="point_of_sale.view_pos_session_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//field[@name='config_id']" position="after">
+            <xpath expr="//field[@name='user_id']" position="after">
                 <field name="report_z"/>
+                <field name="report_z_date"/>
                 <field name="serial_machine"/>
             </xpath>
         </field>

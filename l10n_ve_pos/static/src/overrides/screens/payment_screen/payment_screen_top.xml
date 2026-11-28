@@ -2,13 +2,12 @@
     <t t-name="PaymentScreenDue" t-inherit="point_of_sale.PaymentScreenDue" t-inherit-mode="extension">
         <xpath expr="//section[hasclass('paymentlines-container')]/div[hasclass('total')]" position="after">
             <div class="total text-center text-muted fs-2">
-                <t t-out="foreignTotalDueText"/>
+                <t t-out="this.foreignTotalDueText"/>
             </div>
-            <!-- Solo mostrar botón en reembolsos -->
-            <t t-if="currentOrder.isRefund">
+            <t t-if="this.currentOrder.isRefund">
                 <div class="button ms-1 back btn btn-lg btn-secondary"
                     t-on-click="() => this.showPaymentsOrigin()"
-                    > 
+                    >
                     <i class="oi me-2" data-icon="keyboard_double_arrow_left" />
                     <span class="back_text">View Payments Origin</span>
                 </div>

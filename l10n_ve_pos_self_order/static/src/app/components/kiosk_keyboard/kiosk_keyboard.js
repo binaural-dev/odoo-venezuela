@@ -1,4 +1,4 @@
-import { Component, useEffect, useRef, useState } from "@odoo/owl";
+import { Component, proxy, signal, t, useEffect, useProps } from "@odoo/owl";
 
 // Spanish (LatAm) QWERTY letter rows, lowercase — Ñ included between L and
 // the row's end, same spot as a physical Spanish keyboard. Uppercase is a
@@ -35,16 +35,13 @@ export { NUMBER_ROW, LETTER_ROW_1, LETTER_ROW_2, LETTER_ROW_3 };
  */
 export class KioskKeyboard extends Component {
     static template = "l10n_ve_pos_self_order.KioskKeyboard";
-    static props = {
-        mode: { type: String, optional: true },
-        onKey: Function,
-    };
-    static defaultProps = {
-        mode: "text",
-    };
+    props = useProps({
+        mode: t.string().optional("text"),
+        onKey: t.function(),
+    });
 
     setup() {
-        this.state = useState({ shift: false });
+        this.state = proxy({ shift: false });
         // The keyboard renders at the bottom of long forms (new customer:
         // name, phone, address), so its last row (⌫ / 0 / C in numeric mode)
         // can end up below the fold of the page's scroll container. Bring it
@@ -53,10 +50,10 @@ export class KioskKeyboard extends Component {
         // its cleanup, and recent Chrome/Edge versions make scrollIntoView()
         // return a Promise -> "cleanup is not a function" on the next mode
         // change, which destroys the whole Kiosk app (nothing responds).
-        this.rootRef = useRef("root");
+        this.rootRef = signal.ref();
         useEffect(
             () => {
-                this.rootRef.el?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+                this.rootRef()?.scrollIntoView({ block: "nearest", behavior: "smooth" });
             },
             () => [this.props.mode]
         );

@@ -1,7 +1,4 @@
-/** @odoo-module */
-
 import { PosOrder } from "@point_of_sale/app/models/pos_order";
-import { PosPayment } from "@point_of_sale/app/models/pos_payment";
 import { PosOrderAccounting } from "@point_of_sale/app/models/accounting/pos_order_accounting";
 import { patch } from "@web/core/utils/patch";
 import { floatIsZero } from "@web/core/utils/numbers";
@@ -20,21 +17,6 @@ patch(PosOrder.prototype, {
     this.bi_igtf = 0;
     this.foreign_bi_igtf = 0;
     this.update_igtf();
-  },
-  init_from_JSON(json) {
-    super.init_from_JSON(...arguments);
-    this.igtf_amount = json.igtf_amount;
-    this.bi_igtf = json.bi_igtf;
-    this.foreign_igtf_amount = json.foreign_igtf_amount;
-    this.foreign_bi_igtf = json.foreign_bi_igtf;
-  },
-  export_as_JSON() {
-    let json = super.export_as_JSON();
-    json["igtf_amount"] = this.igtf_amount;
-    json["bi_igtf"] = this.bi_igtf;
-    json["foreign_igtf_amount"] = this.foreign_igtf_amount;
-    json["foreign_bi_igtf"] = this.foreign_bi_igtf;
-    return json;
   },
   // Único punto de entrega de los campos IGTF al backend.
   //
@@ -95,20 +77,25 @@ patch(PosOrder.prototype, {
   //     excedente puede saldar deuda IGTF.
   // `excludeLine` permite calcular el estado "antes" de una línea concreta
   // (para autocompletar su monto de cierre).
+  //
+  // A refund does not generate IGTF from its payment lines: it gives back the
+  // IGTF of the sale (_igtfRefundShare), which starts as IGTF debt, and its
+  // lines cover the base first and then that debt, whatever their method.
   _igtfBaseState(excludeLine = null) {
     const total = this.get_total_without_igtf();
     // Trabajamos en espacio normalizado por signo (montos de pago positivos)
     // para no depender de Math.abs: amt = sign * amount.
     const sign = total < 0 ? -1 : 1;
+    const refundShare = this._igtfRefundShare();
     let remainingBase = this._igtfRoundLocal(sign * total);
-    let unpaidIgtf = 0;
+    let unpaidIgtf = refundShare ? refundShare.igtf : 0;
     const lines = [];
     for (const payment of this.get_paymentlines()) {
       if (excludeLine && payment === excludeLine) {
         continue;
       }
       const amt = this._igtfRoundLocal(sign * (payment.amount || 0));
-      const isIgtf = Boolean(payment.payment_method_id?.apply_igtf);
+      const isIgtf = payment.appliesIgtf && !refundShare;
       const isChange = amt < 0;
       if (isChange || floatIsZero(amt, this.currency.decimal_places)) {
         lines.push({ payment, base: 0, newIgtf: 0, isChange, isIgtf });
@@ -149,6 +136,11 @@ patch(PosOrder.prototype, {
       return this.igtf_amount;
     }
 
+    const refundShare = this._igtfRefundShare();
+    if (refundShare) {
+      return this._igtfApplyRefundShare(refundShare);
+    }
+
     const { sign, lines } = this._igtfBaseState();
     let totalIgtf = 0;
     let totalBase = 0;
@@ -169,6 +161,104 @@ patch(PosOrder.prototype, {
     this.bi_igtf = this._igtfRoundLocal(sign * totalBase);
     this.foreign_bi_igtf = this._igtfToForeign(this.bi_igtf);
     return this.igtf_amount;
+  },
+  /**
+   * IGTF that this refund gives back, as positive amounts in the currency of
+   * the company and in the alternate one, or null when the order is not a
+   * refund or the IGTF of its original orders is unknown (then the IGTF is
+   * computed from its payment lines, as for a sale).
+   *
+   * ``refund_igtf_data`` is what ``pos.order.get_refund_igtf_data`` returns
+   * for its original orders: the invoice total still to refund and the IGTF
+   * still to give back of each one. The refund takes of each original order
+   * the share of that total it refunds, and its whole remainder when it
+   * refunds everything that is left. Its total is split among its original
+   * orders in proportion to their lines.
+   */
+  _igtfRefundShare() {
+    const data = this.isRefund ? this.refund_igtf_data : null;
+    if (!data) {
+      return null;
+    }
+    const amountByOrigin = new Map();
+    for (const line of this.lines || []) {
+      const originId = line.refunded_orderline_id?.order_id?.id;
+      if (!originId) {
+        continue;
+      }
+      const amount = Math.abs(Number(line.priceIncl) || 0);
+      amountByOrigin.set(originId, (amountByOrigin.get(originId) || 0) + amount);
+    }
+    const linesTotal = [...amountByOrigin.values()].reduce((sum, value) => sum + value, 0);
+    const refundTotal = Math.abs(this.get_total_without_igtf());
+    let igtf = 0;
+    let base = 0;
+    let foreignIgtf = 0;
+    for (const [originId, linesAmount] of amountByOrigin) {
+      const origin = data[originId];
+      if (!origin || !(origin.amount_total > 0) || !linesTotal) {
+        continue;
+      }
+      const amount = amountByOrigin.size === 1
+        ? refundTotal
+        : refundTotal * (linesAmount / linesTotal);
+      const ratio = this._igtfRoundLocal(amount - origin.amount_total) >= 0
+        ? 1
+        : amount / origin.amount_total;
+      igtf += this._igtfRoundLocal(origin.igtf_amount * ratio);
+      base += this._igtfRoundLocal(origin.bi_igtf * ratio);
+      foreignIgtf += origin.foreign_igtf_amount * ratio;
+    }
+    return {
+      igtf: this._igtfRoundLocal(igtf),
+      base: this._igtfRoundLocal(base),
+      foreignIgtf: typeof this.roundForeignMoney === "function"
+        ? this.roundForeignMoney(foreignIgtf)
+        : foreignIgtf,
+    };
+  },
+  /**
+   * Give back ``share`` (see _igtfRefundShare) on this refund and put it on
+   * its payment lines, so the credit note reverses it whatever methods pay
+   * the refund. Each line that applies IGTF takes up to the IGTF its amount
+   * would generate as base (the IGTF a line paid in that currency generated in
+   * the sale); the rest goes to the other lines, in their order.
+   */
+  _igtfApplyRefundShare(share) {
+    const sign = this.get_total_without_igtf() < 0 ? -1 : 1;
+    const ordered = [...this.get_paymentlines()].sort(
+      (a, b) => Number(Boolean(b.appliesIgtf)) - Number(Boolean(a.appliesIgtf))
+    );
+    let pending = share.igtf;
+    for (const payment of ordered) {
+      const amt = this._igtfRoundLocal(sign * (payment.amount || 0));
+      if (pending <= 0 || amt <= 0) {
+        continue;
+      }
+      const cap = payment.appliesIgtf ? this.compute_igtf_amount(amt) : amt;
+      const take = this._igtfRoundLocal(Math.min(pending, cap));
+      if (take <= 0) {
+        continue;
+      }
+      pending = this._igtfRoundLocal(pending - take);
+      const foreignTake = share.igtf ? (share.foreignIgtf * take) / share.igtf : 0;
+      payment.set_include_igtf(true);
+      payment.set_igtf_amount(sign * take);
+      payment.set_foreign_igtf_amount(
+        typeof this.roundForeignMoney === "function"
+          ? this.roundForeignMoney(sign * foreignTake)
+          : sign * foreignTake
+      );
+    }
+    this.igtf_amount = this._igtfRoundLocal(sign * share.igtf);
+    this.foreign_igtf_amount = sign * share.foreignIgtf;
+    this.bi_igtf = this._igtfRoundLocal(sign * share.base);
+    this.foreign_bi_igtf = this._igtfToForeign(this.bi_igtf);
+    return this.igtf_amount;
+  },
+  hasRefundIgtf() {
+    const share = this.to_invoice ? this._igtfRefundShare() : null;
+    return Boolean(share && share.igtf);
   },
   compute_igtf_amount(amount) {
     return this._igtfRoundLocal(amount * (this.config.igtf_percentage / 100));
@@ -196,8 +286,15 @@ patch(PosOrder.prototype, {
   // get_foreign_total_with_tax(), que deben seguir siendo la conversión pura
   // de factura para el resto de consumidores (ver migration-lessons.md,
   // "Resuelto 2026-07-14").
+  // A refund shows what it gives back: its total plus the IGTF of the sale
+  // that it refunds (_igtfRefundShare).
   get_total_with_igtf() {
     const total = this.get_total_without_igtf();
+    const refundShare = this._igtfRefundShare();
+    if (refundShare) {
+      const sign = total < 0 ? -1 : 1;
+      return this._igtfRoundLocal(total + sign * refundShare.igtf);
+    }
     return this._igtfRoundLocal(total + this.compute_igtf_amount(total));
   },
 
@@ -215,8 +312,12 @@ patch(PosOrder.prototype, {
       typeof this.get_foreign_total_with_tax === "function"
         ? Number(this.get_foreign_total_with_tax()) || 0
         : 0;
-    const localIgtf = this.compute_igtf_amount(this.get_total_without_igtf());
-    const total = foreignTotal + this._igtfToForeign(localIgtf);
+    const refundShare = this._igtfRefundShare();
+    const localTotal = this.get_total_without_igtf();
+    const foreignIgtf = refundShare
+      ? (localTotal < 0 ? -1 : 1) * refundShare.foreignIgtf
+      : this._igtfToForeign(this.compute_igtf_amount(localTotal));
+    const total = foreignTotal + foreignIgtf;
     return typeof this.roundForeignMoney === "function"
       ? this.roundForeignMoney(total)
       : total;
@@ -261,9 +362,9 @@ patch(PosOrder.prototype, {
       : total;
   },
 
-  // --- O19: remainingDue must include IGTF surcharge ---
+  // --- 20: remainingDue must include IGTF surcharge ---
   //
-  // Core O19's remainingDue = totalDue - amountPaid, CLAMPADO a 0 en cuanto
+  // Core 20's remainingDue = totalDue - amountPaid, CLAMPADO a 0 en cuanto
   // amountPaid >= totalDue. No sirve como base para componer: cuando una
   // línea absorbe deuda IGTF, amountPaid excede totalDue y el clamp pierde
   // ese exceso — sumarle igtf_amount completo devolvía la deuda IGTF TOTAL
@@ -303,7 +404,7 @@ patch(PosOrder.prototype, {
     return remaining;
   },
 
-  // --- O19: change must respect the IGTF-inclusive effective total ---
+  // --- 20: change must respect the IGTF-inclusive effective total ---
   //
   // CONVENCIÓN DE SIGNO DEL CORE (pos_order_accounting.js::change): el vuelto
   // tiene el signo OPUESTO al total de la orden — negativo en ventas, positivo
@@ -335,43 +436,8 @@ patch(PosOrder.prototype, {
       : amount;
   },
 
-  // --- Compat wrappers (O17 → O19) ---
   get_paymentlines() {
     return this.payment_ids ? Array.from(this.payment_ids) : [];
-  },
-  get_due() {
-    return Number(this.remainingDue ?? 0) || 0;
-  },
-  get_rounding_applied() {
-    // O19: renamed to roundingApplied getter in accounting mixin.
-    return Number(this.roundingApplied ?? (typeof this.get_rounding_applied === "function" ? 0 : 0)) || 0;
-  },
-  get_foreign_rounding_applied() {
-    // O19: no existe en core ni en l10n_ve_pos (método comentado).
-    // El cash rounding en moneda extranjera no fue migrado.
-    return 0;
-  },
-  add_paymentline(payment_method) {
-    return this.addPaymentline(payment_method);
-  },
-  select_paymentline(line) {
-    this.selectPaymentline(line);
-  },
-  assert_editable() {
-    if (typeof this.assertEditable === "function") {
-      this.assertEditable();
-    }
-  },
-  electronic_payment_in_progress() {
-    if (typeof this.electronicPaymentInProgress === "function") {
-      return this.electronicPaymentInProgress();
-    }
-    return false;
-  },
-  get_selected_paymentline() {
-    return (this.payment_ids || []).find(
-      (line) => line.uuid === this.uiState?.selected_paymentline_uuid
-    ) ?? null;
   },
   // La precarga es SIEMPRE la del core: remainingDue (deuda de factura +
   // deuda IGTF ya acumulada), sin importar el método. El IGTF que genere la

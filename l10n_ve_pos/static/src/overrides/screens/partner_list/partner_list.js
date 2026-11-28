@@ -22,7 +22,7 @@ patch(PartnerList.prototype, {
    * accepts.
    */
   get searchedVat() {
-    const query = this.searchInputRef?.el?.value ?? this.state.query ?? "";
+    const query = this.searchInputRef?.()?.value ?? this.state.query ?? "";
     const vat = query.replace(/[\s.-]/g, "");
     return /^\d+$/.test(vat) ? vat : false;
   },

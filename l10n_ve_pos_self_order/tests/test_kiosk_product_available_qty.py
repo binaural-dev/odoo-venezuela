@@ -42,6 +42,18 @@ class TestKioskProductAvailableQty(TransactionCase):
                 "company_id": cls.company.id,
             }
         )
+        cls.purchase_tax = cls.env["account.tax"].create(
+            {
+                "name": "Kiosk Purchase Tax",
+                "amount": 16.0,
+                "type_tax_use": "purchase",
+                "tax_group_id": tax_group.id,
+                "company_id": cls.company.id,
+            }
+        )
+        cls.company.write(
+            {"account_sale_tax_id": cls.tax.id, "account_purchase_tax_id": cls.purchase_tax.id}
+        )
         # Una compañía nueva no siempre trae almacén aquí: se crea para que
         # exista el tipo de operación del PdV.
         cls.warehouse = cls.env["stock.warehouse"].search(
@@ -68,7 +80,7 @@ class TestKioskProductAvailableQty(TransactionCase):
                 "available_in_pos": True,
                 "company_id": cls.company.id,
                 "taxes_id": [(6, 0, cls.tax.ids)],
-                "supplier_taxes_id": [(6, 0, cls.tax.ids)],
+                "supplier_taxes_id": [(6, 0, cls.purchase_tax.ids)],
                 **values,
             }
         )
@@ -91,24 +103,41 @@ class TestKioskProductAvailableQty(TransactionCase):
     def _set_setting(self, show_only_available):
         self.company.pos_show_just_products_with_available_qty = show_only_available
 
-    def _load(self, show_only_available=True):
-        """Plantillas (por id) y variantes de este test que carga el Kiosko."""
-        # La caja virtual guarda el ajuste relacionado al crearse: va antes.
-        self._set_setting(show_only_available)
-        config = self.env["pos.config"].new(
+    def _make_config(self):
+        admin = self.env.ref("base.user_admin")
+        admin.company_ids |= self.company
+        journal = self.env["account.journal"].create(
             {
+                "name": "Kiosk Available Qty Sales",
+                "type": "sale",
+                "code": "KAQS",
                 "company_id": self.company.id,
-                "picking_type_id": self.warehouse.pos_type_id.id,
-                "self_ordering_mode": "kiosk",
             }
         )
-        data = {}
-        for model in ("product.template", "product.product"):
-            data[model] = self.env[model]._load_pos_self_data_search_read(data, config)
+        return self.env["pos.config"].create(
+            {
+                "name": "Kiosk Available Qty",
+                "company_id": self.company.id,
+                "default_partner_id": self.company.partner_id.id,
+                "journal_id": journal.id,
+                "picking_type_id": self.warehouse.pos_type_id.id,
+                "self_ordering_mode": "kiosk",
+                "self_ordering_default_user_id": admin.id,
+                "payment_method_ids": [(6, 0, [])],
+            }
+        )
+
+    def _load(self, show_only_available=True):
+        """Plantillas (por id) y variantes de este test que carga el Kiosko."""
+        self._set_setting(show_only_available)
+        config = self._make_config()
+        metadata = config._load_self_metadata()
+        templates = metadata["product.template"]["records"]
+        read = templates._load_pos_self_data_read(templates, config)
         variants = self.templates.product_variant_ids
         return (
-            {t["id"]: t for t in data["product.template"] if t["id"] in self.templates.ids},
-            variants.browse(p["id"] for p in data["product.product"]) & variants,
+            {t["id"]: t for t in read if t["id"] in self.templates.ids},
+            variants.browse(metadata["product.product"]["records"].ids) & variants,
         )
 
     def _set_on_hand(self, template, qty, location=None):
@@ -190,29 +219,8 @@ class TestKioskProductAvailableQty(TransactionCase):
         devuelve ``[]`` en silencio ante un AccessError: el Kiosko no queda
         vacío, saca el almacenable sin stock y recibe el ajuste."""
         self._set_setting(True)
-        # El usuario por defecto del Kiosko pertenece a la compañía de la caja.
         admin = self.env.ref("base.user_admin")
-        admin.company_ids |= self.company
-        journal = self.env["account.journal"].create(
-            {
-                "name": "Kiosk Available Qty Sales",
-                "type": "sale",
-                "code": "KAQS",
-                "company_id": self.company.id,
-            }
-        )
-        config = self.env["pos.config"].create(
-            {
-                "name": "Kiosk Available Qty",
-                "company_id": self.company.id,
-                "journal_id": journal.id,
-                "invoice_journal_id": journal.id,
-                "picking_type_id": self.warehouse.pos_type_id.id,
-                "self_ordering_mode": "kiosk",
-                "self_ordering_default_user_id": admin.id,
-                "payment_method_ids": [(6, 0, [])],
-            }
-        )
+        config = self._make_config()
         data = (
             config.sudo(False)
             .with_company(self.company)
@@ -220,7 +228,7 @@ class TestKioskProductAvailableQty(TransactionCase):
             .with_context(allowed_company_ids=self.company.ids)
             .load_self_data()
         )
-        loaded = {t["id"] for t in data["product.template"]}
-        self.assertTrue(data["pos.config"][0]["pos_show_just_products_with_available_qty"])
+        loaded = {t["id"] for t in data["product.template"]["records"]}
+        self.assertTrue(data["pos.config"]["records"][0]["pos_show_just_products_with_available_qty"])
         self.assertTrue({self.service.id, self.consumable.id} <= loaded)
         self.assertNotIn(self.storable.id, loaded)

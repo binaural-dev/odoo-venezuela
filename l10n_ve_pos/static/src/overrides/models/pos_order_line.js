@@ -139,8 +139,8 @@ patch(PosOrderline.prototype, {
       // es_VE). `Number(price)` con ese string da NaN y el guard nunca
       // dispara, así que se parsea con `_numberFromInput` (mismo parser
       // sensible al locale que ya usa `setQuantity`).
-      let unitPrice = price;
       const parsed = this._numberFromInput(price);
+      let unitPrice = Number.isFinite(parsed) ? parsed : price;
       if (
         this._isDiscountProductLine() &&
         !this._isRefundLine() &&

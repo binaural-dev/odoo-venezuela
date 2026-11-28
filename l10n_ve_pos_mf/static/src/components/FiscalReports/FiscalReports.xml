@@ -7,12 +7,12 @@
             <div class="fiscal-reports-buttons">
                 <button 
                     class="btn btn-primary fiscal-report-btn"
-                    t-on-click="printReportX">
+                    t-on-click="this.printReportX">
                     <i class="oi" data-icon="article"/> Reporte X
                 </button>
                 <button 
                     class="btn btn-danger fiscal-report-btn"
-                    t-on-click="printReportZ">
+                    t-on-click="this.printReportZ">
                     <i class="oi oi-filled" data-icon="article"/> Reporte Z (Cierre)
                 </button>
             </div>
