@@ -258,3 +258,18 @@ La construcción de los subtotales de impuestos y de los ítems DEBE (MUST) trad
 
 - **WHEN** una línea de la factura tiene un impuesto con alícuota distinta de 0, 8, 16 o 31
 - **THEN** el detalle del ítem no se puede construir y la digitalización se interrumpe
+
+### Requirement: Una base neutralizada no se conecta a The Factory HKA
+
+Al neutralizar una base (la copia de producción que se restaura en staging o en un ambiente de pruebas), el módulo DEBE (MUST) borrar en todas las compañías las credenciales de The Factory HKA: URL (`url_tfhka`), usuario (`username_tfhka`), clave (`password_tfhka`) y token (`token_auth_tfhka`). Sin URL ni token, `tfhka.api.client` NO DEBE (MUST NOT) hacer ninguna llamada: la autenticación, la emisión, la anulación y las demás consultas se detienen con un error que pide configurar la URL o el token. El neutralizado del núcleo desactiva además todas las tareas programadas, entre ellas la cola de digitalización. El cliente no consulta si la base está neutralizada: la protección es la falta de credenciales. Viene de 19.
+
+#### Scenario: Copia de producción restaurada en staging
+
+- **WHEN** se neutraliza una base con The Factory HKA configurado en una compañía
+- **THEN** la compañía queda sin URL, usuario, clave ni token de The Factory HKA, y la cola de digitalización queda desactivada
+
+#### Scenario: Digitalizar en una base neutralizada
+
+- **WHEN** un usuario intenta digitalizar un documento o generar el token en la base neutralizada, sin volver a configurar las credenciales
+- **THEN** no sale ninguna llamada a The Factory HKA y el usuario ve el error que pide registrar el usuario, la clave, la URL o el token
+

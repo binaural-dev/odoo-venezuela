@@ -2,6 +2,8 @@ from odoo.tests import TransactionCase, tagged
 from odoo import Command, fields
 from unittest.mock import patch
 
+from .common import seed_daily_rates
+
 
 @tagged("post_install", "-at_install", "l10n_ve_invoice_digital", "move_action_post_alert")
 class TestMoveActionPostAlertWizard(TransactionCase):
@@ -19,6 +21,7 @@ class TestMoveActionPostAlertWizard(TransactionCase):
             "token_auth_tfhka": "token_fake",
             "country_id": self.env.ref('base.ve').id,
         })
+        seed_daily_rates(self.env, self.company)
 
         seq = self.env['ir.sequence'].create({
             'name': 'Sec Test',

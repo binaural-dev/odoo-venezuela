@@ -1,7 +1,6 @@
 from odoo import fields, models, api, _
 from odoo.exceptions import ValidationError, UserError
 import json
-import requests
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -98,21 +97,12 @@ class ResCompany(models.Model):
         self.ensure_one()
         self._validate_tfhka_credentials()
 
-        url = self.url_tfhka.rstrip("/") + "/Autenticacion"
         payload = {
             "usuario": self.username_tfhka,
             "clave": self.password_tfhka
         }
-
-        try:
-            response = requests.post(url, json=payload, timeout=10)
-            self._handle_tfhka_response(response, payload)
-        except requests.exceptions.RequestException as e:
-            _logger.error("Error connecting to the TFHKA API: %s", e)
-            self.env["tfhka.api.client"]._log_call(
-                self, "/Autenticacion", payload, None, None, str(e), False
-            )
-            raise ValidationError(_("Error connecting to the TFHKA API: %s", e))
+        response = self.env["tfhka.api.client"].authenticate(self, payload)
+        self._handle_tfhka_response(response, payload)
 
     def _validate_tfhka_credentials(self):
         if not self.username_tfhka:
