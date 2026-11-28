@@ -1,0 +1,3 @@
+id,name,model_id,group_id/id,operation,domain
+sale.sale_order_see_all_1,All Orders,sale.order,sales_team.group_sale_manager,cru,
+sale_stock.access_stock_picking_sales,stock.picking.sales,stock.picking,sales_team.group_sale_manager,cru,
